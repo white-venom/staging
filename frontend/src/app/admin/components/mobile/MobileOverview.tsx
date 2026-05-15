@@ -1,16 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
   Wallet, 
   Users, 
-  Briefcase, 
-  ArrowRight,
   TrendingUp,
-  Plus
+  Plus,
+  ArrowRight
 } from "lucide-react";
+import { format, subDays, isSameDay } from "date-fns";
 
 interface MobileOverviewProps {
   collections: any[];
@@ -25,6 +25,8 @@ interface MobileOverviewProps {
 }
 
 export default function MobileOverview({
+  collections,
+  deposits,
   totalCollectedAmount,
   totalDepositedAmount,
   netCashBalance,
@@ -33,6 +35,29 @@ export default function MobileOverview({
   todayCount
 }: MobileOverviewProps) {
   
+  // Calculate 7-day trend data
+  const trendData = useMemo(() => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), i)).reverse();
+    
+    return last7Days.map(day => {
+      const dayCollections = collections
+        .filter(c => isSameDay(new Date(c.created_at), day))
+        .reduce((sum, c) => sum + (c.amount || 0), 0);
+        
+      const dayDeposits = deposits
+        .filter(d => isSameDay(new Date(d.created_at), day))
+        .reduce((sum, d) => sum + (d.amount || 0), 0);
+        
+      return {
+        label: format(day, "EEE"),
+        net: dayCollections - dayDeposits,
+        date: format(day, "MMM d")
+      };
+    });
+  }, [collections, deposits]);
+
+  const maxNet = Math.max(...trendData.map(d => Math.abs(d.net)), 1000);
+
   return (
     <div className="space-y-6">
       {/* Premium Summary Card */}
@@ -57,6 +82,38 @@ export default function MobileOverview({
         </div>
       </div>
 
+      {/* 7-Day Pulse (Dynamic Trend) */}
+      <section className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs">7-Day Cash Pulse</h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Daily Net Flow</p>
+          </div>
+          <div className="bg-blue-50 dark:bg-blue-900/10 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">
+            Live
+          </div>
+        </div>
+
+        <div className="flex items-end justify-between h-32 gap-2 px-1">
+          {trendData.map((day, idx) => (
+            <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
+              {/* Tooltip on hover */}
+              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                ₹{day.net.toLocaleString()}
+              </div>
+              
+              <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-t-lg relative overflow-hidden h-24">
+                <div 
+                  className={`absolute bottom-0 left-0 right-0 transition-all duration-1000 ease-out ${day.net >= 0 ? 'bg-blue-500' : 'bg-red-400'}`}
+                  style={{ height: `${Math.max((Math.abs(day.net) / maxNet) * 100, 5)}%` }}
+                />
+              </div>
+              <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{day.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32">
@@ -64,7 +121,7 @@ export default function MobileOverview({
             <ArrowUpRight className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total to Take</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">To Take</p>
             <p className="text-lg font-black text-red-500 mt-1">₹{totalToTake.toLocaleString()}</p>
           </div>
         </div>
@@ -73,55 +130,42 @@ export default function MobileOverview({
             <ArrowDownLeft className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total to Give</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">To Give</p>
             <p className="text-lg font-black text-emerald-500 mt-1">₹{totalToGive.toLocaleString()}</p>
           </div>
         </div>
       </div>
 
-      {/* Today's Activity Section */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between px-2">
-          <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs">Today's Pulse</h3>
-          <button className="text-[10px] font-black text-blue-600 uppercase flex items-center gap-1">
-            Real-time <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-          </button>
-        </div>
-
-        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-2 border border-slate-100 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-4 p-4 border-b border-slate-50 dark:border-slate-800/50">
-            <div className="w-12 h-12 bg-orange-500/10 text-orange-600 rounded-2xl flex items-center justify-center">
-              <TrendingUp className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-black text-slate-800 dark:text-white">{todayCount} Collections</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Received so far today</p>
-            </div>
-            <div className="ml-auto">
-              <ArrowRight className="w-4 h-4 text-slate-300" />
-            </div>
+      {/* Stats Cards */}
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center gap-4 p-5 border-b border-slate-50 dark:border-slate-800/50">
+          <div className="w-12 h-12 bg-orange-500/10 text-orange-600 rounded-2xl flex items-center justify-center">
+            <TrendingUp className="w-6 h-6" />
           </div>
-          <div className="flex items-center gap-4 p-4">
-            <div className="w-12 h-12 bg-purple-500/10 text-purple-600 rounded-2xl flex items-center justify-center">
-              <Users className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-sm font-black text-slate-800 dark:text-white">Staff Active</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase">Tracking 5 members</p>
-            </div>
-            <div className="ml-auto">
-              <ArrowRight className="w-4 h-4 text-slate-300" />
-            </div>
+          <div>
+            <p className="text-sm font-black text-slate-800 dark:text-white">{todayCount} Collections</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Received so far today</p>
           </div>
+          <ArrowRight className="ml-auto w-4 h-4 text-slate-300" />
         </div>
-      </section>
+        <div className="flex items-center gap-4 p-5">
+          <div className="w-12 h-12 bg-purple-500/10 text-purple-600 rounded-2xl flex items-center justify-center">
+            <Users className="w-6 h-6" />
+          </div>
+          <div>
+            <p className="text-sm font-black text-slate-800 dark:text-white">Active Staff</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Pulse of your team</p>
+          </div>
+          <ArrowRight className="ml-auto w-4 h-4 text-slate-300" />
+        </div>
+      </div>
 
-      {/* Floating Action Button for Mobile */}
-      <button className="fixed bottom-24 right-6 w-14 h-14 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-2xl flex items-center justify-center z-50 transform transition-transform active:scale-90">
+      {/* Floating Action Button */}
+      <button className="fixed bottom-24 right-6 w-14 h-14 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-transform">
         <Plus className="w-7 h-7" />
       </button>
 
-      <div className="h-4" /> {/* Spacer for bottom nav */}
+      <div className="h-4" />
     </div>
   );
 }
