@@ -140,44 +140,6 @@ def check_role(payload: dict, db: Session = Depends(get_db)):
     return {"role": user.role, "name": user.name}
 
 
-@router.post("/seed")
-def seed_db(db: Session = Depends(get_db)):
-    """Temporary endpoint to initialize the database with test accounts on Cloud."""
-    from app.core.security import get_password_hash
-    from app.database.db import engine, Base
-    import uuid
-    
-    # Auto-create tables if they don't exist
-    Base.metadata.create_all(bind=engine)
-    
-    # Staff
-    staff_phone = "9917128864"
-    if not db.scalar(select(User).where(User.phone == staff_phone)):
-        staff = User(
-            id=uuid.uuid4(),
-            name="Sujeet Staff",
-            phone=staff_phone,
-            password_hash=get_password_hash(staff_phone),
-            role="staff"
-        )
-        db.add(staff)
-    
-    # Admin
-    admin_phone = "7900671145"
-    if not db.scalar(select(User).where(User.phone == admin_phone)):
-        admin = User(
-            id=uuid.uuid4(),
-            name="Sujeet Admin",
-            phone=admin_phone,
-            password_hash=get_password_hash(admin_phone),
-            role="admin"
-        )
-        db.add(admin)
-        
-    db.commit()
-    return {"message": "Database seeded with test accounts"}
-
-
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     """Fetch profile information of current logged-in session."""
