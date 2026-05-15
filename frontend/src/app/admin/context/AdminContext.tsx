@@ -80,8 +80,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         }
         return {
           id: c.id,
-          retailerId: c.retailer_id,
-          storeId: c.store_id,
+          retailer_id: c.retailer_id,
+          store_id: c.store_id,
           retailerName: c.retailer_name || "Unknown Retailer",
           portalName: c.portal_name || "Standard Channel",
           staffName: c.staff_name || "Unknown Staff",
@@ -109,11 +109,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         }
         return {
           id: d.id,
-          portalId: d.portal_id,
-          retailerId: d.retailer_id,
+          portal_id: d.portal_id,
+          retailer_id: d.retailer_id,
+          recipient_staff_id: d.recipient_staff_id,
           portalGroupId: d.portal_group_id,
           portalGroupName: d.portal_group_name,
-          recipientStaffId: d.recipient_staff_id,
           depositType: d.deposit_type,
           targetName: d.target_name || "Direct Deposit",
           amount: parseFloat(d.amount),
