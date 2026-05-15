@@ -30,6 +30,7 @@ COPY . .
 # Run application under non-privileged system user for absolute container runtime security
 RUN addgroup --system --gid 1001 appgroup
 RUN adduser --system --uid 1002 --gid 1001 appuser
+RUN chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 8000
