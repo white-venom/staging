@@ -19,7 +19,7 @@ import { format } from "date-fns";
 import MobileFilterDrawer from "./MobileFilterDrawer";
 
 export default function MobileLedger() {
-  const { collections, deposits } = useAdmin();
+  const { collections, deposits, retailerDirectory, portalDirectory } = useAdmin();
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -28,17 +28,27 @@ export default function MobileLedger() {
     dateFrom: '',
     dateTo: '',
     staff: 'all',
-    status: 'all',
-    type: 'all'
+    type: 'all',
+    party: 'all',
+    portal: 'all',
+    sortBy: 'date-desc'
   });
 
-  // Get unique staff list for filter
+  // Get unique lists for filters
   const staffList = useMemo(() => {
     return Array.from(new Set([
       ...(collections || []).map(c => c.staff_name),
       ...(deposits || []).map(d => d.staff_name)
     ].filter(Boolean))).sort() as string[];
   }, [collections, deposits]);
+
+  const partyList = useMemo(() => {
+    return (retailerDirectory || []).map((r: any) => r.name).sort();
+  }, [retailerDirectory]);
+
+  const portalList = useMemo(() => {
+    return (portalDirectory || []).map((p: any) => p.name).sort();
+  }, [portalDirectory]);
 
   // Combine and Apply ALL Filters
   const filteredLedger = useMemo(() => {
@@ -55,15 +65,11 @@ export default function MobileLedger() {
       );
     }
 
-    // Apply Staff Filter
-    if (filters.staff !== 'all') {
-      combined = combined.filter(tx => tx.staff_name === filters.staff);
-    }
-
-    // Apply Status Filter
-    if (filters.status !== 'all') {
-      combined = combined.filter(tx => tx.status === filters.status);
-    }
+    // Apply Filters
+    if (filters.staff !== 'all') combined = combined.filter(tx => tx.staff_name === filters.staff);
+    if (filters.party !== 'all') combined = combined.filter(tx => tx.retailer_name === filters.party);
+    if (filters.portal !== 'all') combined = combined.filter(tx => tx.portal_name === filters.portal);
+    if (filters.type !== 'all') combined = combined.filter(tx => tx.type === filters.type);
 
     // Apply Date Range
     if (filters.dateFrom) {
@@ -73,17 +79,25 @@ export default function MobileLedger() {
       combined = combined.filter(tx => format(new Date(tx.created_at), 'yyyy-MM-dd') <= filters.dateTo);
     }
 
-    return combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // Apply Sorting
+    combined.sort((a, b) => {
+      if (filters.sortBy === "date-desc") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (filters.sortBy === "date-asc") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (filters.sortBy === "amount-desc") return (b.amount || 0) - (a.amount || 0);
+      if (filters.sortBy === "amount-asc") return (a.amount || 0) - (b.amount || 0);
+      return 0;
+    });
+
+    return combined;
   }, [collections, deposits, search, filters]);
 
   const handleExportCSV = () => {
-    const headers = ["Date", "Party", "Staff", "Type", "Status", "Amount"];
+    const headers = ["Date", "Party", "Staff", "Type", "Amount"];
     const rows = filteredLedger.map(tx => [
       format(new Date(tx.created_at), "yyyy-MM-dd HH:mm"),
       tx.retailer_name || tx.portal_name || 'N/A',
       tx.staff_name || 'Admin',
       tx.type,
-      tx.status,
       tx.amount
     ]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -164,8 +178,6 @@ export default function MobileLedger() {
                       <p className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
                         {item.type === 'collection' ? 'Cash In' : 'Cash Out'}
                       </p>
-                      <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'verified' ? 'bg-emerald-500' : 'bg-orange-500'}`} />
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{item.status}</p>
                     </div>
                   </div>
                 </div>
@@ -198,6 +210,8 @@ export default function MobileLedger() {
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         staffList={staffList}
+        partyList={partyList}
+        portalList={portalList}
         filters={filters}
         setFilters={setFilters}
       />

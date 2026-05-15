@@ -160,10 +160,6 @@ export default function MobileOverview({
                   <p className={`text-sm font-black ${item.type === 'collection' ? 'text-blue-600' : 'text-red-600'}`}>
                     {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
                   </p>
-                  <div className="flex items-center justify-end gap-1 mt-0.5">
-                    <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'verified' ? 'bg-green-500' : 'bg-orange-500'}`} />
-                    <p className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">{item.status}</p>
-                  </div>
                 </div>
               </div>
             ))
