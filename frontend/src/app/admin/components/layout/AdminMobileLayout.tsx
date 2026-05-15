@@ -6,8 +6,7 @@ import {
   BookOpen, 
   MoreHorizontal, 
   ArrowUpRight, 
-  ArrowDownLeft,
-  Bell
+  ArrowDownLeft
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,7 +36,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
         }
       `}</style>
 
-      {/* Mobile Header with Glowing Logo */}
+      {/* Mobile Header with Glowing Logo (Clean) */}
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-3 flex items-center justify-between no-print">
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10 flex items-center justify-center">
@@ -54,10 +53,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
             <p className="text-[8px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Admin Panel</p>
           </div>
         </div>
-        <button className="relative w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-blue-500 rounded-full border-2 border-white dark:border-slate-900" />
-        </button>
+        {/* Removed Notification Bell as requested */}
       </header>
 
       {/* Page Content */}
