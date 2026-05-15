@@ -120,7 +120,7 @@ export default function MobileLedger() {
             type="text" 
             placeholder="Search transactions..."
             value={search}
-            onChange={(e) => setSearch(setSearch(e.target.value))}
+            onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-12 pr-4 py-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         </div>
