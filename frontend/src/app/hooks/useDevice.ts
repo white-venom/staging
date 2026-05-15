@@ -11,19 +11,21 @@ export function useDevice() {
   });
 
   useEffect(() => {
+    // Only run on client
+    if (typeof window === "undefined") return;
+
     const handleResize = () => {
-      const width = window.innerWidth;
+      const w = window.innerWidth;
       setDevice({
-        isMobile: width < 768,
-        isTablet: width >= 768 && width < 1024,
-        isDesktop: width >= 1024,
-        width,
+        isMobile: w < 1024, // Setting a higher threshold temporarily to see if it triggers
+        isTablet: w >= 1024 && w < 1280,
+        isDesktop: w >= 1280,
+        width: w,
       });
+      console.log(`[useDevice] Width: ${w}, isMobile: ${w < 1024}`);
     };
 
-    // Initialize on mount
     handleResize();
-
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
