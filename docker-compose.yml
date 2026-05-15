@@ -1,0 +1,88 @@
+version: '3.8'
+
+networks:
+  doit_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  letsencrypt_certs:
+    driver: local
+  certbot_www:
+    driver: local
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: doit_db
+    restart: always
+    environment:
+      POSTGRES_DB: doit_production
+      POSTGRES_USER: doit_admin
+      POSTGRES_PASSWORD: securepassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - doit_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U doit_admin -d doit_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: doit_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://doit_admin:securepassword@db:5432/doit_production
+      - PORT=8000
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - doit_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/docs || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: doit_frontend
+    restart: always
+    environment:
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    networks:
+      - doit_network
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
+  nginx:
+    image: nginx:alpine
+    container_name: doit_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - letsencrypt_certs:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - doit_network

@@ -1,0 +1,828 @@
+# Product Requirements Document (PRD)
+
+## DO IT SERVICES — Cash Collection & Retailer Operations Platform
+
+Based on project understanding shared by the user 
+
+---
+
+# 1. Project Overview
+
+## Product Name
+
+**DO IT SERVICES Operations Platform**
+
+## Product Type
+
+Web-based Progressive Web App (PWA)
+
+## Purpose
+
+Build a centralized operational platform for managing:
+
+* Cash collection
+* Retailer ledger management
+* Staff activity
+* Denomination tracking
+* Reporting
+* Bank deposit workflows
+* Collection reconciliation
+
+The platform will replace fragmented workflows currently spread across:
+
+* PDF generation
+* Khatabook
+* Calculator apps
+* Manual reporting
+* Manual reconciliation systems 
+
+---
+
+# 2. Business Problem
+
+## Current Problems
+
+The existing workflow has multiple operational inefficiencies:
+
+| Problem                            | Impact                         |
+| ---------------------------------- | ------------------------------ |
+| Manual collection tracking         | Human errors                   |
+| Separate denomination calculations | Time wastage                   |
+| Manual PDF/report creation         | Duplicate work                 |
+| Khatabook dependency               | No centralized system          |
+| No live visibility                 | Owner lacks real-time insights |
+| Manual reconciliation              | Delays & mismatches            |
+| No unified staff monitoring        | Weak accountability            |
+
+---
+
+# 3. Product Goals
+
+## Primary Goals
+
+The platform should:
+
+* Centralize all cash collection operations
+* Reduce manual data entry
+* Provide real-time operational visibility
+* Automate report generation
+* Simplify reconciliation
+* Improve staff accountability
+* Maintain retailer transaction history
+* Work reliably on mobile devices
+* Support offline-first workflows
+
+---
+
+# 4. Target Users
+
+## 4.1 Staff Users
+
+Field employees responsible for:
+
+* Visiting retailers
+* Collecting cash
+* Entering denomination data
+* Logging KM usage
+* Updating collection status
+
+### Staff Needs
+
+* Fast mobile UI
+* Offline support
+* Simple workflows
+* Quick entry forms
+* Daily summary visibility
+
+---
+
+## 4.2 Admin / Owner
+
+Business operators managing:
+
+* Staff
+* Retailers
+* Collections
+* Reports
+* Reconciliation
+
+### Admin Needs
+
+* Live dashboards
+* Filtering & analytics
+* Report exports
+* Staff tracking
+* Ledger visibility
+* Operational oversight
+
+---
+
+# 5. Product Scope
+
+---
+
+# 6. Functional Requirements
+
+# Module 1 — Authentication & Authorization
+
+## Features
+
+### Login System
+
+* Email/Phone login
+* Password authentication
+* JWT-based session handling
+* Secure logout
+
+### Role-Based Access Control
+
+## Staff Permissions
+
+Can:
+
+* Login
+* Create collection entries
+* View own summaries
+* View assigned retailers
+
+Cannot:
+
+* Access admin dashboards
+* Edit other staff data
+* Access analytics
+
+## Admin Permissions
+
+Can:
+
+* View all collections
+* Manage retailers
+* Manage staff
+* Edit entries
+* Export reports
+* Access analytics
+* Verify collections
+
+---
+
+# Module 2 — Staff Collection Panel (PWA)
+
+## Objective
+
+Provide a fast mobile-first collection workflow.
+
+---
+
+## Collection Entry Workflow
+
+### Staff Should Be Able To Enter:
+
+* Retailer/store
+* Amount collected
+* Denomination breakdown
+* Remarks
+* KM reading
+* Collection timestamp
+
+---
+
+## Denomination Tracking
+
+### Supported Fields
+
+* ₹500
+* ₹200
+* ₹100
+* ₹50
+* ₹20
+* ₹10
+* Coins
+
+### System Behavior
+
+* Auto-calculate total
+* Validate against entered collection amount
+* Prevent mismatch submission
+* Highlight calculation errors instantly
+
+---
+
+## Retailer Selection
+
+### Features
+
+* Search retailer
+* Dropdown selection
+* Assigned retailer filtering
+* Quick retailer lookup
+
+---
+
+## KM / Attendance Tracking
+
+### Inputs
+
+* Start KM
+* End KM
+
+### Calculations
+
+* Total KM
+* Daily travel total
+
+### Future Extensibility
+
+* Fuel reimbursement
+* Incentive tracking
+* Route optimization
+
+---
+
+## Daily Summary
+
+### Staff Dashboard Shows
+
+* Total collection today
+* Number of retailers visited
+* Total cash collected
+* Pending sync count
+* Submission history
+
+---
+
+## Offline Support
+
+### Requirements
+
+When internet is unavailable:
+
+* Save entries locally
+* Queue sync operations
+* Auto-sync when internet reconnects
+* Prevent duplicate submissions
+
+---
+
+# Module 3 — Admin Dashboard
+
+## Objective
+
+Provide centralized operational control.
+
+---
+
+## Live Dashboard
+
+### Metrics
+
+* Today's total collections
+* Staff-wise totals
+* Retailer-wise totals
+* Pending submissions
+* Bank deposit pending
+* Collection trends
+
+---
+
+## Collections Management
+
+### Features
+
+* View all entries
+* Search records
+* Edit entries
+* Verify submissions
+* Mark bank deposits
+* View denomination breakdowns
+
+---
+
+## Advanced Filtering
+
+### Filter By
+
+* Date range
+* Retailer
+* Staff
+* Amount
+* Status
+* KM range
+
+---
+
+## Staff Monitoring
+
+### Track
+
+* Daily activity
+* Attendance
+* Collection efficiency
+* KM usage
+* Submission timing
+* Missed entries
+
+---
+
+# Module 4 — Retailer Ledger System
+
+## Objective
+
+Replace fragmented Khatabook-style tracking.
+
+---
+
+## Ledger Features
+
+### Maintain
+
+* Retailer profile
+* Collection history
+* Transaction logs
+* Balance history
+* Staff interaction history
+
+---
+
+## Future Scope
+
+* Outstanding balance tracking
+* Credit/payment cycles
+* Automated reminders
+
+---
+
+# Module 5 — Reports & Export System
+
+## Reports Required
+
+### Operational Reports
+
+* Daily collection reports
+* Retailer-wise reports
+* Staff performance reports
+* Denomination summary reports
+* Bank deposit reports
+
+---
+
+## Export Formats
+
+* PDF
+* Excel
+
+---
+
+# Module 6 — Notifications (Recommended)
+
+## Suggested Notifications
+
+### Staff
+
+* Submission successful
+* Sync completed
+* Collection mismatch alerts
+
+### Admin
+
+* Large collection alerts
+* Pending submissions
+* Missing collection reports
+
+---
+
+# 7. Non-Functional Requirements
+
+## Performance
+
+* Mobile-first responsiveness
+* Fast load times
+* API response < 2 seconds
+
+---
+
+## Scalability
+
+Architecture should support:
+
+* Multiple companies
+* Additional staff
+* Increased retailer count
+* Future SaaS migration
+
+---
+
+## Reliability
+
+* Offline-safe operations
+* Sync retry mechanisms
+* Data validation
+* Crash-safe submissions
+
+---
+
+## Security
+
+* JWT authentication
+* Password hashing
+* Role-based access
+* HTTPS-only deployment
+* Audit logging
+
+---
+
+# 8. Technical Architecture
+
+# Frontend
+
+## Stack
+
+* React
+* Vite
+* Tailwind CSS
+* PWA support
+
+## Key Requirements
+
+* Mobile responsive
+* Installable PWA
+* Offline caching
+* Optimized touch UI
+
+---
+
+# Backend
+
+## Stack
+
+* FastAPI (Python)
+* REST APIs
+* JWT Authentication
+
+## Responsibilities
+
+* Authentication
+* Data validation
+* Business logic
+* Reporting APIs
+* Sync handling
+
+---
+
+# Database
+
+## Stack
+
+* PostgreSQL
+
+## Core Tables
+
+* users
+* retailers
+* collections
+* denominations
+* attendance
+* bank_deposits
+* ledgers
+* reports
+* audit_logs
+
+---
+
+# Hosting
+
+## Infrastructure
+
+* Hostinger KVM 4 VPS
+
+## Deployment Stack
+
+```text
+Nginx
+↓
+FastAPI
+↓
+PostgreSQL
+↓
+React PWA
+```
+
+---
+
+# 9. Suggested Database Schema (High Level)
+
+## Users
+
+| Field         | Type   |
+| ------------- | ------ |
+| id            | UUID   |
+| name          | String |
+| phone         | String |
+| role          | Enum   |
+| password_hash | String |
+
+---
+
+## Retailers
+
+| Field          | Type   |
+| -------------- | ------ |
+| id             | UUID   |
+| retailer_name  | String |
+| address        | Text   |
+| assigned_staff | UUID   |
+
+---
+
+## Collections
+
+| Field        | Type      |
+| ------------ | --------- |
+| id           | UUID      |
+| retailer_id  | UUID      |
+| staff_id     | UUID      |
+| total_amount | Decimal   |
+| remarks      | Text      |
+| status       | Enum      |
+| created_at   | Timestamp |
+
+---
+
+## Denominations
+
+| Field         | Type    |
+| ------------- | ------- |
+| collection_id | UUID    |
+| note_500      | Integer |
+| note_200      | Integer |
+| note_100      | Integer |
+| note_50       | Integer |
+
+---
+
+# 10. User Flow
+
+# Staff Workflow
+
+```text
+Login
+↓
+Select Retailer
+↓
+Enter Amount
+↓
+Enter Denominations
+↓
+Validate Total
+↓
+Submit Collection
+↓
+Offline Save (if no internet)
+↓
+Sync to Server
+```
+
+---
+
+# Admin Workflow
+
+```text
+Login
+↓
+View Dashboard
+↓
+Monitor Collections
+↓
+Verify Entries
+↓
+Generate Reports
+↓
+Export Reports
+```
+
+---
+
+# 11. API Requirements
+
+## Authentication APIs
+
+* POST /login
+* POST /logout
+* POST /refresh-token
+
+---
+
+## Collection APIs
+
+* POST /collections
+* GET /collections
+* PUT /collections/{id}
+* GET /collections/staff/{id}
+
+---
+
+## Retailer APIs
+
+* GET /retailers
+* POST /retailers
+* PUT /retailers/{id}
+
+---
+
+## Reports APIs
+
+* GET /reports/daily
+* GET /reports/staff
+* GET /reports/retailer
+
+---
+
+# 12. UI/UX Requirements
+
+## Design Principles
+
+* Mobile-first
+* Minimal taps
+* Fast entry workflows
+* Large touch-friendly buttons
+* High readability
+* Low training requirement
+
+---
+
+## Recommended UI Style
+
+* Clean operational dashboard
+* Dark/light mode optional
+* Card-based layouts
+* Bottom navigation for staff panel
+
+---
+
+# 13. Development Roadmap
+
+# Phase 1 — Foundation
+
+Duration: 1–2 Weeks
+
+### Deliverables
+
+* Project setup
+* Backend architecture
+* Authentication system
+* Database schema
+
+---
+
+# Phase 2 — Staff Panel
+
+Duration: 2–3 Weeks
+
+### Deliverables
+
+* Collection forms
+* Denomination logic
+* Offline sync
+* Daily summaries
+
+---
+
+# Phase 3 — Admin Dashboard
+
+Duration: 2–3 Weeks
+
+### Deliverables
+
+* Live dashboard
+* Collection management
+* Retailer management
+* Filters
+
+---
+
+# Phase 4 — Reports & Exports
+
+Duration: 1–2 Weeks
+
+### Deliverables
+
+* PDF reports
+* Excel exports
+* Analytics
+
+---
+
+# Phase 5 — Deployment & Stabilization
+
+Duration: 1–2 Weeks
+
+### Deliverables
+
+* VPS deployment
+* Nginx setup
+* Security hardening
+* Bug fixes
+* Performance optimization
+
+---
+
+# 14. Out of Scope (Initial Version)
+
+The following are intentionally excluded initially:
+
+* Native Android app
+* WhatsApp automation
+* GPS live tracking
+* Payment gateway integration
+* Bank API integration
+* Accounting software integration
+* AI analytics
+* Route optimization
+
+---
+
+# 15. Key Risks
+
+## Scope Creep
+
+Client may continuously request:
+
+> “Ek aur small feature”
+
+### Mitigation
+
+* Signed scope approval
+* Milestone-based delivery
+* Feature freeze per phase
+
+---
+
+## Requirement Changes
+
+Operational workflows may evolve after demos.
+
+### Mitigation
+
+* Weekly reviews
+* Demo approvals
+* Change request documentation
+
+---
+
+# 16. Future Expansion Opportunities
+
+## Potential Version 2 Features
+
+* React Native Android app
+* GPS route tracking
+* WhatsApp automation
+* Bank integrations
+* Multi-company SaaS
+* AI anomaly detection
+* Incentive automation
+* Expense tracking
+
+---
+
+# 17. Success Metrics
+
+Project succeeds if:
+
+* Staff can submit collections within 1 minute
+* Owner gets real-time visibility
+* Manual reconciliation reduces significantly
+* Khatabook dependency is minimized
+* Report generation becomes automated
+* Operational errors reduce
+* System remains stable during daily use
+
+---
+
+# 18. Financial Understanding
+
+| Item          | Estimated Cost   |
+| ------------- | ---------------- |
+| Development   | ~₹71,000         |
+| Hosting       | ₹2000–2500/month |
+| AMC (Year 2+) | ₹24,000/year     |
+
+
+
+---
+
+# 19. Final Recommendation
+
+This project should be treated as:
+
+> A scalable operational workflow platform
+
+—not just a billing or collection app.
+
+The architecture already supports:
+
+* future SaaS conversion
+* multi-client onboarding
+* Android apps
+* API reuse
+* enterprise scalability
+
+This is a strong long-term software business foundation if executed properly.

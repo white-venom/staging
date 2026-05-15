@@ -1,0 +1,905 @@
+# DO IT SERVICES — UI/UX Design Document
+
+## Mobile-First PWA Design System & Interface Architecture
+
+Based on the PRD and operational workflow shared earlier. 
+
+---
+
+# 1. Design Philosophy
+
+## Core Principle
+
+This platform is **not a traditional office software dashboard**.
+
+It is:
+
+* a field operations tool
+* used mostly on phones
+* used while traveling
+* used under time pressure
+* used by non-technical staff
+
+So the UI must prioritize:
+
+| Priority | Requirement               |
+| -------- | ------------------------- |
+| 1        | Speed                     |
+| 2        | Simplicity                |
+| 3        | Touch friendliness        |
+| 4        | Low typing effort         |
+| 5        | Offline reliability       |
+| 6        | Clear visibility outdoors |
+| 7        | One-hand usability        |
+
+---
+
+# 2. Platform Design Direction
+
+## Primary Device Target
+
+Mobile phones (Android primarily)
+
+## Secondary Device
+
+Desktop/laptop for admin panel
+
+---
+
+# 3. PWA Design Requirements
+
+## Must Behave Like Native App
+
+The PWA should support:
+
+* Home screen install
+* Splash screen
+* Fullscreen mode
+* Offline usage
+* Background sync
+* Fast loading
+* App-like navigation
+* Touch optimized interactions
+
+---
+
+# 4. Global UI Style
+
+# Visual Style
+
+Modern operational UI with:
+
+* clean cards
+* rounded corners
+* large buttons
+* minimal clutter
+* high readability
+
+---
+
+# Color Palette
+
+## Recommended Palette
+
+| Usage      | Color              |
+| ---------- | ------------------ |
+| Primary    | Deep Blue          |
+| Accent     | Emerald Green      |
+| Warning    | Amber              |
+| Error      | Red                |
+| Background | Light Gray / White |
+| Text       | Dark Gray          |
+
+---
+
+# Why This Works
+
+Blue:
+
+* trustworthy
+* financial/operational feel
+
+Green:
+
+* success/collection confirmation
+
+Amber:
+
+* pending actions
+
+Red:
+
+* mismatch/errors
+
+---
+
+# 5. Typography
+
+## Requirements
+
+* Large readable fonts
+* Minimal decorative fonts
+* Excellent readability outdoors
+
+---
+
+## Recommended Font
+
+### Primary
+
+* Inter
+
+### Alternatives
+
+* Poppins
+* Manrope
+
+---
+
+# Font Sizes
+
+| Usage         | Size    |
+| ------------- | ------- |
+| Main heading  | 24px    |
+| Section title | 18px    |
+| Card title    | 16px    |
+| Body text     | 14–15px |
+| Small labels  | 12px    |
+
+---
+
+# 6. Mobile Layout Principles
+
+## IMPORTANT RULES
+
+### Rule 1 — Bottom Navigation Only
+
+Top-heavy navigation is bad for field usage.
+
+Use:
+
+* bottom tabs
+* floating action button (FAB)
+
+---
+
+### Rule 2 — Thumb Reachability
+
+Critical buttons must be reachable with one hand.
+
+---
+
+### Rule 3 — Minimal Typing
+
+Prefer:
+
+* dropdowns
+* searchable selects
+* numeric pads
+* quick actions
+
+Avoid:
+
+* long text entry
+
+---
+
+### Rule 4 — Large Touch Targets
+
+Minimum:
+
+* 44px touch height
+
+Ideal:
+
+* 48–56px
+
+---
+
+### Rule 5 — Single Focus Screens
+
+Each screen should do ONE main thing.
+
+Bad:
+
+* overloaded dashboards
+
+Good:
+
+* focused workflows
+
+---
+
+# 7. App Structure
+
+# STAFF APP STRUCTURE
+
+## Bottom Navigation
+
+| Tab         | Purpose            |
+| ----------- | ------------------ |
+| Home        | Daily overview     |
+| Collections | Collection entries |
+| History     | Past submissions   |
+| Profile     | Account/settings   |
+
+---
+
+# ADMIN APP STRUCTURE
+
+## Sidebar + Responsive Mobile Layout
+
+### Desktop
+
+Sidebar navigation
+
+### Mobile
+
+Collapsible bottom drawer menu
+
+---
+
+# 8. Screen-by-Screen Design
+
+# SCREEN 1 — Splash Screen
+
+## Purpose
+
+Fast branding + loading
+
+---
+
+## Elements
+
+* Logo
+* Company name
+* Loading animation
+
+---
+
+## Behavior
+
+* < 2 second loading ideally
+* auto-login check
+
+---
+
+# SCREEN 2 — Login Screen
+
+## Design Goals
+
+Simple.
+Fast.
+No confusion.
+
+---
+
+## Layout
+
+### Top
+
+* Logo
+* Welcome text
+
+### Middle
+
+* Phone/email input
+* Password input
+
+### Bottom
+
+* Login button
+* Remember session
+
+---
+
+## UX Enhancements
+
+* Numeric keyboard for phone
+* Show/hide password
+* Loading state button
+
+---
+
+# SCREEN 3 — Staff Home Dashboard
+
+## Most Important Screen
+
+Should instantly show:
+
+* today status
+* collection performance
+* pending syncs
+
+---
+
+## Layout
+
+### Header
+
+* Greeting
+* Date
+* Sync status indicator
+
+---
+
+## Main Cards
+
+### Card 1 — Today's Collection
+
+Shows:
+
+* total amount
+* collection count
+
+---
+
+### Card 2 — Retailers Visited
+
+Shows:
+
+* count
+* pending visits
+
+---
+
+### Card 3 — KM Summary
+
+Shows:
+
+* today's KM
+* average KM
+
+---
+
+### Card 4 — Offline Queue
+
+Shows:
+
+* unsynced entries
+
+---
+
+## Floating Action Button (FAB)
+
+Huge + button:
+
+> “New Collection”
+
+This should always stay visible.
+
+---
+
+# SCREEN 4 — New Collection Entry
+
+# MOST IMPORTANT WORKFLOW SCREEN
+
+This determines usability success.
+
+---
+
+# Design Goals
+
+The entire collection process should:
+
+* take under 1 minute
+* require minimal typing
+* avoid mistakes
+
+---
+
+# Layout Flow
+
+## Section 1 — Retailer Selection
+
+### Components
+
+* Searchable dropdown
+* Recently used retailers
+* Assigned retailers first
+
+---
+
+## Section 2 — Amount Entry
+
+### Features
+
+* Large numeric keypad
+* Currency formatting
+* Instant validation
+
+---
+
+## Section 3 — Denomination Breakdown
+
+## BEST UX APPROACH
+
+Use card rows like:
+
+```text id="3j8a1v"
+₹500   [-]  10  [+]
+₹200   [-]   5  [+]
+₹100   [-]   8  [+]
+```
+
+NOT tiny text inputs.
+
+This dramatically improves:
+
+* speed
+* accuracy
+* touch usability
+
+---
+
+## Live Calculation
+
+Sticky total bar at bottom:
+
+```text id="2h1ex6"
+Entered Total: ₹12,500
+Denomination Total: ₹12,500
+✓ Matched
+```
+
+OR
+
+```text id="pj16m7"
+⚠ Difference: ₹500
+```
+
+---
+
+## Section 4 — Remarks
+
+Optional quick chips:
+
+* “Partial payment”
+* “Short cash”
+* “Closed shop”
+
+Avoid typing whenever possible.
+
+---
+
+## Section 5 — KM Entry
+
+### Inputs
+
+* Start KM
+* End KM
+
+Auto calculate:
+
+* total KM
+
+---
+
+## Submit Button
+
+Must:
+
+* stay sticky at bottom
+* always visible
+* large touch area
+
+---
+
+# SCREEN 5 — Offline Sync Screen
+
+## Purpose
+
+Show pending uploads.
+
+---
+
+## Required Information
+
+* unsynced entries
+* sync attempts
+* retry button
+* success/failure status
+
+---
+
+# SCREEN 6 — Collection History
+
+## Features
+
+* chronological list
+* retailer names
+* amounts
+* sync status
+* date/time
+
+---
+
+## UX Enhancements
+
+Use:
+
+* expandable cards
+  instead of
+* complex tables
+
+Tables are terrible on mobile.
+
+---
+
+# SCREEN 7 — Admin Dashboard
+
+# Design Direction
+
+Operational command center.
+
+---
+
+# Desktop Layout
+
+## Left Sidebar
+
+Navigation:
+
+* Dashboard
+* Collections
+* Retailers
+* Staff
+* Reports
+* Settings
+
+---
+
+## Main Dashboard Area
+
+### Top Metrics
+
+Grid cards:
+
+* Today's collection
+* Pending bank deposits
+* Active staff
+* Collection trends
+
+---
+
+## Charts
+
+Recommended:
+
+* line charts
+* bar charts
+* collection trends
+
+Avoid:
+
+* overly complex analytics
+
+---
+
+# Mobile Admin Layout
+
+## Important
+
+Admin will ALSO use phone frequently.
+
+So:
+
+* cards > tables
+* collapsible sections
+* bottom sheets
+* responsive charts
+
+---
+
+# 9. UI Components Design System
+
+# Buttons
+
+## Primary Button
+
+* full width
+* rounded-xl
+* strong contrast
+
+---
+
+## Secondary Button
+
+Outlined style.
+
+---
+
+## Danger Button
+
+Red background.
+
+---
+
+# Cards
+
+## Card Design
+
+* soft shadow
+* rounded corners
+* padded spacing
+* clean hierarchy
+
+---
+
+# Inputs
+
+## Input Style
+
+* large height
+* visible labels
+* strong focus states
+
+---
+
+# Dropdowns
+
+Use:
+
+* searchable selects
+
+Especially for retailer selection.
+
+---
+
+# Toast Notifications
+
+Examples:
+
+* Collection saved
+* Sync completed
+* Validation failed
+
+---
+
+# 10. Responsive Design Rules
+
+# Breakpoints
+
+| Device  | Width      |
+| ------- | ---------- |
+| Mobile  | <768px     |
+| Tablet  | 768–1024px |
+| Desktop | >1024px    |
+
+---
+
+# Mobile Rules
+
+## Must Avoid
+
+* wide tables
+* tiny buttons
+* hover-only interactions
+* small text
+* complex nested menus
+
+---
+
+# Required
+
+* stacked layouts
+* vertical scrolling
+* sticky actions
+* thumb-friendly navigation
+
+---
+
+# 11. PWA Technical UX Requirements
+
+# Offline UX
+
+## Important
+
+Users should NEVER lose data.
+
+---
+
+# Required Behavior
+
+If internet fails:
+
+* save locally
+* show offline badge
+* queue sync automatically
+
+---
+
+# Sync Indicator
+
+Use:
+
+* green = synced
+* amber = pending
+* red = failed
+
+---
+
+# 12. Loading & Performance UX
+
+# Required
+
+## App Startup
+
+< 3 seconds
+
+---
+
+## Form Interaction
+
+Instant response
+
+---
+
+## Navigation
+
+No full-page reloads
+
+---
+
+# Skeleton Loaders
+
+Use skeleton placeholders instead of spinners where possible.
+
+---
+
+# 13. Accessibility Requirements
+
+## Important
+
+Field staff may use:
+
+* low-end phones
+* bright sunlight
+* one-hand usage
+
+---
+
+# Must Have
+
+* high contrast
+* large text
+* large buttons
+* visible states
+* readable outdoors
+
+---
+
+# 14. Recommended Frontend Architecture
+
+# Stack
+
+| Technology      | Purpose          |
+| --------------- | ---------------- |
+| React + Vite    | Frontend         |
+| Tailwind CSS    | Styling          |
+| React Query     | API caching      |
+| Zustand         | State management |
+| React Hook Form | Forms            |
+| Zod             | Validation       |
+| PWA Plugin      | Offline support  |
+
+---
+
+# 15. Recommended Component Library
+
+## Best Choice
+
+shadcn/ui
+
+Reason:
+
+* modern
+* customizable
+* mobile friendly
+* Tailwind compatible
+
+---
+
+# 16. Recommended Animation Style
+
+## Keep Minimal
+
+Good:
+
+* smooth transitions
+* card animations
+* loading shimmer
+
+Bad:
+
+* flashy effects
+* heavy motion
+* distracting animations
+
+Operational apps should feel:
+
+* stable
+* reliable
+* fast
+
+---
+
+# 17. Design Risks
+
+# Biggest Risk
+
+Trying to make it:
+
+> “too feature rich”
+
+This can destroy usability.
+
+---
+
+# Another Major Risk
+
+Desktop-first thinking.
+
+This app MUST be:
+
+* mobile-first
+* field-first
+* operational-first
+
+Not:
+
+* corporate dashboard first
+
+---
+
+# 18. Recommended UX Strategy
+
+# PRIORITY ORDER
+
+## Version 1 Focus
+
+Perfect:
+
+* collection workflow
+* denomination UX
+* offline sync
+* dashboard clarity
+
+NOT:
+
+* advanced analytics
+* fancy charts
+* excessive reports
+
+---
+
+# 19. Best Design Direction Summary
+
+The ideal feel should be:
+
+| App Type        | Inspiration         |
+| --------------- | ------------------- |
+| Collection flow | Delivery apps       |
+| Speed           | POS systems         |
+| Reliability     | Banking apps        |
+| Mobile UX       | Modern fintech apps |
+
+---
+
+# 20. Final Design Recommendation
+
+This app should feel like:
+
+> a lightweight operational fintech tool
+
+—not an ERP system.
+
+If the UI becomes:
+
+* cluttered
+* table-heavy
+* desktop-centric
+
+then field staff adoption will fail.
+
+The mobile collection workflow is the heart of the product. Everything else is secondary.

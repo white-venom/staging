@@ -1,0 +1,1 @@
+Integrate a real-time notification system. For admins, send push notifications for events such as 'New Collection Submitted,' 'Staff Synced Data,' or 'Large Collection Recorded.' For staff, send notifications for 'New Retailer Assigned' or 'Urgent Admin Update.' Utilize Web Push API for the PWA.
