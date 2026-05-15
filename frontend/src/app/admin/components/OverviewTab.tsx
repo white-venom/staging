@@ -1,0 +1,475 @@
+"use client";
+
+import React from "react";
+import { 
+  TrendingUp, 
+  FileText, 
+  CheckCircle2, 
+  BarChart2,
+  ArrowUpRight,
+  ArrowDownLeft,
+  Trash2,
+  Edit
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { api } from "../../utils/api";
+
+interface OverviewTabProps {
+  collections: any[];
+  deposits: any[];
+  totalCollectedAmount: number;
+  totalDepositedAmount: number;
+  netCashBalance: number;
+   totalToTake: number;
+   totalToGive: number;
+   fetchData: () => void;
+   todayCount?: number;
+ }
+
+export default function OverviewTab({
+  collections,
+  deposits,
+  totalCollectedAmount,
+  totalDepositedAmount,
+  netCashBalance,
+  totalToTake,
+  totalToGive,
+  fetchData,
+  todayCount
+}: OverviewTabProps) {
+  const router = useRouter();
+   const safeCollections = collections || [];
+   const safeDeposits = deposits || [];
+ 
+   // Pre-calculate running balances for all transactions
+   const combinedTimeline = [
+     ...safeCollections.map(c => ({ ...c, type: 'collection', amt: c.totalAmount })),
+     ...safeDeposits.map(d => ({ ...d, type: 'deposit', amt: d.amount }))
+   ].filter(item => item.date)
+    .sort((a, b) => new Date(a.date.replace(' ', 'T')).getTime() - new Date(b.date.replace(' ', 'T')).getTime());
+ 
+   let runningBal = 0;
+   const balanceSnapshots = new Map();
+   combinedTimeline.forEach(item => {
+     const prev = runningBal;
+     if (item.type === 'collection') runningBal += item.amt;
+     else runningBal -= item.amt;
+     balanceSnapshots.set(item.id, { prev, next: runningBal });
+   });
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      {/* Khatabook Summary Card */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden animate-fade-in">
+        <div className="flex divide-x divide-slate-100 dark:divide-slate-800">
+          {/* You will Give (Hum Denge) */}
+          <div className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-1">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">You will give</span>
+            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-500 tracking-tight">
+              ₹{(totalToGive || 0).toLocaleString()}
+            </span>
+          </div>
+
+          {/* You will Get (Hum Lenge) */}
+          <div className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-1">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400">You will get</span>
+            <span className="text-2xl font-black text-red-600 dark:text-red-500 tracking-tight">
+              ₹{(totalToTake || 0).toLocaleString()}
+            </span>
+          </div>
+        </div>
+        
+        {/* Blue Footer Bar */}
+        <div 
+          onClick={() => router.push('/admin/reports')}
+          className="bg-blue-50 dark:bg-blue-900/10 py-3 flex items-center justify-center border-t border-slate-100 dark:border-slate-800 hover:bg-blue-100 dark:hover:bg-blue-900/20 transition-colors cursor-pointer group"
+        >
+          <div className="flex items-center gap-2">
+            <div className="p-1 bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-700 rounded text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase">PDF</div>
+            <span className="text-sm font-black text-blue-700 dark:text-blue-400 group-hover:underline">View Reports</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Today's Activity Heading */}
+      <div className="flex items-center gap-2 mb-2 px-1">
+        <div className="w-1 h-4 bg-blue-600 rounded-full" />
+        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Today's Activity</h2>
+      </div>
+
+      {/* KPI Summary Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+        
+        {/* Total Collection */}
+        <div className="p-5 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white rounded-2xl shadow-lg shadow-emerald-900/15 border border-emerald-500/20 hover:scale-[1.03] active:scale-95 transition-all relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-white/5 rounded-full blur-xl" />
+          <div className="flex items-start justify-between w-full">
+            <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center shadow-inner">
+              <TrendingUp className="w-4.5 h-4.5 text-emerald-100" />
+            </div>
+             <span className="text-[8px] font-black uppercase tracking-wide text-emerald-100/70 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/10">
+               Today's Collection
+             </span>
+          </div>
+          <div className="mt-4">
+            <span className="text-xl md:text-2xl font-black block tracking-tight text-white">
+              ₹{(totalCollectedAmount || 0).toLocaleString()}
+            </span>
+            <span className="text-[10px] text-emerald-100/80 font-bold block mt-1 tracking-wide">
+              Logged cash receipts
+            </span>
+          </div>
+        </div>
+
+        {/* Total Deposits */}
+        <div className="p-5 bg-gradient-to-br from-red-600 via-red-700 to-red-900 text-white rounded-2xl shadow-lg shadow-red-950/15 border border-red-500/20 hover:scale-[1.03] active:scale-95 transition-all relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-white/5 rounded-full blur-xl" />
+          <div className="flex items-start justify-between w-full">
+            <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center shadow-inner">
+              <FileText className="w-4.5 h-4.5 text-red-100" />
+            </div>
+             <span className="text-[8px] font-black uppercase tracking-wide text-red-100/70 bg-red-950/30 px-2 py-0.5 rounded-full border border-red-500/10">
+               Today's Deposits
+             </span>
+          </div>
+          <div className="mt-4">
+            <span className="text-xl md:text-2xl font-black block tracking-tight text-white">
+              ₹{(totalDepositedAmount || 0).toLocaleString()}
+            </span>
+            <span className="text-[10px] text-red-100/80 font-bold block mt-1 tracking-wide">
+              Bank Deposit Logs
+            </span>
+          </div>
+        </div>
+
+        {/* Net Balance */}
+        <div className="p-5 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-800 text-white rounded-2xl shadow-lg shadow-blue-900/15 border border-blue-500/20 hover:scale-[1.03] active:scale-95 transition-all relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-white/5 rounded-full blur-xl" />
+          <div className="flex items-start justify-between w-full">
+            <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center shadow-inner">
+              <CheckCircle2 className="w-4.5 h-4.5 text-blue-100" />
+            </div>
+            <span className="text-[8px] font-black uppercase tracking-wide text-blue-100/70 bg-blue-950/30 px-2 py-0.5 rounded-full border border-blue-500/10">
+              Net Cash
+            </span>
+          </div>
+          <div className="mt-4">
+            <span className="text-xl md:text-2xl font-black block tracking-tight text-white">
+              ₹{(netCashBalance || 0).toLocaleString()}
+            </span>
+             <span className="text-[10px] text-blue-100/85 font-bold block mt-1 tracking-wide">
+               {todayCount || 0} Entries Today
+             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Real-time Financial Performance Chart */}
+      {(() => {
+        const barDays = Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (6 - i));
+          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          const label = i === 6 ? "Today" : d.toLocaleDateString("en-IN", { weekday: "short" });
+          
+          const collected = safeCollections
+            .filter(c => c.date && c.date.startsWith(key))
+            .reduce((s, c) => s + (c.totalAmount || 0), 0);
+            
+          const deposited = safeDeposits
+            .filter(dep => dep.date && dep.date.startsWith(key))
+            .reduce((s, dep) => s + (dep.amount || 0), 0);
+            
+          const settlement = collected - deposited;
+          
+          return { label, key, collected, deposited, settlement, isToday: i === 6 };
+        });
+        
+        const allValues = barDays.flatMap(b => [b.collected, b.deposited, Math.abs(b.settlement)]);
+        const maxVal = Math.max(...allValues, 1);
+
+        return (
+          <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <BarChart2 className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                <h2 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">7-Day Financial Trend</h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-2.5 py-0.5 rounded-full font-bold border border-blue-200/60 dark:border-blue-900/40">
+                  Net · ₹{(netCashBalance || 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-end justify-between gap-1 md:gap-3 h-48 pt-6 px-1">
+              {barDays.map((bar) => {
+                const colHeight = (bar.collected / maxVal) * 100;
+                const depHeight = (bar.deposited / maxVal) * 100;
+                const setHeight = (Math.max(0, bar.settlement) / maxVal) * 100;
+                
+                return (
+                  <div key={bar.key} className="flex-1 flex flex-col items-center gap-2 group relative">
+                    <div className="w-full flex items-end justify-center gap-0.5 h-32">
+                      <div 
+                        className="w-[30%] bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-[2px] transition-all duration-700 delay-75"
+                        style={{ height: `${colHeight}%`, minHeight: bar.collected > 0 ? '2px' : '0' }}
+                        title={bar.collected > 0 ? `Collected: ₹${bar.collected}` : undefined}
+                      />
+                      <div 
+                        className="w-[30%] bg-gradient-to-t from-red-600 to-red-400 rounded-t-[2px] transition-all duration-700 delay-150"
+                        style={{ height: `${depHeight}%`, minHeight: bar.deposited > 0 ? '2px' : '0' }}
+                        title={bar.deposited > 0 ? `Deposited: ₹${bar.deposited}` : undefined}
+                      />
+                      <div 
+                        className="w-[30%] bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-[2px] transition-all duration-700 delay-300"
+                        style={{ height: `${setHeight}%`, minHeight: bar.settlement > 0 ? '2px' : '0' }}
+                        title={bar.settlement > 0 ? `Net Balance: ₹${bar.settlement}` : undefined}
+                      />
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <span className={`text-[9px] font-bold ${bar.isToday ? "text-slate-900 dark:text-white font-black" : "text-slate-400 dark:text-slate-500"}`}>
+                        {bar.label}
+                      </span>
+                      {bar.isToday && <div className="w-1 h-1 bg-blue-500 rounded-full mt-0.5"></div>}
+                    </div>
+                    {bar.collected > 0 && (
+                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
+                        <div className="bg-slate-900 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
+                          ₹{(bar.collected/1000).toFixed(1)}k
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Collected</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-red-500" />
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Deposited</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Net Balance</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Recent Activity Wireframe Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+        {/* LEFT COLUMN (Collections & Deposits) */}
+        <div className="md:col-span-8 flex flex-col gap-5">
+          {/* Recent Collections Panel */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex-1">
+            <div className="px-5 py-3 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
+              <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Recent Collections</h2>
+            </div>
+            <div className="divide-y divide-slate-50 dark:divide-slate-800">
+               {safeCollections.slice(0, 5).map((c, idx) => {
+                 const snapshots = balanceSnapshots.get(c.id) || { prev: 0, next: 0 };
+                 return (
+                   <div key={idx} className="p-4 flex flex-col gap-3 group border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors">
+                     <div className="flex items-center justify-between text-[11px]">
+                       <div className="flex flex-col">
+                         <span className="font-extrabold text-slate-850 dark:text-slate-100">{c.retailerName}</span>
+                         <span className="text-[9px] text-slate-400 font-bold uppercase">{c.date}</span>
+                       </div>
+                       <div className="flex items-center gap-3">
+                         <span className="font-black text-emerald-600 text-sm">+₹{(c.totalAmount || 0).toLocaleString()}</span>
+                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                           <button 
+                             onClick={async () => {
+                               const newAmount = prompt("Enter correct collection amount:", c.totalAmount.toString());
+                               if(newAmount !== null && !isNaN(parseFloat(newAmount))) {
+                                 try {
+                                   await api.updateCollection(c.id, {
+                                     retailer_id: c.retailer_id,
+                                     store_id: c.store_id,
+                                     total_amount: parseFloat(newAmount),
+                                     remarks: c.remarks,
+                                     denominations: {
+                                       ...c.denominations,
+                                       online_amount: parseFloat(newAmount)
+                                     }
+                                   });
+                                   fetchData();
+                                 } catch (err: any) {
+                                   alert("Failed to update: " + err.message);
+                                 }
+                               }
+                             }}
+                             className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                           >
+                             <Edit className="w-3 h-3" />
+                           </button>
+                           <button 
+                             onClick={async () => {
+                               if(confirm("Delete this collection?")) {
+                                 try {
+                                   await api.deleteCollection(c.id);
+                                   fetchData();
+                                 } catch (err: any) {
+                                   alert("Failed to delete: " + err.message);
+                                 }
+                               }
+                             }}
+                             className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                           >
+                             <Trash2 className="w-3 h-3" />
+                           </button>
+                         </div>
+                       </div>
+                     </div>
+                     
+                     <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                       <div className="flex flex-col">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Opening</span>
+                         <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">₹{snapshots.prev.toLocaleString()}</span>
+                       </div>
+                       <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Collector</span>
+                         <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 line-clamp-1">{c.staffName || 'System'}</span>
+                       </div>
+                       <div className="flex flex-col text-right">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Closing</span>
+                         <span className="text-[10px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                       </div>
+                     </div>
+                   </div>
+                 );
+               })}
+              {safeCollections.length === 0 && <div className="p-8 text-center text-slate-400 text-[10px] font-bold italic">No collections.</div>}
+            </div>
+          </div>
+
+          {/* Recent Deposits Panel */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex-1">
+            <div className="px-5 py-3 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
+              <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Recent Deposits</h2>
+            </div>
+            <div className="divide-y divide-slate-50 dark:divide-slate-800">
+               {safeDeposits.slice(0, 5).map((d, idx) => {
+                 const snapshots = balanceSnapshots.get(d.id) || { prev: 0, next: 0 };
+                 return (
+                   <div key={idx} className="p-4 flex flex-col gap-3 group border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors">
+                     <div className="flex items-center justify-between text-[11px]">
+                       <div className="flex flex-col">
+                         <span className="font-extrabold text-slate-850 dark:text-slate-100">{d.targetName}</span>
+                         <span className="text-[9px] text-slate-400 font-bold uppercase">{d.date}</span>
+                       </div>
+                       <div className="flex items-center gap-3">
+                         <span className="font-black text-red-600 text-sm">-₹{(d.amount || 0).toLocaleString()}</span>
+                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                           <button 
+                             onClick={async () => {
+                               const newAmount = prompt("Enter correct deposit amount:", d.amount.toString());
+                               if(newAmount !== null && !isNaN(parseFloat(newAmount))) {
+                                 try {
+                                   await api.updateDeposit(d.id, {
+                                     deposit_type: d.depositType,
+                                     portal_id: d.portal_id,
+                                     retailer_id: d.retailer_id,
+                                     recipient_staff_id: d.recipient_staff_id,
+                                     amount: parseFloat(newAmount),
+                                     payment_mode: d.paymentMode,
+                                     deposit_date: d.date.split(' ')[0], // Extract YYYY-MM-DD
+                                     denominations: d.denominations
+                                   });
+                                   fetchData();
+                                 } catch (err: any) {
+                                   alert("Failed to update: " + err.message);
+                                 }
+                               }
+                             }}
+                             className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                           >
+                             <Edit className="w-3 h-3" />
+                           </button>
+                           <button 
+                             onClick={async () => {
+                               if(confirm("Delete this deposit?")) {
+                                 try {
+                                   await api.deleteDeposit(d.id);
+                                   fetchData();
+                                 } catch (err: any) {
+                                   alert("Failed to delete: " + err.message);
+                                 }
+                               }
+                             }}
+                             className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                           >
+                             <Trash2 className="w-3 h-3" />
+                           </button>
+                         </div>
+                       </div>
+                     </div>
+ 
+                     <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                       <div className="flex flex-col">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Opening</span>
+                         <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">₹{snapshots.prev.toLocaleString()}</span>
+                       </div>
+                       <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Deposited By</span>
+                         <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 line-clamp-1">{d.staffName || 'System'}</span>
+                       </div>
+                       <div className="flex flex-col text-right">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Closing</span>
+                         <span className="text-[10px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                       </div>
+                     </div>
+                   </div>
+                 );
+               })}
+              {safeDeposits.length === 0 && <div className="p-8 text-center text-slate-400 text-[10px] font-bold italic">No deposits.</div>}
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN (Unified Ledger) */}
+        <div className="md:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col">
+          <div className="px-5 py-3 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
+            <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Recent Ledger</h2>
+          </div>
+          <div className="flex-1 divide-y divide-slate-100 dark:divide-slate-800">
+            {[...safeCollections.map(c => ({...c, type: 'collection', amt: c.totalAmount})), ...safeDeposits.map(d => ({...d, type: 'deposit', amt: d.amount}))]
+              .filter(item => item.date)
+              .sort((a, b) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime())
+              .slice(0, 8)
+              .map((item, idx) => (
+                <div key={idx} className="p-4 flex flex-col gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-850/20 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                      {item.type === 'collection' ? 'COL' : 'DEP'}
+                    </span>
+                    <span className={`text-[10px] font-black ${item.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {item.type === 'collection' ? '+' : '-'}₹{(item.amt || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-extrabold text-slate-850 dark:text-slate-100 line-clamp-1">
+                      {item.type === 'collection' ? item.retailerName : item.targetName}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{item.date}</span>
+                  </div>
+                </div>
+              ))}
+            {(safeCollections.length === 0 && safeDeposits.length === 0) && (
+              <div className="p-10 text-center text-slate-400 text-xs font-bold italic">No Ledger Records.</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

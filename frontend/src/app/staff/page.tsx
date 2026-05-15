@@ -1,0 +1,704 @@
+
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAppStore } from "../utils/store";
+import { api } from "../utils/api";
+import { db, OfflineCollection, OfflineDeposit } from "../utils/db";
+import { initializeSyncEngine } from "../utils/sync";
+import {
+  PlusCircle,
+  ArrowUpRight,
+  LogOut,
+  Coins,
+  CheckCircle,
+  Clock,
+  ChevronDown,
+  ChevronUp,
+  User,
+  Sun,
+  Moon,
+  Wifi,
+  WifiOff,
+  CloudLightning,
+  RefreshCw,
+  Sparkles
+} from "lucide-react";
+
+export default function StaffDashboard() {
+  const router = useRouter();
+  const { currentUser, attendance, collections, deposits, theme, toggleTheme, checkIn, checkOut, restoreAttendance, resetStore } = useAppStore();
+
+  // Real-time network & Dexie state
+  const [isOnline, setIsOnline] = useState(true);
+  const [offlineCollections, setOfflineCollections] = useState<OfflineCollection[]>([]);
+  const [offlineDeposits, setOfflineDeposits] = useState<OfflineDeposit[]>([]);
+  const [syncStatusMsg, setSyncStatusMsg] = useState("");
+
+  const [startKmInput, setStartKmInput] = useState("");
+  const [endKmInput, setEndKmInput] = useState("");
+  const [kmError, setKmError] = useState("");
+  const [showNotesBreakdown, setShowNotesBreakdown] = useState(true);
+
+  // Read local Dexie databases on mount and monitor status
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Read local Dexie databases on mount and monitor status
+  useEffect(() => {
+    if (!mounted) return;
+    if (!currentUser) {
+      router.push("/");
+      return;
+    }
+
+    // Read offline files
+    const loadOfflineQueues = async () => {
+      const col = await db.collections.where("synced").equals(0).toArray();
+      const dep = await db.deposits.where("synced").equals(0).toArray();
+      setOfflineCollections(col);
+      setOfflineDeposits(dep);
+    };
+
+    loadOfflineQueues();
+    
+    // Auto-restore attendance status if not already checked in locally
+    const restoreAttendance = async () => {
+      if (!attendance.isCheckedIn) {
+        try {
+          const status = await api.getMyAttendanceStatus();
+          if (status && status.status === "active") {
+            // Restore with original backend data to keep time consistent
+            restoreAttendance({
+              isCheckedIn: true,
+              startKm: status.start_km,
+              checkInTime: status.start_time.replace("T", " ").substring(0, 16),
+            });
+          }
+        } catch (err) {
+          // 404 is expected if no active shift exists
+        }
+      }
+    };
+    restoreAttendance();
+
+    // Hook up background sync listener
+    const cleanupSync = initializeSyncEngine(
+      (online) => {
+        setIsOnline(online);
+        loadOfflineQueues();
+      },
+      (msg) => {
+        setSyncStatusMsg(msg);
+        loadOfflineQueues();
+        setTimeout(() => setSyncStatusMsg(""), 5000);
+      }
+    );
+
+    return () => cleanupSync();
+  }, [currentUser, router, collections, deposits, mounted]);
+
+  if (!mounted || !currentUser) return null;
+
+  // Calculators
+  let note500 = 0;
+  let note200 = 0;
+  let note100 = 0;
+  let note50 = 0;
+  let note20 = 0;
+  let note10 = 0;
+  let coins = 0;
+
+  collections.forEach((c) => {
+    note500 += c.denominations.note_500;
+    note200 += c.denominations.note_200;
+    note100 += c.denominations.note_100;
+    note50 += c.denominations.note_50;
+    note20 += c.denominations.note_20;
+    note10 += c.denominations.note_10;
+    coins += c.denominations.coins;
+  });
+
+  deposits.forEach((d) => {
+    if (d.denominations) {
+      note500 -= d.denominations.note_500;
+      note200 -= d.denominations.note_200;
+      note100 -= d.denominations.note_100;
+      note50 -= d.denominations.note_50;
+      note20 -= d.denominations.note_20;
+      note10 -= d.denominations.note_10;
+      coins -= d.denominations.coins;
+    }
+  });
+
+  note500 = Math.max(0, note500);
+  note200 = Math.max(0, note200);
+  note100 = Math.max(0, note100);
+  note50 = Math.max(0, note50);
+  note20 = Math.max(0, note20);
+  note10 = Math.max(0, note10);
+  coins = Math.max(0, coins);
+
+  const totalCollected = collections.reduce((s, c) => s + c.totalAmount, 0);
+  const totalDeposited = deposits.reduce((s, d) => s + d.amount, 0);
+  
+  const totalCashNotes = (
+    note500 * 500 +
+    note200 * 200 +
+    note100 * 100 +
+    note50 * 50 +
+    note20 * 20 +
+    note10 * 10 +
+    coins
+  );
+
+  const totalOnline = collections.reduce((s, c) => s + (c.denominations.online_amount || 0), 0) - 
+                      deposits.reduce((s, d) => s + (d.denominations?.online_amount || 0), 0);
+  
+  const netPortfolio = totalCashNotes + totalOnline;
+ 
+  // Calculate running balances for the ledger
+  const combinedLedger = [
+    ...collections.map(c => ({ ...c, type: 'collection' })),
+    ...deposits.map(d => ({ ...d, type: 'deposit', totalAmount: d.amount }))
+  ].filter(item => item.date)
+   .sort((a, b) => new Date(a.date.replace(' ', 'T')).getTime() - new Date(b.date.replace(' ', 'T')).getTime());
+
+  let ledgerRunningBal = 0;
+  const ledgerSnapshots = new Map();
+  combinedLedger.forEach(item => {
+    const prev = ledgerRunningBal;
+    if (item.type === 'collection') ledgerRunningBal += item.totalAmount;
+    else ledgerRunningBal -= item.totalAmount;
+    ledgerSnapshots.set(item.id, { prev, next: ledgerRunningBal });
+  });
+
+  const handleCheckInSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const km = parseInt(startKmInput);
+    if (!isNaN(km) && km > 0) {
+      try {
+        await api.checkIn(km);
+        checkIn(km);
+        setStartKmInput("");
+      } catch (err: any) {
+        alert("Failed to check-in: " + err.message);
+      }
+    }
+  };
+
+  const handleCheckOutSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setKmError("");
+    const end = parseInt(endKmInput);
+    if (isNaN(end)) return;
+
+    if (end <= attendance.startKm) {
+      setKmError(`Ending KM must be greater than starting KM (${attendance.startKm}).`);
+      return;
+    }
+
+    try {
+      await api.checkOut(end);
+      checkOut(end);
+      setEndKmInput("");
+    } catch (err: any) {
+      alert("Failed to check-out: " + err.message);
+    }
+  };
+
+  const handleLogout = () => {
+    resetStore();
+    router.push("/");
+  };
+
+  return (
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-100 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-black transition-colors duration-200">
+      <div className="flex-1 w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-6 select-none pb-24">
+
+        {/* Sync Success notification toast */}
+        {syncStatusMsg && (
+          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center gap-2 animate-pulse shadow-sm">
+            <Sparkles className="w-4 h-4 flex-shrink-0" />
+            <span className="uppercase tracking-wider">{syncStatusMsg}</span>
+          </div>
+        )}
+
+        {/* PREMIUM REDESIGNED HEADER */}
+        <div className="flex items-center justify-between bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-3 pl-4 rounded-[2rem] border border-white/50 dark:border-slate-800/80 shadow-sm shadow-slate-200/20 dark:shadow-none">
+          {/* Logo & Status */}
+          <div className="flex items-center gap-3.5">
+            <div className="bg-slate-900 w-12 h-12 rounded-[1.2rem] shadow-inner flex items-center justify-center flex-shrink-0 border border-slate-700/50">
+              <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5 mb-0.5">
+                <span className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none">{currentUser.name}</span>
+                {isOnline ? (
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" title="Online"></div>
+                ) : (
+                  <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" title="Offline"></div>
+                )}
+              </div>
+              <div className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">
+                Staff Member
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 pr-1">
+            {currentUser?.role === "admin" && (
+              <button
+                onClick={() => router.push("/admin")}
+                className="w-10 h-10 rounded-[1.1rem] bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center shadow-lg transition-transform active:scale-95"
+                title="Admin Dashboard"
+              >
+                <ArrowUpRight className="w-4 h-4" />
+              </button>
+            )}
+            <button
+              onClick={handleLogout}
+              className="w-10 h-10 rounded-[1.1rem] bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center justify-center shadow-sm transition-all active:scale-95"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* DYNAMIC REORDERING BASED ON ATTENDANCE */}
+        {!attendance.isCheckedIn ? (
+          <>
+            {/* ATTENDANCE FIRST IF NOT CHECKED IN */}
+            <AttendanceCard
+              attendance={attendance}
+              handleCheckInSubmit={handleCheckInSubmit}
+              handleCheckOutSubmit={handleCheckOutSubmit}
+              startKmInput={startKmInput}
+              setStartKmInput={setStartKmInput}
+              endKmInput={endKmInput}
+              setEndKmInput={setEndKmInput}
+              kmError={kmError}
+            />
+
+            {/* GREYED OUT NAVIGATION */}
+            <NavigationGrid isCheckedIn={false} router={router} />
+
+            <WalletCard
+              totalCollected={totalCollected}
+              totalDeposited={totalDeposited}
+              totalCashNotes={totalCashNotes}
+              totalOnline={totalOnline}
+              netPortfolio={netPortfolio}
+              showNotesBreakdown={showNotesBreakdown}
+              setShowNotesBreakdown={setShowNotesBreakdown}
+              note500={note500}
+              note200={note200}
+              note100={note100}
+              note50={note50}
+              note20={note20}
+              note10={note10}
+              coins={coins}
+            />
+          </>
+        ) : (
+          <>
+            {/* NAVIGATION FIRST IF CHECKED IN */}
+            <NavigationGrid isCheckedIn={true} router={router} />
+
+            <WalletCard
+              totalCollected={totalCollected}
+              totalDeposited={totalDeposited}
+              totalCashNotes={totalCashNotes}
+              totalOnline={totalOnline}
+              netPortfolio={netPortfolio}
+              showNotesBreakdown={showNotesBreakdown}
+              setShowNotesBreakdown={setShowNotesBreakdown}
+              note500={note500}
+              note200={note200}
+              note100={note100}
+              note50={note50}
+              note20={note20}
+              note10={note10}
+              coins={coins}
+            />
+
+            {/* ATTENDANCE MOVES TO BOTTOM */}
+            <AttendanceCard
+              attendance={attendance}
+              handleCheckInSubmit={handleCheckInSubmit}
+              handleCheckOutSubmit={handleCheckOutSubmit}
+              startKmInput={startKmInput}
+              setStartKmInput={setStartKmInput}
+              endKmInput={endKmInput}
+              setEndKmInput={setEndKmInput}
+              kmError={kmError}
+            />
+          </>
+        )}
+
+        {/* Offline Queues */}
+        {(offlineCollections.length > 0 || offlineDeposits.length > 0) && (
+          <div className="p-4 rounded-3xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 space-y-3.5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CloudLightning className="w-4 h-4 text-amber-500 animate-bounce" />
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                  Waiting List ({offlineCollections.length + offlineDeposits.length})
+                </span>
+              </div>
+              <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-500 animate-pulse flex items-center gap-1 bg-amber-100 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-900/40">
+                <RefreshCw className="w-3 h-3 animate-spin" /> Waiting...
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {offlineCollections.map((col, index) => (
+                <div key={index} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between shadow-sm">
+                  <div>
+                    <span className="font-black text-slate-800 dark:text-slate-200">{col.retailerName}</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash In • {col.date}</span>
+                  </div>
+                  <span className="font-black text-slate-800 dark:text-slate-100">₹{col.totalAmount.toLocaleString()}</span>
+                </div>
+              ))}
+
+              {offlineDeposits.map((dep, index) => (
+                <div key={index} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between shadow-sm">
+                  <div>
+                    <span className="font-black text-slate-800 dark:text-slate-200">{dep.targetName}</span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash Out • {dep.date}</span>
+                  </div>
+                  <span className="font-black text-slate-800 dark:text-slate-100">₹{dep.amount.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* PREMIUM HISTORY LEDGER */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+              Recent Cash Ledger
+            </h3>
+            <button
+              onClick={() => router.push("/history")}
+              className="text-[9px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-600 transition-colors flex items-center gap-1 bg-blue-50 dark:bg-blue-950/30 px-3 py-1.5 rounded-full border border-blue-100 dark:border-blue-900/30 shadow-sm"
+            >
+              View All <ArrowUpRight className="w-3 h-3" />
+            </button>
+          </div>
+          <div className="space-y-3">
+             {combinedLedger.slice().reverse().slice(0, 8).map((c: any) => {
+               const snapshots = ledgerSnapshots.get(c.id) || { prev: 0, next: 0 };
+               return (
+                 <div
+                   key={c.id}
+                   className="p-4 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-3 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all group cursor-default"
+                 >
+                   <div className="flex items-center justify-between">
+                     <div className="flex items-center gap-3.5">
+                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border border-slate-100 dark:border-slate-700/50 transition-colors shadow-inner flex-shrink-0 ${c.type === 'collection' ? 'group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20' : 'group-hover:bg-red-50 dark:group-hover:bg-red-900/20'}`}>
+                         {c.type === 'collection' ? (
+                           <CheckCircle className="w-4 h-4 text-emerald-500" />
+                         ) : (
+                           <ArrowUpRight className="w-4 h-4 text-red-500" />
+                         )}
+                       </div>
+                       <div>
+                         <div className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight">
+                           {c.type === 'collection' ? c.retailerName : c.targetName}
+                         </div>
+                         <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1 flex items-center gap-1.5">
+                           <span className="text-blue-500">{c.type === 'collection' ? c.portalName : (c.depositType || 'Deposit')}</span>
+                           <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                           <span>{c.date}</span>
+                         </div>
+                       </div>
+                     </div>
+                     <div className="text-right flex-shrink-0 ml-2">
+                       <span className={`text-sm font-black tracking-tight block ${c.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
+                         {c.type === 'collection' ? '+' : '-'}₹{c.totalAmount.toLocaleString()}
+                       </span>
+                     </div>
+                   </div>
+
+                   <div className="grid grid-cols-3 gap-2 bg-slate-50/50 dark:bg-slate-950/50 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                     <div className="flex flex-col">
+                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
+                       <span className="text-[9px] font-bold text-slate-500">₹{snapshots.prev.toLocaleString()}</span>
+                     </div>
+                     <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
+                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Collector</span>
+                       <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 line-clamp-1">{currentUser.name}</span>
+                     </div>
+                     <div className="flex flex-col text-right">
+                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
+                       <span className="text-[9px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                     </div>
+                   </div>
+                 </div>
+               );
+             })}
+             {combinedLedger.length === 0 && (
+               <div className="text-center py-10 bg-white/50 dark:bg-slate-900/50 rounded-[2rem] border border-dashed border-slate-300 dark:border-slate-700 shadow-sm">
+                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">No recent entries</p>
+               </div>
+             )}
+          </div>
+        </div>
+      </div>
+      <style>{`
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function AttendanceCard({
+  attendance,
+  handleCheckInSubmit,
+  handleCheckOutSubmit,
+  startKmInput,
+  setStartKmInput,
+  endKmInput,
+  setEndKmInput,
+  kmError
+}: any) {
+  return (
+    <div className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] shadow-xl p-6 text-white border border-slate-700/50 transition-all duration-500 ${attendance.isCheckedIn ? "opacity-90" : "ring-2 ring-blue-500/50 shadow-blue-500/10"}`}>
+      <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10"></div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-white/10 rounded-xl backdrop-blur-md shadow-inner border border-white/5">
+              <Clock className="w-4 h-4 text-blue-300" />
+            </div>
+            <h2 className="text-[10px] font-black uppercase tracking-wider text-white/80">
+              Duty Status (Attendance)
+            </h2>
+          </div>
+          <span className={`text-[9px] uppercase tracking-wide font-black px-3 py-1.5 rounded-full backdrop-blur-md border ${attendance.isCheckedIn
+              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+              : "bg-white/10 text-slate-300 border-white/20"
+            }`}>
+            {attendance.isCheckedIn ? "Checked In" : "Checked Out"}
+          </span>
+        </div>
+
+        {attendance.isCheckedIn ? (
+          <form onSubmit={handleCheckOutSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 bg-black/40 p-4 rounded-2xl border border-white/5 backdrop-blur-md">
+              <div>
+                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Started At</span>
+                <span className="font-black text-lg text-white tracking-tight">{attendance.startKm} <span className="text-[10px] text-slate-500">KM</span></span>
+              </div>
+              <div className="text-right">
+                <span className="text-[8px] text-slate-400 font-bold uppercase tracking-widest block mb-1">Check-in Time</span>
+                <span className="font-black text-sm text-white">{attendance.checkInTime}</span>
+              </div>
+            </div>
+
+            {kmError && (
+              <p className="text-[10px] text-red-200 bg-red-950/80 px-4 py-2 rounded-xl border border-red-500/30 text-center font-bold">
+                {kmError}
+              </p>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <input
+                type="number"
+                placeholder="Enter Ending KM"
+                value={endKmInput}
+                onChange={(e) => setEndKmInput(e.target.value)}
+                className="w-full px-4 py-3.5 bg-black/30 border border-white/10 focus:border-blue-500/50 rounded-xl focus:outline-none text-sm text-white font-bold placeholder-slate-600 transition-colors shadow-inner"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] shadow-lg border border-white/10"
+              >
+                End Shift & Log Out
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form onSubmit={handleCheckInSubmit} className="space-y-4">
+            <p className="text-[11px] text-slate-400 leading-relaxed font-bold mb-2 opacity-70">
+              Enter starting odometer KM to begin.
+            </p>
+            <div className="flex flex-col gap-2">
+              <input
+                type="number"
+                placeholder="Current Odometer KM"
+                value={startKmInput}
+                onChange={(e) => setStartKmInput(e.target.value)}
+                className="w-full px-4 py-3.5 bg-black/30 border border-white/10 focus:border-blue-500/50 rounded-xl focus:outline-none text-sm text-white font-bold placeholder-slate-600 transition-colors shadow-inner"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] shadow-lg border border-white/10"
+              >
+                Start Shift
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WalletCard({
+  totalCollected,
+  totalDeposited,
+  totalCashNotes,
+  totalOnline,
+  netPortfolio,
+  showNotesBreakdown,
+  setShowNotesBreakdown,
+  note500,
+  note200,
+  note100,
+  note50,
+  note20,
+  note10,
+  coins
+}: any) {
+  return (
+    <div className="space-y-4">
+      {/* Three Summary Blocks */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash In</span>
+          <span className="text-xs font-black text-emerald-600 tracking-tight">₹{totalCollected.toLocaleString()}</span>
+        </div>
+        <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash Out</span>
+          <span className="text-xs font-black text-red-600 tracking-tight">₹{totalDeposited.toLocaleString()}</span>
+        </div>
+        <div className="bg-slate-900 dark:bg-slate-100 p-3 rounded-2xl border border-slate-800 dark:border-white shadow-lg">
+          <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Total Cash</span>
+          <span className="text-xs font-black text-white dark:text-slate-950 tracking-tight">₹{netPortfolio.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <div className="p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10"></div>
+
+        <div className="flex items-center justify-between mb-3 relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+              <Coins className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-400">
+              Cash Summary
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 my-4 relative z-10">
+          <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash (In Hand)</span>
+            <span className="text-xl font-black text-slate-900 dark:text-white">₹{totalCashNotes.toLocaleString()}</span>
+          </div>
+          <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Online Balance</span>
+            <span className="text-xl font-black text-slate-900 dark:text-white">₹{totalOnline.toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Notes breakdowns */}
+        <div className="border-t border-slate-100 dark:border-slate-800/60 pt-5 relative z-10">
+          <button
+            onClick={() => setShowNotesBreakdown(!showNotesBreakdown)}
+            className="w-full flex items-center justify-between text-xs font-black text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 focus:outline-none transition-colors"
+          >
+            <span className="uppercase tracking-[0.15em] text-[9px]">Notes Details</span>
+            {showNotesBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+
+          {showNotesBreakdown && (
+            <div className="grid grid-cols-2 gap-3 mt-5 text-xs font-medium">
+              {[
+                { value: "500", count: note500 },
+                { value: "200", count: note200 },
+                { value: "100", count: note100 },
+                { value: "50", count: note50 },
+                { value: "20", count: note20 },
+                { value: "10", count: note10 },
+              ].map((note) => (
+                <div key={note.value} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/60">
+                  <span className="text-slate-400 font-bold tracking-wider">₹{note.value}</span>
+                  <span className="font-black text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-800">{note.count}</span>
+                </div>
+              ))}
+              <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-4 py-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/60 mt-1">
+                <span className="text-slate-400 font-black uppercase tracking-widest text-[9px]">Coins</span>
+                <span className="font-black text-slate-800 dark:text-slate-200 text-sm">₹{coins.toFixed(2)}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NavigationGrid({ isCheckedIn, router }: any) {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      <button
+        onClick={() => {
+          if (!isCheckedIn) {
+            alert("Shift is locked! Please start shift attendance mileage first.");
+            return;
+          }
+          router.push("/collection");
+        }}
+        className={`relative overflow-hidden p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 text-left transition-all duration-300 group shadow-lg shadow-slate-200/40 dark:shadow-none hover:-translate-y-1 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""
+          }`}
+      >
+        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 dark:bg-emerald-900/20 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:scale-150 pointer-events-none"></div>
+        <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-5 border border-emerald-200/50 dark:border-emerald-800/50 relative z-10 shadow-inner group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+          <PlusCircle className="w-5 h-5" />
+        </div>
+        <h3 className="text-[13px] font-black text-slate-800 dark:text-slate-100 relative z-10 tracking-wide">Cash In Entry</h3>
+        <p className="text-[10px] font-bold text-slate-400 mt-1.5 relative z-10">Record retailer payments</p>
+      </button>
+
+      <button
+        onClick={() => {
+          if (!isCheckedIn) {
+            alert("Shift is locked! Please start shift attendance mileage first.");
+            return;
+          }
+          router.push("/deposit");
+        }}
+        className={`relative overflow-hidden p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-red-300 dark:hover:border-red-700 text-left transition-all duration-300 group shadow-lg shadow-slate-200/40 dark:shadow-none hover:-translate-y-1 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""
+          }`}
+      >
+        <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 dark:bg-red-900/20 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:scale-150 pointer-events-none"></div>
+        <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600 dark:text-red-400 mb-5 border border-red-200/50 dark:border-red-800/50 relative z-10 shadow-inner group-hover:bg-red-600 group-hover:text-white transition-colors duration-300">
+          <ArrowUpRight className="w-5 h-5" />
+        </div>
+        <h3 className="text-[13px] font-black text-slate-800 dark:text-slate-100 relative z-10 tracking-wide">Cash Out Entry</h3>
+        <p className="text-[10px] font-bold text-slate-400 mt-1.5 relative z-10">Process payouts</p>
+      </button>
+    </div>
+  );
+}
+

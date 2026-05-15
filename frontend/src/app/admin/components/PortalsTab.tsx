@@ -1,0 +1,580 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { Search, Plus, Globe, Building, X, CreditCard, ChevronRight, Edit, Trash2 } from "lucide-react";
+import { api } from "../../utils/api";
+
+interface PortalsTabProps {
+  portalDirectory: any[]; // These will be Portal Groups now
+  showToastNotification: (msg: string) => void;
+  setShowPortalDrawer: (val: boolean) => void;
+  fetchData?: () => void;
+}
+
+export default function PortalsTab({
+  portalDirectory,
+  showToastNotification,
+  setShowPortalDrawer,
+  fetchData
+}: PortalsTabProps) {
+  const [portalSearch, setPortalSearch] = useState("");
+  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  
+  const [newAccName, setNewAccName] = useState("");
+  const [newAccBank, setNewAccBank] = useState("");
+  const [newAccNo, setNewAccNo] = useState("");
+  const [newAccIfsc, setNewAccIfsc] = useState("");
+  const [newAccGroupId, setNewAccGroupId] = useState("");
+  const [isCreatingAcc, setIsCreatingAcc] = useState(false);
+
+  // Edit states
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editingGroupName, setEditingGroupName] = useState("");
+  const [editingGroupToGive, setEditingGroupToGive] = useState(0);
+  const [editingGroupToTake, setEditingGroupToTake] = useState(0);
+  
+  const [inlineEditing, setInlineEditing] = useState<{id: string, field: 'take' | 'give'} | null>(null);
+  const [inlineValue, setInlineValue] = useState<string>("");
+  const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
+
+  const [editingAccId, setEditingAccId] = useState<string | null>(null);
+  const [editAccName, setEditAccName] = useState("");
+  const [editAccBank, setEditAccBank] = useState("");
+  const [editAccNo, setEditAccNo] = useState("");
+  const [editAccIfsc, setEditAccIfsc] = useState("");
+
+  // Function to handle focused balance updates
+  const handleInlineUpdate = async (id: string, field: 'take' | 'give') => {
+    setIsUpdatingBalance(true);
+    try {
+      const group = portalDirectory.find(g => g.id === id);
+      if (!group) return;
+      
+      // Calculate current transaction-based balance
+      const currentTakeBalance = group.balance > 0 ? group.balance : 0;
+      const currentGiveBalance = group.balance < 0 ? Math.abs(group.balance) : 0;
+
+      const targetValue = parseFloat(inlineValue || "0");
+      
+      await api.updatePortalGroup(id, {
+        name: group.name,
+        opening_to_take: field === 'take' ? (targetValue - currentTakeBalance) : (group.opening_to_take || 0),
+        opening_to_give: field === 'give' ? (targetValue - currentGiveBalance) : (group.opening_to_give || 0)
+      });
+      
+      showToastNotification("Balance updated.");
+      setInlineEditing(null);
+      if (fetchData) fetchData();
+    } catch (err: any) {
+      alert("Failed to update: " + err.message);
+    } finally {
+      setIsUpdatingBalance(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedGroup) {
+      fetchAccounts(selectedGroup.id);
+    }
+  }, [selectedGroup]);
+
+  const fetchAccounts = async (groupId: string) => {
+    try {
+      const data = await api.getGroupAccounts(groupId);
+      setAccounts(data);
+    } catch (err) {
+      console.error("Failed to fetch accounts:", err);
+    }
+  };
+
+  const handleCreateAccountInline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAccGroupId || !newAccName) {
+      alert("Please select a Portal and enter an Account Name");
+      return;
+    }
+
+    setIsCreatingAcc(true);
+    try {
+      await api.createPortal({
+        group_id: newAccGroupId,
+        portal_name: newAccName,
+        bank_name: newAccBank,
+        bank_account_no: newAccNo,
+        ifsc_code: newAccIfsc
+      });
+      showToastNotification(`Account "${newAccName}" registered successfully!`);
+      setNewAccName("");
+      setNewAccBank("");
+      setNewAccNo("");
+      setNewAccIfsc("");
+      setNewAccGroupId("");
+      if (fetchData) fetchData();
+    } catch (err: any) {
+      alert("Failed to add account: " + err.message);
+    } finally {
+      setIsCreatingAcc(false);
+    }
+  };
+
+  const handleCreateAccountModal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedGroup || !newAccName) return;
+
+    setIsCreatingAcc(true);
+    try {
+      await api.createPortal({
+        group_id: selectedGroup.id,
+        portal_name: newAccName,
+        bank_name: newAccBank,
+        bank_account_no: newAccNo,
+        ifsc_code: newAccIfsc
+      });
+      showToastNotification(`Account "${newAccName}" added to ${selectedGroup.name}`);
+      setNewAccName("");
+      setNewAccBank("");
+      setNewAccNo("");
+      setNewAccIfsc("");
+      fetchAccounts(selectedGroup.id);
+    } catch (err: any) {
+      alert("Failed to add account: " + err.message);
+    } finally {
+      setIsCreatingAcc(false);
+    }
+  };
+
+  const handleDeleteGroup = async (groupId: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"? This will remove all associated bank accounts.`)) return;
+    try {
+      await api.deletePortalGroup(groupId);
+      showToastNotification(`Portal "${name}" deleted.`);
+      if (fetchData) fetchData();
+    } catch (err: any) {
+      alert("Failed to delete portal: " + err.message);
+    }
+  };
+
+  const handleUpdateGroup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingGroupId || !editingGroupName) return;
+    try {
+      await api.updatePortalGroup(editingGroupId, { 
+        name: editingGroupName,
+        opening_to_give: editingGroupToGive,
+        opening_to_take: editingGroupToTake
+      });
+      showToastNotification(`Portal "${editingGroupName}" updated.`);
+      setEditingGroupId(null);
+      if (fetchData) fetchData();
+    } catch (err: any) {
+      alert("Failed to update portal: " + err.message);
+    }
+  };
+
+  const handleDeleteAccount = async (accId: string, name: string) => {
+    if (!confirm(`Delete bank account "${name}"?`)) return;
+    try {
+      await api.deletePortal(accId);
+      showToastNotification(`Account "${name}" removed.`);
+      if (selectedGroup) fetchAccounts(selectedGroup.id);
+    } catch (err: any) {
+      alert("Failed to delete account: " + err.message);
+    }
+  };
+
+
+
+  const handleUpdateAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAccId || !selectedGroup) return;
+    try {
+      await api.updatePortal(editingAccId, {
+        portal_name: editAccName,
+        bank_name: editAccBank,
+        bank_account_no: editAccNo,
+        ifsc_code: editAccIfsc,
+        group_id: selectedGroup.id
+      });
+      showToastNotification(`Account "${editAccName}" updated.`);
+      setEditingAccId(null);
+      fetchAccounts(selectedGroup.id);
+    } catch (err: any) {
+      alert("Failed to update account: " + err.message);
+    }
+  };
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search Portals (e.g. RevaPay)..."
+            value={portalSearch}
+            onChange={(e) => setPortalSearch(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none shadow-sm"
+          />
+        </div>
+
+        <button
+          onClick={() => setShowPortalDrawer(true)}
+          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-all"
+        >
+          <Plus className="w-4 h-4" /> Register Portal
+        </button>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4">
+        {portalDirectory
+          .filter(p => (p.name || "").toLowerCase().includes(portalSearch.toLowerCase()))
+          .map((group) => (
+            <div
+              key={group.id}
+              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4 flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex-1">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
+                        <Globe className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-xs font-black text-slate-800 dark:text-slate-100">{group.name}</h3>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleDeleteGroup(group.id, group.name)}
+                        className="p-1.5 text-slate-300 hover:text-red-600 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    {/* To Take Field */}
+                    <div>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-0.5">To Take</span>
+                      {inlineEditing?.id === group.id && inlineEditing?.field === 'take' ? (
+                        <div className="flex items-center gap-1 animate-fade-in">
+                          <input 
+                            type="number" 
+                            autoFocus
+                            value={inlineValue}
+                            onChange={e => setInlineValue(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleInlineUpdate(group.id, 'take');
+                              if (e.key === 'Escape') setInlineEditing(null);
+                            }}
+                            className="w-20 px-1.5 py-1 text-xs font-bold bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none shadow-sm"
+                          />
+                          <button 
+                            onClick={() => handleInlineUpdate(group.id, 'take')} 
+                            disabled={isUpdatingBalance}
+                            className="text-[9px] font-black text-blue-600 hover:text-blue-700 cursor-pointer p-1"
+                          >
+                            SAVE
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 group/edit">
+                          <span className="text-xs font-black text-red-600 dark:text-red-400">
+                            ₹{(group.balance > 0 ? group.balance : 0).toLocaleString()}
+                          </span>
+                          <button 
+                            onClick={() => {
+                              setInlineEditing({ id: group.id, field: 'take' });
+                              const currentTotal = (group.opening_to_take || 0) + (group.balance > 0 ? group.balance : 0);
+                              setInlineValue(currentTotal.toString());
+                            }}
+                            className="p-0.5 text-slate-600 hover:text-blue-600 transition-all cursor-pointer"
+                          >
+                            <Edit className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* To Give Field */}
+                    <div>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-0.5">To Give</span>
+                      {inlineEditing?.id === group.id && inlineEditing?.field === 'give' ? (
+                        <div className="flex items-center gap-1 animate-fade-in">
+                          <input 
+                            type="number" 
+                            autoFocus
+                            value={inlineValue}
+                            onChange={e => setInlineValue(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleInlineUpdate(group.id, 'give');
+                              if (e.key === 'Escape') setInlineEditing(null);
+                            }}
+                            className="w-20 px-1.5 py-1 text-xs font-bold bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none shadow-sm"
+                          />
+                          <button 
+                            onClick={() => handleInlineUpdate(group.id, 'give')} 
+                            disabled={isUpdatingBalance}
+                            className="text-[9px] font-black text-blue-600 hover:text-blue-700 cursor-pointer p-1"
+                          >
+                            SAVE
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 group/edit2">
+                          <span className="text-xs font-black text-emerald-600 dark:text-emerald-500">
+                            ₹{(group.balance < 0 ? Math.abs(group.balance) : 0).toLocaleString()}
+                          </span>
+                          <button 
+                            onClick={() => {
+                              setInlineEditing({ id: group.id, field: 'give' });
+                              const currentTotal = (group.opening_to_give || 0) + (group.balance < 0 ? Math.abs(group.balance) : 0);
+                              setInlineValue(currentTotal.toString());
+                            }}
+                            className="p-0.5 text-slate-600 hover:text-blue-600 transition-all cursor-pointer"
+                          >
+                            <Edit className="w-2.5 h-2.5" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedGroup(group);
+                      setEditingGroupName(group.name);
+                      setEditingGroupToGive(group.opening_to_give || 0);
+                      setEditingGroupToTake(group.opening_to_take || 0);
+                      setIsAccountModalOpen(true);
+                    }}
+                    className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-650 dark:text-slate-350 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Edit className="w-3.5 h-3.5" /> Manage Portal & Banks
+                  </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      
+       {portalDirectory.length === 0 && (
+         <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 border-dashed dark:border-slate-800">
+            <Globe className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+            <p className="text-sm font-bold text-slate-500">No Portals Found</p>
+            <p className="text-[10px] text-slate-400 mt-1">Register a portal first.</p>
+         </div>
+       )}
+
+      {/* ACCOUNTS MANAGEMENT MODAL */}
+      {isAccountModalOpen && selectedGroup && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-6 select-none animate-slide-up shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
+                  Portal Accounts
+                </h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">
+                  Portal: {selectedGroup.name}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setIsAccountModalOpen(false);
+                  setSelectedGroup(null);
+                  setAccounts([]);
+                }}
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+              {/* Portal Settings Section */}
+              <div className="space-y-3">
+                <span className="text-[10px] uppercase font-black text-indigo-500 tracking-wide flex items-center gap-2">
+                  <Globe className="w-3 h-3" /> Portal Settings
+                </span>
+                <div className="p-4 bg-indigo-50/30 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl space-y-4">
+                  <div>
+                    <label className="block text-[9px] text-slate-400 uppercase font-black mb-1">Portal Name</label>
+                    <input 
+                      type="text" 
+                      value={editingGroupName} 
+                      onChange={e => setEditingGroupName(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[9px] text-red-500 uppercase font-black mb-1">To Take (Opening)</label>
+                      <input 
+                        type="number" 
+                        value={editingGroupToTake} 
+                        onChange={e => setEditingGroupToTake(Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-red-50/50 dark:bg-red-950 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold text-red-600 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] text-emerald-500 uppercase font-black mb-1">To Give (Opening)</label>
+                      <input 
+                        type="number" 
+                        value={editingGroupToGive} 
+                        onChange={e => setEditingGroupToGive(Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-emerald-50/50 dark:bg-emerald-950 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleUpdateGroup(selectedGroup.id)}
+                    className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-indigo-600/20"
+                  >
+                    Save Portal Settings
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span className="text-[10px] uppercase font-black text-slate-400 tracking-wide flex items-center gap-2">
+                  <CreditCard className="w-3 h-3" /> Active Bank Accounts
+                </span>
+                {accounts.length > 0 ? (
+                  <div className="space-y-2">
+                    {accounts.map((acc) => (
+                      <div key={acc.id} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl group">
+                        <div className="flex items-center justify-between mb-2">
+                          {editingAccId === acc.id ? (
+                            <input 
+                              value={editAccName}
+                              onChange={(e) => setEditAccName(e.target.value)}
+                              className="text-xs font-black bg-white dark:bg-slate-800 border rounded px-2 py-0.5 outline-none"
+                            />
+                          ) : (
+                            <p className="text-xs font-black text-slate-800 dark:text-slate-200">{acc.portal_name}</p>
+                          )}
+                          <div className="flex items-center gap-1">
+                            {editingAccId === acc.id ? (
+                              <button onClick={handleUpdateAccount} className="text-[9px] text-blue-600 font-bold mr-2">SAVE</button>
+                            ) : (
+                              <button 
+                                onClick={() => {
+                                  setEditingAccId(acc.id);
+                                  setEditAccName(acc.portal_name);
+                                  setEditAccBank(acc.bank_name || "");
+                                  setEditAccNo(acc.bank_account_no || "");
+                                  setEditAccIfsc(acc.ifsc_code || "");
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-blue-600 transition-all"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => handleDeleteAccount(acc.id, acc.portal_name)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 transition-all"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {editingAccId === acc.id ? (
+                          <div className="space-y-2 mt-2">
+                            <input 
+                              placeholder="Bank"
+                              value={editAccBank}
+                              onChange={(e) => setEditAccBank(e.target.value)}
+                              className="w-full text-[10px] bg-white dark:bg-slate-800 border rounded px-2 py-1 outline-none"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <input 
+                                placeholder="A/C No"
+                                value={editAccNo}
+                                onChange={(e) => setEditAccNo(e.target.value)}
+                                className="w-full text-[10px] bg-white dark:bg-slate-800 border rounded px-2 py-1 outline-none"
+                              />
+                              <input 
+                                placeholder="IFSC"
+                                value={editAccIfsc}
+                                onChange={(e) => setEditAccIfsc(e.target.value)}
+                                className="w-full text-[10px] bg-white dark:bg-slate-800 border rounded px-2 py-1 outline-none"
+                              />
+                            </div>
+                            <button onClick={() => setEditingAccId(null)} className="text-[9px] text-slate-400 font-bold block w-full text-center">Cancel</button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-y-1.5 text-[10px]">
+                            <div className="text-slate-400">Bank</div>
+                            <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.bank_name || "N/A"}</div>
+                            <div className="text-slate-400">A/C No</div>
+                            <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.bank_account_no || "N/A"}</div>
+                            <div className="text-slate-400">IFSC</div>
+                            <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.ifsc_code || "N/A"}</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
+                    <p className="text-[10px] text-slate-400 font-bold">No accounts registered for this portal</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                <span className="text-[10px] uppercase font-black text-slate-400 tracking-wide block mb-3">Add New Bank Account</span>
+                <form onSubmit={handleCreateAccountModal} className="space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Account Label (e.g. Primary, ICICI Main)"
+                    value={newAccName}
+                    onChange={(e) => setNewAccName(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                    required
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input
+                      type="text"
+                      placeholder="Bank Name"
+                      value={newAccBank}
+                      onChange={(e) => setNewAccBank(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Account No"
+                      value={newAccNo}
+                      onChange={(e) => setNewAccNo(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="IFSC Code"
+                    value={newAccIfsc}
+                    onChange={(e) => setNewAccIfsc(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                  />
+                  <button
+                    type="submit"
+                    disabled={isCreatingAcc}
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    <Plus className="w-4 h-4" /> {isCreatingAcc ? "Adding..." : "Register Bank Account"}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
