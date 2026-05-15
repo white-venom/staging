@@ -13,8 +13,22 @@ import {
 import { api } from "../../utils/api";
 import { useAdmin } from "../context/AdminContext";
 
-export default function AdministrationTab() {
-  const { fetchData, showToastNotification } = useAdmin();
+interface AdministrationTabProps {
+  userDirectory: any[];
+  portalDirectory: any[];
+  fetchData: () => void;
+  showToastNotification: (msg: string) => void;
+}
+
+export default function AdministrationTab({
+  userDirectory: propsUserDir,
+  portalDirectory: propsPortalDir,
+  fetchData: propsFetchData,
+  showToastNotification: propsShowToast
+}: AdministrationTabProps) {
+  const adminContext = useAdmin();
+  const fetchData = propsFetchData || adminContext.fetchData;
+  const showToastNotification = propsShowToast || adminContext.showToastNotification;
   const [users, setUsers] = useState<any[]>([]);
   
   // Staff State

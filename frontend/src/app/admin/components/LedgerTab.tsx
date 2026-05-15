@@ -6,13 +6,20 @@ import { useAdmin } from "../context/AdminContext";
 interface LedgerTabProps {
   collections: any[];
   deposits: any[];
+  retailerDirectory?: any[];
+  portalDirectory?: any[];
 }
 
 export default function LedgerTab({
   collections,
-  deposits
+  deposits,
+  retailerDirectory: propsRetailerDir,
+  portalDirectory: propsPortalDir
 }: LedgerTabProps) {
-  const { ledgerSearchTerm, setLedgerSearchTerm, retailerDirectory, portalDirectory } = useAdmin();
+  const adminContext = useAdmin();
+  const retailerDirectory = propsRetailerDir || adminContext.retailerDirectory;
+  const portalDirectory = propsPortalDir || adminContext.portalDirectory;
+  const { ledgerSearchTerm, setLedgerSearchTerm } = adminContext;
   const [dateFrom, setDateFrom] = React.useState("");
   const [dateTo, setDateTo] = React.useState("");
   const [typeFilter, setTypeFilter] = React.useState("all");
