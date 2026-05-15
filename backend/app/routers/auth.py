@@ -157,7 +157,7 @@ def seed_db(db: Session = Depends(get_db)):
             id=uuid.uuid4(),
             name="Sujeet Staff",
             phone=staff_phone,
-            password_hash=get_password_hash("pass123"),
+            password_hash=get_password_hash(staff_phone),
             role="staff"
         )
         db.add(staff)
@@ -169,7 +169,7 @@ def seed_db(db: Session = Depends(get_db)):
             id=uuid.uuid4(),
             name="Sujeet Admin",
             phone=admin_phone,
-            password_hash=get_password_hash("pass123"),
+            password_hash=get_password_hash(admin_phone),
             role="admin"
         )
         db.add(admin)

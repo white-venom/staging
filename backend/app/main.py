@@ -33,6 +33,8 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "https://do-it-services.vercel.app",
         "https://do-it-services-sujeet-kansals-projects.vercel.app",
+        "https://do-it-services.vercel.app/",
+        "https://do-it-services-sujeet-kansals-projects.vercel.app/",
     ],
     allow_credentials=True,      # Crucial to allow HttpOnly cookies transmission
     allow_methods=["*"],
