@@ -6,8 +6,6 @@ import {
   ArrowDownLeft, 
   Wallet, 
   TrendingUp,
-  Plus,
-  ChevronRight,
   History
 } from "lucide-react";
 import { format, subDays, isSameDay } from "date-fns";
@@ -31,8 +29,7 @@ export default function MobileOverview({
   totalDepositedAmount,
   netCashBalance,
   totalToTake,
-  totalToGive,
-  todayCount
+  totalToGive
 }: MobileOverviewProps) {
   
   // Calculate 7-day trend data
@@ -130,8 +127,8 @@ export default function MobileOverview({
         </div>
       </div>
 
-      {/* Recent Activity (Like Desktop Ledger) */}
-      <section className="space-y-4">
+      {/* Recent Activity */}
+      <section className="space-y-4 pb-8">
         <div className="flex items-center justify-between px-2">
           <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-2">
             <History className="w-3 h-3" /> Recent Ledger
@@ -139,7 +136,7 @@ export default function MobileOverview({
           <button className="text-[10px] font-black text-blue-600 uppercase">View All</button>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm mb-12">
           {recentActivity.length === 0 ? (
             <div className="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">
               No recent activity
@@ -154,7 +151,7 @@ export default function MobileOverview({
                   <p className="text-sm font-black text-slate-800 dark:text-white truncate">
                     {item.retailer_name || item.portal_name || 'Generic Entry'}
                   </p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
                     {format(new Date(item.created_at), "MMM d, HH:mm")} • {item.staff_name || 'Admin'}
                   </p>
                 </div>
@@ -172,11 +169,6 @@ export default function MobileOverview({
           )}
         </div>
       </section>
-
-      {/* Floating Action Button */}
-      <button className="fixed bottom-24 right-6 w-14 h-14 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-transform">
-        <Plus className="w-7 h-7" />
-      </button>
 
       <div className="h-4" />
     </div>
