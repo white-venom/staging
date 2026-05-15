@@ -37,14 +37,16 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
         }
       `}</style>
 
-      {/* Mobile Header */}
+      {/* Mobile Header with Glowing Logo */}
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-3 flex items-center justify-between no-print">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            {/* Desktop-style Blue Glow Background */}
+            <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full scale-125" />
             <img 
               src="/logo.png" 
               alt="DOIT Logo" 
-              className="w-full h-full object-contain"
+              className="relative w-full h-full object-contain drop-shadow-md"
             />
           </div>
           <div>
