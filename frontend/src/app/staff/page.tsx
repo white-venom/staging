@@ -66,7 +66,7 @@ export default function StaffDashboard() {
     loadOfflineQueues();
     
     // Auto-restore attendance status if not already checked in locally
-    const restoreAttendance = async () => {
+    const autoRestore = async () => {
       if (!attendance.isCheckedIn) {
         try {
           const status = await api.getMyAttendanceStatus();
@@ -83,7 +83,7 @@ export default function StaffDashboard() {
         }
       }
     };
-    restoreAttendance();
+    autoRestore();
 
     // Hook up background sync listener
     const cleanupSync = initializeSyncEngine(
