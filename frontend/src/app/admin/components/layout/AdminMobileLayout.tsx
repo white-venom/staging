@@ -27,8 +27,18 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32">
-      {/* Mobile Header with Real Logo */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-3 flex items-center justify-between">
+      <style jsx global>{`
+        @media print {
+          body * { visibility: hidden; }
+          #printable-area, #printable-area * { visibility: visible; }
+          #printable-area { position: absolute; left: 0; top: 0; width: 100%; }
+          .no-print { display: none !important; }
+          nav, header, button { display: none !important; }
+        }
+      `}</style>
+
+      {/* Mobile Header */}
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-3 flex items-center justify-between no-print">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
             <img 
@@ -49,12 +59,12 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
       </header>
 
       {/* Page Content */}
-      <main className="px-6 pt-6 animate-in fade-in duration-500">
+      <main id="printable-area" className="px-6 pt-6 animate-in fade-in duration-500">
         {children}
       </main>
 
       {/* Premium Bottom Navigation */}
-      <nav className="fixed bottom-6 left-6 right-6 z-50">
+      <nav className="fixed bottom-6 left-6 right-6 z-50 no-print">
         <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-white/20 dark:border-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-[2rem] px-4 py-3 flex items-center justify-between overflow-hidden">
           {navItems.map((item) => {
             const isActive = pathname === item.href;

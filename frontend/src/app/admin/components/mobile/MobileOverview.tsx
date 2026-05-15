@@ -9,6 +9,7 @@ import {
   History
 } from "lucide-react";
 import { format, subDays, isSameDay } from "date-fns";
+import Link from "next/link";
 
 interface MobileOverviewProps {
   collections: any[];
@@ -133,7 +134,7 @@ export default function MobileOverview({
           <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-2">
             <History className="w-3 h-3" /> Recent Ledger
           </h3>
-          <button className="text-[10px] font-black text-blue-600 uppercase">View All</button>
+          <Link href="/admin/ledger" className="text-[10px] font-black text-blue-600 uppercase">View All</Link>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm mb-12">
