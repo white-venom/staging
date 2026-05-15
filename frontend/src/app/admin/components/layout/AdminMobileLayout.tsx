@@ -27,13 +27,20 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32">
-      {/* Mobile Header */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between">
+      {/* Mobile Header with Real Logo */}
+      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg flex items-center justify-center font-black text-xs">
-            DO
+          <div className="w-10 h-10 flex items-center justify-center overflow-hidden">
+            <img 
+              src="/logo.png" 
+              alt="DOIT Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
-          <h1 className="font-black text-slate-900 dark:text-white tracking-tighter uppercase text-sm">Do It Services</h1>
+          <div>
+            <h1 className="font-black text-slate-900 dark:text-white tracking-tighter uppercase text-sm leading-none">Do It Services</h1>
+            <p className="text-[8px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Admin Panel</p>
+          </div>
         </div>
         <button className="relative w-10 h-10 flex items-center justify-center bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-500">
           <Bell className="w-5 h-5" />
