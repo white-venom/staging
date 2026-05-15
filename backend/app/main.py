@@ -1,8 +1,11 @@
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
+# Build Trigger: v1.0.1
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from app.database.db import get_db
+from app.database.db import get_db, engine, Base, SessionLocal
+from app.database.models import User as UserModel
+from app.core.security import get_password_hash
 
 from app.core.config import settings
 from app.routers.auth import router as auth_router
@@ -23,6 +26,38 @@ app = FastAPI(
     redoc_url="/redoc"     # Alternate ReDoc API representation
 )
 
+# Automatic Table Creation (Crucial for ephemeral cloud storage like Render's /tmp)
+@app.on_event("startup")
+def startup_event():
+    Base.metadata.create_all(bind=engine)
+    
+    # Safety Seed: Ensure at least one admin and one staff exist
+    db = SessionLocal()
+    try:
+        admin_exists = db.query(UserModel).filter(UserModel.phone == "7900671145").first()
+        if not admin_exists:
+            new_admin = UserModel(
+                name="Admin User",
+                phone="7900671145",
+                password_hash=get_password_hash("7900671145"),
+                role="admin"
+            )
+            db.add(new_admin)
+            
+        staff_exists = db.query(UserModel).filter(UserModel.phone == "9917128864").first()
+        if not staff_exists:
+            new_staff = UserModel(
+                name="Staff User",
+                phone="9917128864",
+                password_hash=get_password_hash("9917128864"),
+                role="staff"
+            )
+            db.add(new_staff)
+        db.commit()
+    finally:
+        db.close()
+
+
 # Configure CORS Middleware
 app.add_middleware(
     CORSMiddleware,
@@ -33,9 +68,8 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "https://do-it-services.vercel.app",
         "https://do-it-services-sujeet-kansals-projects.vercel.app",
-        "https://do-it-services.vercel.app/",
-        "https://do-it-services-sujeet-kansals-projects.vercel.app/",
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app", # Dynamically allow all Vercel previews
     allow_credentials=True,      # Crucial to allow HttpOnly cookies transmission
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,9 +88,18 @@ app.include_router(admin_settings_router)
 
 
 @app.get("/", tags=["Health Check"])
-def root():
+def root(db: Session = Depends(get_db)):
+    try:
+        # Simple query to check DB connectivity
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
+        db_status = "connected"
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+        
     return {
         "status": "healthy",
+        "database": db_status,
         "service": settings.PROJECT_NAME,
         "version": "1.0.0"
     }

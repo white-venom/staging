@@ -1,23 +1,32 @@
 "use client";
 
 import React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useAdmin } from "../context/AdminContext";
+import { useDevice } from "../../hooks/useDevice";
 
-// Modular Admin Components
-import CollectionsTab from "../components/CollectionsTab";
-import DepositsTab from "../components/DepositsTab";
-import LedgerTab from "../components/LedgerTab";
-import RetailersTab from "../components/RetailersTab";
-import StaffTab from "../components/StaffTab";
-import AdministrationTab from "../components/AdministrationTab";
-import PortalsTab from "../components/PortalsTab";
-import ReportsTab from "../components/ReportsTab";
-import AttendanceTab from "../components/AttendanceTab";
+// Desktop Components
+import CollectionsTab from "../components/desktop/CollectionsTab";
+import DepositsTab from "../components/desktop/DepositsTab";
+import LedgerTab from "../components/desktop/LedgerTab";
+import RetailersTab from "../components/desktop/RetailersTab";
+import StaffTab from "../components/desktop/StaffTab";
+import AdministrationTab from "../components/desktop/AdministrationTab";
+import PortalsTab from "../components/desktop/PortalsTab";
+import ReportsTab from "../components/desktop/ReportsTab";
+import AttendanceTab from "../components/desktop/AttendanceTab";
+
+// Mobile Components
+import MobileCollections from "../components/mobile/MobileCollections";
+import MobileDeposits from "../components/mobile/MobileDeposits";
+import MobileLedger from "../components/mobile/MobileLedger";
+
+import MobileSettings from "../components/mobile/MobileSettings";
 
 export default function AdminTabPage() {
   const params = useParams();
   const tab = params.tab as string;
+  const { isMobile } = useDevice();
   const { 
     collections, 
     deposits, 
@@ -34,7 +43,13 @@ export default function AdminTabPage() {
   const renderTab = () => {
     switch (tab) {
       case "collections":
-        return (
+        return isMobile ? (
+          <MobileCollections 
+            collections={collections}
+            showToastNotification={showToastNotification}
+            fetchData={fetchData}
+          />
+        ) : (
           <CollectionsTab 
             collections={collections}
             showToastNotification={showToastNotification}
@@ -42,7 +57,13 @@ export default function AdminTabPage() {
           />
         );
       case "deposits":
-        return (
+        return isMobile ? (
+          <MobileDeposits 
+            deposits={deposits}
+            showToastNotification={showToastNotification}
+            fetchData={fetchData}
+          />
+        ) : (
           <DepositsTab 
             deposits={deposits}
             showToastNotification={showToastNotification}
@@ -50,7 +71,9 @@ export default function AdminTabPage() {
           />
         );
       case "ledger":
-        return (
+        return isMobile ? (
+          <MobileLedger />
+        ) : (
           <LedgerTab 
             collections={collections}
             deposits={deposits}
@@ -82,7 +105,9 @@ export default function AdminTabPage() {
           />
         );
       case "administration":
-        return (
+        return isMobile ? (
+          <MobileSettings />
+        ) : (
           <AdministrationTab 
             userDirectory={userDirectory}
             portalDirectory={portalDirectory}
