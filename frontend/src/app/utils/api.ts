@@ -4,15 +4,20 @@ const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
+  
+  // Default for production is the Render backend
   if (typeof window !== "undefined") {
-    // In production (via Nginx), the API is often served on the same host at /api
-    // Or if running locally with separate ports, use port 8000
-    if (window.location.port === "3000" || window.location.port === "") {
+    if (window.location.hostname === "do-it-services.vercel.app" || 
+        window.location.hostname.includes("vercel.app")) {
+      return "https://doit-backend-9yel.onrender.com";
+    }
+    
+    // Local dev
+    if (window.location.port === "3000") {
        return `http://${window.location.hostname}:8000`;
     }
-    return `http://${window.location.hostname}:${window.location.port}`;
   }
-  return "http://localhost:8000";
+  return "https://doit-backend-9yel.onrender.com";
 };
 
 const API_BASE_URL = getApiBaseUrl();
