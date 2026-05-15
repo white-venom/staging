@@ -20,8 +20,9 @@ import AttendanceTab from "../components/desktop/AttendanceTab";
 import MobileCollections from "../components/mobile/MobileCollections";
 import MobileDeposits from "../components/mobile/MobileDeposits";
 import MobileLedger from "../components/mobile/MobileLedger";
-
 import MobileSettings from "../components/mobile/MobileSettings";
+import MobileRetailers from "../components/mobile/MobileRetailers";
+import MobilePortals from "../components/mobile/MobilePortals";
 
 export default function AdminTabPage() {
   const params = useParams();
@@ -81,7 +82,14 @@ export default function AdminTabPage() {
           />
         );
       case "portals":
-        return (
+        return isMobile ? (
+          <MobilePortals 
+            portalDirectory={portalDirectory}
+            showToastNotification={showToastNotification}
+            setShowPortalDrawer={setShowPortalDrawer}
+            fetchData={fetchData}
+          />
+        ) : (
           <PortalsTab 
             portalDirectory={portalDirectory}
             showToastNotification={showToastNotification}
@@ -90,7 +98,14 @@ export default function AdminTabPage() {
           />
         );
       case "retailers":
-        return (
+        return isMobile ? (
+          <MobileRetailers 
+            retailerDirectory={retailerDirectory}
+            setShowRetailerDrawer={setShowRetailerDrawer}
+            showToastNotification={showToastNotification}
+            fetchData={fetchData}
+          />
+        ) : (
           <RetailersTab 
             retailerDirectory={retailerDirectory}
             setShowRetailerDrawer={setShowRetailerDrawer}
