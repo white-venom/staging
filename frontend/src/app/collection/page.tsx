@@ -164,11 +164,7 @@ export default function NewCollection() {
     }));
   };
 
-  // Large Amount entry direct suggestions
-  const addQuickCash = (amt: number) => {
-    const currentVal = parseFloat(customAmountInput) || 0;
-    setCustomAmountInput((currentVal + amt).toString());
-  };
+
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
