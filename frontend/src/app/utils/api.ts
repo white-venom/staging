@@ -189,6 +189,13 @@ export const api = {
     method: "POST",
     body: JSON.stringify(data),
   }),
+  updateUser: (id: string, data: any) => request<any>(`/users/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteUser: (id: string) => request<any>(`/users/${id}`, {
+    method: "DELETE",
+  }),
 
   // Admin Settings & Penalties
   getAdminSettings: () => request<any>("/admin-settings/business"),
