@@ -45,7 +45,12 @@ async function refreshAccessToken(): Promise<string | null> {
 
 async function request<T>(endpoint: string, options: RequestInit = {}, retry = true): Promise<T> {
   const token = useAppStore.getState().currentUser?.token;
-  const fullUrl = `${API_BASE_URL}${endpoint}`;
+  // Bulletproof URL joining to prevent double slashes
+  const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
+  const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const fullUrl = `${baseUrl}${path}`;
+  
+  console.log(`[API] Requesting: ${fullUrl}`);
   
   const headers = {
     "Content-Type": "application/json",

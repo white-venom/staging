@@ -144,7 +144,11 @@ def check_role(payload: dict, db: Session = Depends(get_db)):
 def seed_db(db: Session = Depends(get_db)):
     """Temporary endpoint to initialize the database with test accounts on Cloud."""
     from app.core.security import get_password_hash
+    from app.database.db import engine, Base
     import uuid
+    
+    # Auto-create tables if they don't exist
+    Base.metadata.create_all(bind=engine)
     
     # Staff
     staff_phone = "9917128864"
