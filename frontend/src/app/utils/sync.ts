@@ -53,8 +53,8 @@ export async function syncOfflineData(): Promise<number> {
     try {
       // Real API call
       await api.createCollection({
-        retailerName: col.retailerName,
-        portalName: col.portalName,
+        retailer_id: col.retailer_id,
+        store_id: col.store_id,
         total_amount: col.totalAmount,
         denominations: col.denominations,
         remarks: col.remarks
@@ -69,6 +69,8 @@ export async function syncOfflineData(): Promise<number> {
         const alreadyInStore = store.collections.some(c => c.retailerName === col.retailerName && c.totalAmount === col.totalAmount && c.date === col.date);
         if (!alreadyInStore) {
           store.addCollection({
+            retailer_id: col.retailer_id,
+            store_id: col.store_id,
             retailerName: col.retailerName,
             portalName: col.portalName,
             totalAmount: col.totalAmount,
@@ -86,10 +88,12 @@ export async function syncOfflineData(): Promise<number> {
   for (const dep of unsyncedDeposits) {
     try {
       await api.createDeposit({
-        depositType: dep.depositType,
-        targetName: dep.targetName,
+        deposit_type: dep.depositType,
+        portal_id: dep.portal_id,
+        retailer_id: dep.retailer_id,
+        recipient_staff_id: dep.recipient_staff_id,
         amount: dep.amount,
-        paymentMode: dep.paymentMode,
+        payment_mode: dep.paymentMode,
         denominations: dep.denominations
       });
 
@@ -99,6 +103,9 @@ export async function syncOfflineData(): Promise<number> {
         
         const store = useAppStore.getState();
         store.addDeposit({
+          portal_id: dep.portal_id,
+          retailer_id: dep.retailer_id,
+          recipient_staff_id: dep.recipient_staff_id,
           depositType: dep.depositType,
           targetName: dep.targetName,
           amount: dep.amount,

@@ -3,6 +3,8 @@ import { DenominationCounts } from "./store";
 
 export interface OfflineCollection {
   id?: number;
+  retailer_id: string;
+  store_id?: string;
   retailerName: string;
   portalName: string;
   totalAmount: number;
@@ -14,6 +16,9 @@ export interface OfflineCollection {
 
 export interface OfflineDeposit {
   id?: number;
+  portal_id?: string;
+  retailer_id?: string;
+  recipient_staff_id?: string;
   depositType: "portal" | "retailer" | "staff";
   targetName: string;
   amount: number;

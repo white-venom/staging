@@ -184,6 +184,8 @@ export default function NewCollection() {
     // INTERCEPT OFFLINE SUBMISSIONS:
     if (!isOnline) {
       await db.collections.add({
+        retailer_id: selectedRetailer!.id,
+        store_id: selectedStoreId || undefined,
         retailerName: selectedRetailer?.name || "Unknown",
         portalName: selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Direct Retailer Handover",
         totalAmount: totalCollectionAmount,
