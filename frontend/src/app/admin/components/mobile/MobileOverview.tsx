@@ -5,10 +5,10 @@ import {
   ArrowUpRight, 
   ArrowDownLeft, 
   Wallet, 
-  Users, 
   TrendingUp,
   Plus,
-  ArrowRight
+  ChevronRight,
+  History
 } from "lucide-react";
 import { format, subDays, isSameDay } from "date-fns";
 
@@ -56,6 +56,17 @@ export default function MobileOverview({
     });
   }, [collections, deposits]);
 
+  // Combine and sort recent transactions
+  const recentActivity = useMemo(() => {
+    const combined = [
+      ...collections.map(c => ({ ...c, type: 'collection' })),
+      ...deposits.map(d => ({ ...d, type: 'deposit' }))
+    ];
+    return combined
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 10);
+  }, [collections, deposits]);
+
   const maxNet = Math.max(...trendData.map(d => Math.abs(d.net)), 1000);
 
   return (
@@ -82,33 +93,26 @@ export default function MobileOverview({
         </div>
       </div>
 
-      {/* 7-Day Pulse (Dynamic Trend) */}
+      {/* 7-Day Pulse */}
       <section className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs">7-Day Cash Pulse</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Daily Net Flow</p>
+            <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs">Financial Trend</h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Last 7 Days Net Flow</p>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-900/10 text-blue-600 px-3 py-1 rounded-full text-[10px] font-black uppercase">
-            Live
-          </div>
+          <TrendingUp className="w-4 h-4 text-blue-500" />
         </div>
 
-        <div className="flex items-end justify-between h-32 gap-2 px-1">
+        <div className="flex items-end justify-between h-24 gap-1.5 px-1">
           {trendData.map((day, idx) => (
-            <div key={idx} className="flex-1 flex flex-col items-center gap-2 group relative">
-              {/* Tooltip on hover */}
-              <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[8px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                ₹{day.net.toLocaleString()}
-              </div>
-              
-              <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-t-lg relative overflow-hidden h-24">
+            <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group relative">
+              <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-t-lg relative overflow-hidden h-16">
                 <div 
-                  className={`absolute bottom-0 left-0 right-0 transition-all duration-1000 ease-out ${day.net >= 0 ? 'bg-blue-500' : 'bg-red-400'}`}
+                  className={`absolute bottom-0 left-0 right-0 transition-all duration-700 ease-out ${day.net >= 0 ? 'bg-blue-500' : 'bg-red-400'}`}
                   style={{ height: `${Math.max((Math.abs(day.net) / maxNet) * 100, 5)}%` }}
                 />
               </div>
-              <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">{day.label}</p>
+              <p className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">{day.label}</p>
             </div>
           ))}
         </div>
@@ -116,49 +120,58 @@ export default function MobileOverview({
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32">
-          <div className="w-10 h-10 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center">
-            <ArrowUpRight className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">To Take</p>
-            <p className="text-lg font-black text-red-500 mt-1">₹{totalToTake.toLocaleString()}</p>
-          </div>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-28">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">To Take</p>
+          <p className="text-lg font-black text-red-500">₹{totalToTake.toLocaleString()}</p>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-32">
-          <div className="w-10 h-10 bg-emerald-500/10 text-emerald-600 rounded-xl flex items-center justify-center">
-            <ArrowDownLeft className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">To Give</p>
-            <p className="text-lg font-black text-emerald-500 mt-1">₹{totalToGive.toLocaleString()}</p>
-          </div>
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-28">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">To Give</p>
+          <p className="text-lg font-black text-emerald-500">₹{totalToGive.toLocaleString()}</p>
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-4 p-5 border-b border-slate-50 dark:border-slate-800/50">
-          <div className="w-12 h-12 bg-orange-500/10 text-orange-600 rounded-2xl flex items-center justify-center">
-            <TrendingUp className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-black text-slate-800 dark:text-white">{todayCount} Collections</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Received so far today</p>
-          </div>
-          <ArrowRight className="ml-auto w-4 h-4 text-slate-300" />
+      {/* Recent Activity (Like Desktop Ledger) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between px-2">
+          <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-2">
+            <History className="w-3 h-3" /> Recent Ledger
+          </h3>
+          <button className="text-[10px] font-black text-blue-600 uppercase">View All</button>
         </div>
-        <div className="flex items-center gap-4 p-5">
-          <div className="w-12 h-12 bg-purple-500/10 text-purple-600 rounded-2xl flex items-center justify-center">
-            <Users className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-sm font-black text-slate-800 dark:text-white">Active Staff</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Pulse of your team</p>
-          </div>
-          <ArrowRight className="ml-auto w-4 h-4 text-slate-300" />
+
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm">
+          {recentActivity.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">
+              No recent activity
+            </div>
+          ) : (
+            recentActivity.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-4 p-4 border-b border-slate-50 dark:border-slate-800/50 active:bg-slate-50 dark:active:bg-slate-800/30 transition-colors">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.type === 'collection' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
+                  {item.type === 'collection' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-black text-slate-800 dark:text-white truncate">
+                    {item.retailer_name || item.portal_name || 'Generic Entry'}
+                  </p>
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">
+                    {format(new Date(item.created_at), "MMM d, HH:mm")} • {item.staff_name || 'Admin'}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={`text-sm font-black ${item.type === 'collection' ? 'text-blue-600' : 'text-red-600'}`}>
+                    {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
+                  </p>
+                  <div className="flex items-center justify-end gap-1 mt-0.5">
+                    <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'verified' ? 'bg-green-500' : 'bg-orange-500'}`} />
+                    <p className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">{item.status}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
-      </div>
+      </section>
 
       {/* Floating Action Button */}
       <button className="fixed bottom-24 right-6 w-14 h-14 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl shadow-2xl flex items-center justify-center z-50 active:scale-90 transition-transform">
