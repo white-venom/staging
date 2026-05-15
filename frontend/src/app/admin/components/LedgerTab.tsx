@@ -4,15 +4,15 @@ import React, { useEffect } from "react";
 import { useAdmin } from "../context/AdminContext";
 
 interface LedgerTabProps {
-  collections: any[];
-  deposits: any[];
+  collections?: any[];
+  deposits?: any[];
   retailerDirectory?: any[];
   portalDirectory?: any[];
 }
 
 export default function LedgerTab({
-  collections,
-  deposits,
+  collections = [],
+  deposits = [],
   retailerDirectory: propsRetailerDir,
   portalDirectory: propsPortalDir
 }: LedgerTabProps) {

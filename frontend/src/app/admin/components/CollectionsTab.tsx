@@ -12,7 +12,8 @@ interface CollectionsTabProps {
 
 export default function CollectionsTab({
   collections,
-  showToastNotification
+  showToastNotification,
+  fetchData
 }: CollectionsTabProps) {
   const [selectedCollectionId, setSelectedCollectionId] = React.useState<string | null>(null);
   const [isEditMode, setIsEditMode] = React.useState(false);
