@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str
+    DATABASE_URL: str = "sqlite:////tmp/doit_services.db"
 
     # Security
     JWT_SECRET_KEY: str = "super_secure_random_hex_string_32_bytes_long_change_in_production"
