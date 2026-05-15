@@ -157,12 +157,15 @@ export default function NewDeposit() {
     }
 
     // Local store payload (uses camelCase display fields)
-    const localDepData = {
+    const localDepData: any = {
       depositType,
       targetName,
       amount: totalAmount,
-      paymentMode: "unified",
-      denominations: denominations
+      paymentMode: "cash",
+      denominations: denominations,
+      portal_id: depositType === "portal" ? selectedPortalId : undefined,
+      retailer_id: depositType === "retailer" ? selectedRetailerId : undefined,
+      recipient_staff_id: depositType === "staff" ? selectedStaffId : undefined,
     };
 
     const submitOnline = async () => {

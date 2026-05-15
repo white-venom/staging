@@ -214,6 +214,8 @@ export default function NewCollection() {
 
       // If successful, we still update Zustand so it reflects immediately
       addCollection({
+        retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
+        store_id: selectedStoreId || undefined,
         retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Office"),
         portalName: selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Direct Handover",
         totalAmount: totalCollectionAmount,
@@ -228,6 +230,8 @@ export default function NewCollection() {
       // FALLBACK for local testing: if backend is not linked or IDs are invalid
       // We still update the local store so it shows up in the Admin Panel
       addCollection({
+        retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
+        store_id: selectedStoreId || undefined,
         retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Office"),
         portalName: selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Direct Handover",
         totalAmount: totalCollectionAmount,
