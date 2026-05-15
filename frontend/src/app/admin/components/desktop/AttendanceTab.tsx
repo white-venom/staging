@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Clock, ShieldAlert, Check, X, Settings2, Sparkles, UserCheck, Calendar } from "lucide-react";
-import { api } from "../../utils/api";
+import { api } from "../../../utils/api";
 
 interface AttendanceTabProps {
   showToastNotification: (msg: string) => void;

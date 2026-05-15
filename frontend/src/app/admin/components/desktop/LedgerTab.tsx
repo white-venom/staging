@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { useAdmin } from "../context/AdminContext";
+import { useAdmin } from "../../context/AdminContext";
 
 interface LedgerTabProps {
   collections?: any[];

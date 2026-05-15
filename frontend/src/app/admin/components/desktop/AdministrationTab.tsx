@@ -10,8 +10,8 @@ import {
   ShieldAlert,
   CreditCard
 } from "lucide-react";
-import { api } from "../../utils/api";
-import { useAdmin } from "../context/AdminContext";
+import { api } from "../../../utils/api";
+import { useAdmin } from "../../context/AdminContext";
 
 interface AdministrationTabProps {
   userDirectory: any[];

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, Plus, Globe, Building, X, CreditCard, ChevronRight, Edit, Trash2 } from "lucide-react";
-import { api } from "../../utils/api";
+import { api } from "../../../utils/api";
 
 interface PortalsTabProps {
   portalDirectory: any[]; // These will be Portal Groups now

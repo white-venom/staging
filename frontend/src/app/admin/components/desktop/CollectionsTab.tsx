@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Search, Download, X, CheckCircle2, Edit, Trash2 } from "lucide-react";
-import { api } from "../../utils/api";
+import { api } from "../../../utils/api";
 
 interface CollectionsTabProps {
   collections: any[];

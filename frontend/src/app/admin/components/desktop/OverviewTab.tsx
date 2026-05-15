@@ -12,7 +12,7 @@ import {
   Edit
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { api } from "../../utils/api";
+import { api } from "../../../utils/api";
 
 interface OverviewTabProps {
   collections: any[];

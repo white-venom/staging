@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, Plus, X, Store as StoreIcon, Trash2, Edit2, Check, Phone, MapPin } from "lucide-react";
-import { api } from "../../utils/api";
-import { useAdmin } from "../context/AdminContext";
+import { api } from "../../../utils/api";
+import { useAdmin } from "../../context/AdminContext";
 import { useRouter } from "next/navigation";
 
 interface RetailersTabProps {
