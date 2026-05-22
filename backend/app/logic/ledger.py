@@ -8,11 +8,11 @@ def recalculate_balances(retailer_id, db: Session):
     Recalculates all balances for a retailer's ledger from scratch to ensure consistency.
     This is called after a transaction is deleted or an amount is changed in the middle of history.
     """
-    # Get all ledger entries for this retailer ordered by creation time
+    # Get all ledger entries for this retailer ordered by creation time and ID for deterministic sorting
     entries = db.scalars(
         select(Ledger)
         .where(Ledger.retailer_id == retailer_id)
-        .order_by(Ledger.created_at)
+        .order_by(Ledger.created_at, Ledger.id)
     ).all()
 
     # Get the retailer to access opening balances
@@ -36,5 +36,4 @@ def recalculate_balances(retailer_id, db: Session):
     
     # Update the retailer's main balance field to match the latest ledger balance
     retailer.balance = current_balance
-    
-    db.commit()
+

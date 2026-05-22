@@ -304,19 +304,16 @@ def delete_collection(
     
     retailer_id = collection.retailer_id
     
-    # Delete associated ledger entries (cascade is set to SET NULL in model, so we find and delete manually or let it be)
-    # Actually models.py says ondelete="SET NULL" for collection_id in Ledger.
-    # We should delete the ledger entry too.
-    db.execute(update(Ledger).where(Ledger.collection_id == collection_id).values(collection_id=None)) # Disconnect
-    ledger_entries = db.scalars(select(Ledger).where(Ledger.collection_id == collection_id)).all()
-    for le in ledger_entries:
-        db.delete(le)
+    # Delete associated ledger entries (cascade is set to SET NULL in model, so we find and delete manually)
+    from sqlalchemy import delete
+    db.execute(delete(Ledger).where(Ledger.collection_id == collection_id))
     
     db.delete(collection)
     db.commit()
     
     # Recalculate balances for this retailer
     recalculate_balances(retailer_id, db)
+    db.commit()
     return None
 
 @router.put("/{collection_id}", response_model=CollectionResponse)
@@ -356,6 +353,7 @@ def update_collection(
     
     # Recalculate balances
     recalculate_balances(collection.retailer_id, db)
+    db.commit()
     
     db.refresh(collection)
     

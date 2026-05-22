@@ -2,7 +2,7 @@ import uuid
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 
 from app.database.db import get_db
@@ -44,7 +44,7 @@ def update_business_settings(data: SettingsUpdate, db: Session = Depends(get_db)
 @router.get("/pending-penalties")
 def list_pending_penalties(db: Session = Depends(get_db), current_user=Depends(require_admin)):
     """List all attendance records that are late but penalty is not yet approved."""
-    stmt = select(Attendance).where(Attendance.is_late == True, Attendance.is_penalty_approved == False)
+    stmt = select(Attendance).options(joinedload(Attendance.user)).where(Attendance.is_late == True, Attendance.is_penalty_approved == False)
     records = db.scalars(stmt).all()
     return [
         {

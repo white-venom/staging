@@ -130,6 +130,14 @@ class Attendance(Base):
     end_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)  # 'active', 'completed'
     
+    # Meter Image & GPS Tracking fields
+    start_km_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    end_km_image_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    start_latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    start_longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    end_latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    end_longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
     # Late Penalty fields
     is_late: Mapped[bool] = mapped_column(Boolean, default=False)
     penalty_amount: Mapped[float] = mapped_column(Float, default=0.0)

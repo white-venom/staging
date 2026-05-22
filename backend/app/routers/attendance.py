@@ -11,6 +11,32 @@ from app.dependencies import require_staff
 
 router = APIRouter(prefix="/attendance", tags=["Attendance & Shifts"])
 
+import base64
+import uuid
+import os
+
+def save_base64_image(base64_str: str, folder: str) -> str:
+    """Decodes base64 image string and saves to the local static directory, returning relative URL."""
+    try:
+        if not base64_str:
+            return None
+        # Strip data URL prefix if present
+        if "," in base64_str:
+            base64_str = base64_str.split(",")[1]
+        
+        image_data = base64.b64decode(base64_str)
+        os.makedirs(folder, exist_ok=True)
+        filename = f"{uuid.uuid4().hex}.jpg"
+        filepath = os.path.join(folder, filename)
+        
+        with open(filepath, "wb") as f:
+            f.write(image_data)
+            
+        return f"/static/attendance/{filename}"
+    except Exception as e:
+        print(f"Error saving base64 image: {str(e)}")
+        return None
+
 
 @router.post("/check-in", response_model=AttendanceResponse, status_code=status.HTTP_201_CREATED)
 def check_in(
@@ -18,7 +44,7 @@ def check_in(
     db: Session = Depends(get_db),
     current_user=Depends(require_staff)
 ):
-    """Staff checks in for the day, logging their starting vehicle KM."""
+    """Staff checks in for the day, logging their starting vehicle KM, meter image, and GPS location."""
     # Check if they already have an active check-in session for today
     existing = db.scalar(
         select(Attendance).where(
@@ -54,6 +80,16 @@ def check_in(
     is_late = now_ist > threshold_time
     penalty_amount = late_penalty_val if is_late else 0.0
 
+    # Save meter image if uploaded
+    image_url = None
+    if payload.image:
+        static_folder = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "static",
+            "attendance"
+        )
+        image_url = save_base64_image(payload.image, static_folder)
+
     db_attendance = Attendance(
         user_id=current_user.id,
         date=date.today(),
@@ -62,7 +98,10 @@ def check_in(
         status="active",
         is_late=is_late,
         penalty_amount=penalty_amount,
-        is_penalty_approved=False # Admin must approve later
+        is_penalty_approved=False, # Admin must approve later
+        start_km_image_url=image_url,
+        start_latitude=payload.latitude,
+        start_longitude=payload.longitude
     )
     db.add(db_attendance)
     db.commit()
@@ -76,7 +115,7 @@ def check_out(
     db: Session = Depends(get_db),
     current_user=Depends(require_staff)
 ):
-    """Staff checks out, logging ending KM and completing their shift session."""
+    """Staff checks out, logging ending KM, checkout meter image, and GPS location to complete shift."""
     active_shift = db.scalar(
         select(Attendance).where(
             and_(
@@ -98,10 +137,23 @@ def check_out(
     ist = pytz.timezone('Asia/Kolkata')
     now_ist = datetime.now(ist)
     
+    # Save checkout image if uploaded
+    image_url = None
+    if payload.image:
+        static_folder = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "static",
+            "attendance"
+        )
+        image_url = save_base64_image(payload.image, static_folder)
+
     # Complete shift
     active_shift.end_km = payload.end_km
     active_shift.end_time = now_ist.replace(tzinfo=None)
     active_shift.status = "completed"
+    active_shift.end_km_image_url = image_url
+    active_shift.end_latitude = payload.latitude
+    active_shift.end_longitude = payload.longitude
     
     db.commit()
     db.refresh(active_shift)

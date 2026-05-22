@@ -237,50 +237,20 @@ def delete_deposit(
     # Delete associated ledger entries
     db.execute(delete(Ledger).where(Ledger.deposit_id == deposit_id))
     
-    # Handle Portal Group balance reversal if it was a portal deposit
+    # Handle Portal balance reversal if it was a portal deposit
     if deposit.deposit_type == "portal" and deposit.portal_id:
         portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id))
-        if portal and portal.group:
-            portal.group.balance -= Decimal(str(deposit.amount))
+        if portal:
+            portal.balance -= Decimal(str(deposit.amount))
+            if portal.group:
+                portal.group.balance -= Decimal(str(deposit.amount))
     
     db.delete(deposit)
     db.commit()
     
-    old_amount = deposit.amount
-    
-    # Update main fields safely
-    for field, value in payload.model_dump(exclude_unset=True, exclude={"denominations"}).items():
-        setattr(deposit, field, value)
-    
-    # Handle Portal Group balance adjustment
-    if deposit.deposit_type == "portal" and deposit.portal_id:
-        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id))
-        if portal and portal.group:
-            # Adjust by the difference
-            portal.group.balance += (Decimal(str(deposit.amount)) - Decimal(str(old_amount)))
-    
-    # Update ledger entry
-    ledger_entry = db.scalar(select(Ledger).where(Ledger.deposit_id == deposit_id))
-    if ledger_entry:
-        ledger_entry.amount = payload.amount
-    
-    db.commit()
-    
     # Recalculate balances if it was a retailer deposit
-    if deposit.retailer_id:
-        recalculate_balances(deposit.retailer_id, db)
-    
-    db.refresh(deposit)
-    
-    # Populate target_name
-    if deposit.deposit_type == "portal":
-        deposit.target_name = deposit.portal.portal_name if deposit.portal else "Portal Bank"
-    elif deposit.deposit_type == "retailer":
-        deposit.target_name = deposit.retailer.retailer_name if deposit.retailer else "Retailer Store"
-    elif deposit.deposit_type == "staff":
-        if deposit.to_office:
-            deposit.target_name = "Main Office Cashier"
-        else:
-            deposit.target_name = deposit.recipient_staff.name if deposit.recipient_staff else "Field Staff"
-            
-    return deposit
+    if retailer_id:
+        recalculate_balances(retailer_id, db)
+        db.commit()
+        
+    return None

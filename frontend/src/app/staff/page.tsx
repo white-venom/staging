@@ -23,7 +23,9 @@ import {
   WifiOff,
   CloudLightning,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Camera,
+  MapPin
 } from "lucide-react";
 
 export default function StaffDashboard() {
@@ -41,11 +43,49 @@ export default function StaffDashboard() {
   const [kmError, setKmError] = useState("");
   const [showNotesBreakdown, setShowNotesBreakdown] = useState(true);
 
+  // New Odometer Upload & GPS Watermark States
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
+  const [gpsCoords, setGpsCoords] = useState<{ latitude: number; longitude: number; accuracy: number } | null>(null);
+  const [uploadedImageBase64, setUploadedImageBase64] = useState<string | null>(null);
+
   // Read local Dexie databases on mount and monitor status
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Request location access proactively on mount to check if allowed
+  useEffect(() => {
+    if (!mounted) return;
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      setIsLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setGpsCoords({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          });
+          setLocationError("");
+          setIsLocating(false);
+        },
+        (err) => {
+          let errMsg = "Location access denied. GPS tracking is strictly required for shifts.";
+          if (err.code === err.POSITION_UNAVAILABLE) {
+            errMsg = "GPS location information is unavailable.";
+          } else if (err.code === err.TIMEOUT) {
+            errMsg = "Location request timed out. Please try again.";
+          }
+          setLocationError(errMsg);
+          setIsLocating(false);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      setLocationError("Geolocation is not supported by this browser.");
+    }
+  }, [mounted]);
 
   // Read local Dexie databases on mount and monitor status
   useEffect(() => {
@@ -176,14 +216,158 @@ export default function StaffDashboard() {
     ledgerSnapshots.set(item.id, { prev, next: ledgerRunningBal });
   });
 
+  const fetchLiveGPS = (): Promise<{ latitude: number; longitude: number; accuracy: number }> => {
+    return new Promise((resolve, reject) => {
+      if (typeof window === "undefined" || !navigator.geolocation) {
+        const err = new Error("Geolocation is not supported by your browser.");
+        setLocationError(err.message);
+        reject(err);
+        return;
+      }
+      setIsLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const coords = {
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+          };
+          setGpsCoords(coords);
+          setLocationError("");
+          setIsLocating(false);
+          resolve(coords);
+        },
+        (err) => {
+          let errMsg = "Location access denied. Location is strictly required to proceed.";
+          if (err.code === err.POSITION_UNAVAILABLE) {
+            errMsg = "GPS signal lost or unavailable.";
+          } else if (err.code === err.TIMEOUT) {
+            errMsg = "Location fetch timed out. Please retry.";
+          }
+          setLocationError(errMsg);
+          setGpsCoords(null);
+          setIsLocating(false);
+          reject(new Error(errMsg));
+        },
+        { enableHighAccuracy: true, timeout: 15000 }
+      );
+    });
+  };
+
+  const processImageWithLocation = async (file: File) => {
+    try {
+      // 1. Fetch fresh live GPS coordinates first (strict enforcement)
+      const coords = await fetchLiveGPS();
+      
+      // 2. Read image as Data URL
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          // 3. Scale image to max dimension of 1200px
+          const maxDim = 1200;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            alert("Canvas 2D context not available");
+            return;
+          }
+          
+          // Draw original image scaled
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // 4. Draw watermarking bar at bottom
+          const barHeight = Math.max(70, Math.round(height * 0.08));
+          ctx.fillStyle = "rgba(15, 23, 42, 0.85)"; // Slate 900 with high opacity for readability
+          ctx.fillRect(0, height - barHeight, width, barHeight);
+          
+          // Draw a small decorative indicator dot at bottom left (emerald if coordinates are active)
+          ctx.fillStyle = "#10b981"; // Emerald green
+          const dotRadius = Math.max(6, Math.round(barHeight * 0.08));
+          ctx.beginPath();
+          ctx.arc(30, height - barHeight / 2, dotRadius, 0, 2 * Math.PI);
+          ctx.fill();
+          
+          // Setup text typography
+          const fontSize = Math.max(12, Math.round(barHeight * 0.22));
+          ctx.font = `bold ${fontSize}px sans-serif`;
+          ctx.fillStyle = "#ffffff";
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          
+          // GPS Line text
+          const gpsText = `GPS: ${coords.latitude.toFixed(6)}, ${coords.longitude.toFixed(6)} (±${coords.accuracy.toFixed(1)}m)`;
+          const textX = 30 + dotRadius * 2;
+          ctx.fillText(gpsText, textX, height - barHeight * 0.65);
+          
+          // Time line text
+          const istTimeStr = new Date().toLocaleString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            dateStyle: "medium",
+            timeStyle: "medium",
+          });
+          const timeText = `IST: ${istTimeStr} IST`;
+          ctx.fillStyle = "#94a3b8"; // Slate 400 for subtext
+          ctx.font = `${fontSize - 2}px sans-serif`;
+          ctx.fillText(timeText, textX, height - barHeight * 0.35);
+          
+          // On the far right, draw a small branding note
+          ctx.textAlign = "right";
+          ctx.fillStyle = "#60a5fa"; // Blue 400
+          ctx.font = `bold ${fontSize - 1}px sans-serif`;
+          ctx.fillText("DO IT SERVICES", width - 30, height - barHeight / 2);
+          
+          // 5. Output compressed jpeg base64
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          setUploadedImageBase64(dataUrl);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      alert("Verification Failed: " + err.message);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageWithLocation(file);
+    }
+  };
+
   const handleCheckInSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!uploadedImageBase64 || !gpsCoords) {
+      alert("Odometer image and live GPS location are strictly required!");
+      return;
+    }
     const km = parseInt(startKmInput);
     if (!isNaN(km) && km > 0) {
       try {
-        await api.checkIn(km);
+        await api.checkIn(km, uploadedImageBase64, gpsCoords.latitude, gpsCoords.longitude);
         checkIn(km);
         setStartKmInput("");
+        setUploadedImageBase64(null);
+        setGpsCoords(null);
       } catch (err: any) {
         alert("Failed to check-in: " + err.message);
       }
@@ -193,6 +377,10 @@ export default function StaffDashboard() {
   const handleCheckOutSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setKmError("");
+    if (!uploadedImageBase64 || !gpsCoords) {
+      alert("Odometer image and live GPS location are strictly required!");
+      return;
+    }
     const end = parseInt(endKmInput);
     if (isNaN(end)) return;
 
@@ -202,9 +390,11 @@ export default function StaffDashboard() {
     }
 
     try {
-      await api.checkOut(end);
+      await api.checkOut(end, uploadedImageBase64, gpsCoords.latitude, gpsCoords.longitude);
       checkOut(end);
       setEndKmInput("");
+      setUploadedImageBase64(null);
+      setGpsCoords(null);
     } catch (err: any) {
       alert("Failed to check-out: " + err.message);
     }
@@ -282,6 +472,13 @@ export default function StaffDashboard() {
               endKmInput={endKmInput}
               setEndKmInput={setEndKmInput}
               kmError={kmError}
+              uploadedImageBase64={uploadedImageBase64}
+              setUploadedImageBase64={setUploadedImageBase64}
+              gpsCoords={gpsCoords}
+              isLocating={isLocating}
+              locationError={locationError}
+              handleFileChange={handleFileChange}
+              fetchLiveGPS={fetchLiveGPS}
             />
 
             {/* GREYED OUT NAVIGATION */}
@@ -336,6 +533,13 @@ export default function StaffDashboard() {
               endKmInput={endKmInput}
               setEndKmInput={setEndKmInput}
               kmError={kmError}
+              uploadedImageBase64={uploadedImageBase64}
+              setUploadedImageBase64={setUploadedImageBase64}
+              gpsCoords={gpsCoords}
+              isLocating={isLocating}
+              locationError={locationError}
+              handleFileChange={handleFileChange}
+              fetchLiveGPS={fetchLiveGPS}
             />
           </>
         )}
@@ -474,8 +678,17 @@ function AttendanceCard({
   setStartKmInput,
   endKmInput,
   setEndKmInput,
-  kmError
+  kmError,
+  uploadedImageBase64,
+  setUploadedImageBase64,
+  gpsCoords,
+  isLocating,
+  locationError,
+  handleFileChange,
+  fetchLiveGPS
 }: any) {
+  const isSubmitDisabled = !uploadedImageBase64 || !gpsCoords || isLocating;
+
   return (
     <div className={`relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] shadow-xl p-6 text-white border border-slate-700/50 transition-all duration-500 ${attendance.isCheckedIn ? "opacity-90" : "ring-2 ring-blue-500/50 shadow-blue-500/10"}`}>
       <div className="absolute top-0 right-0 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10"></div>
@@ -517,7 +730,7 @@ function AttendanceCard({
               </p>
             )}
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <input
                 type="number"
                 placeholder="Enter Ending KM"
@@ -526,20 +739,88 @@ function AttendanceCard({
                 className="w-full px-4 py-3.5 bg-black/30 border border-white/10 focus:border-blue-500/50 rounded-xl focus:outline-none text-sm text-white font-bold placeholder-slate-600 transition-colors shadow-inner"
                 required
               />
+
+              {/* Upload image capture element */}
+              {!uploadedImageBase64 ? (
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700/80 hover:border-blue-500/50 bg-black/20 hover:bg-black/30 p-5 rounded-2xl cursor-pointer transition-all duration-300 group">
+                  <Camera className="w-8 h-8 text-slate-400 group-hover:text-blue-400 mb-2 transition-colors" />
+                  <span className="text-[10px] font-black tracking-widest text-slate-400 group-hover:text-blue-300 uppercase select-none">Capture Ending Odometer</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    required
+                  />
+                </label>
+              ) : (
+                <div className="relative rounded-2xl overflow-hidden border border-slate-700/50 group">
+                  <img src={uploadedImageBase64} alt="Meter Preview" className="w-full h-36 object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setUploadedImageBase64(null)}
+                    className="absolute top-2 right-2 bg-red-600/90 hover:bg-red-500 text-white p-1.5 rounded-lg shadow-lg text-[9px] font-black uppercase tracking-wider px-3 backdrop-blur-md border border-red-500/20 active:scale-95 transition-transform"
+                  >
+                    Retake
+                  </button>
+                  <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider text-slate-300 border border-white/5">
+                    ✓ Watermark Overlay Succeeded
+                  </div>
+                </div>
+              )}
+
+              {/* Geolocation status and strict warning warnings */}
+              {isLocating && (
+                <div className="flex items-center justify-center gap-2 p-3 bg-blue-950/40 border border-blue-900/40 text-[9px] font-black uppercase tracking-wider text-blue-400 rounded-2xl animate-pulse">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-ping"></span>
+                  <span>Fetching High Accuracy live GPS...</span>
+                </div>
+              )}
+
+              {locationError && (
+                <div className="p-3 bg-red-950/40 border border-red-900/40 rounded-2xl text-center">
+                  <p className="text-[9px] text-red-400 font-black uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5">
+                    <span>⚠️ GPS Locked:</span> {locationError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={fetchLiveGPS}
+                    className="text-[9px] font-black uppercase text-blue-400 hover:text-blue-300 tracking-wider bg-blue-950/20 border border-blue-900/30 px-3.5 py-1.5 rounded-xl transition-all active:scale-95"
+                  >
+                    Retry Fetching Location
+                  </button>
+                </div>
+              )}
+
+              {gpsCoords && (
+                <div className="flex items-center gap-2 p-3 bg-emerald-950/20 border border-emerald-900/30 text-[9px] font-black uppercase tracking-wider text-emerald-400 rounded-2xl">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                  <span className="leading-tight">
+                    GPS Logged: {gpsCoords.latitude.toFixed(6)}, {gpsCoords.longitude.toFixed(6)} (±{gpsCoords.accuracy.toFixed(1)}m)
+                  </span>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] shadow-lg border border-white/10"
+                disabled={isSubmitDisabled}
+                className={`w-full py-3.5 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] shadow-lg border border-white/10 ${
+                  isSubmitDisabled
+                    ? "bg-slate-800 text-slate-500 border-slate-700/40 cursor-not-allowed opacity-50"
+                    : "bg-blue-600 hover:bg-blue-500"
+                }`}
               >
-                End Shift & Log Out
+                {isSubmitDisabled ? "Verify Image & GPS to Check Out" : "End Shift & Log Out"}
               </button>
             </div>
           </form>
         ) : (
           <form onSubmit={handleCheckInSubmit} className="space-y-4">
             <p className="text-[11px] text-slate-400 leading-relaxed font-bold mb-2 opacity-70">
-              Enter starting odometer KM to begin.
+              Enter starting odometer KM, snap meter photo, and allow GPS access.
             </p>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <input
                 type="number"
                 placeholder="Current Odometer KM"
@@ -548,11 +829,79 @@ function AttendanceCard({
                 className="w-full px-4 py-3.5 bg-black/30 border border-white/10 focus:border-blue-500/50 rounded-xl focus:outline-none text-sm text-white font-bold placeholder-slate-600 transition-colors shadow-inner"
                 required
               />
+
+              {/* Upload image capture element */}
+              {!uploadedImageBase64 ? (
+                <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-700/80 hover:border-blue-500/50 bg-black/20 hover:bg-black/30 p-5 rounded-2xl cursor-pointer transition-all duration-300 group">
+                  <Camera className="w-8 h-8 text-slate-400 group-hover:text-blue-400 mb-2 transition-colors" />
+                  <span className="text-[10px] font-black tracking-widest text-slate-400 group-hover:text-blue-300 uppercase select-none">Capture Starting Odometer</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    required
+                  />
+                </label>
+              ) : (
+                <div className="relative rounded-2xl overflow-hidden border border-slate-700/50 group">
+                  <img src={uploadedImageBase64} alt="Meter Preview" className="w-full h-36 object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setUploadedImageBase64(null)}
+                    className="absolute top-2 right-2 bg-red-600/90 hover:bg-red-500 text-white p-1.5 rounded-lg shadow-lg text-[9px] font-black uppercase tracking-wider px-3 backdrop-blur-md border border-red-500/20 active:scale-95 transition-transform"
+                  >
+                    Retake
+                  </button>
+                  <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-wider text-slate-300 border border-white/5">
+                    ✓ Watermark Overlay Succeeded
+                  </div>
+                </div>
+              )}
+
+              {/* Geolocation status and warnings */}
+              {isLocating && (
+                <div className="flex items-center justify-center gap-2 p-3 bg-blue-950/40 border border-blue-900/40 text-[9px] font-black uppercase tracking-wider text-blue-400 rounded-2xl animate-pulse">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-ping"></span>
+                  <span>Fetching High Accuracy live GPS...</span>
+                </div>
+              )}
+
+              {locationError && (
+                <div className="p-3 bg-red-950/40 border border-red-900/40 rounded-2xl text-center">
+                  <p className="text-[9px] text-red-400 font-black uppercase tracking-wider mb-2 flex items-center justify-center gap-1.5">
+                    <span>⚠️ GPS Locked:</span> {locationError}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={fetchLiveGPS}
+                    className="text-[9px] font-black uppercase text-blue-400 hover:text-blue-300 tracking-wider bg-blue-950/20 border border-blue-900/30 px-3.5 py-1.5 rounded-xl transition-all active:scale-95"
+                  >
+                    Retry Fetching Location
+                  </button>
+                </div>
+              )}
+
+              {gpsCoords && (
+                <div className="flex items-center gap-2 p-3 bg-emerald-950/20 border border-emerald-900/30 text-[9px] font-black uppercase tracking-wider text-emerald-400 rounded-2xl">
+                  <MapPin className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                  <span className="leading-tight">
+                    GPS Logged: {gpsCoords.latitude.toFixed(6)}, {gpsCoords.longitude.toFixed(6)} (±{gpsCoords.accuracy.toFixed(1)}m)
+                  </span>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] shadow-lg border border-white/10"
+                disabled={isSubmitDisabled}
+                className={`w-full py-3.5 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] shadow-lg border border-white/10 ${
+                  isSubmitDisabled
+                    ? "bg-slate-800 text-slate-500 border-slate-700/40 cursor-not-allowed opacity-50"
+                    : "bg-blue-600 hover:bg-blue-500"
+                }`}
               >
-                Start Shift
+                {isSubmitDisabled ? "Verify Image & GPS to Check In" : "Start Shift"}
               </button>
             </div>
           </form>

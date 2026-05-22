@@ -222,13 +222,13 @@ export const api = {
   // Attendance
   getMyAttendanceStatus: () => request<any>("/attendance/my-status"),
   getTodayAttendance: () => request<any[]>("/attendance/today"),
-  checkIn: (startKm: number) => request<any>("/attendance/check-in", {
+  checkIn: (startKm: number, image?: string, latitude?: number, longitude?: number) => request<any>("/attendance/check-in", {
     method: "POST",
-    body: JSON.stringify({ start_km: startKm }),
+    body: JSON.stringify({ start_km: startKm, image, latitude, longitude }),
   }),
-  checkOut: (endKm: number) => request<any>("/attendance/check-out", {
+  checkOut: (endKm: number, image?: string, latitude?: number, longitude?: number) => request<any>("/attendance/check-out", {
     method: "POST",
-    body: JSON.stringify({ end_km: endKm }),
+    body: JSON.stringify({ end_km: endKm, image, latitude, longitude }),
   }),
 
   // Auth

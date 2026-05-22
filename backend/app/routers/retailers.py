@@ -32,7 +32,9 @@ def create_retailer(
         address=retailer_data.address,
         assigned_staff_id=retailer_data.assigned_staff_id,
         email=retailer_data.email,
-        phone=retailer_data.phone
+        phone=retailer_data.phone,
+        opening_to_give=retailer_data.opening_to_give,
+        opening_to_take=retailer_data.opening_to_take
     )
     db.add(db_retailer)
     db.flush() # Get ID before commit
@@ -107,6 +109,7 @@ def update_retailer(
     # Recalculate ledger balances in case opening balances were changed
     from app.logic.ledger import recalculate_balances
     recalculate_balances(retailer_id, db)
+    db.commit()
     
     db.refresh(retailer)
     return retailer

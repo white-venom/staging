@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.database.db import Base
-from app.database.models import User, Portal, Retailer, Attendance, Collection, Denomination, BankDeposit, Ledger
+from app.database.models import User, Portal, PortalGroup, Retailer, Attendance, Collection, Denomination, BankDeposit, Ledger
 
 
 def run_schema_verification():
@@ -37,8 +37,19 @@ def run_schema_verification():
         session.commit()
         print(f"   ↳ Created Users: Admin (ID: {admin.id}), Staff A (ID: {staff_1.id}), Staff B (ID: {staff_2.id})")
 
+        # Create a mock PortalGroup
+        portal_group = PortalGroup(
+            name="Blinkit Stores",
+            opening_to_give=Decimal("0.00"),
+            opening_to_take=Decimal("0.00"),
+            balance=Decimal("0.00")
+        )
+        session.add(portal_group)
+        session.commit()
+
         # Create a mock Portal/Store (Muthoot / Blinkit)
         portal = Portal(
+            group_id=portal_group.id,
             portal_name="Blinkit Store Sector 5",
             bank_name="HDFC Bank",
             bank_account_no="50100412345678",
@@ -46,7 +57,7 @@ def run_schema_verification():
         )
         session.add(portal)
         session.commit()
-        print(f"   ↳ Created Portal/Store: {portal.portal_name}")
+        print(f"   ↳ Created Portal/Store: {portal.portal_name} (Group: {portal_group.name})")
 
         # Create a mock Retailer assigned to Staff A
         retailer = Retailer(

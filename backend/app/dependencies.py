@@ -65,5 +65,5 @@ class RoleChecker:
 
 # Base role verification shortcuts
 require_admin = RoleChecker(["admin"])
-require_staff = RoleChecker(["staff"])
+require_staff = RoleChecker(["staff", "admin"])
 require_any_user = RoleChecker(["admin", "staff"])

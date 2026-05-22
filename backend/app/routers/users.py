@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database.db import get_db
 from app.database.models import User
-from app.schemas.auth import UserCreate, UserResponse
+from app.schemas.auth import UserCreate, UserResponse, UserUpdate
 from app.core.security import get_password_hash
 from app.dependencies import require_admin, require_any_user
 
@@ -60,7 +60,7 @@ def list_users(
 @router.put("/{user_id}", response_model=UserResponse)
 def update_user(
     user_id: uuid.UUID,
-    user_data: UserCreate,
+    user_data: UserUpdate,
     db: Session = Depends(get_db),
     current_user=Depends(require_admin)
 ):

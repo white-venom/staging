@@ -137,7 +137,7 @@ def check_role(payload: dict, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="No account found with this number")
     
-    return {"role": user.role, "name": user.name}
+    return {"role": user.role}
 
 
 @router.get("/me", response_model=UserResponse)

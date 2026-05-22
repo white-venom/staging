@@ -57,6 +57,22 @@ def startup_event():
     finally:
         db.close()
 
+    # Trigger the 2-month odometer image cleanup in a background thread
+    try:
+        import threading
+        import sys
+        # Prepend backend directory to path if not present for running the script import safely
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        parent_dir = os.path.dirname(backend_dir)
+        if parent_dir not in sys.path:
+            sys.path.insert(0, parent_dir)
+        
+        from delete_old_attendance_images import run_image_cleanup
+        threading.Thread(target=run_image_cleanup, daemon=True).start()
+        print("✅ Background thread for 2-month odometer image cleanup initiated.")
+    except Exception as e:
+        print(f"⚠️ Failed to start background image cleanup thread: {str(e)}")
+
 
 # Configure CORS Middleware
 app.add_middleware(
@@ -85,6 +101,14 @@ app.include_router(deposits_router)
 app.include_router(reports_router)
 app.include_router(users_router)
 app.include_router(admin_settings_router)
+
+# Mount Static Files (For attendance meter images)
+from fastapi.staticfiles import StaticFiles
+import os
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+os.makedirs(static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 
 
 @app.get("/", tags=["Health Check"])

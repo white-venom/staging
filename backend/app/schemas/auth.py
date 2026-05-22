@@ -32,6 +32,10 @@ class UserCreate(UserBase):
     password: str = Field(..., min_length=6, examples=["secr3tpass"])
 
 
+class UserUpdate(UserBase):
+    password: Optional[str] = Field(None, min_length=6, examples=["secr3tpass"])
+
+
 class UserResponse(UserBase):
     id: uuid.UUID
 

@@ -178,10 +178,23 @@ def update_portal(
     if not db_portal:
         raise HTTPException(status_code=404, detail="Portal not found")
         
+    # Preserve original opening balances
+    from decimal import Decimal
+    old_net = Decimal(str(db_portal.opening_to_take or 0)) - Decimal(str(db_portal.opening_to_give or 0))
+
     # Update fields safely
     for field, value in portal_data.model_dump(exclude_unset=True).items():
         setattr(db_portal, field, value)
     
+    # Calculate delta and apply to balances
+    new_net = Decimal(str(db_portal.opening_to_take or 0)) - Decimal(str(db_portal.opening_to_give or 0))
+    delta = new_net - old_net
+    
+    if delta != 0:
+        db_portal.balance += delta
+        if db_portal.group:
+            db_portal.group.balance += delta
+            
     db.commit()
     db.refresh(db_portal)
     return db_portal
@@ -197,6 +210,9 @@ def delete_portal(
     portal = db.scalar(select(Portal).where(Portal.id == portal_id))
     if not portal:
         raise HTTPException(status_code=404, detail="Portal not found")
+        
+    if portal.group:
+        portal.group.balance -= portal.balance
         
     db.delete(portal)
     db.commit()
