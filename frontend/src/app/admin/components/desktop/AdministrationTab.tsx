@@ -29,8 +29,17 @@ export default function AdministrationTab({
   const adminContext = useAdmin();
   const fetchData = propsFetchData || adminContext.fetchData;
   const showToastNotification = propsShowToast || adminContext.showToastNotification;
+  const { retailerDirectory, portalDirectory } = adminContext;
   const [users, setUsers] = useState<any[]>([]);
   
+  // Virtual Transfer State
+  const [vSourcePortalId, setVSourcePortalId] = useState("");
+  const [vDestRetailerId, setVDestRetailerId] = useState("");
+  const [vAmount, setVAmount] = useState("");
+  const [vRemarks, setVRemarks] = useState("");
+  const [isTransferring, setIsTransferring] = useState(false);
+  const [individualPortals, setIndividualPortals] = useState<any[]>([]);
+
   // Staff State
   const [uName, setUName] = useState("");
   const [uPhone, setUPhone] = useState("");
@@ -56,17 +65,26 @@ export default function AdministrationTab({
   const [retToGive, setRetToGive] = useState(0);
 
   useEffect(() => {
-    loadUsers();
+    loadUsersAndPortals();
   }, []);
 
-  const loadUsers = async () => {
+  const loadUsersAndPortals = async () => {
     try {
-      const data = await api.getUsers();
-      setUsers(data);
+      const [usersData, portalsData] = await Promise.all([
+        api.getUsers(),
+        api.getPortals()
+      ]);
+      setUsers(usersData);
+      setIndividualPortals(portalsData);
     } catch (err) {
       console.error(err);
     }
   };
+
+  const loadUsers = async () => {
+    await loadUsersAndPortals();
+  };
+
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,6 +143,47 @@ export default function AdministrationTab({
       fetchData();
     } catch (err: any) {
       alert("Error: " + err.message);
+    }
+  };
+
+  const handleVirtualTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!vSourcePortalId) {
+      alert("Please select a source portal account");
+      return;
+    }
+    if (!vDestRetailerId) {
+      alert("Please select a destination retailer");
+      return;
+    }
+    const amt = parseFloat(vAmount);
+    if (isNaN(amt) || amt <= 0) {
+      alert("Please enter a valid transfer amount greater than 0");
+      return;
+    }
+
+    setIsTransferring(true);
+    try {
+      await api.virtualTransfer({
+        portal_id: vSourcePortalId,
+        retailer_id: vDestRetailerId,
+        amount: amt,
+        remarks: vRemarks || undefined
+      });
+
+      showToastNotification(`Virtually loaded ₹${amt.toLocaleString()} to Retailer's wallet!`);
+      setVSourcePortalId("");
+      setVDestRetailerId("");
+      setVAmount("");
+      setVRemarks("");
+      
+      // Sync local portals state and context dashboard data
+      await loadUsersAndPortals();
+      fetchData();
+    } catch (err: any) {
+      alert("Transfer Error: " + err.message);
+    } finally {
+      setIsTransferring(false);
     }
   };
 
@@ -214,11 +273,93 @@ export default function AdministrationTab({
                   </div>
                </div>
                <button type="submit" className="w-full py-3 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl text-xs font-black shadow-lg transition-all active:scale-[0.98]">
-                 Register Retailer
+                  Register Retailer
                </button>
+             </form>
+          </div>
+
+          {/* Virtual Wallet Transfer Form */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6">
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <CreditCard className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Virtual Wallet Transfer</h3>
+            </div>
+            
+            <form onSubmit={handleVirtualTransfer} className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Portal Account</label>
+                <select 
+                  value={vSourcePortalId} 
+                  onChange={e => setVSourcePortalId(e.target.value)} 
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none text-slate-700 dark:text-slate-200"
+                  required
+                >
+                  <option value="">-- Select Source Portal --</option>
+                  {individualPortals.map((p: any) => {
+                    const group = portalDirectory.find((g: any) => g.id === p.group_id);
+                    const groupName = group ? group.name : "Portal";
+                    return (
+                      <option key={p.id} value={p.id}>
+                        {groupName} - {p.portal_name} (Bal: ₹{parseFloat(p.balance).toLocaleString()})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Retailer</label>
+                <select 
+                  value={vDestRetailerId} 
+                  onChange={e => setVDestRetailerId(e.target.value)} 
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none text-slate-700 dark:text-slate-200"
+                  required
+                >
+                  <option value="">-- Select Retailer --</option>
+                  {retailerDirectory.map((r: any) => (
+                    <option key={r.id} value={r.id}>
+                      {r.name} (Debt: ₹{parseFloat(r.balance || 0).toLocaleString()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Amount to Load (₹)</label>
+                  <input 
+                    type="number" 
+                    value={vAmount} 
+                    onChange={e => setVAmount(e.target.value)} 
+                    placeholder="e.g. 15000" 
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
+                    min="1"
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Remarks (Optional)</label>
+                  <input 
+                    type="text" 
+                    value={vRemarks} 
+                    onChange={e => setVRemarks(e.target.value)} 
+                    placeholder="e.g. Loaded via RinovaPay" 
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none text-slate-700 dark:text-slate-200"
+                  />
+                </div>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isTransferring}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-600 rounded-xl text-xs font-black shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isTransferring ? "Processing Transfer..." : "Execute Wallet Transfer"}
+              </button>
             </form>
           </div>
         </div>
+
 
         {/* Right Column: Portal/Bank & Users Directory */}
         <div className="space-y-6">
