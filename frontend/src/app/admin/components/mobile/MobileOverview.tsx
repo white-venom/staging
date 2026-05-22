@@ -54,14 +54,28 @@ export default function MobileOverview({
     });
   }, [collections, deposits]);
 
-  // Combine and sort recent transactions
+  // Combine and sort recent transactions using the unified ledger properties
   const recentActivity = useMemo(() => {
     const combined = [
-      ...collections.map(c => ({ ...c, type: 'collection' })),
-      ...deposits.map(d => ({ ...d, type: 'deposit' }))
+      ...(collections || []).map(c => ({
+        id: c.id,
+        date: c.date,
+        party: c.retailerName,
+        staff: c.staffName || "Admin",
+        amount: c.totalAmount,
+        type: 'collection'
+      })),
+      ...(deposits || []).map(d => ({
+        id: d.id,
+        date: d.date,
+        party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
+        staff: d.staffName || "Admin",
+        amount: d.amount,
+        type: 'deposit'
+      }))
     ];
     return combined
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime())
       .slice(0, 10);
   }, [collections, deposits]);
 
@@ -150,10 +164,21 @@ export default function MobileOverview({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black text-slate-800 dark:text-white truncate">
-                    {item.retailer_name || item.portal_name || 'Generic Entry'}
+                    {item.party}
                   </p>
                   <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
-                    {format(new Date(item.created_at), "MMM d, HH:mm")} • {item.staff_name || 'Admin'}
+                    {(() => {
+                      if (!item.date) return "N/A";
+                      try {
+                        const [datePart, timePart] = item.date.split(" ");
+                        const [year, month, day] = datePart.split("-");
+                        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                        const formattedMonth = months[parseInt(month, 10) - 1] || month;
+                        return `${formattedMonth} ${parseInt(day, 10)}, ${timePart}`;
+                      } catch (e) {
+                        return item.date;
+                      }
+                    })()} • {item.staff}
                   </p>
                 </div>
                 <div className="text-right">

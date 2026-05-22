@@ -164,102 +164,89 @@ export default function OverviewTab({
         </div>
       </div>
 
-      {/* Real-time Financial Performance Chart */}
+      {/* Recent Ledger Panel */}
       {(() => {
-        const barDays = Array.from({ length: 7 }, (_, i) => {
-          const d = new Date();
-          d.setDate(d.getDate() - (6 - i));
-          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-          const label = i === 6 ? "Today" : d.toLocaleDateString("en-IN", { weekday: "short" });
-          
-          const collected = safeCollections
-            .filter(c => c.date && c.date.startsWith(key))
-            .reduce((s, c) => s + (c.totalAmount || 0), 0);
-            
-          const deposited = safeDeposits
-            .filter(dep => dep.date && dep.date.startsWith(key))
-            .reduce((s, dep) => s + (dep.amount || 0), 0);
-            
-          const settlement = collected - deposited;
-          
-          return { label, key, collected, deposited, settlement, isToday: i === 6 };
-        });
-        
-        const allValues = barDays.flatMap(b => [b.collected, b.deposited, Math.abs(b.settlement)]);
-        const maxVal = Math.max(...allValues, 1);
+        const recentActivity = [
+          ...safeCollections.map(c => ({
+            id: c.id,
+            date: c.date,
+            party: c.retailerName,
+            staff: c.staffName || "Admin",
+            amount: c.totalAmount,
+            type: 'collection'
+          })),
+          ...safeDeposits.map(d => ({
+            id: d.id,
+            date: d.date,
+            party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
+            staff: d.staffName || "Admin",
+            amount: d.amount,
+            type: 'deposit'
+          }))
+        ].sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime())
+         .slice(0, 10);
 
         return (
           <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <BarChart2 className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                <h2 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">7-Day Financial Trend</h2>
+                <BarChart2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <h2 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Recent Ledger Activity</h2>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-2.5 py-0.5 rounded-full font-bold border border-blue-200/60 dark:border-blue-900/40">
-                  Net · ₹{(netCashBalance || 0).toLocaleString()}
-                </span>
-              </div>
+              <span className="text-[9px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-2.5 py-0.5 rounded-full font-bold border border-blue-200/60 dark:border-blue-900/40">
+                Latest 10 Entries
+              </span>
             </div>
 
-            <div className="flex items-end justify-between gap-1 md:gap-3 h-48 pt-6 px-1">
-              {barDays.map((bar) => {
-                const colHeight = (bar.collected / maxVal) * 100;
-                const depHeight = (bar.deposited / maxVal) * 100;
-                const setHeight = (Math.max(0, bar.settlement) / maxVal) * 100;
-                
-                return (
-                  <div key={bar.key} className="flex-1 flex flex-col items-center gap-2 group relative">
-                    <div className="w-full flex items-end justify-center gap-0.5 h-32">
-                      <div 
-                        className="w-[30%] bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-t-[2px] transition-all duration-700 delay-75"
-                        style={{ height: `${colHeight}%`, minHeight: bar.collected > 0 ? '2px' : '0' }}
-                        title={bar.collected > 0 ? `Collected: ₹${bar.collected}` : undefined}
-                      />
-                      <div 
-                        className="w-[30%] bg-gradient-to-t from-red-600 to-red-400 rounded-t-[2px] transition-all duration-700 delay-150"
-                        style={{ height: `${depHeight}%`, minHeight: bar.deposited > 0 ? '2px' : '0' }}
-                        title={bar.deposited > 0 ? `Deposited: ₹${bar.deposited}` : undefined}
-                      />
-                      <div 
-                        className="w-[30%] bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-[2px] transition-all duration-700 delay-300"
-                        style={{ height: `${setHeight}%`, minHeight: bar.settlement > 0 ? '2px' : '0' }}
-                        title={bar.settlement > 0 ? `Net Balance: ₹${bar.settlement}` : undefined}
-                      />
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <span className={`text-[9px] font-bold ${bar.isToday ? "text-slate-900 dark:text-white font-black" : "text-slate-400 dark:text-slate-500"}`}>
-                        {bar.label}
-                      </span>
-                      {bar.isToday && <div className="w-1 h-1 bg-blue-500 rounded-full mt-0.5"></div>}
-                    </div>
-                    {bar.collected > 0 && (
-                      <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-20">
-                        <div className="bg-slate-900 text-white text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
-                          ₹{(bar.collected/1000).toFixed(1)}k
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Collected</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-red-500" />
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Deposited</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Net Balance</span>
-                </div>
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-[11px] border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-950 text-[9px] font-black uppercase tracking-tight text-slate-400 border-b border-slate-200 dark:border-slate-850">
+                    <th className="px-4 py-2.5">Date & Time</th>
+                    <th className="px-4 py-2.5">Party / Target Account</th>
+                    <th className="px-4 py-2.5">Logged By</th>
+                    <th className="px-4 py-2.5 text-right">Transaction Value</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {recentActivity.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="p-8 text-center text-slate-400 italic font-bold">
+                        No recent ledger entries found.
+                      </td>
+                    </tr>
+                  ) : (
+                    recentActivity.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-slate-450 dark:text-slate-500 whitespace-nowrap">
+                          {(() => {
+                            if (!item.date) return "N/A";
+                            try {
+                              const [datePart, timePart] = item.date.split(" ");
+                              const [year, month, day] = datePart.split("-");
+                              const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                              const formattedMonth = months[parseInt(month, 10) - 1] || month;
+                              return `${formattedMonth} ${parseInt(day, 10)}, ${timePart}`;
+                            } catch (e) {
+                              return item.date;
+                            }
+                          })()}
+                        </td>
+                        <td className="px-4 py-3 font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
+                          <span className={`inline-block mr-2 w-1.5 h-1.5 rounded-full ${item.type === 'collection' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                          {item.party}
+                        </td>
+                        <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                          {item.staff}
+                        </td>
+                        <td className={`px-4 py-3 text-right font-black ${item.type === 'collection' ? 'text-emerald-600 bg-emerald-50/5 dark:bg-emerald-950/2' : 'text-red-600 bg-red-50/5 dark:bg-red-950/2'}`}>
+                          {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         );
