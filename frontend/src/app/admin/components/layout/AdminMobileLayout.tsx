@@ -25,7 +25,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-32">
+    <div className="dark min-h-screen bg-black pb-32 text-slate-100">
       <style jsx global>{`
         @media print {
           body * { visibility: hidden; }
