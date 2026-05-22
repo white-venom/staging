@@ -8,6 +8,49 @@ interface AttendanceTabProps {
   showToastNotification: (msg: string) => void;
 }
 
+function LocationName({ lat, lon }: { lat: number; lon: number }) {
+  const [address, setAddress] = useState<string>("Fetching location...");
+
+  useEffect(() => {
+    let active = true;
+    async function getAddress() {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`,
+          {
+            headers: {
+              "Accept-Language": "en",
+              "User-Agent": "DoItServices/1.0"
+            }
+          }
+        );
+        if (!response.ok) throw new Error();
+        const data = await response.json();
+        if (active) {
+          const addr = data.address || {};
+          const road = addr.road || addr.suburb || addr.neighbourhood || "";
+          const city = addr.city || addr.town || addr.village || "";
+          const state = addr.state || "";
+          
+          const parts = [road, city, state].filter(Boolean);
+          const cleanAddress = parts.join(", ") || data.display_name || "Location Found";
+          setAddress(cleanAddress);
+        }
+      } catch (err) {
+        if (active) {
+          setAddress(`${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+        }
+      }
+    }
+    getAddress();
+    return () => {
+      active = false;
+    };
+  }, [lat, lon]);
+
+  return <span className="font-extrabold text-[9px] uppercase tracking-wider truncate max-w-[160px] inline-block">{address}</span>;
+}
+
 export default function AttendanceTab({ showToastNotification }: AttendanceTabProps) {
   const [lateThreshold, setLateThreshold] = useState("10:00");
   const [latePenalty, setLatePenalty] = useState(100);
@@ -240,9 +283,11 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                         href={`https://www.google.com/maps/search/?api=1&query=${att.start_latitude},${att.start_longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors mt-1"
+                        className="inline-flex items-center gap-1.5 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors mt-1 max-w-[200px]"
+                        title="Click to view on Google Maps"
                       >
-                        <MapPin className="w-2.5 h-2.5 text-blue-500" /> GPS Pin ({att.start_latitude.toFixed(4)}, {att.start_longitude.toFixed(4)})
+                        <MapPin className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" />
+                        <LocationName lat={att.start_latitude} lon={att.start_longitude} />
                       </a>
                     )}
                   </div>
@@ -276,9 +321,11 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                         href={`https://www.google.com/maps/search/?api=1&query=${att.end_latitude},${att.end_longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors mt-1"
+                        className="inline-flex items-center gap-1.5 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors mt-1 max-w-[200px]"
+                        title="Click to view on Google Maps"
                       >
-                        <MapPin className="w-2.5 h-2.5 text-blue-500" /> GPS Pin ({att.end_latitude.toFixed(4)}, {att.end_longitude.toFixed(4)})
+                        <MapPin className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" />
+                        <LocationName lat={att.end_latitude} lon={att.end_longitude} />
                       </a>
                     ) : (
                       att.status === 'active' && <span className="text-[8px] text-slate-400 italic font-bold block uppercase tracking-wider mt-1">Pending Check-Out</span>
