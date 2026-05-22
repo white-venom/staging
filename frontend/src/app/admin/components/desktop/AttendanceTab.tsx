@@ -137,10 +137,10 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
               <div key={p.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl group transition-all hover:border-red-200 shadow-sm">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-600">
-                    {p.staff_name.substring(0, 2).toUpperCase()}
+                    {(p.staff_name || "ST").substring(0, 2).toUpperCase()}
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-100">{p.staff_name}</span>
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-100">{p.staff_name || "Unknown Staff"}</span>
                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
                       {p.date} · Check-in at {p.start_time}
                     </span>
@@ -204,10 +204,10 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/60 pb-3">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-xs font-black text-white shadow-inner">
-                    {att.staff_name.substring(0, 2).toUpperCase()}
+                    {(att.staff_name || "ST").substring(0, 2).toUpperCase()}
                   </div>
                   <div>
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-100 block">{att.staff_name}</span>
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-100 block">{att.staff_name || "Unknown Staff"}</span>
                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 block">
                       Duty Shift · {att.date}
                     </span>
@@ -233,7 +233,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                 <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                   <div className="space-y-1.5 flex-1">
                     <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block">Check-In Mileage</span>
-                    <span className="font-black text-base text-slate-800 dark:text-slate-100 tracking-tight">{att.start_km.toLocaleString()} <span className="text-[10px] text-slate-400">KM</span></span>
+                    <span className="font-black text-base text-slate-800 dark:text-slate-100 tracking-tight">{(att.start_km || 0).toLocaleString()} <span className="text-[10px] text-slate-400">KM</span></span>
                     <span className="text-[9px] text-slate-500 font-medium block">Time: {att.start_time || 'N/A'}</span>
                     {att.start_latitude && (
                       <a 
