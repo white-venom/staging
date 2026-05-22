@@ -252,11 +252,9 @@ export default function OverviewTab({
         );
       })()}
 
-      {/* Recent Activity Wireframe Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-        {/* LEFT COLUMN (Collections & Deposits) */}
-        <div className="md:col-span-8 flex flex-col gap-5">
-          {/* Recent Collections Panel */}
+      {/* Recent Activity Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Recent Collections Panel */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex-1">
             <div className="px-5 py-3 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
               <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Recent Collections</h2>
@@ -422,41 +420,6 @@ export default function OverviewTab({
             </div>
           </div>
         </div>
-
-        {/* RIGHT COLUMN (Unified Ledger) */}
-        <div className="md:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex flex-col">
-          <div className="px-5 py-3 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
-            <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Recent Ledger</h2>
-          </div>
-          <div className="flex-1 divide-y divide-slate-100 dark:divide-slate-800">
-            {[...safeCollections.map(c => ({...c, type: 'collection', amt: c.totalAmount})), ...safeDeposits.map(d => ({...d, type: 'deposit', amt: d.amount}))]
-              .filter(item => item.date)
-              .sort((a, b) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime())
-              .slice(0, 8)
-              .map((item, idx) => (
-                <div key={idx} className="p-4 flex flex-col gap-1.5 hover:bg-slate-50 dark:hover:bg-slate-850/20 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                      {item.type === 'collection' ? 'COL' : 'DEP'}
-                    </span>
-                    <span className={`text-[10px] font-black ${item.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {item.type === 'collection' ? '+' : '-'}₹{(item.amt || 0).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[11px] font-extrabold text-slate-850 dark:text-slate-100 line-clamp-1">
-                      {item.type === 'collection' ? item.retailerName : item.targetName}
-                    </span>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{item.date}</span>
-                  </div>
-                </div>
-              ))}
-            {(safeCollections.length === 0 && safeDeposits.length === 0) && (
-              <div className="p-10 text-center text-slate-400 text-xs font-bold italic">No Ledger Records.</div>
-            )}
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
