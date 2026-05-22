@@ -7,7 +7,7 @@ import MobileOverview from "./components/mobile/MobileOverview";
 import { useDevice } from "../hooks/useDevice";
 
 export default function AdminPage() {
-  const { collections, deposits, retailerDirectory, portalDirectory, fetchData } = useAdmin();
+  const { collections, deposits, retailerDirectory, portalDirectory, fetchData, userDirectory, staffComplianceLogs } = useAdmin();
   const { isMobile } = useDevice();
 
   const totalCollectedAmount = (collections || []).reduce((s, c) => s + (c.totalAmount || 0), 0);
@@ -41,6 +41,8 @@ export default function AdminPage() {
         totalToGive={totalToGive}
         fetchData={fetchData}
         todayCount={todayCount}
+        userDirectory={userDirectory}
+        staffComplianceLogs={staffComplianceLogs}
       />
     );
   }
@@ -56,6 +58,8 @@ export default function AdminPage() {
       totalToGive={totalToGive}
       fetchData={fetchData}
       todayCount={todayCount}
+      userDirectory={userDirectory}
+      staffComplianceLogs={staffComplianceLogs}
     />
   );
 }

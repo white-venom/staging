@@ -165,7 +165,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         startTime: log.start_time,
         endTime: log.end_time,
         duration: log.duration,
-        status: log.status === "active" ? "Active Duty" : "Completed"
+        status: log.status === "active" ? "Active Duty" : "Completed",
+        startLatitude: log.start_latitude,
+        startLongitude: log.start_longitude,
+        endLatitude: log.end_latitude,
+        endLongitude: log.end_longitude,
+        startKmImageUrl: log.start_km_image_url,
+        endKmImageUrl: log.end_km_image_url
       })));
     } catch (err: any) {
       console.error("Failed to fetch backend data:", err);
