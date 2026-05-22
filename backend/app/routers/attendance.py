@@ -207,7 +207,13 @@ def get_today_attendance(
             "duration": _calculate_duration(att),
             "status": att.status,
             "is_late": att.is_late,
-            "penalty_amount": att.penalty_amount
+            "penalty_amount": att.penalty_amount,
+            "start_km_image_url": att.start_km_image_url,
+            "end_km_image_url": att.end_km_image_url,
+            "start_latitude": att.start_latitude,
+            "start_longitude": att.start_longitude,
+            "end_latitude": att.end_latitude,
+            "end_longitude": att.end_longitude
         }
         for att, name in results
     ]

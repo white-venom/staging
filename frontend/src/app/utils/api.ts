@@ -20,7 +20,7 @@ const getApiBaseUrl = () => {
   return "https://doit-backend-9yel.onrender.com";
 };
 
-const API_BASE_URL = getApiBaseUrl();
+export const API_BASE_URL = getApiBaseUrl();
 
 // Attempt to refresh the access token using the HttpOnly refresh cookie
 async function refreshAccessToken(): Promise<string | null> {

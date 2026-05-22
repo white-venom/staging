@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Clock, ShieldAlert, Check, X, Settings2, Sparkles, UserCheck, Calendar } from "lucide-react";
-import { api } from "../../../utils/api";
+import { Clock, ShieldAlert, Check, X, Settings2, Sparkles, UserCheck, Calendar, MapPin } from "lucide-react";
+import { api, API_BASE_URL } from "../../../utils/api";
 
 interface AttendanceTabProps {
   showToastNotification: (msg: string) => void;
@@ -13,10 +13,13 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
   const [latePenalty, setLatePenalty] = useState(100);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [pendingPenalties, setPendingPenalties] = useState<any[]>([]);
+  const [todayAttendance, setTodayAttendance] = useState<any[]>([]);
+  const [activeLightboxImage, setActiveLightboxImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadSettings();
     loadPenalties();
+    loadTodayAttendance();
   }, []);
 
   const loadSettings = async () => {
@@ -35,6 +38,15 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
       setPendingPenalties(data);
     } catch (err) {
       console.error("Failed to load penalties:", err);
+    }
+  };
+
+  const loadTodayAttendance = async () => {
+    try {
+      const data = await api.getTodayAttendance();
+      setTodayAttendance(data);
+    } catch (err) {
+      console.error("Failed to load today's attendance:", err);
     }
   };
 
@@ -170,6 +182,155 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
           </div>
         </div>
       </div>
+
+      {/* TODAY'S SHIFTS & ODOMETER VERIFICATION */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-blue-600" />
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Today's Staff Shifts & Odometer Logs</h3>
+          </div>
+          <span className="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full font-black uppercase tracking-wider">
+            {todayAttendance.length} Shifts Today
+          </span>
+        </div>
+
+        <div className="grid gap-4">
+          {todayAttendance.map((att) => (
+            <div 
+              key={att.id} 
+              className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2rem] flex flex-col gap-4 shadow-sm hover:border-blue-100 dark:hover:border-blue-900/40 transition-all"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/60 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-xs font-black text-white shadow-inner">
+                    {att.staff_name.substring(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-100 block">{att.staff_name}</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-0.5 block">
+                      Duty Shift · {att.date}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className={`text-[9px] uppercase tracking-wider font-black px-2.5 py-1 rounded-full border ${
+                    att.status === 'active'
+                      ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 animate-pulse'
+                      : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                  }`}>
+                    {att.status === 'active' ? 'Active Shift' : 'Completed'}
+                  </span>
+                  <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full font-bold flex items-center gap-1 border border-slate-200/50 dark:border-slate-700/50">
+                    <Clock className="w-3 h-3" /> {att.duration}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* START KM DETAILS */}
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                  <div className="space-y-1.5 flex-1">
+                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block">Check-In Mileage</span>
+                    <span className="font-black text-base text-slate-800 dark:text-slate-100 tracking-tight">{att.start_km.toLocaleString()} <span className="text-[10px] text-slate-400">KM</span></span>
+                    <span className="text-[9px] text-slate-500 font-medium block">Time: {att.start_time || 'N/A'}</span>
+                    {att.start_latitude && (
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${att.start_latitude},${att.start_longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors mt-1"
+                      >
+                        <MapPin className="w-2.5 h-2.5 text-blue-500" /> GPS Pin ({att.start_latitude.toFixed(4)}, {att.start_longitude.toFixed(4)})
+                      </a>
+                    )}
+                  </div>
+                  {att.start_km_image_url ? (
+                    <button 
+                      onClick={() => setActiveLightboxImage(`${API_BASE_URL}${att.start_km_image_url}`)}
+                      className="w-full sm:w-24 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 group relative flex-shrink-0 cursor-pointer shadow-sm active:scale-95 transition-transform"
+                    >
+                      <img src={`${API_BASE_URL}${att.start_km_image_url}`} alt="Start KM Odometer" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[8px] font-black text-white uppercase tracking-wider">Inspect</span>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="w-full sm:w-24 h-16 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900 flex-shrink-0">
+                      <span className="text-[8px] text-slate-400 font-bold uppercase">No Photo</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* END KM DETAILS */}
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                  <div className="space-y-1.5 flex-1">
+                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block">Check-Out Mileage</span>
+                    <span className="font-black text-base text-slate-800 dark:text-slate-100 tracking-tight">
+                      {att.end_km ? `${att.end_km.toLocaleString()} KM` : <span className="text-slate-400 italic">Pending</span>}
+                    </span>
+                    <span className="text-[9px] text-slate-500 font-medium block">Time: {att.end_time || 'N/A'}</span>
+                    {att.end_latitude ? (
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${att.end_latitude},${att.end_longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors mt-1"
+                      >
+                        <MapPin className="w-2.5 h-2.5 text-blue-500" /> GPS Pin ({att.end_latitude.toFixed(4)}, {att.end_longitude.toFixed(4)})
+                      </a>
+                    ) : (
+                      att.status === 'active' && <span className="text-[8px] text-slate-400 italic font-bold block uppercase tracking-wider mt-1">Pending Check-Out</span>
+                    )}
+                  </div>
+                  {att.end_km_image_url ? (
+                    <button 
+                      onClick={() => setActiveLightboxImage(`${API_BASE_URL}${att.end_km_image_url}`)}
+                      className="w-full sm:w-24 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 group relative flex-shrink-0 cursor-pointer shadow-sm active:scale-95 transition-transform"
+                    >
+                      <img src={`${API_BASE_URL}${att.end_km_image_url}`} alt="End KM Odometer" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[8px] font-black text-white uppercase tracking-wider">Inspect</span>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="w-full sm:w-24 h-16 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900 flex-shrink-0">
+                      <span className="text-[8px] text-slate-400 font-bold uppercase">{att.status === 'active' ? 'Pending' : 'No Photo'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+          {todayAttendance.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-20 opacity-40">
+              <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">No shifts today</p>
+              <p className="text-[10px] text-slate-500 mt-2 font-bold uppercase tracking-wide text-center">
+                Staff have not started shift logs yet today.
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* LIGHTBOX VERIFICATION DIALOG */}
+      {activeLightboxImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          onClick={() => setActiveLightboxImage(null)}
+        >
+          <div className="relative max-w-3xl max-h-[85vh] w-full overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <img src={activeLightboxImage} alt="Odometer Verification" className="w-full h-full object-contain" />
+            <button 
+              onClick={() => setActiveLightboxImage(null)}
+              className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer shadow-lg active:scale-95 transition-transform"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ADDITIONAL FEATURES PLACEHOLDER */}
       <div className="grid md:grid-cols-3 gap-6">
