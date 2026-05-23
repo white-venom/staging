@@ -248,7 +248,7 @@ export default function NewCollection() {
   };
 
   return (
-    <div className="dark min-h-screen bg-black text-slate-100 transition-colors duration-200">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       <div className="flex-1 w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-5 select-none pb-24">
         
         {/* Navigation block */}
