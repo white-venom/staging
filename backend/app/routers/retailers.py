@@ -37,26 +37,14 @@ def create_retailer(
         opening_to_take=retailer_data.opening_to_take
     )
     db.add(db_retailer)
-    db.flush() # Get ID before commit
-
-    # Calculate net initial balance
-    # To Take (Debit) is positive, To Give (Credit) is negative
-    net_balance = retailer_data.opening_to_take - retailer_data.opening_to_give
-
-    # Create initial ledger entry if net balance is non-zero
-    if net_balance != 0:
-        initial_ledger = Ledger(
-            retailer_id=db_retailer.id,
-            transaction_type="debit" if net_balance > 0 else "credit",
-            amount=abs(net_balance),
-            balance=net_balance,
-            description="Opening Balance"
-        )
-        db.add(initial_ledger)
-
     db.commit()
+
+    # Recalculate will automatically create the opening ledger entry and update/commit retailer.balance!
+    from app.logic.ledger import recalculate_balances
+    recalculate_balances(db_retailer.id, db)
+    db.commit()
+
     db.refresh(db_retailer)
-    db_retailer.balance = float(net_balance)
     return db_retailer
 
 
