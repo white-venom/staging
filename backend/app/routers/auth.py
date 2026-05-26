@@ -24,6 +24,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 def login(
     login_data: LoginRequest,
     response: Response,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """Authenticate credentials, set secure HttpOnly refresh cookies, and return access token."""
@@ -40,13 +41,14 @@ def login(
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
+    is_https = request.url.scheme == "https" or "onrender.com" in str(request.base_url)
     # Set refresh token in secure HttpOnly cookie
     response.set_cookie(
         key="refresh_token",
         value=refresh_token,
         httponly=True,
-        secure=False,  # In production, set to True (requires HTTPS). False for local HTTP dev.
-        samesite="lax",
+        secure=is_https,
+        samesite="none" if is_https else "lax",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         path="/auth"   # Restrict cookie transmit scope to only auth-related endpoints
     )
@@ -100,13 +102,14 @@ def refresh(
     new_access_token = create_access_token(data={"sub": str(user.id)})
     new_refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
+    is_https = request.url.scheme == "https" or "onrender.com" in str(request.base_url)
     # Set rotated cookie
     response.set_cookie(
         key="refresh_token",
         value=new_refresh_token,
         httponly=True,
-        secure=False,  # False for local HTTP dev
-        samesite="lax",
+        secure=is_https,
+        samesite="none" if is_https else "lax",
         max_age=settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 60 * 60,
         path="/auth"
     )

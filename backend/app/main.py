@@ -39,7 +39,7 @@ def startup_event():
             new_admin = UserModel(
                 name="Admin User",
                 phone="7900671145",
-                password_hash=get_password_hash("7900671145"),
+                password_hash=get_password_hash("pass123"),
                 role="admin"
             )
             db.add(new_admin)
@@ -49,7 +49,7 @@ def startup_event():
             new_staff = UserModel(
                 name="Staff User",
                 phone="9917128864",
-                password_hash=get_password_hash("9917128864"),
+                password_hash=get_password_hash("pass123"),
                 role="staff"
             )
             db.add(new_staff)

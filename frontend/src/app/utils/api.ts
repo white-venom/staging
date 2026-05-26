@@ -13,8 +13,9 @@ const getApiBaseUrl = () => {
     }
     
     // Local dev
-    if (window.location.port === "3000") {
-       return `http://${window.location.hostname}:8000`;
+    if (window.location.port === "3000" || window.location.port === "5173") {
+       // Force 127.0.0.1 to avoid Windows IPv6 (::1) localhost resolution issues causing ERR_CONNECTION_REFUSED
+       return "http://127.0.0.1:8000";
     }
   }
   return "https://doit-backend-9yel.onrender.com";
@@ -22,24 +23,38 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+let refreshPromise: Promise<string | null> | null = null;
+
 // Attempt to refresh the access token using the HttpOnly refresh cookie
 async function refreshAccessToken(): Promise<string | null> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
-      method: "POST",
-      credentials: "include", // sends the HttpOnly refresh cookie
-    });
-    if (!response.ok) return null;
-    const data = await response.json();
-    const newToken: string = data.access_token;
-    // Update the stored token in Zustand
-    const store = useAppStore.getState();
-    if (store.currentUser) {
-      store.setCurrentUser({ ...store.currentUser, token: newToken });
+  if (refreshPromise) {
+    return refreshPromise;
+  }
+
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+        method: "POST",
+        credentials: "include", // sends the HttpOnly refresh cookie
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      const newToken: string = data.access_token;
+      // Update the stored token in Zustand
+      const store = useAppStore.getState();
+      if (store.currentUser) {
+        store.setCurrentUser({ ...store.currentUser, token: newToken });
+      }
+      return newToken;
+    } catch {
+      return null;
     }
-    return newToken;
-  } catch {
-    return null;
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
   }
 }
 
@@ -64,16 +79,41 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
     credentials: "include", // ensure cookies are sent for refresh
   });
 
-  // Auto-refresh on 401 and retry once
-  if (response.status === 401 && retry) {
+  const isAuthEndpoint = endpoint.includes("/auth/login") || endpoint.includes("/auth/refresh");
+
+  // Auto-refresh on 401 and retry once (but not for login/refresh itself)
+  if (response.status === 401 && retry && !isAuthEndpoint) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       // Retry with fresh token
       return request<T>(endpoint, options, false);
     } else {
       // Refresh failed — force logout
-      useAppStore.getState().resetStore();
-      if (typeof window !== "undefined") window.location.href = "/";
+      const store = useAppStore.getState();
+      if (store.currentUser) {
+        // Only run logout/redirect logic once for the first failing request
+        store.resetStore();
+        if (typeof window !== "undefined") {
+          try {
+            const raw = localStorage.getItem("doit-services-storage");
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              if (parsed && parsed.state) {
+                parsed.state.currentUser = null;
+                parsed.state.collections = [];
+                parsed.state.deposits = [];
+                parsed.state.attendance = { isCheckedIn: false, startKm: 0 };
+                localStorage.setItem("doit-services-storage", JSON.stringify(parsed));
+              }
+            } else {
+              localStorage.removeItem("doit-services-storage");
+            }
+          } catch (e) {
+            localStorage.removeItem("doit-services-storage");
+          }
+          window.location.href = "/";
+        }
+      }
       throw new Error("Session expired. Please log in again.");
     }
   }
