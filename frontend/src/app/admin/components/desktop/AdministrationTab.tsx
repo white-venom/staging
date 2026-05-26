@@ -46,7 +46,7 @@ export default function AdministrationTab({
   // Staff State
   const [uName, setUName] = useState("");
   const [uPhone, setUPhone] = useState("");
-  const [uRole, setURole] = useState("field_staff");
+  const [uRole, setURole] = useState("staff");
   const [uPassword, setUPassword] = useState("");
 
   // Portal & Bank State
@@ -94,7 +94,7 @@ export default function AdministrationTab({
     try {
       await api.createUser({ name: uName, phone: uPhone, role: uRole, password: uPassword });
       showToastNotification(`User "${uName}" created!`);
-      setUName(""); setUPhone(""); setURole("field_staff"); setUPassword("");
+      setUName(""); setUPhone(""); setURole("staff"); setUPassword("");
       loadUsers();
     } catch (err: any) {
       alert("Error: " + err.message);

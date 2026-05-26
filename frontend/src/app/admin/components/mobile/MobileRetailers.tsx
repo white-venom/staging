@@ -121,16 +121,10 @@ export default function MobileRetailers({
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-850 p-2.5 rounded-2xl">
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Balance</p>
-                  {(() => {
-                    const hasVirtualTx = (deposits || []).some(d => d.retailer_id === retailer.id && d.depositType === "virtual");
-                    const bal = hasVirtualTx ? (retailer.balance || 0) : (retailer.opening_to_take || 0);
-                    return (
-                      <p className={`text-xs font-black mt-0.5 ${bal >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                        ₹{Math.abs(bal).toLocaleString()}
-                      </p>
-                    );
-                  })()}
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Net Bal</p>
+                  <p className={`text-xs font-black mt-0.5 ${(retailer.balance || 0) <= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    ₹{Math.abs(retailer.balance || 0).toLocaleString()}
+                  </p>
                 </div>
               </div>
 

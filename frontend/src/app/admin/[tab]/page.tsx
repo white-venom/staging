@@ -117,6 +117,9 @@ export default function AdminTabPage() {
         return (
           <StaffTab 
             staffComplianceLogs={staffComplianceLogs}
+            userDirectory={userDirectory}
+            showToastNotification={showToastNotification}
+            fetchData={fetchData}
           />
         );
       case "administration":

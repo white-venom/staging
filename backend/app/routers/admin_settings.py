@@ -112,36 +112,10 @@ def process_virtual_transfer(
             if not retailer:
                 raise HTTPException(status_code=404, detail="Destination retailer not found.")
                 
-            # Fetch latest ledger entry to calculate new running balance
-            latest_ledger = db.scalar(
-                select(Ledger)
-                .where(Ledger.retailer_id == payload.retailer_id)
-                .order_by(desc(Ledger.created_at), desc(Ledger.id))
-                .limit(1)
-            )
+            # Add virtual transfer amount to retailer's "To Give" balance
+            retailer.opening_to_give = (retailer.opening_to_give or Decimal("0.00")) + payload.amount
             
-            if latest_ledger:
-                prev_balance = latest_ledger.balance
-            else:
-                prev_balance = Decimal(str(retailer.opening_to_take or 0))
-                
-            new_balance = prev_balance + payload.amount
-            
-            # Log a 'debit' entry in Retailer's Ledger
-            desc_text = f"Virtual Portal Transfer from {portal.portal_name}"
-            if payload.remarks:
-                desc_text += f" ({payload.remarks})"
-                
-            ledger_entry = Ledger(
-                retailer_id=payload.retailer_id,
-                transaction_type="debit",
-                amount=payload.amount,
-                balance=new_balance,
-                description=desc_text
-            )
-            db.add(ledger_entry)
-            
-            # Log in bank deposits to keep audit trail and activate frontend calculation
+            # Log in bank deposits to keep audit trail
             db_deposit = BankDeposit(
                 staff_id=current_user.id,
                 deposit_type="virtual",
@@ -151,20 +125,22 @@ def process_virtual_transfer(
                 payment_mode="online",
                 deposit_date=date.today(),
                 status="verified",
-                balance_snapshot=new_balance
+                balance_snapshot=retailer.opening_to_give
             )
             db.add(db_deposit)
             
-            # Update retailer outstanding balance cache
-            retailer.balance = new_balance
+            # Recalculate ledger balances to reflect the updated opening_to_give
+            from app.logic.ledger import recalculate_balances
+            recalculate_balances(payload.retailer_id, db)
             
             db.commit()
+            db.refresh(retailer)
             return {
                 "message": "Virtual transfer processed successfully",
                 "portal_name": portal.portal_name,
                 "target_name": retailer.retailer_name,
                 "new_portal_balance": float(portal.balance),
-                "new_target_balance": float(retailer.balance)
+                "new_target_balance": float(retailer.opening_to_give)
             }
         else:
             # Transfer to Staff
