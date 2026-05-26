@@ -33,6 +33,7 @@ export default function AdministrationTab({
   const [users, setUsers] = useState<any[]>([]);
   
   // Virtual Transfer State
+  const [selectedPortalGroupId, setSelectedPortalGroupId] = useState("");
   const [vSourcePortalId, setVSourcePortalId] = useState("");
   const [vDestType, setVDestType] = useState<"retailer" | "staff">("retailer");
   const [vDestRetailerId, setVDestRetailerId] = useState("");
@@ -198,6 +199,7 @@ export default function AdministrationTab({
 
       const targetMsg = vDestType === "retailer" ? "Retailer's wallet" : "Staff's virtual wallet";
       showToastNotification(`Virtually loaded ₹${amt.toLocaleString()} to ${targetMsg}!`);
+      setSelectedPortalGroupId("");
       setVSourcePortalId("");
       setVDestRetailerId("");
       setVDestStaffId("");
@@ -333,25 +335,49 @@ export default function AdministrationTab({
             </div>
             
             <form onSubmit={handleVirtualTransfer} className="space-y-4">
-              <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Portal Account</label>
-                <select 
-                  value={vSourcePortalId} 
-                  onChange={e => setVSourcePortalId(e.target.value)} 
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none text-slate-700 dark:text-slate-200"
-                  required
-                >
-                  <option value="">-- Select Source Portal --</option>
-                  {individualPortals.map((p: any) => {
-                    const group = portalDirectory.find((g: any) => g.id === p.group_id);
-                    const groupName = group ? group.name : "Portal";
-                    return (
-                      <option key={p.id} value={p.id}>
-                        {groupName} - {p.portal_name} (Bal: ₹{parseFloat(p.balance).toLocaleString()})
-                      </option>
-                    );
-                  })}
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Portal</label>
+                  <select 
+                    value={selectedPortalGroupId} 
+                    onChange={e => {
+                      setSelectedPortalGroupId(e.target.value);
+                      setVSourcePortalId("");
+                    }} 
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none text-slate-700 dark:text-slate-200"
+                    required
+                  >
+                    <option value="">-- Select Portal --</option>
+                    {portalDirectory
+                      .filter((g: any) => individualPortals.some((p: any) => p.group_id === g.id))
+                      .map((g: any) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))
+                    }
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Bank/Account</label>
+                  <select 
+                    value={vSourcePortalId} 
+                    onChange={e => setVSourcePortalId(e.target.value)} 
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none text-slate-700 dark:text-slate-200 disabled:opacity-50"
+                    required
+                    disabled={!selectedPortalGroupId}
+                  >
+                    <option value="">-- Select Bank Account --</option>
+                    {individualPortals
+                      .filter((p: any) => p.group_id === selectedPortalGroupId)
+                      .map((p: any) => (
+                        <option key={p.id} value={p.id}>
+                          {p.portal_name} (Bal: ₹{parseFloat(p.balance).toLocaleString()})
+                        </option>
+                      ))
+                    }
+                  </select>
+                </div>
               </div>
 
               <div>
