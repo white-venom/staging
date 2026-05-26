@@ -73,7 +73,7 @@ export default function MobilePortals({
               key={group.id}
               className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm"
             >
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center">
                     <Layers className="w-6 h-6" />
@@ -88,6 +88,22 @@ export default function MobilePortals({
                 </button>
               </div>
 
+              {/* Group To Take & To Give raw inputs */}
+              <div className="grid grid-cols-2 gap-3 mb-4 bg-slate-50 dark:bg-slate-800/30 p-3 rounded-2xl border border-slate-100/50 dark:border-slate-800/40">
+                <div>
+                  <span className="text-[9px] font-black text-red-500 uppercase tracking-tighter block mb-0.5">To Take</span>
+                  <span className="text-sm font-black text-red-650 dark:text-red-400">
+                    ₹{(group.opening_to_take || 0).toLocaleString()}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tighter block mb-0.5">To Give</span>
+                  <span className="text-sm font-black text-emerald-650 dark:text-emerald-500">
+                    ₹{(group.opening_to_give || 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
               {/* Sub-portals List */}
               <div className="space-y-3">
                 {(group.portals || []).slice(0, 3).map((portal: any) => (
@@ -97,14 +113,19 @@ export default function MobilePortals({
                         <CreditCard className="w-4 h-4" />
                       </div>
                       <div>
-                        <p className="text-xs font-black text-slate-800 dark:text-white">{portal.name}</p>
+                        <p className="text-xs font-black text-slate-800 dark:text-white">{portal.portal_name}</p>
                         <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">ID: {portal.id.slice(0,8)}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`text-xs font-black ${portal.balance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                        ₹{(portal.balance || 0).toLocaleString()}
-                      </p>
+                    <div className="text-right flex flex-col gap-0.5">
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <span className="text-[8px] font-bold text-slate-400 uppercase">Take:</span>
+                        <span className="text-xs font-black text-red-600 dark:text-red-400">₹{(portal.opening_to_take || 0).toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 justify-end">
+                        <span className="text-[8px] font-bold text-slate-400 uppercase">Give:</span>
+                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-500">₹{(portal.opening_to_give || 0).toLocaleString()}</span>
+                      </div>
                     </div>
                   </div>
                 ))}

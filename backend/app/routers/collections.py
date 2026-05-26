@@ -98,14 +98,14 @@ def submit_collection(
             latest_ledger = db.scalar(
                 select(Ledger)
                 .where(Ledger.retailer_id == payload.retailer_id)
-                .order_by(desc(Ledger.created_at))
+                .order_by(desc(Ledger.created_at), desc(Ledger.id))
                 .limit(1)
             )
             
             if latest_ledger:
                 prev_balance = latest_ledger.balance
             else:
-                prev_balance = Decimal(str(retailer.opening_to_take or 0)) - Decimal(str(retailer.opening_to_give or 0))
+                prev_balance = Decimal(str(retailer.opening_to_take or 0))
             
             new_balance = prev_balance - payload.total_amount
             
@@ -243,7 +243,7 @@ def verify_collection(
     latest_ledger = db.scalar(
         select(Ledger)
         .where(Ledger.retailer_id == collection.retailer_id)
-        .order_by(desc(Ledger.created_at))
+        .order_by(desc(Ledger.created_at), desc(Ledger.id))
         .limit(1)
     )
     
@@ -251,7 +251,7 @@ def verify_collection(
         prev_balance = latest_ledger.balance
     else:
         # Respect opening balance
-        prev_balance = Decimal(str(collection.retailer.opening_to_take or 0)) - Decimal(str(collection.retailer.opening_to_give or 0))
+        prev_balance = Decimal(str(collection.retailer.opening_to_take or 0))
     
     # Collections reduce what they owe DO IT SERVICES (credit)
     new_balance = prev_balance - collection.total_amount
@@ -308,6 +308,14 @@ def delete_collection(
     from sqlalchemy import delete
     db.execute(delete(Ledger).where(Ledger.collection_id == collection_id))
     
+    # Restore portal balance if the collection was against a portal
+    if collection.portal_id:
+        portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id))
+        if portal:
+            portal.balance += Decimal(str(collection.total_amount))
+            if portal.group:
+                portal.group.balance += Decimal(str(collection.total_amount))
+                
     db.delete(collection)
     db.commit()
     
@@ -328,9 +336,21 @@ def update_collection(
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
     
+    # Calculate amount difference for portal update
+    old_amount = collection.total_amount
+    new_amount = payload.total_amount
+    diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
+
     # Update main fields safely
     for field, value in payload.model_dump(exclude_unset=True, exclude={"denominations"}).items():
         setattr(collection, field, value)
+        
+    if collection.portal_id and diff != 0:
+        portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id))
+        if portal:
+            portal.balance -= diff
+            if portal.group:
+                portal.group.balance -= diff
     
     # Update denominations
     if collection.denominations:

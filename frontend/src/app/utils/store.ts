@@ -46,7 +46,7 @@ export interface DepositItem {
   portal_id?: string;
   retailer_id?: string;
   recipient_staff_id?: string;
-  depositType: "portal" | "retailer" | "staff";
+  depositType: "portal" | "retailer" | "staff" | "virtual";
   targetName: string; // Portal bank, retailer name, or staff recipient name
   amount: number;
   paymentMode: "cash" | "online";

@@ -16,10 +16,13 @@ def seed():
                 id=uuid.uuid4(),
                 name="Sujeet Staff",
                 phone=staff_phone,
-                hashed_password=get_password_hash("password123"),
+                password_hash=get_password_hash("pass123"),
                 role="staff"
             )
             db.add(staff)
+        else:
+            print(f"Resetting password for existing staff user: {staff_phone}")
+            staff.password_hash = get_password_hash("pass123")
         
         # Check if admin exists
         admin_phone = "7900671145"
@@ -30,16 +33,19 @@ def seed():
                 id=uuid.uuid4(),
                 name="Sujeet Admin",
                 phone=admin_phone,
-                hashed_password=get_password_hash("password123"),
+                password_hash=get_password_hash("pass123"),
                 role="admin"
             )
             db.add(admin)
+        else:
+            print(f"Resetting password for existing admin user: {admin_phone}")
+            admin.password_hash = get_password_hash("pass123")
 
         # Seed some retailers
         retailers = [
-            {"name": "Aggarwal Kirana Store", "phone": "9876543210", "area": "Sector 15, Rohini"},
-            {"name": "Karan Provision & General", "phone": "9812345678", "area": "Dwarka Sector 7"},
-            {"name": "Sharma Supermarket", "phone": "9555667788", "area": "Pitampura"}
+            {"name": "Aggarwal Kirana Store", "phone": "9876543210", "address": "Sector 15, Rohini"},
+            {"name": "Karan Provision & General", "phone": "9812345678", "address": "Dwarka Sector 7"},
+            {"name": "Sharma Supermarket", "phone": "9555667788", "address": "Pitampura"}
         ]
         
         for r in retailers:
@@ -50,7 +56,7 @@ def seed():
                     id=uuid.uuid4(),
                     retailer_name=r["name"],
                     phone=r["phone"],
-                    area=r["area"],
+                    address=r["address"],
                     balance=0.0
                 )
                 db.add(new_r)

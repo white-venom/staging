@@ -174,18 +174,10 @@ export default function StaffDashboard() {
     }
   });
 
-  note500 = Math.max(0, note500);
-  note200 = Math.max(0, note200);
-  note100 = Math.max(0, note100);
-  note50 = Math.max(0, note50);
-  note20 = Math.max(0, note20);
-  note10 = Math.max(0, note10);
-  coins = Math.max(0, coins);
-
   const totalCollected = collections.reduce((s, c) => s + c.totalAmount, 0);
-  const totalDeposited = deposits.reduce((s, d) => s + d.amount, 0);
+  const totalDeposited = deposits.filter(d => d.depositType !== "virtual").reduce((s, d) => s + d.amount, 0);
   
-  const totalCashNotes = (
+  const totalCashNotes = Math.max(0, (
     note500 * 500 +
     note200 * 200 +
     note100 * 100 +
@@ -193,10 +185,10 @@ export default function StaffDashboard() {
     note20 * 20 +
     note10 * 10 +
     coins
-  );
+  ));
 
   const totalOnline = collections.reduce((s, c) => s + (c.denominations.online_amount || 0), 0) - 
-                      deposits.reduce((s, d) => s + (d.denominations?.online_amount || 0), 0);
+                      deposits.filter(d => d.depositType !== "virtual").reduce((s, d) => s + (d.denominations?.online_amount || 0), 0);
   
   const netPortfolio = totalCashNotes + totalOnline;
  

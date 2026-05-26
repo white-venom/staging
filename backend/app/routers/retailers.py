@@ -21,6 +21,9 @@ def create_retailer(
     current_user=Depends(require_admin)
 ):
     """Admin-only endpoint to register retailers."""
+    if retailer_data.opening_to_take < 0 or retailer_data.opening_to_give < 0:
+        raise HTTPException(status_code=400, detail="Opening balances cannot be negative")
+
     # Verify staff id exists if provided
     if retailer_data.assigned_staff_id:
         staff = db.scalar(select(User).where(User.id == retailer_data.assigned_staff_id))
@@ -39,11 +42,9 @@ def create_retailer(
     db.add(db_retailer)
     db.commit()
 
-    # Recalculate will automatically create the opening ledger entry and update/commit retailer.balance!
     from app.logic.ledger import recalculate_balances
     recalculate_balances(db_retailer.id, db)
     db.commit()
-
     db.refresh(db_retailer)
     return db_retailer
 
@@ -54,19 +55,7 @@ def list_retailers(
     current_user=Depends(require_any_user)
 ):
     """Get active retailers. All users can see all retailers for now."""
-    retailers = db.scalars(select(Retailer).order_by(Retailer.retailer_name)).all()
-    
-    # Manually calculate balance for each retailer from the latest ledger entry
-    for ret in retailers:
-        latest_ledger = db.scalar(
-            select(Ledger)
-            .where(Ledger.retailer_id == ret.id)
-            .order_by(desc(Ledger.created_at))
-            .limit(1)
-        )
-        ret.balance = float(latest_ledger.balance) if latest_ledger else 0.00
-        
-    return retailers
+    return db.scalars(select(Retailer).order_by(Retailer.retailer_name)).all()
 
 
 @router.put("/{retailer_id}", response_model=RetailerResponse)
@@ -81,16 +70,28 @@ def update_retailer(
     if not retailer:
         raise HTTPException(status_code=404, detail="Retailer not found")
 
-    # Update fields
+    if retailer_data.opening_to_give is not None and retailer_data.opening_to_give < 0:
+        raise HTTPException(status_code=400, detail="To Give cannot be negative")
+    if retailer_data.opening_to_take is not None and retailer_data.opening_to_take < 0:
+        raise HTTPException(status_code=400, detail="To Take cannot be negative")
+
+    # Update fields safely
     for field, value in retailer_data.model_dump(exclude_unset=True).items():
         if field == "assigned_staff_id" and value:
             staff = db.scalar(select(User).where(User.id == value))
             if not staff:
                 raise HTTPException(status_code=400, detail="Assigned staff member not found")
-        if field in ["opening_to_give", "opening_to_take"] and value is not None:
-            from decimal import Decimal
-            value = Decimal(str(value))
-        setattr(retailer, field, value)
+        if field not in ["opening_to_give", "opening_to_take"]:
+            setattr(retailer, field, value)
+
+    from decimal import Decimal
+    if retailer_data.opening_to_give is not None:
+        retailer.opening_to_give = (retailer.opening_to_give or Decimal("0.00")) + Decimal(str(retailer_data.opening_to_give))
+    if retailer_data.opening_to_take is not None:
+        delta_take = Decimal(str(retailer_data.opening_to_take))
+        retailer.opening_to_take = (retailer.opening_to_take or Decimal("0.00")) + delta_take
+        retailer.balance = (retailer.balance or Decimal("0.00")) + delta_take
+
 
     db.commit()
     

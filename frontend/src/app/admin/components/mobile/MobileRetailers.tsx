@@ -11,6 +11,7 @@ import {
   MoreVertical,
   Filter
 } from "lucide-react";
+import { useAdmin } from "../../context/AdminContext";
 
 interface MobileRetailersProps {
   retailerDirectory: any[];
@@ -23,6 +24,7 @@ export default function MobileRetailers({
   retailerDirectory,
   setShowRetailerDrawer
 }: MobileRetailersProps) {
+  const { collections, deposits } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filtered = retailerDirectory.filter(r => 
@@ -86,26 +88,49 @@ export default function MobileRetailers({
                   <div>
                     <h3 className="font-black text-slate-900 dark:text-white truncate max-w-[150px]">{retailer.name}</h3>
                     <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
-                      <MapPin className="w-3 h-3" /> {retailer.location || 'Unknown'}
+                      <MapPin className="w-3 h-3" /> {retailer.area || 'Unknown'}
                     </div>
                   </div>
                 </div>
-                <button className="p-2 text-slate-300">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  {retailer.phone && (
+                    <a 
+                      href={`tel:${retailer.phone}`}
+                      className="p-2.5 bg-blue-50 text-blue-600 dark:bg-slate-800 dark:text-blue-400 rounded-xl active:scale-95 transition-transform"
+                    >
+                      <Phone className="w-4 h-4" />
+                    </a>
+                  )}
+                  <button className="p-2 text-slate-350">
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Current Balance</p>
-                  <p className={`text-sm font-black mt-0.5 ${retailer.balance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    ₹{Math.abs(retailer.balance || 0).toLocaleString()}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                <div className="bg-slate-50 dark:bg-slate-850 p-2.5 rounded-2xl">
+                  <p className="text-[8px] font-black text-red-500 uppercase tracking-tighter">To Take</p>
+                  <p className="text-xs font-black mt-0.5 text-red-650 dark:text-red-400">
+                    ₹{(retailer.opening_to_take || 0).toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl flex items-center justify-center">
-                   <button className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase">
-                     <Phone className="w-3 h-3" /> Call Now
-                   </button>
+                <div className="bg-slate-50 dark:bg-slate-850 p-2.5 rounded-2xl">
+                  <p className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">To Give</p>
+                  <p className="text-xs font-black mt-0.5 text-emerald-650 dark:text-emerald-500">
+                    ₹{(retailer.opening_to_give || 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-850 p-2.5 rounded-2xl">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Balance</p>
+                  {(() => {
+                    const hasVirtualTx = (deposits || []).some(d => d.retailer_id === retailer.id && d.depositType === "virtual");
+                    const bal = hasVirtualTx ? (retailer.balance || 0) : (retailer.opening_to_take || 0);
+                    return (
+                      <p className={`text-xs font-black mt-0.5 ${bal >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        ₹{Math.abs(bal).toLocaleString()}
+                      </p>
+                    );
+                  })()}
                 </div>
               </div>
 

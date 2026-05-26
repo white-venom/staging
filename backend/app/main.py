@@ -85,7 +85,7 @@ app.add_middleware(
         "https://do-it-services.vercel.app",
         "https://do-it-services-sujeet-kansals-projects.vercel.app",
     ],
-    allow_origin_regex=r"https://.*\.vercel\.app", # Dynamically allow all Vercel previews
+    allow_origin_regex=r"https?://.*", # Allows any HTTP/HTTPS origin (crucial for local Wi-Fi/IP testing)
     allow_credentials=True,      # Crucial to allow HttpOnly cookies transmission
     allow_methods=["*"],
     allow_headers=["*"],

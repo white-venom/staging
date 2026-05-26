@@ -3,9 +3,8 @@ from sqlalchemy import create_engine, select, delete, text
 from sqlalchemy.orm import Session
 from app.database.models import Base, PortalGroup, Portal
 
-# Database connection URL - CORRECTED NAME FROM .env
-SQLALCHEMY_DATABASE_URL = "sqlite:///./doit_services.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+# Database connection engine imported from settings config
+from app.database.db import engine
 
 def setup_groups():
     # Ensure tables exist
@@ -20,29 +19,15 @@ def setup_groups():
         except Exception as e:
             print(f"Notice: {e}")
         
-        # Full list of Portals from the image/chat
+        # Exactly 2 Portals
         portal_names = [
             "PayNearby",
-            "RNFI",
-            "Pay 1",
-            "Paygrt",
-            "Reli Pay",
-            "Rinova Pay",
-            "Sekure Pay",
-            "Soul Pay",
-            "Super PayNearby",
-            "Super Rinova Pay",
-            "Super Soul Pay",
-            "Vidcom"
+            "RNFI"
         ]
         
-        # Common banks listed by user
+        # Single bank account per portal
         common_banks = [
-            "State Bank of India",
-            "Bank of India",
-            "Uco Bank",
-            "Punjab National Bank",
-            "Punjab and Sindh bank"
+            "State Bank of India"
         ]
         
         for name in portal_names:
@@ -53,7 +38,7 @@ def setup_groups():
             session.add(group)
             session.flush() # get the id
             
-            # Add the 5 bank accounts to each portal group
+            # Add the 1 bank account to each portal group
             for bank in common_banks:
                 account = Portal(
                     id=uuid.uuid4(),

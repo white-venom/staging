@@ -9,12 +9,14 @@ from app.database.db import get_db
 from app.database.models import User
 from app.core.security import decode_token
 
-# Define standard OAuth2 security schema parsing header "Authorization: Bearer <token>"
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+# Define standard HTTP Bearer security schema parsing header "Authorization: Bearer <token>"
+security = HTTPBearer(auto_error=False)
 
 
 def get_current_user(
-    token: Optional[str] = Depends(oauth2_scheme), 
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security), 
     db: Session = Depends(get_db)
 ) -> User:
     """FastAPI Dependency to authenticate users using JWT Bearer headers."""
@@ -24,10 +26,14 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    if not token:
+    print(f"DEBUG: [get_current_user] credentials={credentials}", flush=True)
+    if not credentials:
         raise credentials_exception
 
+    token = credentials.credentials
+    print(f"DEBUG: [get_current_user] token={token}", flush=True)
     payload = decode_token(token, expected_type="access")
+    print(f"DEBUG: [get_current_user] payload={payload}", flush=True)
     if payload is None:
         raise credentials_exception
         

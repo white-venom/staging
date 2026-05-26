@@ -29,8 +29,11 @@ def create_portal_group(
     current_user=Depends(require_admin)
 ):
     """Admin-only endpoint to register a Portal Group (e.g., RevaPay)."""
-    # Net Balance = To Take (Debit) - To Give (Credit)
-    initial_balance = group_data.opening_to_take - group_data.opening_to_give
+    if group_data.opening_to_take < 0 or group_data.opening_to_give < 0:
+        raise HTTPException(status_code=400, detail="Opening balances cannot be negative")
+        
+    # In the additive model, we do not subtract to_give from to_take for the running balance.
+    initial_balance = Decimal(str(group_data.opening_to_take))
     
     db_group = PortalGroup(
         name=group_data.name,
@@ -66,22 +69,20 @@ def update_portal_group(
     if not db_group:
         raise HTTPException(status_code=404, detail="Portal Group not found")
     
+    if group_data.opening_to_give is not None and group_data.opening_to_give < 0:
+        raise HTTPException(status_code=400, detail="To Give cannot be negative")
+    if group_data.opening_to_take is not None and group_data.opening_to_take < 0:
+        raise HTTPException(status_code=400, detail="To Take cannot be negative")
+
     from decimal import Decimal
-    
-    # Preserve transaction history by calculating the delta of opening balance changes
-    old_opening_net = Decimal(str(db_group.opening_to_take or 0)) - Decimal(str(db_group.opening_to_give or 0))
     
     db_group.name = group_data.name
     if group_data.opening_to_give is not None:
-        db_group.opening_to_give = Decimal(str(group_data.opening_to_give))
+        db_group.opening_to_give = (db_group.opening_to_give or Decimal("0.00")) + Decimal(str(group_data.opening_to_give))
     if group_data.opening_to_take is not None:
-        db_group.opening_to_take = Decimal(str(group_data.opening_to_take))
-        
-    new_opening_net = Decimal(str(db_group.opening_to_take or 0)) - Decimal(str(db_group.opening_to_give or 0))
-    delta = new_opening_net - old_opening_net
-    
-    # Apply the change in opening balance to the current running balance
-    db_group.balance += delta
+        delta_take = Decimal(str(group_data.opening_to_take))
+        db_group.opening_to_take = (db_group.opening_to_take or Decimal("0.00")) + delta_take
+        db_group.balance = (db_group.balance or Decimal("0.00")) + delta_take
     
     db.commit()
     db.refresh(db_group)
@@ -121,8 +122,11 @@ def create_portal(
     current_user=Depends(require_admin)
 ):
     """Admin-only endpoint to register portal/store targets (Blinkit, Muthoot, etc.)."""
+    if portal_data.opening_to_take < 0 or portal_data.opening_to_give < 0:
+        raise HTTPException(status_code=400, detail="Opening balances cannot be negative")
+        
     # Create portal
-    initial_balance = Decimal(str(portal_data.opening_to_take)) - Decimal(str(portal_data.opening_to_give))
+    initial_balance = Decimal(str(portal_data.opening_to_take))
     db_portal = Portal(
         group_id=portal_data.group_id,
         portal_name=portal_data.portal_name,
@@ -178,22 +182,25 @@ def update_portal(
     if not db_portal:
         raise HTTPException(status_code=404, detail="Portal not found")
         
-    # Preserve original opening balances
-    from decimal import Decimal
-    old_net = Decimal(str(db_portal.opening_to_take or 0)) - Decimal(str(db_portal.opening_to_give or 0))
+    if portal_data.opening_to_give is not None and portal_data.opening_to_give < 0:
+        raise HTTPException(status_code=400, detail="To Give cannot be negative")
+    if portal_data.opening_to_take is not None and portal_data.opening_to_take < 0:
+        raise HTTPException(status_code=400, detail="To Take cannot be negative")
 
     # Update fields safely
     for field, value in portal_data.model_dump(exclude_unset=True).items():
-        setattr(db_portal, field, value)
+        if field not in ["opening_to_give", "opening_to_take"]:
+            setattr(db_portal, field, value)
     
-    # Calculate delta and apply to balances
-    new_net = Decimal(str(db_portal.opening_to_take or 0)) - Decimal(str(db_portal.opening_to_give or 0))
-    delta = new_net - old_net
-    
-    if delta != 0:
-        db_portal.balance += delta
+    from decimal import Decimal
+    if portal_data.opening_to_give is not None:
+        db_portal.opening_to_give = (db_portal.opening_to_give or Decimal("0.00")) + Decimal(str(portal_data.opening_to_give))
+    if portal_data.opening_to_take is not None:
+        delta_take = Decimal(str(portal_data.opening_to_take))
+        db_portal.opening_to_take = (db_portal.opening_to_take or Decimal("0.00")) + delta_take
+        db_portal.balance = (db_portal.balance or Decimal("0.00")) + delta_take
         if db_portal.group:
-            db_portal.group.balance += delta
+            db_portal.group.balance = (db_portal.group.balance or Decimal("0.00")) + delta_take
             
     db.commit()
     db.refresh(db_portal)

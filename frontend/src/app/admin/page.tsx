@@ -22,12 +22,12 @@ export default function AdminPage() {
   const todayCount = (collections || []).filter(c => c.date?.startsWith(todayStr)).length;
 
   const totalToTake = 
-    (retailerDirectory || []).reduce((s, r) => s + (r.balance > 0 ? r.balance : 0), 0) +
-    (portalDirectory || []).reduce((s, p) => s + (p.balance > 0 ? p.balance : 0), 0);
+    (retailerDirectory || []).reduce((s, r) => s + (r.opening_to_take || 0), 0) +
+    (portalDirectory || []).reduce((s, p) => s + (p.opening_to_take || 0), 0);
 
   const totalToGive = 
-    (retailerDirectory || []).reduce((s, r) => s + (r.balance < 0 ? Math.abs(r.balance) : 0), 0) +
-    (portalDirectory || []).reduce((s, p) => s + (p.balance < 0 ? Math.abs(p.balance) : 0), 0);
+    (retailerDirectory || []).reduce((s, r) => s + (r.opening_to_give || 0), 0) +
+    (portalDirectory || []).reduce((s, p) => s + (p.opening_to_give || 0), 0);
 
   if (isMobile) {
     return (

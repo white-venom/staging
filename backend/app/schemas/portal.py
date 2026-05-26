@@ -18,17 +18,6 @@ class PortalGroupUpdate(PortalGroupBase):
     opening_to_take: Optional[float] = None
 
 
-class PortalGroupResponse(PortalGroupBase):
-    id: uuid.UUID
-    created_at: datetime
-    opening_to_give: float
-    opening_to_take: float
-    balance: float
-
-    class Config:
-        from_attributes = True
-
-
 class PortalBase(BaseModel):
     portal_name: str = Field(..., max_length=100, examples=["Main Account"])
     bank_name: Optional[str] = Field(None, max_length=100, examples=["HDFC Bank"])
@@ -55,6 +44,18 @@ class PortalResponse(PortalBase):
     opening_to_give: float
     opening_to_take: float
     balance: float
+
+    class Config:
+        from_attributes = True
+
+
+class PortalGroupResponse(PortalGroupBase):
+    id: uuid.UUID
+    created_at: datetime
+    opening_to_give: float
+    opening_to_take: float
+    balance: float
+    portals: List[PortalResponse] = []
 
     class Config:
         from_attributes = True

@@ -20,7 +20,7 @@ export default function RetailersTab({
   fetchData
 }: RetailersTabProps) {
   const router = useRouter();
-  const { setLedgerSearchTerm } = useAdmin();
+  const { collections, deposits, setLedgerSearchTerm } = useAdmin();
   const [retailerSearch, setRetailerSearch] = useState("");
   const [selectedRetailer, setSelectedRetailer] = useState<any | null>(null);
   const [stores, setStores] = useState<any[]>([]);
@@ -36,8 +36,8 @@ export default function RetailersTab({
   const [editRetPhone, setEditRetPhone] = useState("");
   const [editRetArea, setEditRetArea] = useState("");
   const [editRetEmail, setEditRetEmail] = useState("");
-  const [editRetToGive, setEditRetToGive] = useState(0);
-  const [editRetToTake, setEditRetToTake] = useState(0);
+  const [editRetToGive, setEditRetToGive] = useState<string>("");
+  const [editRetToTake, setEditRetToTake] = useState<string>("");
 
   // Store Edit state
   const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
@@ -66,22 +66,28 @@ export default function RetailersTab({
     setEditRetPhone(retailer.phone);
     setEditRetArea(retailer.area);
     setEditRetEmail(retailer.email || "");
-    setEditRetToGive(retailer.opening_to_give || 0);
-    setEditRetToTake(retailer.opening_to_take || 0);
+    setEditRetToGive("");
+    setEditRetToTake("");
     setIsEditRetailerModalOpen(true);
   };
 
   const handleSaveRetailerEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRetailer) return;
+    const addTake = parseFloat(editRetToTake || "0");
+    const addGive = parseFloat(editRetToGive || "0");
+    if (addTake < 0 || addGive < 0) {
+      alert("Negative values are not allowed.");
+      return;
+    }
     try {
       await api.updateRetailer(editingRetailer.id, {
         retailer_name: editRetName,
         phone: editRetPhone,
         address: editRetArea,
         email: editRetEmail,
-        opening_to_give: editRetToGive,
-        opening_to_take: editRetToTake
+        opening_to_give: addGive,
+        opening_to_take: addTake
       });
       showToastNotification(`Retailer "${editRetName}" updated.`);
       setIsEditRetailerModalOpen(false);
@@ -227,13 +233,13 @@ export default function RetailersTab({
                   <div>
                     <span className="text-[8px] font-black text-red-500 uppercase tracking-wide block mb-0.5">To Take</span>
                     <span className="text-xs font-black text-red-600 dark:text-red-400">
-                      ₹{(retailer.balance > 0 ? retailer.balance : 0).toLocaleString()}
+                      ₹{(retailer.opening_to_take || 0).toLocaleString()}
                     </span>
                   </div>
                   <div>
                     <span className="text-[8px] font-black text-emerald-500 uppercase tracking-wide block mb-0.5">To Give</span>
                     <span className="text-xs font-black text-emerald-600 dark:text-emerald-500">
-                      ₹{(retailer.balance < 0 ? Math.abs(retailer.balance) : 0).toLocaleString()}
+                      ₹{(retailer.opening_to_give || 0).toLocaleString()}
                     </span>
                   </div>
                 </div>
@@ -285,23 +291,45 @@ export default function RetailersTab({
                 <input type="tel" value={editRetPhone} onChange={(e) => setEditRetPhone(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
                 <input type="text" value={editRetArea} onChange={(e) => setEditRetArea(e.target.value)} placeholder="Area / Route" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
                 <input type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
+                <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none">
+                  <div>
+                    <span className="text-slate-400 block mb-0.5">Current To Take</span>
+                    <span className="font-black text-red-650 dark:text-red-400">₹{(editingRetailer.opening_to_take || 0).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block mb-0.5">Current To Give</span>
+                    <span className="font-black text-emerald-650 dark:text-emerald-500">₹{(editingRetailer.opening_to_give || 0).toLocaleString()}</span>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                    <div className="space-y-1">
-                     <label className="text-[8px] font-black text-red-500 uppercase">To Take</label>
+                     <label className="text-[8px] font-black text-red-500 uppercase">Add to To Take</label>
                      <input 
                        type="number" 
-                       value={editRetToTake || ""} 
-                       onChange={(e) => setEditRetToTake(e.target.value ? Number(e.target.value) : 0)}
-                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                       min="0"
+                       placeholder="Amount to Add"
+                       value={editRetToTake} 
+                       onChange={(e) => setEditRetToTake(e.target.value)}
+                       onFocus={e => {
+                         if (Number(e.target.value) === 0) setEditRetToTake("");
+                         e.target.select();
+                       }}
+                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none" 
                      />
                    </div>
                    <div className="space-y-1">
-                     <label className="text-[8px] font-black text-emerald-500 uppercase">To Give</label>
+                     <label className="text-[8px] font-black text-emerald-500 uppercase">Add to To Give</label>
                      <input 
                        type="number" 
-                       value={editRetToGive || ""} 
-                       onChange={(e) => setEditRetToGive(e.target.value ? Number(e.target.value) : 0)}
-                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                       min="0"
+                       placeholder="Amount to Add"
+                       value={editRetToGive} 
+                       onChange={(e) => setEditRetToGive(e.target.value)}
+                       onFocus={e => {
+                         if (Number(e.target.value) === 0) setEditRetToGive("");
+                         e.target.select();
+                       }}
+                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none" 
                      />
                    </div>
                 </div>

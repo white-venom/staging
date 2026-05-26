@@ -32,8 +32,13 @@ class DepositCreate(BaseModel):
         elif dt == "staff":
             if not self.recipient_staff_id and not self.to_office:
                 raise ValueError("Either recipient_staff_id or to_office must be set for a staff handover.")
+        elif dt == "virtual":
+            if not self.portal_id:
+                raise ValueError("portal_id is required for a virtual transfer.")
+            if not self.retailer_id:
+                raise ValueError("retailer_id is required for a virtual transfer.")
         else:
-            raise ValueError("deposit_type must be either 'portal', 'retailer', or 'staff'.")
+            raise ValueError("deposit_type must be one of 'portal', 'retailer', 'staff', or 'virtual'.")
         return self
 
 

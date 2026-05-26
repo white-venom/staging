@@ -24,6 +24,8 @@ def submit_deposit(
     """Staff registers a deposit: Option A (Portal bank), Option B (Retailer payout), or Option C (Staff handover)."""
     # Validation checks
     dt = payload.deposit_type.lower().strip()
+    portal = None
+    retailer = None
     if dt == "portal":
         portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
         if not portal:
@@ -37,6 +39,13 @@ def submit_deposit(
             recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id))
             if not recipient:
                 raise HTTPException(status_code=404, detail="Recipient staff member not found.")
+    elif dt == "virtual":
+        portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
+        if not portal:
+            raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
+        retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
+        if not retailer:
+            raise HTTPException(status_code=404, detail="Target retailer not found.")
 
     try:
         db_deposit = BankDeposit(
@@ -76,14 +85,14 @@ def submit_deposit(
             latest_ledger = db.scalar(
                 select(Ledger)
                 .where(Ledger.retailer_id == payload.retailer_id)
-                .order_by(desc(Ledger.created_at))
+                .order_by(desc(Ledger.created_at), desc(Ledger.id))
                 .limit(1)
             )
             
             if latest_ledger:
                 prev_balance = latest_ledger.balance
             else:
-                prev_balance = Decimal(str(retailer.opening_to_take or 0)) - Decimal(str(retailer.opening_to_give or 0))
+                prev_balance = Decimal(str(retailer.opening_to_take or 0))
             
             # Deposits/Payouts to retailer (Debit) increase what they owe DO IT SERVICES
             new_balance = prev_balance + payload.amount
@@ -115,6 +124,56 @@ def submit_deposit(
                 # Also update group balance
                 if portal.group:
                     portal.group.balance += Decimal(str(payload.amount))
+        elif dt == "virtual":
+            # Validate and decrement staff virtual balance limit
+            if current_user.role != "admin":
+                if current_user.virtual_balance < payload.amount:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Sufficient virtual limit not available. Current limit: ₹{float(current_user.virtual_balance):,.2f}"
+                    )
+                current_user.virtual_balance -= payload.amount
+
+            # Step A: Decrement Portal Balance and To Give
+            portal.balance -= payload.amount
+            portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - payload.amount
+            if portal.group:
+                portal.group.balance -= payload.amount
+                portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - payload.amount
+                
+            # Step B: Fetch latest ledger entry to calculate new running balance
+            latest_ledger = db.scalar(
+                select(Ledger)
+                .where(Ledger.retailer_id == payload.retailer_id)
+                .order_by(desc(Ledger.created_at), desc(Ledger.id))
+                .limit(1)
+            )
+            
+            if latest_ledger:
+                prev_balance = latest_ledger.balance
+            else:
+                prev_balance = Decimal(str(retailer.opening_to_take or 0))
+                
+            new_balance = prev_balance + payload.amount
+            
+            # Step C: Log a 'debit' entry in Retailer's Ledger
+            desc_text = f"Virtual Portal Transfer from {portal.portal_name}"
+            if payload.reference_no:
+                desc_text += f" (Ref: {payload.reference_no})"
+                
+            ledger_entry = Ledger(
+                retailer_id=payload.retailer_id,
+                transaction_type="debit",
+                amount=payload.amount,
+                balance=new_balance,
+                description=desc_text,
+                deposit_id=db_deposit.id
+            )
+            db.add(ledger_entry)
+            
+            # Step D: Update retailer outstanding balance cache
+            retailer.balance = new_balance
+            db_deposit.balance_snapshot = new_balance
 
         db.commit()
         db.refresh(db_deposit)
@@ -141,6 +200,15 @@ def submit_deposit(
                     db_deposit.target_name = recipient.name if recipient else "Field Staff"
                 else:
                     db_deposit.target_name = "Field Staff"
+        elif dt == "virtual":
+            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
+            retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
+            p_name = portal.portal_name if portal else "Portal"
+            r_name = retailer.retailer_name if retailer else "Retailer"
+            db_deposit.target_name = f"Virtual: {p_name} ➔ {r_name}"
+            if portal and portal.group:
+                db_deposit.portal_group_name = portal.group.name
+                db_deposit.portal_group_id = portal.group.id
         
         db_deposit.staff_name = current_user.name
         
@@ -193,6 +261,13 @@ def list_deposits(
                 dep.target_name = "Main Office Cashier"
             else:
                 dep.target_name = dep.recipient_staff.name if dep.recipient_staff else "Field Staff"
+        elif dep.deposit_type == "virtual":
+            if dep.retailer:
+                dep.target_name = f"Retailer Limit: {dep.retailer.retailer_name}"
+            elif dep.recipient_staff:
+                dep.target_name = f"Staff Limit: {dep.recipient_staff.name}"
+            else:
+                dep.target_name = "Virtual Transfer"
         else:
             dep.target_name = "Direct Deposit"
             
@@ -237,13 +312,28 @@ def delete_deposit(
     # Delete associated ledger entries
     db.execute(delete(Ledger).where(Ledger.deposit_id == deposit_id))
     
-    # Handle Portal balance reversal if it was a portal deposit
-    if deposit.deposit_type == "portal" and deposit.portal_id:
+    # Handle Portal and Staff balance reversals
+    if deposit.portal_id:
         portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id))
         if portal:
-            portal.balance -= Decimal(str(deposit.amount))
-            if portal.group:
-                portal.group.balance -= Decimal(str(deposit.amount))
+            if deposit.deposit_type == "portal":
+                # Deleting portal deposit: reduce portal balance since cash was never deposited
+                portal.balance -= Decimal(str(deposit.amount))
+                if portal.group:
+                    portal.group.balance -= Decimal(str(deposit.amount))
+            elif deposit.deposit_type == "virtual":
+                # Deleting virtual transfer: restore portal balance since virtual funds are returned
+                portal.balance += Decimal(str(deposit.amount))
+                portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
+                if portal.group:
+                    portal.group.balance += Decimal(str(deposit.amount))
+                    portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
+
+    # Reverse staff virtual limit if virtual limit transfer is deleted
+    if deposit.deposit_type == "virtual" and deposit.recipient_staff_id:
+        staff = db.scalar(select(User).where(User.id == deposit.recipient_staff_id))
+        if staff:
+            staff.virtual_balance -= Decimal(str(deposit.amount))
     
     db.delete(deposit)
     db.commit()

@@ -29,12 +29,14 @@ export default function AdministrationTab({
   const adminContext = useAdmin();
   const fetchData = propsFetchData || adminContext.fetchData;
   const showToastNotification = propsShowToast || adminContext.showToastNotification;
-  const { retailerDirectory, portalDirectory } = adminContext;
+  const { retailerDirectory, portalDirectory, collections, deposits } = adminContext;
   const [users, setUsers] = useState<any[]>([]);
   
   // Virtual Transfer State
   const [vSourcePortalId, setVSourcePortalId] = useState("");
+  const [vDestType, setVDestType] = useState<"retailer" | "staff">("retailer");
   const [vDestRetailerId, setVDestRetailerId] = useState("");
+  const [vDestStaffId, setVDestStaffId] = useState("");
   const [vAmount, setVAmount] = useState("");
   const [vRemarks, setVRemarks] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
@@ -48,8 +50,8 @@ export default function AdministrationTab({
 
   // Portal & Bank State
   const [pName, setPName] = useState("");
-  const [pToTake, setPToTake] = useState(0);
-  const [pToGive, setPToGive] = useState(0);
+  const [pToTake, setPToTake] = useState<string>("");
+  const [pToGive, setPToGive] = useState<string>("");
   const [bAccName, setBAccName] = useState("");
   const [bBankName, setBBankName] = useState("");
   const [bBranchName, setBBranchName] = useState("");
@@ -61,8 +63,8 @@ export default function AdministrationTab({
   const [retPhone, setRetPhone] = useState("");
   const [retArea, setRetArea] = useState("");
   const [retEmail, setRetEmail] = useState("");
-  const [retToTake, setRetToTake] = useState(0);
-  const [retToGive, setRetToGive] = useState(0);
+  const [retToTake, setRetToTake] = useState<string>("");
+  const [retToGive, setRetToGive] = useState<string>("");
 
   useEffect(() => {
     loadUsersAndPortals();
@@ -100,11 +102,17 @@ export default function AdministrationTab({
 
   const handleRegisterPortalAndBank = async (e: React.FormEvent) => {
     e.preventDefault();
+    const takeVal = parseFloat(pToTake || "0");
+    const giveVal = parseFloat(pToGive || "0");
+    if (takeVal < 0 || giveVal < 0) {
+      alert("Opening balances cannot be negative");
+      return;
+    }
     try {
       const group = await api.createPortalGroup({ 
         name: pName,
-        opening_to_give: pToGive,
-        opening_to_take: pToTake
+        opening_to_give: giveVal,
+        opening_to_take: takeVal
       });
 
       if (bAccName) {
@@ -118,7 +126,7 @@ export default function AdministrationTab({
       }
 
       showToastNotification(`Portal "${pName}" & Bank Account registered!`);
-      setPName(""); setPToTake(0); setPToGive(0);
+      setPName(""); setPToTake(""); setPToGive("");
       setBAccName(""); setBBankName(""); setBBranchName(""); setBAccNo(""); setBIfsc("");
       fetchData();
     } catch (err: any) {
@@ -128,18 +136,24 @@ export default function AdministrationTab({
 
   const handleCreateRetailer = async (e: React.FormEvent) => {
     e.preventDefault();
+    const takeVal = parseFloat(retToTake || "0");
+    const giveVal = parseFloat(retToGive || "0");
+    if (takeVal < 0 || giveVal < 0) {
+      alert("Opening balances cannot be negative");
+      return;
+    }
     try {
       await api.createRetailer({
         retailer_name: retName,
         phone: retPhone,
         address: retArea,
         email: retEmail,
-        opening_to_take: retToTake,
-        opening_to_give: retToGive
+        opening_to_take: takeVal,
+        opening_to_give: giveVal
       });
       showToastNotification(`Retailer "${retName}" registered!`);
       setRetName(""); setRetPhone(""); setRetArea(""); setRetEmail("");
-      setRetToTake(0); setRetToGive(0);
+      setRetToTake(""); setRetToGive("");
       fetchData();
     } catch (err: any) {
       alert("Error: " + err.message);
@@ -152,28 +166,41 @@ export default function AdministrationTab({
       alert("Please select a source portal account");
       return;
     }
-    if (!vDestRetailerId) {
-      alert("Please select a destination retailer");
-      return;
-    }
     const amt = parseFloat(vAmount);
     if (isNaN(amt) || amt <= 0) {
       alert("Please enter a valid transfer amount greater than 0");
       return;
     }
 
+    const payload: any = {
+      portal_id: vSourcePortalId,
+      amount: amt,
+      remarks: vRemarks || undefined
+    };
+
+    if (vDestType === "retailer") {
+      if (!vDestRetailerId) {
+        alert("Please select a destination retailer");
+        return;
+      }
+      payload.retailer_id = vDestRetailerId;
+    } else {
+      if (!vDestStaffId) {
+        alert("Please select a destination staff member");
+        return;
+      }
+      payload.staff_id = vDestStaffId;
+    }
+
     setIsTransferring(true);
     try {
-      await api.virtualTransfer({
-        portal_id: vSourcePortalId,
-        retailer_id: vDestRetailerId,
-        amount: amt,
-        remarks: vRemarks || undefined
-      });
+      await api.virtualTransfer(payload);
 
-      showToastNotification(`Virtually loaded ₹${amt.toLocaleString()} to Retailer's wallet!`);
+      const targetMsg = vDestType === "retailer" ? "Retailer's wallet" : "Staff's virtual wallet";
+      showToastNotification(`Virtually loaded ₹${amt.toLocaleString()} to ${targetMsg}!`);
       setVSourcePortalId("");
       setVDestRetailerId("");
+      setVDestStaffId("");
       setVAmount("");
       setVRemarks("");
       
@@ -265,11 +292,31 @@ export default function AdministrationTab({
                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-red-500 uppercase">To Take</label>
-                    <input type="number" value={retToTake} onChange={e => setRetToTake(e.target.value ? Number(e.target.value) : 0)} className="w-full px-3 py-2 bg-red-50/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold text-red-600 focus:outline-none" />
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={retToTake} 
+                      onChange={e => setRetToTake(e.target.value)} 
+                      onFocus={e => {
+                        if (Number(e.target.value) === 0) setRetToTake("");
+                        e.target.select();
+                      }}
+                      className="w-full px-3 py-2 bg-red-50/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold text-red-600 focus:outline-none" 
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-emerald-500 uppercase">To Give</label>
-                    <input type="number" value={retToGive} onChange={e => setRetToGive(e.target.value ? Number(e.target.value) : 0)} className="w-full px-3 py-2 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none" />
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={retToGive} 
+                      onChange={e => setRetToGive(e.target.value)} 
+                      onFocus={e => {
+                        if (Number(e.target.value) === 0) setRetToGive("");
+                        e.target.select();
+                      }}
+                      className="w-full px-3 py-2 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none" 
+                    />
                   </div>
                </div>
                <button type="submit" className="w-full py-3 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl text-xs font-black shadow-lg transition-all active:scale-[0.98]">
@@ -308,21 +355,72 @@ export default function AdministrationTab({
               </div>
 
               <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Retailer</label>
-                <select 
-                  value={vDestRetailerId} 
-                  onChange={e => setVDestRetailerId(e.target.value)} 
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none text-slate-700 dark:text-slate-200"
-                  required
-                >
-                  <option value="">-- Select Retailer --</option>
-                  {retailerDirectory.map((r: any) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} (Debt: ₹{parseFloat(r.balance || 0).toLocaleString()})
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Type</label>
+                <div className="flex gap-4 mb-2">
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="destType" 
+                      value="retailer" 
+                      checked={vDestType === "retailer"} 
+                      onChange={() => setVDestType("retailer")} 
+                      className="accent-indigo-600"
+                    />
+                    Retailer Wallet
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="destType" 
+                      value="staff" 
+                      checked={vDestType === "staff"} 
+                      onChange={() => setVDestType("staff")} 
+                      className="accent-indigo-600"
+                    />
+                    Staff Virtual Limit
+                  </label>
+                </div>
               </div>
+
+              {vDestType === "retailer" ? (
+                <div>
+                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Retailer</label>
+                  <select 
+                    value={vDestRetailerId} 
+                    onChange={e => setVDestRetailerId(e.target.value)} 
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none text-slate-700 dark:text-slate-200"
+                    required
+                  >
+                    <option value="">-- Select Retailer --</option>
+                    {retailerDirectory.map((r: any) => {
+                      const hasVirtualTx = (deposits || []).some(d => d.retailer_id === r.id && d.depositType === "virtual");
+                      const bal = hasVirtualTx ? (r.balance || 0) : (r.opening_to_take || 0);
+                      return (
+                        <option key={r.id} value={r.id}>
+                          {r.name} (Bal: ₹{bal.toLocaleString()})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Staff Member</label>
+                  <select 
+                    value={vDestStaffId} 
+                    onChange={e => setVDestStaffId(e.target.value)} 
+                    className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none text-slate-700 dark:text-slate-200"
+                    required
+                  >
+                    <option value="">-- Select Staff Member --</option>
+                    {(users || []).filter((u: any) => u.role === "staff").map((u: any) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} (Virtual: ₹{(u.virtual_balance || 0).toLocaleString()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -380,11 +478,31 @@ export default function AdministrationTab({
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-red-500 uppercase">To Take</label>
-                    <input type="number" value={pToTake} onChange={e => setPToTake(e.target.value ? Number(e.target.value) : 0)} placeholder="To Take" className="w-full px-3 py-2 bg-red-50/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold text-red-600 focus:outline-none" />
+                    <input 
+                      type="number" 
+                      value={pToTake} 
+                      onChange={e => setPToTake(e.target.value)} 
+                      onFocus={e => {
+                        if (Number(e.target.value) === 0) setPToTake("");
+                        e.target.select();
+                      }}
+                      placeholder="To Take" 
+                      className="w-full px-3 py-2 bg-red-50/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold text-red-600 focus:outline-none" 
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-emerald-500 uppercase">To Give</label>
-                    <input type="number" value={pToGive} onChange={e => setPToGive(e.target.value ? Number(e.target.value) : 0)} placeholder="To Give" className="w-full px-3 py-2 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none" />
+                    <input 
+                      type="number" 
+                      value={pToGive} 
+                      onChange={e => setPToGive(e.target.value)} 
+                      onFocus={e => {
+                        if (Number(e.target.value) === 0) setPToGive("");
+                        e.target.select();
+                      }}
+                      placeholder="To Give" 
+                      className="w-full px-3 py-2 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none" 
+                    />
                   </div>
                 </div>
               </div>
@@ -438,6 +556,7 @@ export default function AdministrationTab({
                     <th className="px-6 py-3">Full Name</th>
                     <th className="px-6 py-3">Phone</th>
                     <th className="px-6 py-3">Role</th>
+                    <th className="px-6 py-3 text-right">Virtual Balance</th>
                     <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -452,6 +571,9 @@ export default function AdministrationTab({
                         }`}>
                           {u.role}
                         </span>
+                      </td>
+                      <td className="px-6 py-3 text-right font-bold text-slate-700 dark:text-slate-300">
+                        {u.role === 'staff' ? `₹${Number(u.virtual_balance || 0).toLocaleString()}` : '-'}
                       </td>
                       <td className="px-6 py-3 text-right">
                         <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 text-slate-300 hover:text-red-600 transition-colors">

@@ -19,7 +19,7 @@ export default function NewDeposit() {
   const router = useRouter();
   const { theme, toggleTheme, addDeposit } = useAppStore();
 
-  const [depositType, setDepositType] = useState<"portal" | "retailer" | "staff">("portal");
+  const [depositType, setDepositType] = useState<"portal" | "retailer" | "staff" | "virtual">("portal");
 
   // Dynamic options loaded from backend
   const [portalGroups, setPortalGroups] = useState<any[]>([]);
@@ -75,12 +75,11 @@ export default function NewDeposit() {
         const { api } = await import("../utils/api");
         const [groups, r, s] = await Promise.all([api.getPortalGroups(), api.getRetailers(), api.getStaffList()]);
         const mappedGroups = groups.map((x: any) => {
-          const bal = parseFloat(x.balance || 0);
           return { 
             id: x.id, 
             name: x.name,
-            toGive: bal < 0 ? Math.abs(bal) : 0,
-            toTake: bal > 0 ? bal : 0
+            toGive: parseFloat(x.opening_to_give || 0),
+            toTake: parseFloat(x.opening_to_take || 0)
           };
         });
         const mappedRetailers = r.map((x: any) => ({ id: x.id, name: x.retailer_name || x.name }));
@@ -135,6 +134,10 @@ export default function NewDeposit() {
       targetName = `${groupName} - ${accName}`;
     } else if (depositType === "retailer") {
       targetName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer Store";
+    } else if (depositType === "virtual") {
+      const portalName = groupAccounts.find(a => a.id === selectedPortalId)?.name || "Portal";
+      const retailerName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer";
+      targetName = `Virtual: ${portalName} ➔ ${retailerName}`;
     } else {
       targetName = toOffice ? "Main Office Cashier" : (staffUsers.find(s => s.id === selectedStaffId)?.name || "Field Staff");
     }
@@ -142,12 +145,12 @@ export default function NewDeposit() {
     // Build proper backend payload with UUIDs
     const backendPayload: any = {
       deposit_type: depositType,
-      payment_mode: "unified",
+      payment_mode: depositType === "virtual" ? "online" : "unified",
       amount: totalAmount,
       denominations: denominations,
     };
-    if (depositType === "portal") backendPayload.portal_id = selectedPortalId;
-    if (depositType === "retailer") backendPayload.retailer_id = selectedRetailerId;
+    if (depositType === "portal" || depositType === "virtual") backendPayload.portal_id = selectedPortalId;
+    if (depositType === "retailer" || depositType === "virtual") backendPayload.retailer_id = selectedRetailerId;
     if (depositType === "staff") {
       if (toOffice) {
         backendPayload.to_office = true;
@@ -161,10 +164,10 @@ export default function NewDeposit() {
       depositType,
       targetName,
       amount: totalAmount,
-      paymentMode: "cash",
+      paymentMode: depositType === "virtual" ? "online" : "cash",
       denominations: denominations,
-      portal_id: depositType === "portal" ? selectedPortalId : undefined,
-      retailer_id: depositType === "retailer" ? selectedRetailerId : undefined,
+      portal_id: (depositType === "portal" || depositType === "virtual") ? selectedPortalId : undefined,
+      retailer_id: (depositType === "retailer" || depositType === "virtual") ? selectedRetailerId : undefined,
       recipient_staff_id: depositType === "staff" ? selectedStaffId : undefined,
     };
 
@@ -216,11 +219,12 @@ export default function NewDeposit() {
             <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-2 px-1">
               Where is money going? (Channel)
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {[
                 { type: "portal", label: "Portals", desc: "To Bank Account" },
                 { type: "retailer", label: "Shops", desc: "Retailer Refund" },
                 { type: "staff", label: "Office", desc: "Staff or Office" },
+                { type: "virtual", label: "Virtual Money", desc: "Distributor Load" },
               ].map((opt) => (
                 <button
                   key={opt.type}
@@ -241,6 +245,66 @@ export default function NewDeposit() {
 
           {/* Context details options selector */}
           <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            {depositType === "virtual" && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
+                    1. Select Source Portal Account
+                  </label>
+                  <div className="relative">
+                    <Building className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                    <select
+                      value={selectedGroupId}
+                      onChange={(e) => setSelectedGroupId(e.target.value)}
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
+                    >
+                      {portalGroups.length === 0 && <option value="">Loading portals...</option>}
+                      {portalGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+
+                {selectedGroupId && (
+                  <div>
+                    <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
+                      2. Select Source Bank Account
+                    </label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                      <select
+                        value={selectedPortalId}
+                        onChange={(e) => setSelectedPortalId(e.target.value)}
+                        className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
+                      >
+                        {groupAccounts.length === 0 && <option value="">No accounts found...</option>}
+                        {groupAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
+                    3. Select Destination Retailer
+                  </label>
+                  <div className="relative">
+                    <Layers className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
+                    <select
+                      value={selectedRetailerId}
+                      onChange={(e) => setSelectedRetailerId(e.target.value)}
+                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
+                    >
+                      {retailers.length === 0 && <option value="">Loading retailers...</option>}
+                      {retailers.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {depositType === "portal" && (
               <div className="space-y-3">
                 <div>
@@ -363,7 +427,23 @@ export default function NewDeposit() {
 
 
           {/* Unified Calculator Table */}
-          <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+          {depositType === "virtual" ? (
+            <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+              <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
+                Amount to Transfer (₹)
+              </label>
+              <input
+                type="number"
+                placeholder="e.g. 10000"
+                value={denominations.online_amount || ""}
+                onChange={(e) => handleDenomChange("online_amount", e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl text-sm font-bold text-slate-800 dark:text-slate-200"
+                min="1"
+                required
+              />
+            </div>
+          ) : (
+            <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
               <Coins className="w-4 h-4 text-slate-600 dark:text-slate-400" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -428,6 +508,7 @@ export default function NewDeposit() {
               </div>
             </div>
           </div>
+        )}
 
           {/* Computed summary box */}
           <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">

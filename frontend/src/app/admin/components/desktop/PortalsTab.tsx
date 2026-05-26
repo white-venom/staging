@@ -32,8 +32,8 @@ export default function PortalsTab({
   // Edit states
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState("");
-  const [editingGroupToGive, setEditingGroupToGive] = useState(0);
-  const [editingGroupToTake, setEditingGroupToTake] = useState(0);
+  const [editingGroupToGive, setEditingGroupToGive] = useState<string>("");
+  const [editingGroupToTake, setEditingGroupToTake] = useState<string>("");
   
   const [inlineEditing, setInlineEditing] = useState<{id: string, field: 'take' | 'give'} | null>(null);
   const [inlineValue, setInlineValue] = useState<string>("");
@@ -52,17 +52,18 @@ export default function PortalsTab({
       const group = portalDirectory.find(g => g.id === id);
       if (!group) return;
       
-      // Calculate current transaction-based balance
-      const currentTakeBalance = group.balance > 0 ? group.balance : 0;
-      const currentGiveBalance = group.balance < 0 ? Math.abs(group.balance) : 0;
-
       const targetValue = parseFloat(inlineValue || "0");
+      if (targetValue < 0) {
+        alert("Negative values are not allowed.");
+        return;
+      }
       
-      await api.updatePortalGroup(id, {
-        name: group.name,
-        opening_to_take: field === 'take' ? (targetValue - currentTakeBalance) : (group.opening_to_take || 0),
-        opening_to_give: field === 'give' ? (targetValue - currentGiveBalance) : (group.opening_to_give || 0)
-      });
+      // In the additive model, we send only the increment to the backend
+      // Only send the field that was actually edited; omit the other
+      const payload: any = { name: group.name };
+      if (field === 'take' && targetValue > 0) payload.opening_to_take = targetValue;
+      if (field === 'give' && targetValue > 0) payload.opening_to_give = targetValue;
+      await api.updatePortalGroup(id, payload);
       
       showToastNotification("Balance updated.");
       setInlineEditing(null);
@@ -156,19 +157,33 @@ export default function PortalsTab({
     }
   };
 
-  const handleUpdateGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingGroupId || !editingGroupName) return;
+  const handleUpdateGroup = async (groupId: string) => {
+    console.log("handleUpdateGroup called with:", { groupId, editingGroupName, editingGroupToGive, editingGroupToTake });
+    if (!groupId || !editingGroupName) {
+      console.warn("handleUpdateGroup missing params:", { groupId, editingGroupName });
+      return;
+    }
+    const addTake = parseFloat(editingGroupToTake || "0");
+    const addGive = parseFloat(editingGroupToGive || "0");
+    if (addTake < 0 || addGive < 0) {
+      alert("Negative values are not allowed.");
+      return;
+    }
+    
     try {
-      await api.updatePortalGroup(editingGroupId, { 
-        name: editingGroupName,
-        opening_to_give: editingGroupToGive,
-        opening_to_take: editingGroupToTake
-      });
+      // In the additive model, we send only the incremental additions (deltas)
+      // Only include non-zero values to avoid unnecessary additive-zero operations
+      const payload: any = { name: editingGroupName };
+      if (addTake > 0) payload.opening_to_take = addTake;
+      if (addGive > 0) payload.opening_to_give = addGive;
+      console.log("Sending updatePortalGroup payload:", payload);
+      await api.updatePortalGroup(groupId, payload);
       showToastNotification(`Portal "${editingGroupName}" updated.`);
       setEditingGroupId(null);
+      setIsAccountModalOpen(false);
       if (fetchData) fetchData();
     } catch (err: any) {
+      console.error("Failed to update portal group API error:", err);
       alert("Failed to update portal: " + err.message);
     }
   };
@@ -265,9 +280,15 @@ export default function PortalsTab({
                         <div className="flex items-center gap-1 animate-fade-in">
                           <input 
                             type="number" 
+                            min="0"
+                            placeholder="+ Add"
                             autoFocus
                             value={inlineValue}
                             onChange={e => setInlineValue(e.target.value)}
+                            onFocus={e => {
+                              if (Number(e.target.value) === 0) setInlineValue("");
+                              e.target.select();
+                            }}
                             onKeyDown={e => {
                               if (e.key === 'Enter') handleInlineUpdate(group.id, 'take');
                               if (e.key === 'Escape') setInlineEditing(null);
@@ -285,13 +306,12 @@ export default function PortalsTab({
                       ) : (
                         <div className="flex items-center gap-1.5 group/edit">
                           <span className="text-xs font-black text-red-600 dark:text-red-400">
-                            ₹{(group.balance > 0 ? group.balance : 0).toLocaleString()}
+                            ₹{(group.opening_to_take || 0).toLocaleString()}
                           </span>
                           <button 
                             onClick={() => {
                               setInlineEditing({ id: group.id, field: 'take' });
-                              const currentTotal = (group.opening_to_take || 0) + (group.balance > 0 ? group.balance : 0);
-                              setInlineValue(currentTotal.toString());
+                              setInlineValue("");
                             }}
                             className="p-0.5 text-slate-600 hover:text-blue-600 transition-all cursor-pointer"
                           >
@@ -308,9 +328,15 @@ export default function PortalsTab({
                         <div className="flex items-center gap-1 animate-fade-in">
                           <input 
                             type="number" 
+                            min="0"
+                            placeholder="+ Add"
                             autoFocus
                             value={inlineValue}
                             onChange={e => setInlineValue(e.target.value)}
+                            onFocus={e => {
+                              if (Number(e.target.value) === 0) setInlineValue("");
+                              e.target.select();
+                            }}
                             onKeyDown={e => {
                               if (e.key === 'Enter') handleInlineUpdate(group.id, 'give');
                               if (e.key === 'Escape') setInlineEditing(null);
@@ -328,13 +354,12 @@ export default function PortalsTab({
                       ) : (
                         <div className="flex items-center gap-1.5 group/edit2">
                           <span className="text-xs font-black text-emerald-600 dark:text-emerald-500">
-                            ₹{(group.balance < 0 ? Math.abs(group.balance) : 0).toLocaleString()}
+                            ₹{(group.opening_to_give || 0).toLocaleString()}
                           </span>
                           <button 
                             onClick={() => {
                               setInlineEditing({ id: group.id, field: 'give' });
-                              const currentTotal = (group.opening_to_give || 0) + (group.balance < 0 ? Math.abs(group.balance) : 0);
-                              setInlineValue(currentTotal.toString());
+                              setInlineValue("");
                             }}
                             className="p-0.5 text-slate-600 hover:text-blue-600 transition-all cursor-pointer"
                           >
@@ -344,12 +369,14 @@ export default function PortalsTab({
                       )}
                     </div>
                   </div>
+
                   <button
                     onClick={() => {
                       setSelectedGroup(group);
+                      setEditingGroupId(group.id);
                       setEditingGroupName(group.name);
-                      setEditingGroupToGive(group.opening_to_give || 0);
-                      setEditingGroupToTake(group.opening_to_take || 0);
+                      setEditingGroupToGive("");
+                      setEditingGroupToTake("");
                       setIsAccountModalOpen(true);
                     }}
                     className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-650 dark:text-slate-350 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
@@ -373,7 +400,7 @@ export default function PortalsTab({
       {/* ACCOUNTS MANAGEMENT MODAL */}
       {isAccountModalOpen && selectedGroup && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-6 select-none animate-slide-up shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-6 animate-slide-up shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
@@ -411,22 +438,44 @@ export default function PortalsTab({
                       className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
                     />
                   </div>
+                  <div className="grid grid-cols-2 gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] mb-2">
+                    <div>
+                      <span className="text-slate-400 block mb-0.5">Current To Take</span>
+                      <span className="font-black text-red-600 dark:text-red-400">₹{(selectedGroup.opening_to_take || 0).toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block mb-0.5">Current To Give</span>
+                      <span className="font-black text-emerald-600 dark:text-emerald-500">₹{(selectedGroup.opening_to_give || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[9px] text-red-500 uppercase font-black mb-1">To Take (Opening)</label>
+                      <label className="block text-[9px] text-red-500 uppercase font-black mb-1">Add to To Take</label>
                       <input 
                         type="number" 
+                        min="0"
+                        placeholder="Amount to Add"
                         value={editingGroupToTake} 
-                        onChange={e => setEditingGroupToTake(Number(e.target.value))}
+                        onChange={e => setEditingGroupToTake(e.target.value)}
+                        onFocus={e => {
+                          if (Number(e.target.value) === 0) setEditingGroupToTake("");
+                          e.target.select();
+                        }}
                         className="w-full px-3 py-2 bg-red-50/50 dark:bg-red-950 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold text-red-600 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] text-emerald-500 uppercase font-black mb-1">To Give (Opening)</label>
+                      <label className="block text-[9px] text-emerald-500 uppercase font-black mb-1">Add to To Give</label>
                       <input 
                         type="number" 
+                        min="0"
+                        placeholder="Amount to Add"
                         value={editingGroupToGive} 
-                        onChange={e => setEditingGroupToGive(Number(e.target.value))}
+                        onChange={e => setEditingGroupToGive(e.target.value)}
+                        onFocus={e => {
+                          if (Number(e.target.value) === 0) setEditingGroupToGive("");
+                          e.target.select();
+                        }}
                         className="w-full px-3 py-2 bg-emerald-50/50 dark:bg-emerald-950 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none"
                       />
                     </div>

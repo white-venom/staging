@@ -42,11 +42,11 @@ export default function AdminDesktopLayout({ children }: { children: React.React
   const [retailerPhone, setRetailerPhone] = useState("");
   const [retailerArea, setRetailerArea] = useState("");
   const [retailerEmail, setRetailerEmail] = useState("");
-  const [retailerToGive, setRetailerToGive] = useState(0);
-  const [retailerToTake, setRetailerToTake] = useState(0);
+  const [retailerToGive, setRetailerToGive] = useState<string>("");
+  const [retailerToTake, setRetailerToTake] = useState<string>("");
   const [pGroupName, setPGroupName] = useState("");
-  const [pGroupToGive, setPGroupToGive] = useState(0);
-  const [pGroupToTake, setPGroupToTake] = useState(0);
+  const [pGroupToGive, setPGroupToGive] = useState<string>("");
+  const [pGroupToTake, setPGroupToTake] = useState<string>("");
 
   const activeTab = pathname.split("/").pop() || "overview";
 
@@ -58,8 +58,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
         phone: retailerPhone,
         address: retailerArea,
         email: retailerEmail,
-        opening_to_give: retailerToGive,
-        opening_to_take: retailerToTake
+        opening_to_give: parseFloat(retailerToGive || "0"),
+        opening_to_take: parseFloat(retailerToTake || "0")
       });
       showToastNotification(`Store "${retailerName}" registered successfully!`);
       setShowRetailerDrawer(false);
@@ -67,8 +67,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       setRetailerPhone("");
       setRetailerArea("");
       setRetailerEmail("");
-      setRetailerToGive(0);
-      setRetailerToTake(0);
+      setRetailerToGive("");
+      setRetailerToTake("");
       fetchData();
     } catch (err: any) {
       alert("Failed to register store: " + err.message);
@@ -80,15 +80,15 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     try {
       await api.createPortalGroup({ 
         name: pGroupName,
-        opening_to_give: pGroupToGive,
-        opening_to_take: pGroupToTake
+        opening_to_give: parseFloat(pGroupToGive || "0"),
+        opening_to_take: parseFloat(pGroupToTake || "0")
       });
 
       showToastNotification(`Portal Group "${pGroupName}" registered!`);
       setShowPortalDrawer(false);
       setPGroupName("");
-      setPGroupToGive(0);
-      setPGroupToTake(0);
+      setPGroupToGive("");
+      setPGroupToTake("");
       fetchData();
     } catch (err: any) {
       alert("Failed to register portal: " + err.message);
@@ -174,11 +174,31 @@ export default function AdminDesktopLayout({ children }: { children: React.React
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-red-500 uppercase ml-1">To Take</label>
-                  <input type="number" placeholder="Enter Amount" value={retailerToTake || ""} onChange={(e) => setRetailerToTake(e.target.value ? Number(e.target.value) : 0)} className="w-full px-3 py-2 border border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10 rounded-lg font-bold text-red-600 focus:outline-none" />
+                  <input 
+                    type="number" 
+                    placeholder="Enter Amount" 
+                    value={retailerToTake} 
+                    onChange={(e) => setRetailerToTake(e.target.value)} 
+                    onFocus={e => {
+                      if (Number(e.target.value) === 0) setRetailerToTake("");
+                      e.target.select();
+                    }}
+                    className="w-full px-3 py-2 border border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10 rounded-lg font-bold text-red-600 focus:outline-none" 
+                  />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-emerald-500 uppercase ml-1">To Give</label>
-                  <input type="number" placeholder="Enter Amount" value={retailerToGive || ""} onChange={(e) => setRetailerToGive(e.target.value ? Number(e.target.value) : 0)} className="w-full px-3 py-2 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-lg font-bold text-emerald-600 focus:outline-none" />
+                  <input 
+                    type="number" 
+                    placeholder="Enter Amount" 
+                    value={retailerToGive} 
+                    onChange={(e) => setRetailerToGive(e.target.value)} 
+                    onFocus={e => {
+                      if (Number(e.target.value) === 0) setRetailerToGive("");
+                      e.target.select();
+                    }}
+                    className="w-full px-3 py-2 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-lg font-bold text-emerald-600 focus:outline-none" 
+                  />
                 </div>
               </div>
               <button type="submit" className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl font-bold">Create Store</button>
@@ -206,11 +226,31 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-red-500 uppercase ml-1">To Take</label>
-                    <input type="number" placeholder="To Take" value={pGroupToTake || ""} onChange={(e) => setPGroupToTake(e.target.value ? Number(e.target.value) : 0)} className="w-full px-3 py-2 border border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10 rounded-lg font-bold text-red-600 focus:outline-none" />
+                    <input 
+                      type="number" 
+                      placeholder="To Take" 
+                      value={pGroupToTake} 
+                      onChange={(e) => setPGroupToTake(e.target.value)} 
+                      onFocus={e => {
+                        if (Number(e.target.value) === 0) setPGroupToTake("");
+                        e.target.select();
+                      }}
+                      className="w-full px-3 py-2 border border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10 rounded-lg font-bold text-red-600 focus:outline-none" 
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-emerald-500 uppercase ml-1">To Give</label>
-                    <input type="number" placeholder="To Give" value={pGroupToGive || ""} onChange={(e) => setPGroupToGive(e.target.value ? Number(e.target.value) : 0)} className="w-full px-3 py-2 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-lg font-bold text-emerald-600 focus:outline-none" />
+                    <input 
+                      type="number" 
+                      placeholder="To Give" 
+                      value={pGroupToGive} 
+                      onChange={(e) => setPGroupToGive(e.target.value)} 
+                      onFocus={e => {
+                        if (Number(e.target.value) === 0) setPGroupToGive("");
+                        e.target.select();
+                      }}
+                      className="w-full px-3 py-2 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-lg font-bold text-emerald-600 focus:outline-none" 
+                    />
                   </div>
                 </div>
               </div>

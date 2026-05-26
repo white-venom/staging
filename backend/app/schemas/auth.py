@@ -36,8 +36,11 @@ class UserUpdate(UserBase):
     password: Optional[str] = Field(None, min_length=6, examples=["secr3tpass"])
 
 
+from decimal import Decimal
+
 class UserResponse(UserBase):
     id: uuid.UUID
+    virtual_balance: Decimal
 
     class Config:
         from_attributes = True

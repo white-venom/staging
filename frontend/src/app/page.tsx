@@ -181,8 +181,10 @@ export default function LoginPage() {
                 <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-all duration-300">
                   <Phone className="w-5 h-5" />
                 </div>
-                <input
+                 <input
                   type="tel"
+                  name="username"
+                  autoComplete="username"
                   placeholder="Mobile Number"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
@@ -197,6 +199,8 @@ export default function LoginPage() {
                 </div>
                 <input
                   type={showPassword ? "text" : "password"}
+                  name="password"
+                  autoComplete="current-password"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

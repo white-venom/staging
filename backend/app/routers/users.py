@@ -19,7 +19,7 @@ def list_staff_only(
 ):
     """Returns basic id+name list of all staff users. Accessible to any authenticated user (for deposit form dropdowns)."""
     users = db.scalars(select(User).where(User.role == "staff").order_by(User.name)).all()
-    return [{"id": str(u.id), "name": u.name} for u in users]
+    return [{"id": str(u.id), "name": u.name, "virtual_balance": float(u.virtual_balance)} for u in users]
 
 
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)

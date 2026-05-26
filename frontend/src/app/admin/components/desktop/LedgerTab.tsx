@@ -79,18 +79,18 @@ export default function LedgerTab({
     }))
   ];
 
-  // Calculate Initial Balance for Summary Section
+  // Calculate Initial Balance for Summary Section (starts with opening_to_take, no netting/subtraction)
   let initialBalance = 0;
   if (partyFilter !== "all") {
     const ret = (retailerDirectory || []).find(r => r.name === partyFilter);
-    if (ret) initialBalance = (ret.opening_to_take || 0) - (ret.opening_to_give || 0);
+    if (ret) initialBalance = (ret.opening_to_take || 0);
     else {
         const port = (portalDirectory || []).find(p => p.name === partyFilter);
-        if (port) initialBalance = (port.opening_to_take || 0) - (port.opening_to_give || 0);
+        if (port) initialBalance = (port.opening_to_take || 0);
     }
   } else if (portalFilter !== "all") {
       const port = (portalDirectory || []).find(p => p.name === portalFilter);
-      if (port) initialBalance = (port.opening_to_take || 0) - (port.opening_to_give || 0);
+      if (port) initialBalance = (port.opening_to_take || 0);
   }
 
   // Apply Search
@@ -124,10 +124,10 @@ export default function LedgerTab({
     // 1. Map of ALL Opening Balances (Use IDs for accuracy)
     const partyOpeningBalances = new Map<string, number>();
     (retailerDirectory || []).forEach(r => {
-        partyOpeningBalances.set(r.id, (r.opening_to_take || 0) - (r.opening_to_give || 0));
+        partyOpeningBalances.set(r.id, (r.opening_to_take || 0));
     });
     (portalDirectory || []).forEach(p => {
-        partyOpeningBalances.set(p.id, (p.opening_to_take || 0) - (p.opening_to_give || 0));
+        partyOpeningBalances.set(p.id, (p.opening_to_take || 0));
     });
 
     // 2. Per-Party Snapshots (Accurate even if mixed)
@@ -305,9 +305,29 @@ export default function LedgerTab({
                 <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase">{partyFilter !== "all" ? partyFilter : portalFilter}</h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">Account Statement Summary</p>
             </div>
-            <div className="text-right">
-                <span className="text-[9px] font-black text-slate-400 uppercase block">Opening Balance</span>
-                <span className="text-xs font-black text-slate-600 dark:text-slate-300">₹{initialBalance.toLocaleString()}.00</span>
+            <div className="text-right flex gap-6">
+              <div>
+                <span className="text-[9px] font-black text-slate-400 uppercase block text-left">Opening To Take</span>
+                <span className="text-xs font-black text-red-650 dark:text-red-400">
+                  ₹{(() => {
+                    const ret = (retailerDirectory || []).find(r => r.name === (partyFilter !== "all" ? partyFilter : portalFilter));
+                    if (ret) return (ret.opening_to_take || 0);
+                    const port = (portalDirectory || []).find(p => p.name === (partyFilter !== "all" ? partyFilter : portalFilter));
+                    return port ? (port.opening_to_take || 0) : 0;
+                  })().toLocaleString()}.00
+                </span>
+              </div>
+              <div>
+                <span className="text-[9px] font-black text-slate-400 uppercase block text-left">Opening To Give</span>
+                <span className="text-xs font-black text-emerald-650 dark:text-emerald-500">
+                  ₹{(() => {
+                    const ret = (retailerDirectory || []).find(r => r.name === (partyFilter !== "all" ? partyFilter : portalFilter));
+                    if (ret) return (ret.opening_to_give || 0);
+                    const port = (portalDirectory || []).find(p => p.name === (partyFilter !== "all" ? partyFilter : portalFilter));
+                    return port ? (port.opening_to_give || 0) : 0;
+                  })().toLocaleString()}.00
+                </span>
+              </div>
             </div>
           </div>
         ) : null}

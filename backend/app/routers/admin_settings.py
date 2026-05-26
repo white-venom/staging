@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel, Field
 
 from app.database.db import get_db
-from app.database.models import BusinessSettings, Attendance, Portal, Retailer, Ledger
-from app.dependencies import require_admin
+from app.database.models import BusinessSettings, Attendance, Portal, Retailer, Ledger, User, BankDeposit
+from datetime import date
+from app.dependencies import require_admin, require_any_user
 
 router = APIRouter(prefix="/admin-settings", tags=["Admin Control Panel"])
 
@@ -22,7 +23,8 @@ class PenaltyApproval(BaseModel):
 
 class VirtualTransferRequest(BaseModel):
     portal_id: uuid.UUID
-    retailer_id: uuid.UUID
+    retailer_id: Optional[uuid.UUID] = None
+    staff_id: Optional[uuid.UUID] = None
     amount: Decimal = Field(..., gt=0)
     remarks: Optional[str] = None
 
@@ -85,68 +87,116 @@ def approve_penalty(data: PenaltyApproval, db: Session = Depends(get_db), curren
 def process_virtual_transfer(
     payload: VirtualTransferRequest,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_any_user)
 ):
-    """Atomically transfers virtual balance from Portal to Retailer and logs a ledger debit entry."""
+    """Atomically transfers virtual balance from Portal to Retailer or Staff."""
     # 1. Fetch Source Portal
     portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
     if not portal:
         raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
         
-    # 2. Fetch Destination Retailer
-    retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
-    if not retailer:
-        raise HTTPException(status_code=404, detail="Destination retailer not found.")
+    if not payload.retailer_id and not payload.staff_id:
+        raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
         
     try:
-        # Step A: Decrement Portal Balance
+        # Step A: Decrement Portal Balance and To Give
         portal.balance -= payload.amount
+        portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - payload.amount
         if portal.group:
             portal.group.balance -= payload.amount
+            portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - payload.amount
             
-        # Step B: Fetch latest ledger entry to calculate new running balance
-        latest_ledger = db.scalar(
-            select(Ledger)
-            .where(Ledger.retailer_id == payload.retailer_id)
-            .order_by(desc(Ledger.created_at), desc(Ledger.id))
-            .limit(1)
-        )
-        
-        if latest_ledger:
-            prev_balance = latest_ledger.balance
+        if payload.retailer_id:
+            # Transfer to Retailer
+            retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
+            if not retailer:
+                raise HTTPException(status_code=404, detail="Destination retailer not found.")
+                
+            # Fetch latest ledger entry to calculate new running balance
+            latest_ledger = db.scalar(
+                select(Ledger)
+                .where(Ledger.retailer_id == payload.retailer_id)
+                .order_by(desc(Ledger.created_at), desc(Ledger.id))
+                .limit(1)
+            )
+            
+            if latest_ledger:
+                prev_balance = latest_ledger.balance
+            else:
+                prev_balance = Decimal(str(retailer.opening_to_take or 0))
+                
+            new_balance = prev_balance + payload.amount
+            
+            # Log a 'debit' entry in Retailer's Ledger
+            desc_text = f"Virtual Portal Transfer from {portal.portal_name}"
+            if payload.remarks:
+                desc_text += f" ({payload.remarks})"
+                
+            ledger_entry = Ledger(
+                retailer_id=payload.retailer_id,
+                transaction_type="debit",
+                amount=payload.amount,
+                balance=new_balance,
+                description=desc_text
+            )
+            db.add(ledger_entry)
+            
+            # Log in bank deposits to keep audit trail and activate frontend calculation
+            db_deposit = BankDeposit(
+                staff_id=current_user.id,
+                deposit_type="virtual",
+                portal_id=payload.portal_id,
+                retailer_id=payload.retailer_id,
+                amount=payload.amount,
+                payment_mode="online",
+                deposit_date=date.today(),
+                status="verified",
+                balance_snapshot=new_balance
+            )
+            db.add(db_deposit)
+            
+            # Update retailer outstanding balance cache
+            retailer.balance = new_balance
+            
+            db.commit()
+            return {
+                "message": "Virtual transfer processed successfully",
+                "portal_name": portal.portal_name,
+                "target_name": retailer.retailer_name,
+                "new_portal_balance": float(portal.balance),
+                "new_target_balance": float(retailer.balance)
+            }
         else:
-            prev_balance = Decimal(str(retailer.opening_to_take or 0)) - Decimal(str(retailer.opening_to_give or 0))
+            # Transfer to Staff
+            staff = db.scalar(select(User).where(User.id == payload.staff_id))
+            if not staff:
+                raise HTTPException(status_code=404, detail="Destination staff member not found.")
+                
+            staff.virtual_balance += payload.amount
             
-        new_balance = prev_balance + payload.amount
-        
-        # Step C: Log a 'debit' entry in Retailer's Ledger
-        desc_text = f"Virtual Portal Transfer from {portal.portal_name}"
-        if payload.remarks:
-            desc_text += f" ({payload.remarks})"
+            # Record in bank deposits to keep log details
+            db_deposit = BankDeposit(
+                staff_id=current_user.id,
+                deposit_type="virtual",
+                portal_id=payload.portal_id,
+                recipient_staff_id=payload.staff_id,
+                amount=payload.amount,
+                payment_mode="online",
+                deposit_date=date.today(),
+                status="verified",
+                balance_snapshot=staff.virtual_balance
+            )
+            db.add(db_deposit)
             
-        ledger_entry = Ledger(
-            retailer_id=payload.retailer_id,
-            transaction_type="debit",
-            amount=payload.amount,
-            balance=new_balance,
-            description=desc_text
-        )
-        db.add(ledger_entry)
-        
-        # Step D: Update retailer outstanding balance cache
-        retailer.balance = new_balance
-        
-        # Commit transaction atomically
-        db.commit()
-        
-        return {
-            "message": "Virtual transfer processed successfully",
-            "portal_name": portal.portal_name,
-            "retailer_name": retailer.retailer_name,
-            "new_portal_balance": float(portal.balance),
-            "new_retailer_balance": float(retailer.balance)
-        }
-        
+            db.commit()
+            return {
+                "message": "Virtual transfer processed successfully",
+                "portal_name": portal.portal_name,
+                "target_name": staff.name,
+                "new_portal_balance": float(portal.balance),
+                "new_target_balance": float(staff.virtual_balance)
+            }
+            
     except Exception as e:
         db.rollback()
         raise HTTPException(
