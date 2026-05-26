@@ -69,9 +69,9 @@ def startup_event():
         
         from delete_old_attendance_images import run_image_cleanup
         threading.Thread(target=run_image_cleanup, daemon=True).start()
-        print("✅ Background thread for 2-month odometer image cleanup initiated.")
+        print("[INFO] Background thread for 2-month odometer image cleanup initiated.")
     except Exception as e:
-        print(f"⚠️ Failed to start background image cleanup thread: {str(e)}")
+        print(f"[ERROR] Failed to start background image cleanup thread: {str(e)}")
 
 
 # Configure CORS Middleware

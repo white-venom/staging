@@ -51,11 +51,11 @@ export default function MobileOverview({
     
     return last7Days.map(day => {
       const dayCollections = collections
-        .filter(c => isSameDay(new Date(c.created_at), day))
-        .reduce((sum, c) => sum + (c.amount || 0), 0);
+        .filter(c => isSameDay(new Date(c.created_at || c.date), day))
+        .reduce((sum, c) => sum + (c.totalAmount || 0), 0);
         
       const dayDeposits = deposits
-        .filter(d => isSameDay(new Date(d.created_at), day))
+        .filter(d => isSameDay(new Date(d.created_at || d.date), day))
         .reduce((sum, d) => sum + (d.amount || 0), 0);
         
       return {
@@ -356,31 +356,6 @@ export default function MobileOverview({
           </button>
         </div>
       </div>
-
-      {/* 7-Day Pulse */}
-      <section className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-6 border border-slate-100 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs">Financial Trend</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">Last 7 Days Net Flow</p>
-          </div>
-          <TrendingUp className="w-4 h-4 text-blue-500" />
-        </div>
-
-        <div className="flex items-end justify-between h-24 gap-1.5 px-1">
-          {trendData.map((day, idx) => (
-            <div key={idx} className="flex-1 flex flex-col items-center gap-1.5 group relative">
-              <div className="w-full bg-slate-50 dark:bg-slate-800/50 rounded-t-lg relative overflow-hidden h-16">
-                <div 
-                  className={`absolute bottom-0 left-0 right-0 transition-all duration-700 ease-out ${day.net >= 0 ? 'bg-blue-500' : 'bg-red-400'}`}
-                  style={{ height: `${Math.max((Math.abs(day.net) / maxNet) * 100, 5)}%` }}
-                />
-              </div>
-              <p className="text-[7px] font-black text-slate-400 uppercase tracking-tighter">{day.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 gap-4">

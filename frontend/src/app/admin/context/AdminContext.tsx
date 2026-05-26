@@ -90,7 +90,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           denominations: c.denominations,
           remarks: c.remarks,
           status: c.status,
-          date: dtStr
+          date: dtStr,
+          created_at: c.created_at
         };
       });
 
@@ -122,7 +123,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           denominations: d.denominations,
           status: d.status,
           staffName: d.staff_name || "System",
-          date: dtStr
+          date: dtStr,
+          created_at: d.created_at
         };
       });
 

@@ -73,32 +73,35 @@ export default function MobileLedger() {
 
     // Apply Date Range
     if (filters.dateFrom) {
-      combined = combined.filter(tx => format(new Date(tx.created_at), 'yyyy-MM-dd') >= filters.dateFrom);
+      combined = combined.filter(tx => format(new Date(tx.created_at || tx.date), 'yyyy-MM-dd') >= filters.dateFrom);
     }
     if (filters.dateTo) {
-      combined = combined.filter(tx => format(new Date(tx.created_at), 'yyyy-MM-dd') <= filters.dateTo);
+      combined = combined.filter(tx => format(new Date(tx.created_at || tx.date), 'yyyy-MM-dd') <= filters.dateTo);
     }
 
     // Apply Sorting
     combined.sort((a, b) => {
-      if (filters.sortBy === "date-desc") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (filters.sortBy === "date-asc") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      if (filters.sortBy === "amount-desc") return (b.amount || 0) - (a.amount || 0);
-      if (filters.sortBy === "amount-asc") return (a.amount || 0) - (b.amount || 0);
+      if (filters.sortBy === "date-desc") return new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime();
+      if (filters.sortBy === "date-asc") return new Date(a.created_at || a.date).getTime() - new Date(b.created_at || b.date).getTime();
+      if (filters.sortBy === "amount-desc") return getTxAmount(b) - getTxAmount(a);
+      if (filters.sortBy === "amount-asc") return getTxAmount(a) - getTxAmount(b);
       return 0;
     });
 
     return combined;
   }, [collections, deposits, search, filters]);
 
+  // Helper: get display amount regardless of field name
+  const getTxAmount = (tx: any) => tx.totalAmount ?? tx.amount ?? 0;
+
   const handleExportCSV = () => {
     const headers = ["Date", "Party", "Staff", "Type", "Amount"];
     const rows = filteredLedger.map(tx => [
-      format(new Date(tx.created_at), "yyyy-MM-dd HH:mm"),
+      format(new Date(tx.created_at || tx.date), "yyyy-MM-dd HH:mm"),
       tx.retailer_name || tx.portal_name || 'N/A',
       tx.staff_name || 'Admin',
       tx.type,
-      tx.amount
+      getTxAmount(tx)
     ]);
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const link = document.createElement("a");
@@ -183,7 +186,7 @@ export default function MobileLedger() {
                 </div>
                 <div className="text-right">
                   <p className={`text-lg font-black ${item.type === 'collection' ? "text-blue-600" : "text-red-600"}`}>
-                    {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
+                    {item.type === 'collection' ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -196,7 +199,7 @@ export default function MobileLedger() {
                 <div className="flex items-center gap-1.5 text-slate-400">
                   <Calendar className="w-3.5 h-3.5" />
                   <span className="text-[10px] font-bold uppercase tracking-wider">
-                    {format(new Date(item.created_at), "MMM d, yyyy • HH:mm")}
+                    {format(new Date(item.created_at || item.date), "MMM d, yyyy • HH:mm")}
                   </span>
                 </div>
               </div>

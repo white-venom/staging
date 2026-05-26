@@ -20,7 +20,7 @@ import AttendanceTab from "../components/desktop/AttendanceTab";
 import MobileCollections from "../components/mobile/MobileCollections";
 import MobileDeposits from "../components/mobile/MobileDeposits";
 import MobileLedger from "../components/mobile/MobileLedger";
-import MobileSettings from "../components/mobile/MobileSettings";
+import MobileStaff from "../components/mobile/MobileStaff";
 import MobileRetailers from "../components/mobile/MobileRetailers";
 import MobilePortals from "../components/mobile/MobilePortals";
 
@@ -86,7 +86,6 @@ export default function AdminTabPage() {
           <MobilePortals 
             portalDirectory={portalDirectory}
             showToastNotification={showToastNotification}
-            setShowPortalDrawer={setShowPortalDrawer}
             fetchData={fetchData}
           />
         ) : (
@@ -101,7 +100,6 @@ export default function AdminTabPage() {
         return isMobile ? (
           <MobileRetailers 
             retailerDirectory={retailerDirectory}
-            setShowRetailerDrawer={setShowRetailerDrawer}
             showToastNotification={showToastNotification}
             fetchData={fetchData}
           />
@@ -114,7 +112,9 @@ export default function AdminTabPage() {
           />
         );
       case "staff":
-        return (
+        return isMobile ? (
+          <MobileStaff />
+        ) : (
           <StaffTab 
             staffComplianceLogs={staffComplianceLogs}
             userDirectory={userDirectory}
@@ -123,9 +123,7 @@ export default function AdminTabPage() {
           />
         );
       case "administration":
-        return isMobile ? (
-          <MobileSettings />
-        ) : (
+        return isMobile ? null : (
           <AdministrationTab 
             userDirectory={userDirectory}
             portalDirectory={portalDirectory}

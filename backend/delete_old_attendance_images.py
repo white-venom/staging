@@ -10,7 +10,7 @@ from app.database.db import SessionLocal
 from app.database.models import Attendance
 
 def run_image_cleanup():
-    print("🧹 Starting 2-month Odometer image cleanup process...")
+    print("[INFO] Starting 2-month Odometer image cleanup process...")
     db = SessionLocal()
     try:
         two_months_ago = date.today() - timedelta(days=60)
@@ -22,7 +22,7 @@ def run_image_cleanup():
             Attendance.date < two_months_ago
         )
         records = db.scalars(stmt).all()
-        print(f"🔍 Found {len(records)} attendance records older than 60 days with images.")
+        print(f"[INFO] Found {len(records)} attendance records older than 60 days with images.")
         
         static_base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app")
         
@@ -36,9 +36,9 @@ def run_image_cleanup():
                 if os.path.exists(filepath):
                     try:
                         os.remove(filepath)
-                        print(f"🗑️ Deleted check-in image: {filepath}")
+                        print(f"[INFO] Deleted check-in image: {filepath}")
                     except Exception as e:
-                        print(f"⚠️ Error deleting file {filepath}: {str(e)}")
+                        print(f"[WARNING] Error deleting file {filepath}: {str(e)}")
                 r.start_km_image_url = None
                 deleted_count += 1
                 
@@ -49,19 +49,19 @@ def run_image_cleanup():
                 if os.path.exists(filepath):
                     try:
                         os.remove(filepath)
-                        print(f"🗑️ Deleted check-out image: {filepath}")
+                        print(f"[INFO] Deleted check-out image: {filepath}")
                     except Exception as e:
-                        print(f"⚠️ Error deleting file {filepath}: {str(e)}")
+                        print(f"[WARNING] Error deleting file {filepath}: {str(e)}")
                 r.end_km_image_url = None
                 deleted_count += 1
                 
         if deleted_count > 0:
             db.commit()
-            print(f"✅ Successfully cleaned up {deleted_count} physical images and updated database references.")
+            print(f"[INFO] Successfully cleaned up {deleted_count} physical images and updated database references.")
         else:
-            print("✅ No images needed deletion.")
+            print("[INFO] No images needed deletion.")
     except Exception as e:
-        print(f"❌ Error during image cleanup: {str(e)}")
+        print(f"[ERROR] Error during image cleanup: {str(e)}")
     finally:
         db.close()
 
