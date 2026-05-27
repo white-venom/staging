@@ -74,13 +74,22 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
           </div>
         </div>
 
-        {/* Hamburger Button */}
-        <button
-          onClick={() => setIsMenuOpen(true)}
-          className="w-10 h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl flex items-center justify-center text-slate-700 dark:text-slate-200 active:scale-90 transition-transform cursor-pointer"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleLogout}
+            className="w-10 h-10 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl flex items-center justify-center text-red-500 active:scale-90 transition-transform cursor-pointer"
+            title="Sign Out"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+          {/* Hamburger Button */}
+          <button
+            onClick={() => setIsMenuOpen(true)}
+            className="w-10 h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl flex items-center justify-center text-slate-700 dark:text-slate-200 active:scale-90 transition-transform cursor-pointer"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        </div>
       </header>
 
       {/* Page Content */}
