@@ -16,7 +16,8 @@ import {
   Clock,
   LogOut,
   X,
-  CheckCircle2
+  CheckCircle2,
+  CreditCard
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { api } from "@/app/utils/api";
@@ -100,6 +101,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     { id: "collections", label: "Cash In", icon: ClipboardList, path: "/admin/collections" },
     { id: "deposits", label: "Cash Out", icon: TrendingUp, path: "/admin/deposits" },
     { id: "ledger", label: "Ledger", icon: BookOpen, path: "/admin/ledger" },
+    { id: "wallet-transfer", label: "Wallet Transfer", icon: CreditCard, path: "/admin/wallet-transfer" },
     { id: "portals", label: "Portals", icon: Globe, path: "/admin/portals" },
     { id: "retailers", label: "Retailers", icon: Home, path: "/admin/retailers" },
     { id: "staff", label: "Staff", icon: Users, path: "/admin/staff" },

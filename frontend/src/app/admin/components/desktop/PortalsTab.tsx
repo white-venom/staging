@@ -313,9 +313,10 @@ export default function PortalsTab({
                               setInlineEditing({ id: group.id, field: 'take' });
                               setInlineValue("");
                             }}
-                            className="p-0.5 text-slate-600 hover:text-blue-600 transition-all cursor-pointer"
+                            className="p-0.5 text-slate-400 hover:text-red-650 transition-all cursor-pointer"
+                            title="Add to To Take"
                           >
-                            <Edit className="w-2.5 h-2.5" />
+                            <Plus className="w-2.5 h-2.5" />
                           </button>
                         </div>
                       )}
@@ -361,9 +362,10 @@ export default function PortalsTab({
                               setInlineEditing({ id: group.id, field: 'give' });
                               setInlineValue("");
                             }}
-                            className="p-0.5 text-slate-600 hover:text-blue-600 transition-all cursor-pointer"
+                            className="p-0.5 text-slate-400 hover:text-emerald-650 transition-all cursor-pointer"
+                            title="Add to To Give"
                           >
-                            <Edit className="w-2.5 h-2.5" />
+                            <Plus className="w-2.5 h-2.5" />
                           </button>
                         </div>
                       )}

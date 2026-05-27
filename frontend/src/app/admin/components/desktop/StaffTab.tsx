@@ -167,9 +167,11 @@ export default function StaffTab({
                             <button onClick={() => handleEdit(u)} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
                               <Edit className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            {u.role !== "admin" && (
+                              <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

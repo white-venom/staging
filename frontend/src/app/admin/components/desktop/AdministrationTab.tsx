@@ -602,9 +602,11 @@ export default function AdministrationTab({
                         {u.role === 'staff' ? `₹${Number(u.virtual_balance || 0).toLocaleString()}` : '-'}
                       </td>
                       <td className="px-6 py-3 text-right">
-                        <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 text-slate-300 hover:text-red-600 transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {u.role !== "admin" && (
+                          <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 text-slate-300 hover:text-red-600 transition-colors">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

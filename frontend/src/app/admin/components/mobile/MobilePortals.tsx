@@ -41,6 +41,40 @@ export default function MobilePortals({
   const [bIfsc, setBIfsc] = useState("");
   const [addingBank, setAddingBank] = useState(false);
 
+  // Inline balance editing states
+  const [inlineEditing, setInlineEditing] = useState<{ id: string, field: 'take' | 'give' } | null>(null);
+  const [inlineValue, setInlineValue] = useState("");
+  const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
+
+  const handleInlinePortalUpdate = async (id: string, field: 'take' | 'give') => {
+    setIsUpdatingBalance(true);
+    try {
+      const group = portalDirectory.find(g => g.id === id);
+      if (!group) return;
+
+      const targetValue = parseFloat(inlineValue || "0");
+      if (targetValue < 0) {
+        showToastNotification("Negative values are not allowed.");
+        setIsUpdatingBalance(false);
+        return;
+      }
+
+      // In the additive model, we send name and ONLY the increment to the backend
+      const payload: any = { name: group.name };
+      if (field === 'take' && targetValue > 0) payload.opening_to_take = targetValue;
+      if (field === 'give' && targetValue > 0) payload.opening_to_give = targetValue;
+
+      await api.updatePortalGroup(id, payload);
+      showToastNotification(`✓ Balance updated for ${group.name}`);
+      setInlineEditing(null);
+      fetchData();
+    } catch (err: any) {
+      showToastNotification("Error: " + err.message);
+    } finally {
+      setIsUpdatingBalance(false);
+    }
+  };
+
   const handleCreatePortal = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
@@ -215,9 +249,12 @@ export default function MobilePortals({
             <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No portals found</p>
           </div>
         ) : (
-          filtered.map((group) => (
-            <div 
-              key={group.id}
+          filtered.map((group) => {
+            const isEditingThis = inlineEditing?.id === group.id;
+            const editingField = inlineEditing && inlineEditing.id === group.id ? inlineEditing.field : null;
+            return (
+              <div 
+                key={group.id}
               className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-5 border border-slate-100 dark:border-slate-800 shadow-sm space-y-4 flex flex-col"
             >
               <div className="flex items-center justify-between">
@@ -241,13 +278,35 @@ export default function MobilePortals({
               {/* Group To Take & To Give raw inputs */}
               <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-850 p-3 rounded-2xl border border-slate-100/50 dark:border-slate-800/40">
                 <div>
-                  <span className="text-[8px] font-black text-red-500 uppercase tracking-tighter block mb-0.5">To Take</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-black text-red-500 uppercase tracking-tighter block mb-0.5">To Take</span>
+                    <button
+                      onClick={() => {
+                        setInlineEditing({ id: group.id, field: 'take' });
+                        setInlineValue("");
+                      }}
+                      className="p-0.5 bg-slate-100 dark:bg-slate-800 rounded text-red-500 hover:bg-slate-200 transition-colors"
+                    >
+                      <Plus className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
                   <span className="text-xs font-black text-red-650 dark:text-red-400">
                     ₹{(group.opening_to_take || 0).toLocaleString()}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter block mb-0.5">To Give</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter block mb-0.5">To Give</span>
+                    <button
+                      onClick={() => {
+                        setInlineEditing({ id: group.id, field: 'give' });
+                        setInlineValue("");
+                      }}
+                      className="p-0.5 bg-slate-100 dark:bg-slate-800 rounded text-emerald-500 hover:bg-slate-200 transition-colors"
+                    >
+                      <Plus className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
                   <span className="text-xs font-black text-emerald-650 dark:text-emerald-555">
                     ₹{(group.opening_to_give || 0).toLocaleString()}
                   </span>
@@ -259,6 +318,38 @@ export default function MobilePortals({
                   </span>
                 </div>
               </div>
+
+              {isEditingThis && editingField && (
+                <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2 animate-in fade-in duration-200">
+                  <p className="text-[9px] font-black text-slate-450 uppercase tracking-wider">
+                    Add more to {editingField === 'take' ? 'To Take (Red)' : 'To Give (Green)'}
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="Amount to Add"
+                      value={inlineValue}
+                      onChange={e => setInlineValue(e.target.value)}
+                      className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => handleInlinePortalUpdate(group.id, editingField)}
+                      disabled={isUpdatingBalance}
+                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors"
+                    >
+                      Add
+                    </button>
+                    <button
+                      onClick={() => setInlineEditing(null)}
+                      className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Sub-portals List */}
               {group.portals && group.portals.length > 0 && (
@@ -356,7 +447,7 @@ export default function MobilePortals({
                 )}
               </div>
             </div>
-          ))
+          );})
         )}
       </div>
     </div>

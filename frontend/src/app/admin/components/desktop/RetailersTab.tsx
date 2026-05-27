@@ -39,6 +39,11 @@ export default function RetailersTab({
   const [editRetToGive, setEditRetToGive] = useState<string>("");
   const [editRetToTake, setEditRetToTake] = useState<string>("");
 
+  // Inline adjustment state
+  const [inlineEditingRetailer, setInlineEditingRetailer] = useState<{id: string, field: 'take' | 'give'} | null>(null);
+  const [inlineRetailerValue, setInlineRetailerValue] = useState<string>("");
+  const [isUpdatingRetailerBalance, setIsUpdatingRetailerBalance] = useState(false);
+
   // Store Edit state
   const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
   const [editStoreName, setEditStoreName] = useState("");
@@ -56,6 +61,39 @@ export default function RetailersTab({
       setStores(data);
     } catch (err) {
       console.error("Failed to fetch stores:", err);
+    }
+  };
+
+  const handleInlineRetailerUpdate = async (id: string, field: 'take' | 'give') => {
+    setIsUpdatingRetailerBalance(true);
+    try {
+      const retailer = retailerDirectory.find(r => r.id === id);
+      if (!retailer) return;
+
+      const targetValue = parseFloat(inlineRetailerValue || "0");
+      if (targetValue < 0) {
+        alert("Negative values are not allowed.");
+        return;
+      }
+
+      // In the additive model, we send name, phone, address, and ONLY the increment to the backend
+      const payload: any = {
+        retailer_name: retailer.name,
+        phone: retailer.phone,
+        address: retailer.area,
+        email: retailer.email || "",
+      };
+      if (field === 'take' && targetValue > 0) payload.opening_to_take = targetValue;
+      if (field === 'give' && targetValue > 0) payload.opening_to_give = targetValue;
+
+      await api.updateRetailer(id, payload);
+      showToastNotification("Balance updated.");
+      setInlineEditingRetailer(null);
+      fetchData();
+    } catch (err: any) {
+      alert("Failed to update: " + err.message);
+    } finally {
+      setIsUpdatingRetailerBalance(false);
     }
   };
 
@@ -193,29 +231,30 @@ export default function RetailersTab({
               key={retailer.id}
               className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4 flex flex-col justify-between group relative overflow-hidden"
             >
-              {/* Actions Overlay */}
-              <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button 
-                  onClick={() => handleStartEditRetailer(retailer)}
-                  className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors"
-                >
-                  <Edit2 className="w-3 h-3" />
-                </button>
-                <button 
-                  onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
-                  className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-
               <div>
                 <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="text-xs font-black text-slate-800 dark:text-slate-100">{retailer.name}</h3>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <MapPin className="w-2.5 h-2.5 text-slate-400" />
-                      <span className="text-[9px] text-slate-400 uppercase tracking-wide font-bold">Route: {retailer.area}</span>
+                  <div className="flex items-start gap-3">
+                    <div>
+                      <h3 className="text-xs font-black text-slate-800 dark:text-slate-100">{retailer.name}</h3>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <MapPin className="w-2.5 h-2.5 text-slate-400" />
+                        <span className="text-[9px] text-slate-400 uppercase tracking-wide font-bold">Route: {retailer.area}</span>
+                      </div>
+                    </div>
+                    {/* Actions Overlay */}
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => handleStartEditRetailer(retailer)}
+                        className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
+                        className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
@@ -230,17 +269,102 @@ export default function RetailersTab({
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  {/* To Take Field */}
                   <div>
                     <span className="text-[8px] font-black text-red-500 uppercase tracking-wide block mb-0.5">To Take</span>
-                    <span className="text-xs font-black text-red-600 dark:text-red-400">
-                      ₹{(retailer.opening_to_take || 0).toLocaleString()}
-                    </span>
+                    {inlineEditingRetailer?.id === retailer.id && inlineEditingRetailer?.field === 'take' ? (
+                      <div className="flex items-center gap-1">
+                        <input 
+                          type="number" 
+                          min="0"
+                          placeholder="+ Add"
+                          autoFocus
+                          value={inlineRetailerValue}
+                          onChange={e => setInlineRetailerValue(e.target.value)}
+                          onFocus={e => {
+                            if (Number(e.target.value) === 0) setInlineRetailerValue("");
+                            e.target.select();
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleInlineRetailerUpdate(retailer.id, 'take');
+                            if (e.key === 'Escape') setInlineEditingRetailer(null);
+                          }}
+                          className="w-20 px-1.5 py-1 text-xs font-bold bg-white dark:bg-slate-850 border border-blue-400 rounded outline-none shadow-sm"
+                        />
+                        <button 
+                          onClick={() => handleInlineRetailerUpdate(retailer.id, 'take')} 
+                          disabled={isUpdatingRetailerBalance}
+                          className="text-[9px] font-black text-blue-600 hover:text-blue-700 cursor-pointer p-1"
+                        >
+                          SAVE
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black text-red-600 dark:text-red-400">
+                          ₹{(retailer.opening_to_take || 0).toLocaleString()}
+                        </span>
+                        <button 
+                          onClick={() => {
+                            setInlineEditingRetailer({ id: retailer.id, field: 'take' });
+                            setInlineRetailerValue("");
+                          }}
+                          className="p-0.5 text-slate-400 hover:text-red-600 transition-all cursor-pointer"
+                          title="Add to To Take"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
+
+                  {/* To Give Field */}
                   <div>
                     <span className="text-[8px] font-black text-emerald-500 uppercase tracking-wide block mb-0.5">To Give</span>
-                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-500">
-                      ₹{(retailer.opening_to_give || 0).toLocaleString()}
-                    </span>
+                    {inlineEditingRetailer?.id === retailer.id && inlineEditingRetailer?.field === 'give' ? (
+                      <div className="flex items-center gap-1">
+                        <input 
+                          type="number" 
+                          min="0"
+                          placeholder="+ Add"
+                          autoFocus
+                          value={inlineRetailerValue}
+                          onChange={e => setInlineRetailerValue(e.target.value)}
+                          onFocus={e => {
+                            if (Number(e.target.value) === 0) setInlineRetailerValue("");
+                            e.target.select();
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') handleInlineRetailerUpdate(retailer.id, 'give');
+                            if (e.key === 'Escape') setInlineEditingRetailer(null);
+                          }}
+                          className="w-20 px-1.5 py-1 text-xs font-bold bg-white dark:bg-slate-850 border border-blue-400 rounded outline-none shadow-sm"
+                        />
+                        <button 
+                          onClick={() => handleInlineRetailerUpdate(retailer.id, 'give')} 
+                          disabled={isUpdatingRetailerBalance}
+                          className="text-[9px] font-black text-blue-600 hover:text-blue-700 cursor-pointer p-1"
+                        >
+                          SAVE
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-500">
+                          ₹{(retailer.opening_to_give || 0).toLocaleString()}
+                        </span>
+                        <button 
+                          onClick={() => {
+                            setInlineEditingRetailer({ id: retailer.id, field: 'give' });
+                            setInlineRetailerValue("");
+                          }}
+                          className="p-0.5 text-slate-400 hover:text-emerald-600 transition-all cursor-pointer"
+                          title="Add to To Give"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

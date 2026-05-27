@@ -11,7 +11,8 @@ import {
   Lock,
   Plus,
   ArrowLeft,
-  X
+  X,
+  Edit
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
@@ -20,6 +21,7 @@ export default function MobileStaff() {
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
 
@@ -51,13 +53,24 @@ export default function MobileStaff() {
     loadUsers();
   }, []);
 
-  const handleCreateUser = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await api.createUser({ name: uName, phone: uPhone, role: uRole, password: uPassword });
-      showToast(`✓ Staff "${uName}" created`);
+      if (editingUser) {
+        await api.updateUser(editingUser.id, { 
+          name: uName, 
+          phone: uPhone, 
+          role: uRole, 
+          password: uPassword || undefined 
+        });
+        showToast(`✓ Staff "${uName}" updated`);
+      } else {
+        await api.createUser({ name: uName, phone: uPhone, role: uRole, password: uPassword });
+        showToast(`✓ Staff "${uName}" created`);
+      }
       setUName(""); setUPhone(""); setURole("staff"); setUPassword("");
+      setEditingUser(null);
       setShowAddForm(false);
       loadUsers();
     } catch (err: any) {
@@ -65,6 +78,23 @@ export default function MobileStaff() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleStartEdit = (u: any) => {
+    setEditingUser(u);
+    setUName(u.name);
+    setUPhone(u.phone);
+    setURole(u.role);
+    setUPassword("");
+    setShowAddForm(true);
+  };
+
+  const handleToggleAddForm = () => {
+    if (showAddForm) {
+      setEditingUser(null);
+      setUName(""); setUPhone(""); setURole("staff"); setUPassword("");
+    }
+    setShowAddForm(v => !v);
   };
 
   const handleDeleteUser = async (id: string, name: string) => {
@@ -99,18 +129,20 @@ export default function MobileStaff() {
           </div>
         </div>
         <button 
-          onClick={() => setShowAddForm(v => !v)}
+          onClick={handleToggleAddForm}
           className={`w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center active:scale-90 transition-transform ${showAddForm ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-350 shadow-none' : 'bg-blue-600 text-white shadow-blue-500/30'}`}
         >
           {showAddForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
         </button>
       </div>
 
-      {/* Add Staff Form */}
+      {/* Add/Edit Staff Form */}
       {showAddForm && (
         <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-3 duration-250">
-          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-l-2 border-blue-500 pl-2">New Account</p>
-          <form onSubmit={handleCreateUser} className="space-y-4">
+          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-l-2 border-blue-500 pl-2">
+            {editingUser ? "Edit Account" : "New Account"}
+          </p>
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             <div>
               <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Full Name</label>
               <input
@@ -150,7 +182,9 @@ export default function MobileStaff() {
               </div>
             </div>
             <div>
-              <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Password</label>
+              <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">
+                Password {editingUser && "(leave blank to keep unchanged)"}
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                 <input
@@ -159,7 +193,7 @@ export default function MobileStaff() {
                   onChange={e => setUPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full pl-10 pr-10 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  required
+                  required={!editingUser}
                 />
                 <button
                   type="button"
@@ -175,7 +209,7 @@ export default function MobileStaff() {
               disabled={submitting}
               className="w-full py-4 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
-              {submitting ? "Creating..." : "Create Account"}
+              {submitting ? "Saving..." : editingUser ? "Save Changes" : "Create Account"}
             </button>
           </form>
         </div>
@@ -218,12 +252,22 @@ export default function MobileStaff() {
                   </p>
                 )}
               </div>
-              <button
-                onClick={() => handleDeleteUser(u.id, u.name)}
-                className="w-10 h-10 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-xl flex items-center justify-center active:scale-90 transition-transform cursor-pointer"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleStartEdit(u)}
+                  className="w-10 h-10 bg-blue-50 dark:bg-blue-950/30 text-blue-500 rounded-xl flex items-center justify-center active:scale-90 transition-transform cursor-pointer"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                {u.role !== 'admin' && (
+                  <button
+                    onClick={() => handleDeleteUser(u.id, u.name)}
+                    className="w-10 h-10 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-xl flex items-center justify-center active:scale-90 transition-transform cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           ))
         )}
@@ -231,3 +275,4 @@ export default function MobileStaff() {
     </div>
   );
 }
+

@@ -15,6 +15,7 @@ import AdministrationTab from "../components/desktop/AdministrationTab";
 import PortalsTab from "../components/desktop/PortalsTab";
 import ReportsTab from "../components/desktop/ReportsTab";
 import AttendanceTab from "../components/desktop/AttendanceTab";
+import WalletTransferTab from "../components/desktop/WalletTransferTab";
 
 // Mobile Components
 import MobileCollections from "../components/mobile/MobileCollections";
@@ -122,6 +123,8 @@ export default function AdminTabPage() {
             fetchData={fetchData}
           />
         );
+      case "wallet-transfer":
+        return <WalletTransferTab />;
       case "administration":
         return isMobile ? null : (
           <AdministrationTab 

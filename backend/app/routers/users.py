@@ -93,6 +93,9 @@ def delete_user(
     if user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete your own account")
 
+    if user.role == "admin":
+        raise HTTPException(status_code=400, detail="Admins cannot be deleted.")
+
     db.delete(user)
     db.commit()
     return None
