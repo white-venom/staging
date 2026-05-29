@@ -77,7 +77,7 @@ FastAPI (Python)
 REST APIs
 JWT Authentication
 Database
-PostgreSQL
+PostgreSQL (Password: password123)
 Hosting
 Hostinger VPS (KVM 4 planned)
 Vercel optional for frontend
