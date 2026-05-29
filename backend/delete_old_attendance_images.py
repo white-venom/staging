@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.database.db import SessionLocal
 from app.database.models import Attendance
+from app.logic.r2 import is_r2_configured, delete_image_from_r2
 
 def run_image_cleanup():
     print("[INFO] Starting 2-month Odometer image cleanup process...")
@@ -27,37 +28,48 @@ def run_image_cleanup():
         static_base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app")
         
         deleted_count = 0
+        r2_active = is_r2_configured()
+        
         for r in records:
             # Clean check-in image
             if r.start_km_image_url:
-                # Relative URL looks like /static/attendance/filename.jpg
-                rel_path = r.start_km_image_url.lstrip("/")
-                filepath = os.path.join(static_base_dir, rel_path)
-                if os.path.exists(filepath):
-                    try:
-                        os.remove(filepath)
-                        print(f"[INFO] Deleted check-in image: {filepath}")
-                    except Exception as e:
-                        print(f"[WARNING] Error deleting file {filepath}: {str(e)}")
+                if r.start_km_image_url.startswith("http"):
+                    if r2_active:
+                        delete_image_from_r2(r.start_km_image_url)
+                else:
+                    # Relative URL looks like /static/attendance/filename.jpg
+                    rel_path = r.start_km_image_url.lstrip("/")
+                    filepath = os.path.join(static_base_dir, rel_path)
+                    if os.path.exists(filepath):
+                        try:
+                            os.remove(filepath)
+                            print(f"[INFO] Deleted check-in image locally: {filepath}")
+                        except Exception as e:
+                            print(f"[WARNING] Error deleting local file {filepath}: {str(e)}")
                 r.start_km_image_url = None
                 deleted_count += 1
                 
             # Clean check-out image
             if r.end_km_image_url:
-                rel_path = r.end_km_image_url.lstrip("/")
-                filepath = os.path.join(static_base_dir, rel_path)
-                if os.path.exists(filepath):
-                    try:
-                        os.remove(filepath)
-                        print(f"[INFO] Deleted check-out image: {filepath}")
-                    except Exception as e:
-                        print(f"[WARNING] Error deleting file {filepath}: {str(e)}")
+                if r.end_km_image_url.startswith("http"):
+                    if r2_active:
+                        delete_image_from_r2(r.end_km_image_url)
+                else:
+                    # Relative URL
+                    rel_path = r.end_km_image_url.lstrip("/")
+                    filepath = os.path.join(static_base_dir, rel_path)
+                    if os.path.exists(filepath):
+                        try:
+                            os.remove(filepath)
+                            print(f"[INFO] Deleted check-out image locally: {filepath}")
+                        except Exception as e:
+                            print(f"[WARNING] Error deleting local file {filepath}: {str(e)}")
                 r.end_km_image_url = None
                 deleted_count += 1
                 
         if deleted_count > 0:
             db.commit()
-            print(f"[INFO] Successfully cleaned up {deleted_count} physical images and updated database references.")
+            print(f"[INFO] Successfully cleaned up {deleted_count} image references and updated database.")
         else:
             print("[INFO] No images needed deletion.")
     except Exception as e:
@@ -67,3 +79,4 @@ def run_image_cleanup():
 
 if __name__ == "__main__":
     run_image_cleanup()
+

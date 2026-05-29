@@ -5,20 +5,25 @@ const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   
-  // Default for production is the Render backend
   if (typeof window !== "undefined") {
+    // Production VPS domains
+    if (window.location.hostname === "app.doitservices.in") {
+      return "https://api.doitservices.in";
+    }
+    
+    // Legacy Vercel/Render fallback
     if (window.location.hostname === "do-it-services.vercel.app" || 
         window.location.hostname.includes("vercel.app")) {
       return "https://doit-backend-9yel.onrender.com";
     }
     
     // Local dev
-    if (window.location.port === "3000" || window.location.port === "5173") {
-       // Force 127.0.0.1 to avoid Windows IPv6 (::1) localhost resolution issues causing ERR_CONNECTION_REFUSED
+    if (window.location.port === "3000" || window.location.port === "5173" || 
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
        return "http://127.0.0.1:8000";
     }
   }
-  return "https://doit-backend-9yel.onrender.com";
+  return "https://api.doitservices.in";
 };
 
 export const API_BASE_URL = getApiBaseUrl();

@@ -21,7 +21,7 @@ fi
 # Configuration Variables
 DB_NAME=${POSTGRES_DB:-"doit_production"}
 DB_USER=${POSTGRES_USER:-"doit_admin"}
-DB_HOST=${POSTGRES_HOST:-"localhost"}
+DB_HOST=${POSTGRES_HOST:-"db"}
 DB_PORT=${POSTGRES_PORT:-"5432"}
 
 BACKUP_DIR="/tmp/pg_backups"

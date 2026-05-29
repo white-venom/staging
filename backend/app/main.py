@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
 # Build Trigger: v1.0.1
@@ -75,17 +76,16 @@ def startup_event():
 
 
 # Configure CORS Middleware
+origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
+
+# Enable wildcard origin regex in local/development mode for easy Wi-Fi testing
+is_development = "localhost" in settings.DATABASE_URL or "127.0.0.1" in settings.DATABASE_URL or "sqlite" in settings.DATABASE_URL
+allow_origin_regex = r"https?://.*" if is_development else None
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "https://do-it-services.vercel.app",
-        "https://do-it-services-sujeet-kansals-projects.vercel.app",
-    ],
-    allow_origin_regex=r"https?://.*", # Allows any HTTP/HTTPS origin (crucial for local Wi-Fi/IP testing)
+    allow_origins=origins,
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=True,      # Crucial to allow HttpOnly cookies transmission
     allow_methods=["*"],
     allow_headers=["*"],
@@ -104,7 +104,6 @@ app.include_router(admin_settings_router)
 
 # Mount Static Files (For attendance meter images)
 from fastapi.staticfiles import StaticFiles
-import os
 static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")

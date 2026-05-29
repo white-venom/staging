@@ -14,9 +14,10 @@ router = APIRouter(prefix="/attendance", tags=["Attendance & Shifts"])
 import base64
 import uuid
 import os
+from app.logic.r2 import is_r2_configured, upload_image_to_r2
 
 def save_base64_image(base64_str: str, folder: str) -> str:
-    """Decodes base64 image string and saves to the local static directory, returning relative URL."""
+    """Decodes base64 image string and saves to Cloudflare R2 if configured, or falls back to local static directory, returning URL."""
     try:
         if not base64_str:
             return None
@@ -25,8 +26,17 @@ def save_base64_image(base64_str: str, folder: str) -> str:
             base64_str = base64_str.split(",")[1]
         
         image_data = base64.b64decode(base64_str)
-        os.makedirs(folder, exist_ok=True)
         filename = f"{uuid.uuid4().hex}.jpg"
+        
+        # If R2 credentials are set up, attempt upload to Cloudflare R2
+        if is_r2_configured():
+            r2_url = upload_image_to_r2(image_data, filename)
+            if r2_url:
+                return r2_url
+            print("[WARNING] R2 upload failed. Falling back to local storage.")
+        
+        # Local storage fallback
+        os.makedirs(folder, exist_ok=True)
         filepath = os.path.join(folder, filename)
         
         with open(filepath, "wb") as f:
@@ -36,6 +46,7 @@ def save_base64_image(base64_str: str, folder: str) -> str:
     except Exception as e:
         print(f"Error saving base64 image: {str(e)}")
         return None
+
 
 
 @router.post("/check-in", response_model=AttendanceResponse, status_code=status.HTTP_201_CREATED)
