@@ -101,7 +101,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     { id: "collections", label: "Cash In", icon: ClipboardList, path: "/admin/collections" },
     { id: "deposits", label: "Cash Out", icon: TrendingUp, path: "/admin/deposits" },
     { id: "ledger", label: "Ledger", icon: BookOpen, path: "/admin/ledger" },
-    { id: "wallet-transfer", label: "Wallet Transfer", icon: CreditCard, path: "/admin/wallet-transfer" },
+    { id: "wallet-transfer", label: "Virtual Money Transfer", icon: CreditCard, path: "/admin/wallet-transfer" },
     { id: "portals", label: "Portals", icon: Globe, path: "/admin/portals" },
     { id: "retailers", label: "Retailers", icon: Home, path: "/admin/retailers" },
     { id: "staff", label: "Staff", icon: Users, path: "/admin/staff" },
@@ -151,7 +151,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       <main className="flex-1 ml-64 p-6 min-h-screen">
         <header className="flex items-center justify-between mb-6">
           <div>
-             <h2 className="text-xl font-black text-slate-900 dark:text-white capitalize">{activeTab === "admin" ? "Dashboard" : activeTab}</h2>
+             <h2 className="text-xl font-black text-slate-900 dark:text-white capitalize">{activeTab === "admin" ? "Dashboard" : activeTab === "wallet-transfer" ? "Virtual Money Transfer" : activeTab}</h2>
              <p className="text-xs text-slate-400 font-semibold mt-1">Welcome back, {currentUser?.name}</p>
           </div>
         </header>

@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../utils/api";
+import InlineSelect from "../../../../app/components/InlineSelect";
 
 interface OverviewTabProps {
   collections: any[];
@@ -178,31 +179,19 @@ export default function OverviewTab({
               </div>
               <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide">Staff Tracking</span>
             </div>
-
-            {/* Dropdown for selecting Staff */}
-            <div className="relative">
-              <select
-                value={selectedStaffName}
-                onChange={(e) => setSelectedStaffName(e.target.value)}
-                className="pl-3 pr-8 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-[10px] font-extrabold text-slate-800 dark:text-slate-200 focus:outline-none appearance-none cursor-pointer"
-              >
-                {staffUsers.length === 0 ? (
-                  <option value="">No Staff Active</option>
-                ) : (
-                  staffUsers.map((u) => (
-                    <option key={u.id} value={u.name}>
-                      {u.name}
-                    </option>
-                  ))
-                )}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
-                <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                </svg>
-              </div>
-            </div>
           </div>
+
+          {/* Dropdown for selecting Staff – renders inline below */}
+          <InlineSelect
+            value={selectedStaffName}
+            onChange={(val) => setSelectedStaffName(val)}
+            options={staffUsers.length === 0
+              ? [{ value: "", label: "No Staff Active" }]
+              : staffUsers.map((u) => ({ value: u.name, label: u.name }))
+            }
+            placeholder="Select Staff Member"
+            icon={<Users className="w-4 h-4" />}
+          />
 
           {/* Core Metrics Grid */}
           <div className="grid grid-cols-3 gap-3">

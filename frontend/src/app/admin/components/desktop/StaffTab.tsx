@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { CheckCircle, Clock, UserPlus, ShieldAlert, Trash2, Edit } from "lucide-react";
+import { CheckCircle, Clock, UserPlus, ShieldAlert, Trash2, Edit, X } from "lucide-react";
 import { api } from "../../../utils/api";
 
 interface StaffTabProps {
@@ -17,44 +17,56 @@ export default function StaffTab({
   showToastNotification = () => {}, 
   fetchData = () => {} 
 }: StaffTabProps) {
-  const [uName, setUName] = useState("");
-  const [uPhone, setUPhone] = useState("");
-  const [uRole, setURole] = useState("staff");
-  const [uPassword, setUPassword] = useState("");
+  // Add Staff State
+  const [addName, setAddName] = useState("");
+  const [addPhone, setAddPhone] = useState("");
+  const [addRole, setAddRole] = useState("staff");
+  const [addPassword, setAddPassword] = useState("");
+
+  // Edit Staff State
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editRole, setEditRole] = useState("staff");
+  const [editPassword, setEditPassword] = useState("");
 
   const staffMembers = userDirectory.filter((u: any) => u.role === "staff" || u.role === "admin");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editingId) {
-        // Edit mode
-        const payload: any = { name: uName, phone: uPhone, role: uRole };
-        if (uPassword) {
-          payload.password = uPassword;
-        }
-        await api.updateUser(editingId, payload);
-        showToastNotification(`Staff member "${uName}" updated!`);
-      } else {
-        // Create mode
-        await api.createUser({ name: uName, phone: uPhone, role: uRole, password: uPassword });
-        showToastNotification(`Staff member "${uName}" created!`);
-      }
-      resetForm();
+      await api.createUser({ name: addName, phone: addPhone, role: addRole, password: addPassword });
+      showToastNotification(`Staff member "${addName}" created!`);
+      resetAddForm();
       fetchData();
     } catch (err: any) {
       alert("Error: " + err.message);
     }
   };
 
-  const handleEdit = (user: any) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingId) return;
+    try {
+      const payload: any = { name: editName, phone: editPhone, role: editRole };
+      if (editPassword) {
+        payload.password = editPassword;
+      }
+      await api.updateUser(editingId, payload);
+      showToastNotification(`Staff member "${editName}" updated!`);
+      resetEditForm();
+      fetchData();
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  const handleEditClick = (user: any) => {
     setEditingId(user.id);
-    setUName(user.name);
-    setUPhone(user.phone);
-    setURole(user.role);
-    setUPassword(""); // Keep blank to indicate no change
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setEditName(user.name);
+    setEditPhone(user.phone);
+    setEditRole(user.role);
+    setEditPassword(""); // Keep blank to indicate no change
   };
 
   const handleDeleteUser = async (id: string) => {
@@ -62,19 +74,26 @@ export default function StaffTab({
     try {
       await api.deleteUser(id);
       showToastNotification("Staff member deleted.");
-      if (editingId === id) resetForm();
+      if (editingId === id) resetEditForm();
       fetchData();
     } catch (err: any) {
       alert("Error: " + err.message);
     }
   };
 
-  const resetForm = () => {
+  const resetAddForm = () => {
+    setAddName("");
+    setAddPhone("");
+    setAddRole("staff");
+    setAddPassword("");
+  };
+
+  const resetEditForm = () => {
     setEditingId(null);
-    setUName("");
-    setUPhone("");
-    setURole("staff");
-    setUPassword("");
+    setEditName("");
+    setEditPhone("");
+    setEditRole("staff");
+    setEditPassword("");
   };
 
   return (
@@ -87,42 +106,35 @@ export default function StaffTab({
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                {editingId ? <Edit className="w-5 h-5 text-indigo-600" /> : <UserPlus className="w-5 h-5 text-indigo-600" />}
+                <UserPlus className="w-5 h-5 text-indigo-600" />
                 <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
-                  {editingId ? "Edit Staff Member" : "Add Staff Member"}
+                  Add Staff Member
                 </h3>
               </div>
-              {editingId && (
-                <button onClick={resetForm} className="text-[10px] font-bold text-slate-400 hover:text-slate-600 uppercase">
-                  Cancel Edit
-                </button>
-              )}
             </div>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleAddSubmit} className="space-y-4">
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Full Name</label>
-                <input type="text" value={uName} onChange={e => setUName(e.target.value)} placeholder="e.g. Rahul Sharma" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input type="text" value={addName} onChange={e => setAddName(e.target.value)} placeholder="e.g. Rahul Sharma" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Phone Number</label>
-                <input type="tel" value={uPhone} onChange={e => setUPhone(e.target.value)} placeholder="e.g. 9917128864" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input type="tel" value={addPhone} onChange={e => setAddPhone(e.target.value)} placeholder="e.g. 9917128864" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">System Role</label>
-                <select value={uRole} onChange={e => setURole(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none">
+                <select value={addRole} onChange={e => setAddRole(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none">
                   <option value="staff">Field Staff (Cash In/Out Ops)</option>
                   <option value="admin">Master Admin (Full Access)</option>
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                  {editingId ? "New Password (leave blank to keep current)" : "Initial Password"}
-                </label>
-                <input type="password" value={uPassword} onChange={e => setUPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required={!editingId} />
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Initial Password</label>
+                <input type="password" value={addPassword} onChange={e => setAddPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
               </div>
               <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-[0.98]">
-                {editingId ? "Update Account" : "Create Account"}
+                Create Account
               </button>
             </form>
           </div>
@@ -164,7 +176,7 @@ export default function StaffTab({
                         </td>
                         <td className="px-6 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => handleEdit(u)} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+                            <button onClick={() => handleEditClick(u)} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
                               <Edit className="w-3.5 h-3.5" />
                             </button>
                             {u.role !== "admin" && (
@@ -273,6 +285,91 @@ export default function StaffTab({
           )}
         </div>
       </div>
+
+      {/* Edit Staff Popup Modal */}
+      {editingId && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Edit className="w-5 h-5 text-indigo-600" />
+                <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
+                  Edit Staff Member
+                </h3>
+              </div>
+              <button 
+                onClick={resetEditForm} 
+                className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-350"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Full Name</label>
+                <input 
+                  type="text" 
+                  value={editName} 
+                  onChange={e => setEditName(e.target.value)} 
+                  placeholder="e.g. Rahul Sharma" 
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none text-slate-700 dark:text-slate-200" 
+                  required 
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Phone Number</label>
+                <input 
+                  type="tel" 
+                  value={editPhone} 
+                  onChange={e => setEditPhone(e.target.value)} 
+                  placeholder="e.g. 9917128864" 
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none text-slate-700 dark:text-slate-200" 
+                  required 
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">System Role</label>
+                <select 
+                  value={editRole} 
+                  onChange={e => setEditRole(e.target.value)} 
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none text-slate-700 dark:text-slate-200"
+                >
+                  <option value="staff">Field Staff (Cash In/Out Ops)</option>
+                  <option value="admin">Master Admin (Full Access)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                  New Password (leave blank to keep current)
+                </label>
+                <input 
+                  type="password" 
+                  value={editPassword} 
+                  onChange={e => setEditPassword(e.target.value)} 
+                  placeholder="••••••••" 
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none text-slate-700 dark:text-slate-200" 
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button 
+                  type="button" 
+                  onClick={resetEditForm} 
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-black transition-all active:scale-[0.98]"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-[0.98]"
+                >
+                  Update Account
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

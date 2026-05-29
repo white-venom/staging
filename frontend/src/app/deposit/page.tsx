@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, DenominationCounts } from "../utils/store";
+import InlineSelect from "../components/InlineSelect";
 import { 
   ArrowLeft, 
   Layers, 
@@ -251,18 +252,13 @@ export default function NewDeposit() {
                   <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
                     1. Select Source Portal Account
                   </label>
-                  <div className="relative">
-                    <Building className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                    <select
-                      value={selectedGroupId}
-                      onChange={(e) => setSelectedGroupId(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
-                    >
-                      {portalGroups.length === 0 && <option value="">Loading portals...</option>}
-                      {portalGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
+                  <InlineSelect
+                    value={selectedGroupId}
+                    onChange={(val) => setSelectedGroupId(val)}
+                    options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
+                    placeholder={portalGroups.length === 0 ? "Loading portals..." : "Select Portal"}
+                    icon={<Building className="w-4 h-4" />}
+                  />
                 </div>
 
                 {selectedGroupId && (
@@ -270,18 +266,13 @@ export default function NewDeposit() {
                     <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
                       2. Select Source Bank Account
                     </label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                      <select
-                        value={selectedPortalId}
-                        onChange={(e) => setSelectedPortalId(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
-                      >
-                        {groupAccounts.length === 0 && <option value="">No accounts found...</option>}
-                        {groupAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                    </div>
+                    <InlineSelect
+                      value={selectedPortalId}
+                      onChange={(val) => setSelectedPortalId(val)}
+                      options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
+                      placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
+                      icon={<CreditCard className="w-4 h-4" />}
+                    />
                   </div>
                 )}
 
@@ -289,18 +280,13 @@ export default function NewDeposit() {
                   <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
                     3. Select Destination Retailer
                   </label>
-                  <div className="relative">
-                    <Layers className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                    <select
-                      value={selectedRetailerId}
-                      onChange={(e) => setSelectedRetailerId(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
-                    >
-                      {retailers.length === 0 && <option value="">Loading retailers...</option>}
-                      {retailers.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
+                  <InlineSelect
+                    value={selectedRetailerId}
+                    onChange={(val) => setSelectedRetailerId(val)}
+                    options={retailers.map(r => ({ value: r.id, label: r.name }))}
+                    placeholder={retailers.length === 0 ? "Loading retailers..." : "Select Retailer"}
+                    icon={<Layers className="w-4 h-4" />}
+                  />
                 </div>
               </div>
             )}
@@ -311,18 +297,13 @@ export default function NewDeposit() {
                   <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
                     1. Choose Portal
                   </label>
-                  <div className="relative">
-                    <Building className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                    <select
-                      value={selectedGroupId}
-                      onChange={(e) => setSelectedGroupId(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
-                    >
-                      {portalGroups.length === 0 && <option value="">Loading portals...</option>}
-                      {portalGroups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
+                  <InlineSelect
+                    value={selectedGroupId}
+                    onChange={(val) => setSelectedGroupId(val)}
+                    options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
+                    placeholder={portalGroups.length === 0 ? "Loading portals..." : "Select Portal"}
+                    icon={<Building className="w-4 h-4" />}
+                  />
                   
                   {selectedGroupId && (
                     <div className="mt-2.5 flex items-center gap-2">
@@ -354,18 +335,13 @@ export default function NewDeposit() {
                     <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
                       2. Choose Bank Account
                     </label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                      <select
-                        value={selectedPortalId}
-                        onChange={(e) => setSelectedPortalId(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
-                      >
-                        {groupAccounts.length === 0 && <option value="">No accounts found...</option>}
-                        {groupAccounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                    </div>
+                    <InlineSelect
+                      value={selectedPortalId}
+                      onChange={(val) => setSelectedPortalId(val)}
+                      options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
+                      placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
+                      icon={<CreditCard className="w-4 h-4" />}
+                    />
                   </div>
                 )}
               </div>
@@ -376,18 +352,13 @@ export default function NewDeposit() {
                 <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
                   Select Shop for Refund
                 </label>
-                <div className="relative">
-                  <Layers className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                  <select
-                    value={selectedRetailerId}
-                    onChange={(e) => setSelectedRetailerId(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
-                  >
-                    {retailers.length === 0 && <option value="">Loading retailers...</option>}
-                    {retailers.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
+                <InlineSelect
+                  value={selectedRetailerId}
+                  onChange={(val) => setSelectedRetailerId(val)}
+                  options={retailers.map(r => ({ value: r.id, label: r.name }))}
+                  placeholder={retailers.length === 0 ? "Loading retailers..." : "Select Shop"}
+                  icon={<Layers className="w-4 h-4" />}
+                />
               </div>
             )}
 
@@ -407,18 +378,13 @@ export default function NewDeposit() {
                     }`}>Main Office</button>
                 </div>
                 {!toOffice && (
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                    <select
-                      value={selectedStaffId}
-                      onChange={(e) => setSelectedStaffId(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
-                    >
-                      {staffUsers.length === 0 && <option value="">Loading staff...</option>}
-                      {staffUsers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                    </select>
-                    <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
+                  <InlineSelect
+                    value={selectedStaffId}
+                    onChange={(val) => setSelectedStaffId(val)}
+                    options={staffUsers.map(s => ({ value: s.id, label: s.name }))}
+                    placeholder={staffUsers.length === 0 ? "Loading staff..." : "Select Staff"}
+                    icon={<User className="w-4 h-4" />}
+                  />
                 )}
               </div>
             )}

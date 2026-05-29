@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore, DenominationCounts } from "../utils/store";
 import { db, seedOfflineRetailers, CachedRetailer } from "../utils/db";
+import InlineSelect from "../components/InlineSelect";
 import { 
   ArrowLeft, 
   Store as StoreIcon, 
@@ -31,8 +32,6 @@ export default function NewCollection() {
 
   // Search & Selector State
   const [retailers, setRetailers] = useState<CachedRetailer[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
   const [selectedRetailer, setSelectedRetailer] = useState<CachedRetailer | null>(null);
   const [selectedStoreId, setSelectedStoreId] = useState<string>("");
   const [retailerStores, setRetailerStores] = useState<any[]>([]);
@@ -150,11 +149,7 @@ export default function NewCollection() {
 
   if (!mounted) return null;
 
-  // Filter query selector
-  const filteredRetailers = retailers.filter(r => 
-    r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    r.phone.includes(searchQuery)
-  );
+
 
   const handleDenomChange = (key: keyof DenominationCounts, value: string) => {
     const val = value === "" ? 0 : parseFloat(value);
@@ -311,52 +306,23 @@ export default function NewCollection() {
           {/* DYNAMIC SOURCE INPUT */}
           <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3.5">
             {sourceType === "retailer" && (
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 <div>
                   <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
-                    Find Shop or Retailer
+                    Select Retailer
                   </label>
                   
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                    <input
-                      type="text"
-                      placeholder="Type retailer name or phone..."
-                      value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        setShowSearchDropdown(true);
-                      }}
-                      onFocus={() => setShowSearchDropdown(true)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 font-semibold"
-                    />
-                  </div>
-
-                  {showSearchDropdown && searchQuery && (
-                    <div className="mt-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 z-20 relative">
-                      {filteredRetailers.length === 0 ? (
-                        <div className="p-3 text-xs text-slate-400 text-center font-medium">
-                          No retailers matched.
-                        </div>
-                      ) : (
-                        filteredRetailers.map((r) => (
-                          <button
-                            key={r.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedRetailer(r);
-                              setSearchQuery("");
-                              setShowSearchDropdown(false);
-                            }}
-                            className="w-full text-left p-3 hover:bg-slate-50 dark:hover:bg-slate-950 text-xs flex justify-between items-center transition-colors cursor-pointer"
-                          >
-                            <span className="font-extrabold text-slate-800 dark:text-slate-200">{r.name}</span>
-                            <span className="text-[10px] text-slate-400 font-bold">{r.phone}</span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
+                  <InlineSelect
+                    value={selectedRetailer?.id || ""}
+                    onChange={(val) => {
+                      const match = retailers.find(r => r.id === val);
+                      setSelectedRetailer(match || null);
+                    }}
+                    options={retailers.map((r) => ({ value: r.id, label: `${r.name}${r.phone ? ` (${r.phone})` : ""}` }))}
+                    placeholder="Choose Retailer"
+                    icon={<StoreIcon className="w-4 h-4" />}
+                  />
+                </div>
 
                   {selectedRetailer && (
                     <div className="space-y-3 mt-3">
@@ -404,28 +370,21 @@ export default function NewCollection() {
                       </div>
                     </div>
                   )}
-                </div>
 
                 <div>
                   <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
                     Select Shop (Branch)
                   </label>
-                  <div className="relative">
-                    <StoreIcon className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                    <select
-                      value={selectedStoreId}
-                      onChange={(e) => setSelectedStoreId(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
-                    >
-                      <option value="">Direct Retailer Handover</option>
-                      {retailerStores.map((store) => (
-                        <option key={store.id} value={store.id}>
-                          {store.store_name}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                  </div>
+                  <InlineSelect
+                    value={selectedStoreId}
+                    onChange={(val) => setSelectedStoreId(val)}
+                    options={[
+                      { value: "", label: "Direct Retailer Handover" },
+                      ...retailerStores.map((store) => ({ value: store.id, label: store.store_name }))
+                    ]}
+                    placeholder="Direct Retailer Handover"
+                    icon={<StoreIcon className="w-4 h-4" />}
+                  />
                 </div>
               </div>
             )}
@@ -435,20 +394,13 @@ export default function NewCollection() {
                 <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
                   Select Staff Member
                 </label>
-                <div className="relative">
-                  <UserIcon className="absolute left-3.5 top-3 w-4 h-4 text-slate-400 dark:text-slate-500" />
-                  <select
-                    value={selectedStaffId}
-                    onChange={(e) => setSelectedStaffId(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-xl focus:outline-none text-xs text-slate-700 dark:text-slate-300 appearance-none cursor-pointer font-semibold"
-                  >
-                    <option value="">Choose Staff Member</option>
-                    {staffMembers.map((s) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className="absolute right-3.5 top-3 w-4 h-4 text-slate-400 pointer-events-none" />
-                </div>
+                <InlineSelect
+                  value={selectedStaffId}
+                  onChange={(val) => setSelectedStaffId(val)}
+                  options={staffMembers.map((s) => ({ value: s.id, label: s.name }))}
+                  placeholder="Choose Staff Member"
+                  icon={<UserIcon className="w-4 h-4" />}
+                />
               </div>
             )}
 

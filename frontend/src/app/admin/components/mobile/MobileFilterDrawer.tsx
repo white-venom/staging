@@ -2,6 +2,7 @@
 
 import React from "react";
 import { X, Calendar, User, Filter, Globe, Store, ArrowUpDown, Tag } from "lucide-react";
+import InlineSelect from "../../../../app/components/InlineSelect";
 
 interface MobileFilterDrawerProps {
   isOpen: boolean;
@@ -59,14 +60,15 @@ export default function MobileFilterDrawer({
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
               <Store className="w-3 h-3" /> Retailer / Bank
             </label>
-            <select 
+            <InlineSelect
               value={filters.party}
-              onChange={(e) => setFilters({ ...filters, party: e.target.value })}
-              className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="all">All Parties</option>
-              {partyList.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+              onChange={(val) => setFilters({ ...filters, party: val })}
+              options={[
+                { value: "all", label: "All Parties" },
+                ...partyList.map(p => ({ value: p, label: p }))
+              ]}
+              placeholder="All Parties"
+            />
           </div>
 
           {/* 2. Portal Filter */}
@@ -74,14 +76,15 @@ export default function MobileFilterDrawer({
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
               <Globe className="w-3 h-3" /> Portal Group
             </label>
-            <select 
+            <InlineSelect
               value={filters.portal}
-              onChange={(e) => setFilters({ ...filters, portal: e.target.value })}
-              className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="all">All Portals</option>
-              {portalList.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+              onChange={(val) => setFilters({ ...filters, portal: val })}
+              options={[
+                { value: "all", label: "All Portals" },
+                ...portalList.map(p => ({ value: p, label: p }))
+              ]}
+              placeholder="All Portals"
+            />
           </div>
 
           {/* 3. Transaction Type */}
@@ -107,14 +110,15 @@ export default function MobileFilterDrawer({
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
               <User className="w-3 h-3" /> Staff Member
             </label>
-            <select 
+            <InlineSelect
               value={filters.staff}
-              onChange={(e) => setFilters({ ...filters, staff: e.target.value })}
-              className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="all">All Staff</option>
-              {staffList.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+              onChange={(val) => setFilters({ ...filters, staff: val })}
+              options={[
+                { value: "all", label: "All Staff" },
+                ...staffList.map(s => ({ value: s, label: s }))
+              ]}
+              placeholder="All Staff"
+            />
           </div>
 
           {/* 5. Date Range */}
@@ -139,16 +143,17 @@ export default function MobileFilterDrawer({
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
               <ArrowUpDown className="w-3 h-3" /> Sort Results
             </label>
-            <select 
+            <InlineSelect
               value={filters.sortBy}
-              onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
-              className="w-full p-4 bg-slate-50 dark:bg-slate-800 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="date-desc">Newest First</option>
-              <option value="date-asc">Oldest First</option>
-              <option value="amount-desc">Amount: High to Low</option>
-              <option value="amount-asc">Amount: Low to High</option>
-            </select>
+              onChange={(val) => setFilters({ ...filters, sortBy: val })}
+              options={[
+                { value: "date-desc", label: "Newest First" },
+                { value: "date-asc", label: "Oldest First" },
+                { value: "amount-desc", label: "Amount: High to Low" },
+                { value: "amount-asc", label: "Amount: Low to High" }
+              ]}
+              placeholder="Sort Results"
+            />
           </div>
         </div>
 

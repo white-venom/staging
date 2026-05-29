@@ -29,7 +29,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
     { label: "CASH IN", icon: ArrowUpRight, href: "/admin/collections" },
     { label: "CASH OUT", icon: ArrowDownLeft, href: "/admin/deposits" },
     { label: "LEDGER", icon: BookOpen, href: "/admin/ledger" },
-    { label: "WALLET TRANSFER", icon: CreditCard, href: "/admin/wallet-transfer" },
+    { label: "VIRTUAL MONEY TRANSFER", icon: CreditCard, href: "/admin/wallet-transfer" },
     { label: "STAFF MGMT", icon: Users, href: "/admin/staff" },
     { label: "RETAILER MGMT", icon: Building, href: "/admin/retailers" },
     { label: "PORTAL MGMT", icon: Globe, href: "/admin/portals" },

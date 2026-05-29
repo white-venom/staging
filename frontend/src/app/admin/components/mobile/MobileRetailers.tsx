@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
+import { useAdmin } from "../../context/AdminContext";
 
 interface MobileRetailersProps {
   retailerDirectory: any[];
@@ -25,6 +26,7 @@ export default function MobileRetailers({
   showToastNotification,
   fetchData
 }: MobileRetailersProps) {
+  const { collections, deposits } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -42,18 +44,17 @@ export default function MobileRetailers({
   const [inlineValue, setInlineValue] = useState("");
   const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
 
-  const handleInlineRetailerUpdate = async (id: string, field: 'take' | 'give') => {
+  const handleInlineRetailerUpdate = async (id: string, field: 'take' | 'give', valueToSave?: string) => {
+    const valToUse = valueToSave !== undefined ? valueToSave : inlineValue;
+    const targetValue = parseFloat(valToUse || "0");
+    if (isNaN(targetValue) || targetValue <= 0) {
+      setInlineEditing(null);
+      return;
+    }
     setIsUpdatingBalance(true);
     try {
       const retailer = retailerDirectory.find(r => r.id === id);
       if (!retailer) return;
-
-      const targetValue = parseFloat(inlineValue || "0");
-      if (targetValue < 0) {
-        showToastNotification("Negative values are not allowed.");
-        setIsUpdatingBalance(false);
-        return;
-      }
 
       const payload: any = {
         retailer_name: retailer.name,
@@ -343,22 +344,76 @@ export default function MobileRetailers({
                       placeholder="Amount to Add"
                       value={inlineValue}
                       onChange={e => setInlineValue(e.target.value)}
+                      onBlur={(e) => {
+                        handleInlineRetailerUpdate(retailer.id, editingField, e.target.value);
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') e.currentTarget.blur();
+                        if (e.key === 'Escape') setInlineEditing(null);
+                      }}
                       className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
                       autoFocus
                     />
-                    <button
-                      onClick={() => handleInlineRetailerUpdate(retailer.id, editingField)}
-                      disabled={isUpdatingBalance}
-                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors"
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={() => setInlineEditing(null)}
-                      className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors"
-                    >
-                      Cancel
-                    </button>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-slate-150 dark:border-slate-800 space-y-2">
+                    <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider block">Retailer Transaction Ledger</span>
+                    {(() => {
+                      const retailerTx = [
+                        ...(collections || [])
+                          .filter(c => c.retailerId === retailer.id)
+                          .map(c => ({
+                            id: c.id,
+                            date: c.date,
+                            type: "Cash In",
+                            staff: c.staffName || "Admin",
+                            amount: c.totalAmount,
+                            isCredit: true,
+                            balance: c.balance_snapshot
+                          })),
+                        ...(deposits || [])
+                          .filter(d => d.retailerId === retailer.id)
+                          .map(d => ({
+                            id: d.id,
+                            date: d.date,
+                            type: "Cash Out",
+                            staff: d.staffName || "Admin",
+                            amount: d.amount,
+                            isCredit: false,
+                            balance: d.balance_snapshot
+                          }))
+                      ].sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime());
+
+                      if (retailerTx.length === 0) {
+                        return (
+                          <p className="text-[10px] font-bold text-slate-400 italic py-2">No transaction history found.</p>
+                        );
+                      }
+
+                      return (
+                        <div className="max-h-48 overflow-y-auto border border-slate-100 dark:border-slate-800/80 rounded-xl divide-y divide-slate-150/40 dark:divide-slate-800/40">
+                          {retailerTx.map(tx => (
+                            <div key={tx.id} className="p-2.5 flex items-center justify-between text-[10px] bg-slate-50/40 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-extrabold text-slate-755 dark:text-slate-200 uppercase">{tx.type}</span>
+                                  <span className="text-[8px] font-bold text-slate-400">by {tx.staff}</span>
+                                </div>
+                                <span className="text-[8px] text-slate-400 block mt-0.5">{tx.date}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className={`font-black ${tx.isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
+                                  {tx.isCredit ? '+' : '-'}₹{tx.amount.toLocaleString()}
+                                </span>
+                                {tx.balance !== undefined && (
+                                  <span className="text-[8px] text-slate-400 block mt-0.5">Bal: ₹{Number(tx.balance).toLocaleString()}</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
