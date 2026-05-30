@@ -6,7 +6,7 @@ from sqlalchemy import select, and_, desc, update
 from sqlalchemy.orm import Session, joinedload
 
 from app.database.db import get_db
-from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store
+from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, Portal
 from app.schemas.collection import CollectionCreate, CollectionResponse
 from app.dependencies import require_staff, require_admin, require_any_user
 from app.logic.ledger import recalculate_balances
@@ -26,7 +26,7 @@ def submit_collection(
     from_staff = None
     
     if payload.retailer_id:
-        retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
+        retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
         if not retailer:
             raise HTTPException(status_code=404, detail="Retailer not found")
         
@@ -123,7 +123,7 @@ def submit_collection(
             db_collection.balance_snapshot = new_balance
             
         elif payload.portal_id:
-            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
+            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
             if portal:
                 portal.balance -= Decimal(str(payload.total_amount))
                 db_collection.balance_snapshot = portal.balance
@@ -148,7 +148,7 @@ def submit_collection(
         db_collection.staff_name = current_user.name
 
         # 3. Simulate Email Alert (Task 110: Auto-Verify)
-        if retailer.email:
+        if retailer and retailer.email:
             secure_link = f"https://doitservice.com/public/ledger/{retailer.ledger_token}"
             print("\n" + "="*80)
             print("📨 [SMTP EMAIL DISPATCH SIMULATOR] TO RETAILER (AUTO-VERIFIED)")
@@ -229,12 +229,18 @@ def verify_collection(
     current_user=Depends(require_admin)
 ):
     """Admin verifies a collection entry. Triggers live ledger bookkeeping and automated email alerts to retailers."""
-    collection = db.scalar(select(Collection).where(Collection.id == collection_id))
+    collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
 
     if collection.status == "verified":
         raise HTTPException(status_code=400, detail="This collection has already been verified and logged!")
+        
+    if not collection.retailer_id:
+        raise HTTPException(status_code=400, detail="Can only verify retailer collections via this endpoint.")
+
+    # Lock the retailer
+    retailer = db.scalar(select(Retailer).where(Retailer.id == collection.retailer_id).with_for_update())
 
     # 1. Update status
     collection.status = "verified"
@@ -276,7 +282,7 @@ def verify_collection(
 
     # 3. Simulate Email Alert with Secure Public Token
     retailer = collection.retailer
-    if retailer.email:
+    if retailer and retailer.email:
         secure_link = f"https://doitservice.com/public/ledger/{retailer.ledger_token}"
         print("\n" + "="*80)
         print("📨 [SMTP EMAIL DISPATCH SIMULATOR] TO RETAILER")
@@ -289,6 +295,8 @@ def verify_collection(
         print(f"     You can view your secure, real-time live statement anytime here:")
         print(f"     🔗 {secure_link}")
         print("="*80 + "\n")
+        
+    return collection
 
 from app.logic.ledger import recalculate_balances
 
@@ -299,7 +307,7 @@ def delete_collection(
     current_user=Depends(require_admin)
 ):
     """Admin-only: Delete a collection and its associated ledger entry, then fix following balances."""
-    collection = db.scalar(select(Collection).where(Collection.id == collection_id))
+    collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
     
@@ -311,7 +319,7 @@ def delete_collection(
     
     # Restore portal balance if the collection was against a portal
     if collection.portal_id:
-        portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id))
+        portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
         if portal:
             portal.balance += Decimal(str(collection.total_amount))
             if portal.group:
@@ -333,7 +341,7 @@ def update_collection(
     current_user=Depends(require_admin)
 ):
     """Admin-only: Update collection amount or details and recalculate balances."""
-    collection = db.scalar(select(Collection).where(Collection.id == collection_id))
+    collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
     
@@ -347,7 +355,7 @@ def update_collection(
         setattr(collection, field, value)
         
     if collection.portal_id and diff != 0:
-        portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id))
+        portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
         if portal:
             portal.balance -= diff
             if portal.group:

@@ -87,11 +87,11 @@ def approve_penalty(data: PenaltyApproval, db: Session = Depends(get_db), curren
 def process_virtual_transfer(
     payload: VirtualTransferRequest,
     db: Session = Depends(get_db),
-    current_user=Depends(require_any_user)
+    current_user=Depends(require_admin)
 ):
     """Atomically transfers virtual balance from Portal to Retailer or Staff."""
     # 1. Fetch Source Portal
-    portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
+    portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
     if not portal:
         raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
         
@@ -108,7 +108,7 @@ def process_virtual_transfer(
             
         if payload.retailer_id:
             # Transfer to Retailer
-            retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
+            retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
             if not retailer:
                 raise HTTPException(status_code=404, detail="Destination retailer not found.")
                 
@@ -144,7 +144,7 @@ def process_virtual_transfer(
             }
         else:
             # Transfer to Staff
-            staff = db.scalar(select(User).where(User.id == payload.staff_id))
+            staff = db.scalar(select(User).where(User.id == payload.staff_id).with_for_update())
             if not staff:
                 raise HTTPException(status_code=404, detail="Destination staff member not found.")
                 

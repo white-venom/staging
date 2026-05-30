@@ -27,23 +27,23 @@ def submit_deposit(
     portal = None
     retailer = None
     if dt == "portal":
-        portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
+        portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
         if not portal:
             raise HTTPException(status_code=404, detail="Target portal bank account not found.")
     elif dt == "retailer":
-        retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
+        retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
         if not retailer:
             raise HTTPException(status_code=404, detail="Target retailer profile not found.")
     elif dt == "staff":
         if payload.recipient_staff_id:
-            recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id))
+            recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id).with_for_update())
             if not recipient:
                 raise HTTPException(status_code=404, detail="Recipient staff member not found.")
     elif dt == "virtual":
-        portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
+        portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
         if not portal:
             raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
-        retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
+        retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
         if not retailer:
             raise HTTPException(status_code=404, detail="Target retailer not found.")
 
@@ -180,7 +180,7 @@ def submit_deposit(
         
         # Populate target_name for response
         if dt == "portal":
-            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
+            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
             if portal:
                 db_deposit.target_name = portal.portal_name
                 if portal.group:
@@ -189,20 +189,20 @@ def submit_deposit(
             else:
                 db_deposit.target_name = "Portal Bank"
         elif dt == "retailer":
-            retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
+            retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
             db_deposit.target_name = retailer.retailer_name if retailer else "Retailer Store"
         elif dt == "staff":
             if payload.to_office:
                 db_deposit.target_name = "Main Office Cashier"
             else:
                 if payload.recipient_staff_id:
-                    recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id))
+                    recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id).with_for_update())
                     db_deposit.target_name = recipient.name if recipient else "Field Staff"
                 else:
                     db_deposit.target_name = "Field Staff"
         elif dt == "virtual":
-            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id))
-            retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id))
+            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
+            retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
             p_name = portal.portal_name if portal else "Portal"
             r_name = retailer.retailer_name if retailer else "Retailer"
             db_deposit.target_name = f"Virtual: {p_name} ➔ {r_name}"
@@ -304,7 +304,7 @@ def delete_deposit(
     current_user=Depends(require_admin)
 ):
     """Admin-only: Delete a deposit and its associated ledger entry, then fix following balances."""
-    deposit = db.scalar(select(BankDeposit).where(BankDeposit.id == deposit_id))
+    deposit = db.scalar(select(BankDeposit).where(BankDeposit.id == deposit_id).with_for_update())
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit record not found")
     
@@ -315,7 +315,7 @@ def delete_deposit(
     
     # Handle Portal and Staff balance reversals
     if deposit.portal_id:
-        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id))
+        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
         if portal:
             if deposit.deposit_type == "portal":
                 # Deleting portal deposit: reduce portal balance since cash was never deposited
@@ -332,7 +332,7 @@ def delete_deposit(
 
     # Reverse staff virtual limit if virtual limit transfer is deleted
     if deposit.deposit_type == "virtual" and deposit.recipient_staff_id:
-        staff = db.scalar(select(User).where(User.id == deposit.recipient_staff_id))
+        staff = db.scalar(select(User).where(User.id == deposit.recipient_staff_id).with_for_update())
         if staff:
             staff.virtual_balance -= Decimal(str(deposit.amount))
     

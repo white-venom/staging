@@ -132,11 +132,13 @@ export default function MobileFilterDrawer({
                 label="From"
                 value={filters.dateFrom}
                 onChange={(val) => setFilters({ ...filters, dateFrom: val })}
+                type="from"
               />
               <InlineDatePicker
                 label="To"
                 value={filters.dateTo}
                 onChange={(val) => setFilters({ ...filters, dateTo: val })}
+                type="to"
               />
             </div>
           </div>
