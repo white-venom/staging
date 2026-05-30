@@ -331,10 +331,17 @@ def delete_deposit(
                     portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
 
     # Reverse staff virtual limit if virtual limit transfer is deleted
-    if deposit.deposit_type == "virtual" and deposit.recipient_staff_id:
-        staff = db.scalar(select(User).where(User.id == deposit.recipient_staff_id).with_for_update())
-        if staff:
-            staff.virtual_balance -= Decimal(str(deposit.amount))
+    if deposit.deposit_type == "virtual":
+        if deposit.recipient_staff_id:
+            # Reversing virtual transfer to staff: subtract from recipient's limit
+            recipient = db.scalar(select(User).where(User.id == deposit.recipient_staff_id).with_for_update())
+            if recipient:
+                recipient.virtual_balance -= Decimal(str(deposit.amount))
+        else:
+            # Reversing portal-to-retailer transfer: refund creator's limit if they are staff
+            creator = db.scalar(select(User).where(User.id == deposit.staff_id).with_for_update())
+            if creator and creator.role != "admin":
+                creator.virtual_balance += Decimal(str(deposit.amount))
     
     db.delete(deposit)
     db.commit()

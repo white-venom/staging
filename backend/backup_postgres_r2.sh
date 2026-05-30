@@ -18,6 +18,22 @@ if [ -f "$ENV_FILE" ]; then
     source "$ENV_FILE"
 fi
 
+# Check required configurations to avoid insecure fallbacks
+if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+    echo "❌ Error: POSTGRES_PASSWORD is not configured in the environment." >&2
+    exit 1
+fi
+
+if [ -z "${DB_BACKUP_KEY:-}" ]; then
+    echo "❌ Error: DB_BACKUP_KEY is not configured in the environment." >&2
+    exit 1
+fi
+
+if [ -z "${R2_S3_ENDPOINT:-}" ] || [ "${R2_S3_ENDPOINT}" = "https://your-account-id.r2.cloudflarestorage.com" ]; then
+    echo "❌ Error: R2_S3_ENDPOINT is not configured or is set to a placeholder." >&2
+    exit 1
+fi
+
 # Configuration Variables
 DB_NAME=${POSTGRES_DB:-"doit_production"}
 DB_USER=${POSTGRES_USER:-"doit_admin"}
@@ -31,8 +47,8 @@ ENCRYPTED_FILENAME="${BACKUP_FILENAME}.enc"
 
 # Cloudflare R2 / S3 Configuration Parameters
 R2_BUCKET=${R2_BACKUP_BUCKET:-"doit-db-backups"}
-R2_ENDPOINT_URL=${R2_S3_ENDPOINT:-"https://your-account-id.r2.cloudflarestorage.com"}
-BACKUP_ENCRYPTION_KEY=${DB_BACKUP_KEY:-"DoItServicesSecureBackupPassphrase2026"}
+R2_ENDPOINT_URL=${R2_S3_ENDPOINT}
+BACKUP_ENCRYPTION_KEY=${DB_BACKUP_KEY}
 
 # Ensure local temporary storage directory exists
 mkdir -p "$BACKUP_DIR"
@@ -41,7 +57,7 @@ echo "🏁 Starting PostgreSQL database backup process for: ${DB_NAME}..."
 
 # 1. Generate compressed database dump via pg_dump
 echo "📦 Dumping Postgres schema & tables..."
-PGPASSWORD="${POSTGRES_PASSWORD:-"securepassword"}" pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" | gzip > "${BACKUP_DIR}/${BACKUP_FILENAME}"
+PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" | gzip > "${BACKUP_DIR}/${BACKUP_FILENAME}"
 
 # 2. Encrypt the backup file using AES-256-CBC to protect customer ledger data (Task 61)
 echo "🔒 Encrypting backup file using AES-256 symmetric cipher..."
