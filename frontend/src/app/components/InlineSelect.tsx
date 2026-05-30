@@ -57,7 +57,7 @@ export default function InlineSelect({
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setIsOpen((prev) => !prev)}
-        className={`w-full flex items-center gap-2 ${icon ? 'pl-10' : 'pl-4'} pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border ${isOpen ? 'border-blue-400 ring-1 ring-blue-400/30' : 'border-slate-200 dark:border-slate-800'} rounded-xl text-left text-[13px] font-semibold transition-all ${
+        className={`relative w-full flex items-center gap-2 ${icon ? 'pl-10' : 'pl-4'} pr-10 py-2.5 bg-slate-50 dark:bg-slate-950 border ${isOpen ? 'border-blue-400 ring-1 ring-blue-400/30' : 'border-slate-200 dark:border-slate-800'} rounded-xl text-left text-[13px] font-semibold transition-all ${
           disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
         } ${
           selectedOption

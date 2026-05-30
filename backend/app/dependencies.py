@@ -26,14 +26,11 @@ def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    print(f"DEBUG: [get_current_user] credentials={credentials}", flush=True)
     if not credentials:
         raise credentials_exception
 
     token = credentials.credentials
-    print(f"DEBUG: [get_current_user] token={token}", flush=True)
     payload = decode_token(token, expected_type="access")
-    print(f"DEBUG: [get_current_user] payload={payload}", flush=True)
     if payload is None:
         raise credentials_exception
         

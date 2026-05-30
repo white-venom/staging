@@ -181,19 +181,21 @@ export default function LoginPage() {
           </div>
 
           {/* Testing Credentials (Collapsible/Subtle) */}
-          <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800">
-             <p className="text-[9px] uppercase font-black text-slate-350 dark:text-slate-600 tracking-widest mb-3">Test System Accounts</p>
-             <div className="flex gap-4">
-                <div className="flex-1 text-[9px] text-slate-400">
-                   <span className="block font-bold text-slate-500 mb-0.5">STAFF:</span>
-                   <span>9917128864 / pass123</span>
-                </div>
-                <div className="flex-1 text-[9px] text-slate-400 border-l border-slate-100 dark:border-slate-800 pl-4">
-                   <span className="block font-bold text-slate-500 mb-0.5">ADMIN:</span>
-                   <span>7900671145 / pass123</span>
+          {process.env.NODE_ENV === "development" && (
+             <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800">
+                <p className="text-[9px] uppercase font-black text-slate-350 dark:text-slate-600 tracking-widest mb-3">Test System Accounts</p>
+                <div className="flex gap-4">
+                   <div className="flex-1 text-[9px] text-slate-400">
+                      <span className="block font-bold text-slate-500 mb-0.5">STAFF:</span>
+                      <span>9917128864 / pass123</span>
+                   </div>
+                   <div className="flex-1 text-[9px] text-slate-400 border-l border-slate-100 dark:border-slate-800 pl-4">
+                      <span className="block font-bold text-slate-500 mb-0.5">ADMIN:</span>
+                      <span>7900671145 / pass123</span>
+                   </div>
                 </div>
              </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

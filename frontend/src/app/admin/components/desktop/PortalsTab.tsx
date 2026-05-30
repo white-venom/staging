@@ -277,7 +277,7 @@ export default function PortalsTab({
                     <div>
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-0.5">To Take</span>
                       {inlineEditing?.id === group.id && inlineEditing?.field === 'take' ? (
-                        <div className="flex items-center gap-1 animate-fade-in">
+                        <div className="flex items-center gap-1 animate-fade-in flex-wrap">
                           <input 
                             type="number" 
                             min="0"
@@ -326,7 +326,7 @@ export default function PortalsTab({
                     <div>
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-0.5">To Give</span>
                       {inlineEditing?.id === group.id && inlineEditing?.field === 'give' ? (
-                        <div className="flex items-center gap-1 animate-fade-in">
+                        <div className="flex items-center gap-1 animate-fade-in flex-wrap">
                           <input 
                             type="number" 
                             min="0"

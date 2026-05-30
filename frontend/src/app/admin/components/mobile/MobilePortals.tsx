@@ -324,29 +324,31 @@ export default function MobilePortals({
                   <p className="text-[9px] font-black text-slate-450 uppercase tracking-wider">
                     Add more to {editingField === 'take' ? 'To Take (Red)' : 'To Give (Green)'}
                   </p>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2">
                     <input
                       type="number"
                       min="0"
                       placeholder="Amount to Add"
                       value={inlineValue}
                       onChange={e => setInlineValue(e.target.value)}
-                      className="flex-1 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
                       autoFocus
                     />
-                    <button
-                      onClick={() => handleInlinePortalUpdate(group.id, editingField)}
-                      disabled={isUpdatingBalance}
-                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors"
-                    >
-                      Add
-                    </button>
-                    <button
-                      onClick={() => setInlineEditing(null)}
-                      className="px-3.5 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors"
-                    >
-                      Cancel
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleInlinePortalUpdate(group.id, editingField)}
+                        disabled={isUpdatingBalance}
+                        className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Add
+                      </button>
+                      <button
+                        onClick={() => setInlineEditing(null)}
+                        className="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

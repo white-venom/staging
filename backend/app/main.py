@@ -32,31 +32,33 @@ app = FastAPI(
 def startup_event():
     Base.metadata.create_all(bind=engine)
     
-    # Safety Seed: Ensure at least one admin and one staff exist
-    db = SessionLocal()
-    try:
-        admin_exists = db.query(UserModel).filter(UserModel.phone == "7900671145").first()
-        if not admin_exists:
-            new_admin = UserModel(
-                name="Admin User",
-                phone="7900671145",
-                password_hash=get_password_hash("pass123"),
-                role="admin"
-            )
-            db.add(new_admin)
-            
-        staff_exists = db.query(UserModel).filter(UserModel.phone == "9917128864").first()
-        if not staff_exists:
-            new_staff = UserModel(
-                name="Staff User",
-                phone="9917128864",
-                password_hash=get_password_hash("pass123"),
-                role="staff"
-            )
-            db.add(new_staff)
-        db.commit()
-    finally:
-        db.close()
+    # Safety Seed: Ensure at least one admin and one staff exist (only in development and if SEED_ACCOUNTS is enabled)
+    is_dev = "localhost" in settings.DATABASE_URL or "127.0.0.1" in settings.DATABASE_URL or "sqlite" in settings.DATABASE_URL or "172.18" in settings.DATABASE_URL
+    if os.getenv("SEED_ACCOUNTS", "true").lower() == "true" and is_dev:
+        db = SessionLocal()
+        try:
+            admin_exists = db.query(UserModel).filter(UserModel.phone == "7900671145").first()
+            if not admin_exists:
+                new_admin = UserModel(
+                    name="Admin User",
+                    phone="7900671145",
+                    password_hash=get_password_hash("pass123"),
+                    role="admin"
+                )
+                db.add(new_admin)
+                
+            staff_exists = db.query(UserModel).filter(UserModel.phone == "9917128864").first()
+            if not staff_exists:
+                new_staff = UserModel(
+                    name="Staff User",
+                    phone="9917128864",
+                    password_hash=get_password_hash("pass123"),
+                    role="staff"
+                )
+                db.add(new_staff)
+            db.commit()
+        finally:
+            db.close()
 
     # Trigger the 2-month odometer image cleanup in a background thread
     try:

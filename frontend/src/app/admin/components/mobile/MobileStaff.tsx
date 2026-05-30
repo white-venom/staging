@@ -130,88 +130,98 @@ export default function MobileStaff() {
         </div>
         <button 
           onClick={handleToggleAddForm}
-          className={`w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center active:scale-90 transition-transform ${showAddForm ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-350 shadow-none' : 'bg-blue-600 text-white shadow-blue-500/30'}`}
+          className={`w-12 h-12 rounded-2xl shadow-lg flex items-center justify-center active:scale-90 transition-transform bg-blue-600 text-white shadow-blue-500/30`}
         >
-          {showAddForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+          <Plus className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Add/Edit Staff Form */}
+      {/* Add/Edit Staff Modal Popup */}
       {showAddForm && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 space-y-4 shadow-sm animate-in fade-in slide-in-from-top-3 duration-250">
-          <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-l-2 border-blue-500 pl-2">
-            {editingUser ? "Edit Account" : "New Account"}
-          </p>
-          <form onSubmit={handleFormSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Full Name</label>
-              <input
-                type="text"
-                value={uName}
-                onChange={e => setUName(e.target.value)}
-                placeholder="e.g. Rahul Sharma"
-                className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                required
-              />
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 w-full max-w-sm space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest border-l-2 border-blue-500 pl-2">
+                {editingUser ? "Edit Account" : "New Account"}
+              </p>
+              <button type="button" onClick={handleToggleAddForm} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-full active:scale-90 text-slate-500 transition-transform cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleFormSubmit} className="space-y-4">
               <div>
-                <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Phone</label>
-                <div className="relative">
-                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                  <input
-                    type="tel"
-                    value={uPhone}
-                    onChange={e => setUPhone(e.target.value)}
-                    placeholder="9876543210"
-                    className="w-full pl-10 pr-3 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    required
-                  />
+                <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={uName}
+                  onChange={e => setUName(e.target.value)}
+                  placeholder="e.g. Rahul Sharma"
+                  className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Phone</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                    <input
+                      type="tel"
+                      value={uPhone}
+                      onChange={e => setUPhone(e.target.value)}
+                      placeholder="9876543210"
+                      className="w-full pl-10 pr-3 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Role</label>
+                  <select
+                    value={uRole}
+                    onChange={e => setURole(e.target.value)}
+                    className="w-full px-3 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="staff">Staff</option>
+                    <option value="admin">Admin</option>
+                  </select>
                 </div>
               </div>
               <div>
-                <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Role</label>
-                <select
-                  value={uRole}
-                  onChange={e => setURole(e.target.value)}
-                  className="w-full px-3 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none cursor-pointer"
-                >
-                  <option value="staff">Staff</option>
-                  <option value="admin">Admin</option>
-                </select>
+                <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">
+                  Password {editingUser && "(leave blank to keep unchanged)"}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={uPassword}
+                    onChange={e => setUPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-12 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    required={!editingUser}
+                  />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowPassword(v => !v);
+                    }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center z-10 text-slate-400 cursor-pointer active:scale-90 bg-transparent"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">
-                Password {editingUser && "(leave blank to keep unchanged)"}
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={uPassword}
-                  onChange={e => setUPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-10 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  required={!editingUser}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-4 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-            >
-              {submitting ? "Saving..." : editingUser ? "Save Changes" : "Create Account"}
-            </button>
-          </form>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full mt-2 py-4 bg-blue-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              >
+                {submitting ? "Saving..." : editingUser ? "Save Changes" : "Create Account"}
+              </button>
+            </form>
+          </div>
         </div>
       )}
 
