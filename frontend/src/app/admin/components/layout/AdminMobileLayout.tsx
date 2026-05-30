@@ -70,7 +70,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
           </div>
           <div>
             <h1 className="font-black text-slate-900 dark:text-white tracking-tighter uppercase text-sm leading-none">Do It Services</h1>
-            <p className="text-[8px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Admin Panel</p>
+            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Admin Panel</p>
           </div>
         </div>
 
@@ -112,8 +112,8 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
               {/* Drawer Header */}
               <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800 mb-6">
                 <div className="flex flex-col">
-                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Navigation</span>
-                  <span className="text-[8px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Admin Panel</span>
+                  <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">Do-It-Services</span>
+                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Admin Panel</span>
                 </div>
                 <button
                   onClick={() => setIsMenuOpen(false)}

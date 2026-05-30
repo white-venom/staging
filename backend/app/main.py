@@ -33,7 +33,7 @@ def startup_event():
     Base.metadata.create_all(bind=engine)
     
     # Safety Seed: Ensure at least one admin and one staff exist (only in development and if SEED_ACCOUNTS is enabled)
-    is_dev = "localhost" in settings.DATABASE_URL or "127.0.0.1" in settings.DATABASE_URL or "sqlite" in settings.DATABASE_URL or "172.18" in settings.DATABASE_URL
+    is_dev = settings.ENVIRONMENT == "development"
     if os.getenv("SEED_ACCOUNTS", "true").lower() == "true" and is_dev:
         db = SessionLocal()
         try:
@@ -81,7 +81,7 @@ def startup_event():
 origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
 
 # Enable wildcard origin regex in local/development mode for easy Wi-Fi testing
-is_development = "localhost" in settings.DATABASE_URL or "127.0.0.1" in settings.DATABASE_URL or "sqlite" in settings.DATABASE_URL
+is_development = settings.ENVIRONMENT == "development"
 allow_origin_regex = r"https?://.*" if is_development else None
 
 app.add_middleware(
@@ -120,7 +120,9 @@ def root(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
         db_status = "connected"
     except Exception as e:
-        db_status = f"error: {str(e)}"
+        import logging
+        logging.getLogger("uvicorn.error").error(f"Database health check failed: {e}")
+        db_status = "disconnected"
         
     return {
         "status": "healthy",

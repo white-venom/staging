@@ -3,6 +3,7 @@
 import React from "react";
 import { X, Calendar, User, Filter, Globe, Store, ArrowUpDown, Tag } from "lucide-react";
 import InlineSelect from "../../../../app/components/InlineSelect";
+import InlineDatePicker from "../../../../app/components/InlineDatePicker";
 
 interface MobileFilterDrawerProps {
   isOpen: boolean;
@@ -40,7 +41,7 @@ export default function MobileFilterDrawer({
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-8 shadow-2xl animate-in slide-in-from-bottom-full duration-300 ease-out border-t border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-8 shadow-2xl animate-in fade-in duration-200 border-t border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between mb-8 shrink-0">
           <div>
             <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Advanced Filters</h3>
@@ -121,20 +122,22 @@ export default function MobileFilterDrawer({
             />
           </div>
 
-          {/* 5. Date Range */}
+          {/* 5. Date Range — Custom inline Year → Month → Day picker */}
           <div className="space-y-3">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
               <Calendar className="w-3 h-3" /> Date Range
             </label>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
-                <p className="text-[7px] font-black text-slate-400 uppercase mb-1">From</p>
-                <input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} className="bg-transparent border-none p-0 text-xs font-bold w-full outline-none dark:text-white" />
-              </div>
-              <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl">
-                <p className="text-[7px] font-black text-slate-400 uppercase mb-1">To</p>
-                <input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} className="bg-transparent border-none p-0 text-xs font-bold w-full outline-none dark:text-white" />
-              </div>
+            <div className="flex flex-col gap-3">
+              <InlineDatePicker
+                label="From"
+                value={filters.dateFrom}
+                onChange={(val) => setFilters({ ...filters, dateFrom: val })}
+              />
+              <InlineDatePicker
+                label="To"
+                value={filters.dateTo}
+                onChange={(val) => setFilters({ ...filters, dateTo: val })}
+              />
             </div>
           </div>
 

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
+import InlineSelect from "@/app/components/InlineSelect";
 
 export default function MobileStaff() {
   const [users, setUsers] = useState<any[]>([]);
@@ -175,16 +176,16 @@ export default function MobileStaff() {
                     />
                   </div>
                 </div>
-                <div>
+                <div className="relative z-[60]">
                   <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Role</label>
-                  <select
+                  <InlineSelect
                     value={uRole}
-                    onChange={e => setURole(e.target.value)}
-                    className="w-full px-3 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none cursor-pointer"
-                  >
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                    onChange={(val) => setURole(val)}
+                    options={[
+                      { value: "staff", label: "Staff" },
+                      { value: "admin", label: "Admin" }
+                    ]}
+                  />
                 </div>
               </div>
               <div>
