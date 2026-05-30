@@ -108,7 +108,7 @@ def delete_portal_group(
         print(f"Error deleting portal group: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Database error: {str(e)}"
+            detail="An internal error occurred while deleting the portal group."
         )
     return None
 

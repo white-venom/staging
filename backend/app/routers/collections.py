@@ -165,7 +165,8 @@ def submit_collection(
         return db_collection
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Database insertion failed: {str(e)}")
+        print(f"Error during collection insertion: {e}")
+        raise HTTPException(status_code=500, detail="An internal error occurred while processing the collection.")
 
 
 @router.get("", response_model=List[CollectionResponse])

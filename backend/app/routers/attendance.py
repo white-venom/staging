@@ -7,7 +7,7 @@ import pytz
 from app.database.db import get_db
 from app.database.models import Attendance, BusinessSettings
 from app.schemas.attendance import CheckInRequest, CheckOutRequest, AttendanceResponse
-from app.dependencies import require_staff
+from app.dependencies import require_staff, require_admin
 
 router = APIRouter(prefix="/attendance", tags=["Attendance & Shifts"])
 
@@ -190,7 +190,8 @@ def get_my_attendance_status(
 
 @router.get("/today")
 def get_today_attendance(
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin)
 ):
     """Get all attendance records for today (for admin)."""
     ist = pytz.timezone('Asia/Kolkata')

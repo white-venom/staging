@@ -129,19 +129,6 @@ def logout(response: Response):
     return {"message": "Logged out successfully"}
 
 
-@router.post("/check-role")
-def check_role(payload: dict, db: Session = Depends(get_db)):
-    """Silently identify user role by phone number (no password required). Used for dynamic login theme."""
-    phone = payload.get("phone", "").strip()
-    if not phone:
-        raise HTTPException(status_code=400, detail="Phone number required")
-    
-    user = db.scalar(select(User).where(User.phone == phone))
-    if not user:
-        raise HTTPException(status_code=404, detail="No account found with this number")
-    
-    return {"role": user.role}
-
 
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):

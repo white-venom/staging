@@ -215,7 +215,8 @@ def submit_deposit(
         return db_deposit
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to record deposit: {str(e)}")
+        print(f"Error recording deposit: {e}")
+        raise HTTPException(status_code=500, detail="An internal error occurred while processing the deposit.")
 
 
 @router.get("", response_model=List[DepositResponse])

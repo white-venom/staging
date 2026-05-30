@@ -175,8 +175,9 @@ def process_virtual_transfer(
             
     except Exception as e:
         db.rollback()
+        print(f"Error in virtual transfer: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Transaction failed: {str(e)}"
+            detail="An internal error occurred during the virtual transfer."
         )
 
