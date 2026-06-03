@@ -76,7 +76,8 @@ export default function MobileOverview({
         party: c.retailerName,
         staff: c.staffName || "Admin",
         amount: c.totalAmount,
-        type: 'collection'
+        type: 'collection',
+        balance: c.balance_snapshot
       })),
       ...(deposits || []).map(d => ({
         id: d.id,
@@ -84,7 +85,8 @@ export default function MobileOverview({
         party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
         staff: d.staffName || "Admin",
         amount: d.amount,
-        type: 'deposit'
+        type: 'deposit',
+        balance: d.balance_snapshot
       }))
     ];
     return combined
@@ -399,6 +401,9 @@ export default function MobileOverview({
                   <p className={`text-sm font-black ${item.type === 'collection' ? 'text-blue-600' : 'text-red-600'}`}>
                     {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
                   </p>
+                  {item.balance !== undefined && item.balance !== null && (
+                    <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">Bal: ₹{Number(item.balance).toLocaleString()}</p>
+                  )}
                 </div>
               </div>
             ))
