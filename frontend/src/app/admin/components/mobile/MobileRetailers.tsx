@@ -673,7 +673,6 @@ export default function MobileRetailers({
             </form>
           </div>
         </div>
-        </div>
       )}
 
       {/* RETAILER STORES MODAL */}
