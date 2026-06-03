@@ -7,8 +7,8 @@ const getApiBaseUrl = () => {
   
   if (typeof window !== "undefined") {
     // Production VPS domains
-    if (window.location.hostname === "app.doitservices.in") {
-      return "https://api.doitservices.in";
+    if (window.location.hostname === "app.crediiflow.in") {
+      return "https://api.crediiflow.in";
     }
     
     // Legacy Vercel/Render fallback
@@ -23,7 +23,7 @@ const getApiBaseUrl = () => {
        return "http://127.0.0.1:8000";
     }
   }
-  return "https://api.doitservices.in";
+  return "https://api.crediiflow.in";
 };
 
 export const API_BASE_URL = getApiBaseUrl();
