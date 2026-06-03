@@ -225,7 +225,6 @@ export default function NewDeposit() {
                 { type: "portal", label: "Portals", desc: "To Bank Account" },
                 { type: "retailer", label: "Shops", desc: "Retailer Refund" },
                 { type: "staff", label: "Office", desc: "Staff or Office" },
-                { type: "virtual", label: "Virtual Money", desc: "Distributor Load" },
               ].map((opt) => (
                 <button
                   key={opt.type}
