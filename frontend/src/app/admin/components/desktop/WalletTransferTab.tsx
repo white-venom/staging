@@ -100,7 +100,6 @@ export default function WalletTransferTab() {
                   setVSourcePortalId("");
                 }}
                 options={(portalDirectory || [])
-                  .filter((g: any) => g.portals && g.portals.length > 0)
                   .map((g: any) => ({ value: g.id, label: g.name }))
                 }
                 placeholder="Select Portal"

@@ -56,7 +56,7 @@ export default function MobileOverview({
         .reduce((sum, c) => sum + (c.totalAmount || 0), 0);
         
       const dayDeposits = deposits
-        .filter(d => isSameDay(new Date(d.created_at || d.date), day) && d.depositType !== 'virtual')
+        .filter(d => isSameDay(new Date(d.created_at || d.date), day) && d.depositType?.toLowerCase() !== 'virtual')
         .reduce((sum, d) => sum + (d.amount || 0), 0);
         
       return {
@@ -124,7 +124,7 @@ export default function MobileOverview({
 
     // Filter deposits today by selected staff name
     const staffDepsToday = (deposits || []).filter(
-      (d) => d.staffName === selectedStaffName && d.date?.startsWith(todayStr) && d.depositType !== 'virtual'
+      (d) => d.staffName === selectedStaffName && d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
     );
 
     const collectedToday = staffColsToday.reduce((s, c) => s + (c.totalAmount || 0), 0);

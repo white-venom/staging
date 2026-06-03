@@ -242,16 +242,18 @@ export default function RetailersTab({
                       </div>
                     </div>
                     {/* Actions Overlay */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 transition-opacity">
                       <button 
                         onClick={() => handleStartEditRetailer(retailer)}
-                        className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors"
+                        className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                        title="Edit Retailer"
                       >
                         <Edit2 className="w-3 h-3" />
                       </button>
                       <button 
                         onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
-                        className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors"
+                        className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
+                        title="Delete Retailer"
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>

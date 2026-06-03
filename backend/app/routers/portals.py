@@ -53,7 +53,8 @@ def list_portal_groups(
     current_user=Depends(require_any_user)
 ):
     """Get all Portal Groups."""
-    groups = db.scalars(select(PortalGroup).order_by(PortalGroup.name)).all()
+    from sqlalchemy.orm import joinedload
+    groups = db.scalars(select(PortalGroup).options(joinedload(PortalGroup.portals)).order_by(PortalGroup.name)).unique().all()
     return groups
 
 
