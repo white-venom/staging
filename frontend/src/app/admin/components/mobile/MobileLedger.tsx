@@ -116,7 +116,7 @@ export default function MobileLedger() {
       {/* Header Section */}
       <div className="flex items-center justify-between px-2">
         <div>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Unified Ledger</h2>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Ledger</h2>
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{filteredLedger.length} Records Found</p>
         </div>
         <div className="flex gap-2">
