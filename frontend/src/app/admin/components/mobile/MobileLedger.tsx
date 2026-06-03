@@ -149,63 +149,53 @@ export default function MobileLedger() {
         </button>
       </div>
 
-      {/* Transaction List */}
-      <div className="space-y-4 pb-20">
-        {filteredLedger.length === 0 ? (
-          <div className="py-20 text-center">
-            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
-              <History className="w-10 h-10 text-slate-400" />
-            </div>
-            <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No matching records</p>
-          </div>
-        ) : (
-          filteredLedger.map((item: any, idx) => (
-            <div 
-              key={idx} 
-              className="bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-sm active:bg-slate-50 dark:active:bg-slate-800/50 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                    item.type === 'collection' 
-                      ? "bg-blue-50 text-blue-600" 
-                      : "bg-red-50 text-red-600"
-                  }`}>
-                    {item.type === 'collection' ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownLeft className="w-6 h-6" />}
-                  </div>
-                  <div>
-                    <h4 className="font-black text-slate-900 dark:text-white truncate max-w-[160px]">
-                      {item.retailer_name || item.portal_name || 'General Entry'}
-                    </h4>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                        {item.type === 'collection' ? 'Cash In' : 'Cash Out'}
-                      </p>
+      {/* Transaction List (Table Format) */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm mb-20">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-[11px] border-collapse min-w-[550px]">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-tight text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800 w-28">Date & Time</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800">Party</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-center w-20">Type</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right w-24 bg-slate-100/50 dark:bg-slate-800/50">Amount</th>
+                <th className="p-4 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24">Staff</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              {filteredLedger.length === 0 ? (
+                <tr><td colSpan={5} className="p-10 text-center text-slate-400 italic font-bold">No matching records</td></tr>
+              ) : filteredLedger.map((item: any, idx) => (
+                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors">
+                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400">
+                    <div className="flex flex-col">
+                      <span className="whitespace-nowrap">{format(new Date(item.created_at || item.date), "dd-MM-yyyy")}</span>
+                      <span className="text-[9px] font-medium opacity-60">
+                        {format(new Date(item.created_at || item.date), "HH:mm")}
+                      </span>
                     </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className={`text-lg font-black ${item.type === 'collection' ? "text-blue-600" : "text-red-600"}`}>
+                  </td>
+                  <td className="p-4 border-r border-slate-50 dark:border-slate-800">
+                    <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase truncate block">
+                      {item.retailer_name || item.portal_name || 'General Entry'}
+                    </span>
+                  </td>
+                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-center">
+                     <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                        {item.type === 'collection' ? 'Cash In' : 'Cash Out'}
+                     </span>
+                  </td>
+                  <td className={`p-4 border-r border-slate-50 dark:border-slate-800 text-right font-black ${item.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
                     {item.type === 'collection' ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-slate-800/50">
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <User className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">{item.staff_name || 'Admin'}</span>
-                </div>
-                <div className="flex items-center gap-1.5 text-slate-400">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <span className="text-[10px] font-bold uppercase tracking-wider">
-                    {format(new Date(item.created_at || item.date), "MMM d, yyyy • HH:mm")}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
+                  </td>
+                  <td className="p-4 text-right font-bold text-slate-500 uppercase text-[9px]">
+                    {item.staff_name || 'Admin'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Filter Drawer */}
