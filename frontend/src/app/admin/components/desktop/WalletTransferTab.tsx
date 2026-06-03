@@ -120,35 +120,8 @@ export default function WalletTransferTab() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Type</label>
-            <div className="flex gap-4 mb-2">
-              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="destType" 
-                  value="retailer" 
-                  checked={vDestType === "retailer"} 
-                  onChange={() => setVDestType("retailer")} 
-                  className="accent-indigo-600"
-                />
-                Retailer Wallet
-              </label>
-              <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
-                <input 
-                  type="radio" 
-                  name="destType" 
-                  value="staff" 
-                  checked={vDestType === "staff"} 
-                  onChange={() => setVDestType("staff")} 
-                  className="accent-indigo-600"
-                />
-                Staff Virtual Limit
-              </label>
-            </div>
-          </div>
 
-          {vDestType === "retailer" ? (
+
             <div>
               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Retailer</label>
               <InlineSelect
@@ -165,20 +138,6 @@ export default function WalletTransferTab() {
                 placeholder="Select Retailer"
               />
             </div>
-          ) : (
-            <div>
-              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Staff Member</label>
-              <InlineSelect
-                value={vDestStaffId}
-                onChange={(val) => setVDestStaffId(val)}
-                options={(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({
-                  value: u.id,
-                  label: `${u.name} (Virtual: ₹${(u.virtual_balance || 0).toLocaleString()})`
-                }))}
-                placeholder="Select Staff Member"
-              />
-            </div>
-          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

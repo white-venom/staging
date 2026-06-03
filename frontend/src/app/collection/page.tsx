@@ -125,8 +125,8 @@ export default function NewCollection() {
       // Fetch Staff Members
       try {
         const { api } = await import("../utils/api");
-        const allUsers = await api.getUsers();
-        setStaffMembers(allUsers.filter((u: any) => u.role === "staff"));
+        const staffList = await api.getStaffList();
+        setStaffMembers(staffList);
       } catch (err) {
         console.warn("Failed to fetch staff members", err);
       }

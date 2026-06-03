@@ -356,7 +356,6 @@ export default function AdministrationTab({
                     <th className="px-6 py-3">Full Name</th>
                     <th className="px-6 py-3">Phone</th>
                     <th className="px-6 py-3">Role</th>
-                    <th className="px-6 py-3 text-right">Virtual Balance</th>
                     <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -371,9 +370,6 @@ export default function AdministrationTab({
                         }`}>
                           {u.role}
                         </span>
-                      </td>
-                      <td className="px-6 py-3 text-right font-bold text-slate-700 dark:text-slate-300">
-                        {u.role === 'staff' ? `₹${Number(u.virtual_balance || 0).toLocaleString()}` : '-'}
                       </td>
                       <td className="px-6 py-3 text-right">
                         {u.role !== "admin" && (
