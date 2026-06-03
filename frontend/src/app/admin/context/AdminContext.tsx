@@ -57,12 +57,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     if (showLoading) setIsLoading(true);
     try {
       const [cols, deps, rets, fetchedUsers, pGroups, attendanceLogs] = await Promise.all([
-        api.getCollections(),
-        api.getDeposits(),
-        api.getRetailers(),
-        api.getUsers(),
-        api.getPortalGroups(),
-        api.getTodayAttendance()
+        api.getCollections().catch((e) => { console.error("Cols err:", e); return []; }),
+        api.getDeposits().catch((e) => { console.error("Deps err:", e); return []; }),
+        api.getRetailers().catch((e) => { console.error("Rets err:", e); return []; }),
+        api.getUsers().catch((e) => { console.error("Users err:", e); return []; }),
+        api.getPortalGroups().catch((e) => { console.error("Portals err:", e); return []; }),
+        api.getTodayAttendance().catch((e) => { console.error("Att err:", e); return []; })
       ]);
       
       const mappedCols = cols.map((c: any) => {
