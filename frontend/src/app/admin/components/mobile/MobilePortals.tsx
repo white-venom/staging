@@ -8,7 +8,8 @@ import {
   Trash2,
   X,
   ArrowLeft,
-  CreditCard
+  CreditCard,
+  Edit
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
@@ -41,6 +42,13 @@ export default function MobilePortals({
   const [bIfsc, setBIfsc] = useState("");
   const [addingBank, setAddingBank] = useState(false);
 
+  // Portal Group Edit state
+  const [isEditPortalModalOpen, setIsEditPortalModalOpen] = useState(false);
+  const [editingPortalGroup, setEditingPortalGroup] = useState<any | null>(null);
+  const [editPortalName, setEditPortalName] = useState("");
+  const [editPortalToGive, setEditPortalToGive] = useState<string>("");
+  const [editPortalToTake, setEditPortalToTake] = useState<string>("");
+
   // Inline balance editing states
   const [inlineEditing, setInlineEditing] = useState<{ id: string, field: 'take' | 'give' } | null>(null);
   const [inlineValue, setInlineValue] = useState("");
@@ -72,6 +80,40 @@ export default function MobilePortals({
       showToastNotification("Error: " + err.message);
     } finally {
       setIsUpdatingBalance(false);
+    }
+  };
+
+  const handleStartEditPortal = (group: any) => {
+    setEditingPortalGroup(group);
+    setEditPortalName(group.name);
+    setEditPortalToGive("");
+    setEditPortalToTake("");
+    setIsEditPortalModalOpen(true);
+  };
+
+  const handleSavePortalEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPortalGroup) return;
+    const addTake = parseFloat(editPortalToTake || "0");
+    const addGive = parseFloat(editPortalToGive || "0");
+    if (addTake < 0 || addGive < 0) {
+      showToastNotification("Negative values are not allowed.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const payload: any = { name: editPortalName };
+      if (addTake > 0) payload.opening_to_take = addTake;
+      if (addGive > 0) payload.opening_to_give = addGive;
+
+      await api.updatePortalGroup(editingPortalGroup.id, payload);
+      showToastNotification(`✓ Portal "${editPortalName}" updated`);
+      setIsEditPortalModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      showToastNotification("Error: " + err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -267,12 +309,20 @@ export default function MobilePortals({
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{(group.portals || []).length} Accounts Active</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => handleDeletePortalGroup(group.id, group.name)}
-                  className="p-2.5 bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => handleStartEditPortal(group)}
+                    className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => handleDeletePortalGroup(group.id, group.name)}
+                    className="p-2.5 bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Group To Take & To Give raw inputs */}
@@ -452,6 +502,79 @@ export default function MobilePortals({
           );})
         )}
       </div>
+
+      {/* PORTAL EDIT MODAL */}
+      {isEditPortalModalOpen && editingPortalGroup && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] w-full max-w-sm p-6 space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Edit Portal Group</h3>
+              <button 
+                onClick={() => setIsEditPortalModalOpen(false)} 
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer hover:bg-slate-250 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSavePortalEdit} className="space-y-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Portal Name</label>
+                  <input 
+                    type="text" 
+                    value={editPortalName} 
+                    onChange={(e) => setEditPortalName(e.target.value)} 
+                    placeholder="Portal Name" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20" 
+                    required 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[10px]">
+                  <div>
+                    <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current To Take</span>
+                    <span className="font-black text-red-650 dark:text-red-400">₹{(editingPortalGroup.opening_to_take || 0).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current To Give</span>
+                    <span className="font-black text-emerald-650 dark:text-emerald-555">₹{(editingPortalGroup.opening_to_give || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                   <div>
+                     <label className="text-[8px] font-black text-red-500 uppercase tracking-wider block mb-1">Add to To Take</label>
+                     <input 
+                       type="number" 
+                       min="0"
+                       placeholder="Amount to Add"
+                       value={editPortalToTake} 
+                       onChange={(e) => setEditPortalToTake(e.target.value)}
+                       className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20" 
+                     />
+                   </div>
+                   <div>
+                     <label className="text-[8px] font-black text-emerald-500 uppercase tracking-wider block mb-1">Add to To Give</label>
+                     <input 
+                       type="number" 
+                       min="0"
+                       placeholder="Amount to Add"
+                       value={editPortalToGive} 
+                       onChange={(e) => setEditPortalToGive(e.target.value)}
+                       className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20" 
+                     />
+                   </div>
+                </div>
+              </div>
+              <button 
+                type="submit" 
+                disabled={submitting}
+                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]"
+              >
+                {submitting ? "Saving..." : "Save Changes"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

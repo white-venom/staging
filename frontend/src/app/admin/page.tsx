@@ -11,13 +11,13 @@ export default function AdminPage() {
   const { isMobile } = useDevice();
 
   const totalCollectedAmount = (collections || []).reduce((s, c) => s + (c.totalAmount || 0), 0);
-  const totalDepositedAmount = (deposits || []).reduce((s, d) => s + (d.amount || 0), 0);
+  const totalDepositedAmount = (deposits || []).filter(d => d.depositType !== 'virtual').reduce((s, d) => s + (d.amount || 0), 0);
   const netCashBalance = totalCollectedAmount - totalDepositedAmount;
   
   // Today's specific totals for KPI blocks
   const todayStr = new Date().toISOString().split('T')[0];
   const todayCollected = (collections || []).filter(c => c.date?.startsWith(todayStr)).reduce((s, c) => s + (c.totalAmount || 0), 0);
-  const todayDeposited = (deposits || []).filter(d => d.date?.startsWith(todayStr)).reduce((s, d) => s + (d.amount || 0), 0);
+  const todayDeposited = (deposits || []).filter(d => d.date?.startsWith(todayStr) && d.depositType !== 'virtual').reduce((s, d) => s + (d.amount || 0), 0);
   const todayNet = todayCollected - todayDeposited;
   const todayCount = (collections || []).filter(c => c.date?.startsWith(todayStr)).length;
 

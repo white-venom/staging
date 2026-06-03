@@ -8,10 +8,8 @@ import InlineSelect from "../../../components/InlineSelect";
 
 export default function WalletTransferTab() {
   const adminContext = useAdmin();
-  const { retailerDirectory, portalDirectory, deposits, fetchData, showToastNotification } = adminContext;
+  const { retailerDirectory, portalDirectory, userDirectory, deposits, fetchData, showToastNotification } = adminContext;
 
-  const [users, setUsers] = useState<any[]>([]);
-  const [individualPortals, setIndividualPortals] = useState<any[]>([]);
   const [selectedPortalGroupId, setSelectedPortalGroupId] = useState("");
   const [vSourcePortalId, setVSourcePortalId] = useState("");
   const [vDestType, setVDestType] = useState<"retailer" | "staff">("retailer");
@@ -21,22 +19,7 @@ export default function WalletTransferTab() {
   const [vRemarks, setVRemarks] = useState("");
   const [isTransferring, setIsTransferring] = useState(false);
 
-  useEffect(() => {
-    loadUsersAndPortals();
-  }, []);
-
-  const loadUsersAndPortals = async () => {
-    try {
-      const [usersData, portalsData] = await Promise.all([
-        api.getUsers(),
-        api.getPortals()
-      ]);
-      setUsers(usersData);
-      setIndividualPortals(portalsData);
-    } catch (err) {
-      console.error("Error loading directories:", err);
-    }
-  };
+  const selectedGroup = (portalDirectory || []).find((g: any) => g.id === selectedPortalGroupId);
 
   const handleVirtualTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +71,6 @@ export default function WalletTransferTab() {
       setVAmount("");
       setVRemarks("");
       
-      await loadUsersAndPortals();
       if (fetchData) fetchData();
     } catch (err: any) {
       alert("Transfer Error: " + err.message);
@@ -118,7 +100,7 @@ export default function WalletTransferTab() {
                   setVSourcePortalId("");
                 }}
                 options={(portalDirectory || [])
-                  .filter((g: any) => individualPortals.some((p: any) => p.group_id === g.id))
+                  .filter((g: any) => g.portals && g.portals.length > 0)
                   .map((g: any) => ({ value: g.id, label: g.name }))
                 }
                 placeholder="Select Portal"
@@ -129,13 +111,10 @@ export default function WalletTransferTab() {
               <InlineSelect
                 value={vSourcePortalId}
                 onChange={(val) => setVSourcePortalId(val)}
-                options={individualPortals
-                  .filter((p: any) => p.group_id === selectedPortalGroupId)
-                  .map((p: any) => ({
-                    value: p.id,
-                    label: `${p.portal_name} (Bal: ₹${parseFloat(p.balance).toLocaleString()})`
-                  }))
-                }
+                options={(selectedGroup?.portals || []).map((p: any) => ({
+                  value: p.id,
+                  label: `${p.portal_name} (Bal: ₹${p.balance.toLocaleString()})`
+                }))}
                 placeholder="Select Bank Account"
                 disabled={!selectedPortalGroupId}
               />
@@ -193,7 +172,7 @@ export default function WalletTransferTab() {
               <InlineSelect
                 value={vDestStaffId}
                 onChange={(val) => setVDestStaffId(val)}
-                options={(users || []).filter((u: any) => u.role === "staff").map((u: any) => ({
+                options={(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({
                   value: u.id,
                   label: `${u.name} (Virtual: ₹${(u.virtual_balance || 0).toLocaleString()})`
                 }))}

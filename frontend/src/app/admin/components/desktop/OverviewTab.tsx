@@ -82,7 +82,7 @@ export default function OverviewTab({
 
     // Filter deposits today by selected staff name
     const staffDepsToday = safeDeposits.filter(
-      (d) => d.staffName === selectedStaffName && d.date?.startsWith(todayStr)
+      (d) => d.staffName === selectedStaffName && d.date?.startsWith(todayStr) && d.depositType !== 'virtual'
     );
 
     const collectedToday = staffColsToday.reduce((s, c) => s + (c.totalAmount || 0), 0);
@@ -117,10 +117,10 @@ export default function OverviewTab({
   // State for visited stores modal popup
   const [showVisitedModal, setShowVisitedModal] = React.useState(false);
 
-  // Pre-calculate running balances for all transactions
+  // Pre-calculate running balances for all transactions (excluding virtual deposits)
   const combinedTimeline = [
     ...safeCollections.map(c => ({ ...c, type: 'collection', amt: c.totalAmount })),
-    ...safeDeposits.map(d => ({ ...d, type: 'deposit', amt: d.amount }))
+    ...safeDeposits.filter(d => d.depositType !== 'virtual').map(d => ({ ...d, type: 'deposit', amt: d.amount }))
   ].filter(item => item.date)
    .sort((a, b) => new Date(a.date.replace(' ', 'T')).getTime() - new Date(b.date.replace(' ', 'T')).getTime());
 

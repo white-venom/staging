@@ -63,7 +63,8 @@ export default function LedgerTab({
       debit: 0,
       credit: c.totalAmount,
       balance_snapshot: c.balance_snapshot,
-      type: 'collection'
+      type: 'collection',
+      depositType: null
     })),
     ...(deposits || []).map(d => ({
       id: d.id,
@@ -75,7 +76,8 @@ export default function LedgerTab({
       debit: d.amount,
       credit: 0,
       balance_snapshot: d.balance_snapshot,
-      type: 'deposit'
+      type: 'deposit',
+      depositType: d.depositType
     }))
   ];
 
@@ -152,15 +154,18 @@ export default function LedgerTab({
         totalInitial = 0;
     }
 
+    const isFilteredView = partyFilter !== "all" || portalFilter !== "all";
     let reportRunning = totalInitial; 
     const globalSnapshots = new Map<string, number>();
     chronological.forEach(tx => {
-      reportRunning += (tx.credit - tx.debit);
+      if (isFilteredView || tx.depositType !== 'virtual') {
+        reportRunning += (tx.credit - tx.debit);
+      }
       globalSnapshots.set(tx.id, reportRunning);
     });
 
     const totalCredit = allTransactions.reduce((s, c) => s + c.credit, 0);
-    const totalDebit = allTransactions.reduce((s, d) => s + d.debit, 0);
+    const totalDebit = allTransactions.reduce((s, d) => s + ((!isFilteredView && d.depositType === 'virtual') ? 0 : d.debit), 0);
     const netBalance = totalInitial + totalCredit - totalDebit; 
 
   return (

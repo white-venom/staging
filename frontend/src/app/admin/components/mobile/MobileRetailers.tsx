@@ -9,7 +9,8 @@ import {
   Phone, 
   Trash2,
   X,
-  ArrowLeft
+  ArrowLeft,
+  Edit2
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
@@ -38,6 +39,16 @@ export default function MobileRetailers({
   const [retEmail, setRetEmail] = useState("");
   const [retToTake, setRetToTake] = useState("");
   const [retToGive, setRetToGive] = useState("");
+
+  // Retailer Edit state
+  const [isEditRetailerModalOpen, setIsEditRetailerModalOpen] = useState(false);
+  const [editingRetailer, setEditingRetailer] = useState<any | null>(null);
+  const [editRetName, setEditRetName] = useState("");
+  const [editRetPhone, setEditRetPhone] = useState("");
+  const [editRetArea, setEditRetArea] = useState("");
+  const [editRetEmail, setEditRetEmail] = useState("");
+  const [editRetToGive, setEditRetToGive] = useState<string>("");
+  const [editRetToTake, setEditRetToTake] = useState<string>("");
 
   // Inline balance editing states
   const [inlineEditing, setInlineEditing] = useState<{ id: string, field: 'take' | 'give' } | null>(null);
@@ -73,6 +84,46 @@ export default function MobileRetailers({
       showToastNotification("Error: " + err.message);
     } finally {
       setIsUpdatingBalance(false);
+    }
+  };
+
+  const handleStartEditRetailer = (retailer: any) => {
+    setEditingRetailer(retailer);
+    setEditRetName(retailer.name);
+    setEditRetPhone(retailer.phone);
+    setEditRetArea(retailer.area);
+    setEditRetEmail(retailer.email || "");
+    setEditRetToGive("");
+    setEditRetToTake("");
+    setIsEditRetailerModalOpen(true);
+  };
+
+  const handleSaveRetailerEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRetailer) return;
+    const addTake = parseFloat(editRetToTake || "0");
+    const addGive = parseFloat(editRetToGive || "0");
+    if (addTake < 0 || addGive < 0) {
+      showToastNotification("Negative values are not allowed.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.updateRetailer(editingRetailer.id, {
+        retailer_name: editRetName,
+        phone: editRetPhone,
+        address: editRetArea,
+        email: editRetEmail,
+        opening_to_give: addGive,
+        opening_to_take: addTake
+      });
+      showToastNotification(`✓ Retailer "${editRetName}" updated`);
+      setIsEditRetailerModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      showToastNotification("Error: " + err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -281,6 +332,12 @@ export default function MobileRetailers({
                     </a>
                   )}
                   <button 
+                    onClick={() => handleStartEditRetailer(retailer)}
+                    className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button 
                     onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
                     className="p-2.5 bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
                   >
@@ -421,6 +478,110 @@ export default function MobileRetailers({
           );})
         )}
       </div>
+
+      {/* RETAILER EDIT MODAL */}
+      {isEditRetailerModalOpen && editingRetailer && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] w-full max-w-sm p-6 space-y-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Edit Retailer</h3>
+              <button 
+                onClick={() => setIsEditRetailerModalOpen(false)} 
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer hover:bg-slate-250 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveRetailerEdit} className="space-y-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Retailer Name</label>
+                  <input 
+                    type="text" 
+                    value={editRetName} 
+                    onChange={(e) => setEditRetName(e.target.value)} 
+                    placeholder="Retailer Name" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20" 
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Phone</label>
+                  <input 
+                    type="tel" 
+                    value={editRetPhone} 
+                    onChange={(e) => setEditRetPhone(e.target.value)} 
+                    placeholder="Phone" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20" 
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Area / Route</label>
+                  <input 
+                    type="text" 
+                    value={editRetArea} 
+                    onChange={(e) => setEditRetArea(e.target.value)} 
+                    placeholder="Area / Route" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Email</label>
+                  <input 
+                    type="email" 
+                    value={editRetEmail} 
+                    onChange={(e) => setEditRetEmail(e.target.value)} 
+                    placeholder="Email" 
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20" 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[10px]">
+                  <div>
+                    <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current To Take</span>
+                    <span className="font-black text-red-650 dark:text-red-400">₹{(editingRetailer.opening_to_take || 0).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current To Give</span>
+                    <span className="font-black text-emerald-650 dark:text-emerald-555">₹{(editingRetailer.opening_to_give || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                   <div>
+                     <label className="text-[8px] font-black text-red-500 uppercase tracking-wider block mb-1">Add to To Take</label>
+                     <input 
+                       type="number" 
+                       min="0"
+                       placeholder="Amount to Add"
+                       value={editRetToTake} 
+                       onChange={(e) => setEditRetToTake(e.target.value)}
+                       className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20" 
+                     />
+                   </div>
+                   <div>
+                     <label className="text-[8px] font-black text-emerald-500 uppercase tracking-wider block mb-1">Add to To Give</label>
+                     <input 
+                       type="number" 
+                       min="0"
+                       placeholder="Amount to Add"
+                       value={editRetToGive} 
+                       onChange={(e) => setEditRetToGive(e.target.value)}
+                       className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20" 
+                     />
+                   </div>
+                </div>
+              </div>
+              <button 
+                type="submit" 
+                disabled={submitting}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
+              >
+                {submitting ? "Saving..." : "Save Changes"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

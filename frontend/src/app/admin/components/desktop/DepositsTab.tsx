@@ -93,7 +93,7 @@ export default function DepositsTab({
     return 0;
   });
 
-  const grandTotal = filtered.reduce((s, d) => s + d.amount, 0);
+  const grandTotal = filtered.filter(d => d.depositType !== 'virtual').reduce((s, d) => s + d.amount, 0);
 
   return (
     <div className="space-y-4 animate-fade-in select-none">

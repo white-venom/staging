@@ -264,8 +264,23 @@ export default function PortalsTab({
                     
                     <div className="flex items-center gap-2">
                       <button 
+                        onClick={() => {
+                          setSelectedGroup(group);
+                          setEditingGroupId(group.id);
+                          setEditingGroupName(group.name);
+                          setEditingGroupToGive("");
+                          setEditingGroupToTake("");
+                          setIsAccountModalOpen(true);
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-blue-650 dark:text-slate-500 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                        title="Edit Portal Settings"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
                         onClick={() => handleDeleteGroup(group.id, group.name)}
-                        className="p-1.5 text-slate-300 hover:text-red-600 transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-450 hover:text-red-600 transition-colors cursor-pointer"
+                        title="Delete Portal Group"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
