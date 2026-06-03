@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import { ChevronDown, Check, Search } from "lucide-react";
 
 interface InlineSelectOption {
   value: string;
@@ -28,7 +28,9 @@ export default function InlineSelect({
   disabled = false,
 }: InlineSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Close on outside click
   useEffect(() => {
@@ -47,8 +49,23 @@ export default function InlineSelect({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery("");
+    } else {
+      // Small delay to ensure the input is rendered before focusing
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [isOpen]);
+
   const selectedOption = options.find((o) => o.value === value);
   const displayLabel = selectedOption?.label || placeholder;
+
+  const filteredOptions = options.filter(opt => 
+    opt.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div ref={containerRef} className={`relative ${className}`}>
@@ -80,14 +97,27 @@ export default function InlineSelect({
 
       {/* Dropdown list – rendered inline below the trigger */}
       {isOpen && (
-        <div className="mt-1.5 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg shadow-slate-200/60 dark:shadow-black/30 overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-150">
+        <div className="mt-1.5 absolute top-full left-0 w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg shadow-slate-200/60 dark:shadow-black/30 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-1 duration-150 flex flex-col">
+          <div className="p-2 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10 shrink-0">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold outline-none focus:ring-1 focus:ring-blue-500 transition-shadow"
+              />
+            </div>
+          </div>
           <div className="max-h-56 overflow-y-auto overscroll-contain">
-            {options.length === 0 ? (
+            {filteredOptions.length === 0 ? (
               <div className="px-4 py-3 text-xs text-slate-400 italic font-medium">
-                No options available
+                No matching options
               </div>
             ) : (
-              options.map((opt) => {
+              filteredOptions.map((opt) => {
                 const isSelected = opt.value === value;
                 return (
                   <button
