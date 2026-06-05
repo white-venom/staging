@@ -19,8 +19,9 @@ const getApiBaseUrl = () => {
     
     // Local dev
     if (window.location.port === "3000" || window.location.port === "5173" || 
-        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-       return "http://127.0.0.1:8000";
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || 
+        /^192\.168\./.test(window.location.hostname) || window.location.hostname.endsWith(".local")) {
+       return `http://${window.location.hostname}:8000`;
     }
   }
   return "https://api.crediiflow.in";

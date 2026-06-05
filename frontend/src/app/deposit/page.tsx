@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore, DenominationCounts } from "../utils/store";
 import InlineSelect from "../components/InlineSelect";
 import { 
@@ -18,6 +18,8 @@ import {
 
 export default function NewDeposit() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("editId");
   const { theme, toggleTheme, addDeposit } = useAppStore();
 
   const [depositType, setDepositType] = useState<"portal" | "retailer" | "staff" | "virtual">("portal");
@@ -33,6 +35,8 @@ export default function NewDeposit() {
   const [selectedRetailerId, setSelectedRetailerId] = useState("");
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [toOffice, setToOffice] = useState(false);
+  const [portalsList, setPortalsList] = useState<any[]>([]);
+  const [showOnlinePortal, setShowOnlinePortal] = useState(false);
 
   const [denominations, setDenominations] = useState<DenominationCounts>({
     note_500: 0,
@@ -60,21 +64,81 @@ export default function NewDeposit() {
   const totalAmount = totalCashAmount + denominations.online_amount;
 
   const handleDenomChange = (key: keyof DenominationCounts, value: string) => {
-    const val = value === "" ? 0 : parseFloat(value);
+    if (key === "online_portal_id") {
+      setDenominations(prev => ({ ...prev, [key]: value }));
+      return;
+    }
+    let val = value === "" ? 0 : parseFloat(value);
+    if (isNaN(val) || val < 0) {
+      val = 0;
+    }
     setDenominations(prev => ({
       ...prev,
-      [key]: isNaN(val) ? 0 : val
+      [key]: val
     }));
   };
 
+  const handleNoNegativeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, allowDecimal: boolean = false) => {
+    const invalidKeys = allowDecimal ? ["-", "+", "e", "E"] : ["-", "+", "e", "E", "."];
+    if (invalidKeys.includes(e.key)) {
+      e.preventDefault();
+    }
+  };
+
   const [mounted, setMounted] = useState(false);
+
+  // Pre-fill if editing
+  React.useEffect(() => {
+    if (editId && mounted && portalGroups.length > 0) {
+      const loadEdit = async () => {
+        try {
+          const { api } = await import("../utils/api");
+          const deps = await api.getDeposits();
+          const target = deps.find((d: any) => d.id === editId);
+          if (target) {
+            setDepositType(target.deposit_type);
+            if (target.deposit_type === "portal" || target.deposit_type === "virtual") {
+              setSelectedPortalId(target.portal_id);
+            }
+            if (target.deposit_type === "retailer" || target.deposit_type === "virtual") {
+              setSelectedRetailerId(target.retailer_id);
+            }
+            if (target.deposit_type === "staff" && target.recipient_staff_id) {
+              setSelectedStaffId(target.recipient_staff_id);
+            }
+            if (target.denominations) {
+              setDenominations({
+                note_500: Number(target.denominations.note_500) || 0,
+                note_200: Number(target.denominations.note_200) || 0,
+                note_100: Number(target.denominations.note_100) || 0,
+                note_50: Number(target.denominations.note_50) || 0,
+                note_20: Number(target.denominations.note_20) || 0,
+                note_10: Number(target.denominations.note_10) || 0,
+                coins: Number(target.denominations.coins) || 0,
+                online_amount: Number(target.denominations.online_amount) || 0,
+                online_portal_id: target.denominations.online_portal_id
+              });
+              if (target.denominations.online_portal_id) {
+                setShowOnlinePortal(true);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Failed to load edit deposit", err);
+        }
+      };
+      loadEdit();
+    }
+  }, [editId, mounted, portalGroups]);
+
+
   React.useEffect(() => {
     setMounted(true);
     // Load dynamic options from backend
     const loadOptions = async () => {
       try {
         const { api } = await import("../utils/api");
-        const [groups, r, s] = await Promise.all([api.getPortalGroups(), api.getRetailers(), api.getStaffList()]);
+        const [groups, r, s, portals] = await Promise.all([api.getPortalGroups(), api.getRetailers(), api.getStaffList(), api.getPortals()]);
         const mappedGroups = groups.map((x: any) => {
           return { 
             id: x.id, 
@@ -89,6 +153,7 @@ export default function NewDeposit() {
         setPortalGroups(mappedGroups);
         setRetailers(mappedRetailers);
         setStaffUsers(mappedStaff);
+        setPortalsList(portals.map((p: any) => ({ id: p.id, name: p.portal_name })));
         
         if (mappedGroups.length > 0) setSelectedGroupId(mappedGroups[0].id);
         if (mappedRetailers.length > 0) setSelectedRetailerId(mappedRetailers[0].id);
@@ -140,7 +205,7 @@ export default function NewDeposit() {
       const retailerName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer";
       targetName = `Virtual: ${portalName} ➔ ${retailerName}`;
     } else {
-      targetName = toOffice ? "Main Office Cashier" : (staffUsers.find(s => s.id === selectedStaffId)?.name || "Field Staff");
+      targetName = "Main Office";
     }
 
     // Build proper backend payload with UUIDs
@@ -153,11 +218,7 @@ export default function NewDeposit() {
     if (depositType === "portal" || depositType === "virtual") backendPayload.portal_id = selectedPortalId;
     if (depositType === "retailer" || depositType === "virtual") backendPayload.retailer_id = selectedRetailerId;
     if (depositType === "staff") {
-      if (toOffice) {
-        backendPayload.to_office = true;
-      } else {
-        backendPayload.recipient_staff_id = selectedStaffId;
-      }
+      backendPayload.to_office = true;
     }
 
     // Local store payload (uses camelCase display fields)
@@ -175,8 +236,12 @@ export default function NewDeposit() {
     const submitOnline = async () => {
       try {
         const { api } = await import("../utils/api");
-        await api.createDeposit(backendPayload);
-        addDeposit(localDepData);
+        if (editId) {
+          await api.updateDeposit(editId, backendPayload);
+        } else {
+          await api.createDeposit(backendPayload);
+          addDeposit(localDepData);
+        }
         router.push("/staff");
       } catch (err: any) {
         console.error("Backend deposit failed:", err);
@@ -206,8 +271,8 @@ export default function NewDeposit() {
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div>
-              <h1 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Cash Out Entry</h1>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Record payout details.</p>
+              <h1 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">{editId ? "Edit Cash Out" : "Cash Out Entry"}</h1>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{editId ? "Update payout details." : "Record payout details."}</p>
             </div>
           </div>
 
@@ -224,7 +289,7 @@ export default function NewDeposit() {
               {[
                 { type: "portal", label: "Portals", desc: "To Bank Account" },
                 { type: "retailer", label: "Shops", desc: "Retailer Refund" },
-                { type: "staff", label: "Office", desc: "Staff or Office" },
+                { type: "staff", label: "Office", desc: "Main Office" },
               ].map((opt) => (
                 <button
                   key={opt.type}
@@ -244,150 +309,125 @@ export default function NewDeposit() {
           </div>
 
           {/* Context details options selector */}
-          <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            {depositType === "virtual" && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
-                    1. Select Source Portal Account
-                  </label>
-                  <InlineSelect
-                    value={selectedGroupId}
-                    onChange={(val) => setSelectedGroupId(val)}
-                    options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
-                    placeholder={portalGroups.length === 0 ? "Loading portals..." : "Select Portal"}
-                    icon={<Building className="w-4 h-4" />}
-                  />
-                </div>
-
-                {selectedGroupId && (
+          {depositType !== "staff" && (
+            <div className="p-5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+              {depositType === "virtual" && (
+                <div className="space-y-4">
                   <div>
                     <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
-                      2. Select Source Bank Account
+                      1. Select Source Portal Account
                     </label>
                     <InlineSelect
-                      value={selectedPortalId}
-                      onChange={(val) => setSelectedPortalId(val)}
-                      options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
-                      placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
-                      icon={<CreditCard className="w-4 h-4" />}
+                      value={selectedGroupId}
+                      onChange={(val) => setSelectedGroupId(val)}
+                      options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
+                      placeholder={portalGroups.length === 0 ? "Loading portals..." : "Select Portal"}
+                      icon={<Building className="w-4 h-4" />}
                     />
                   </div>
-                )}
 
+                  {selectedGroupId && (
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
+                        2. Select Source Bank Account
+                      </label>
+                      <InlineSelect
+                        value={selectedPortalId}
+                        onChange={(val) => setSelectedPortalId(val)}
+                        options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
+                        placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
+                        icon={<CreditCard className="w-4 h-4" />}
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
+                      3. Select Destination Retailer
+                    </label>
+                    <InlineSelect
+                      value={selectedRetailerId}
+                      onChange={(val) => setSelectedRetailerId(val)}
+                      options={retailers.map(r => ({ value: r.id, label: r.name }))}
+                      placeholder={retailers.length === 0 ? "Loading retailers..." : "Select Retailer"}
+                      icon={<Layers className="w-4 h-4" />}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {depositType === "portal" && (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
+                      1. Choose Portal
+                    </label>
+                    <InlineSelect
+                      value={selectedGroupId}
+                      onChange={(val) => setSelectedGroupId(val)}
+                      options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
+                      placeholder={portalGroups.length === 0 ? "Loading portals..." : "Select Portal"}
+                      icon={<Building className="w-4 h-4" />}
+                    />
+                    
+                    {selectedGroupId && (
+                      <div className="mt-2.5 flex items-center gap-2">
+                        {portalGroups.find(g => g.id === selectedGroupId)?.toGive > 0 && (
+                          <div className="flex-1 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl">
+                            <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest block">To Give</span>
+                            <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400">₹{portalGroups.find(g => g.id === selectedGroupId)?.toGive.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {portalGroups.find(g => g.id === selectedGroupId)?.toTake > 0 && (
+                          <div className="flex-1 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-xl">
+                            <span className="text-[8px] font-black text-red-600 dark:text-red-500 uppercase tracking-widest block">To Take</span>
+                            <span className="text-[11px] font-black text-red-700 dark:text-red-400">₹{portalGroups.find(g => g.id === selectedGroupId)?.toTake.toLocaleString()}</span>
+                          </div>
+                        )}
+                        {(portalGroups.find(g => g.id === selectedGroupId)?.toGive === 0 || !portalGroups.find(g => g.id === selectedGroupId)?.toGive) && 
+                         (portalGroups.find(g => g.id === selectedGroupId)?.toTake === 0 || !portalGroups.find(g => g.id === selectedGroupId)?.toTake) && (
+                          <div className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
+                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Balance</span>
+                            <span className="text-[11px] font-black text-slate-600 dark:text-slate-500">Settled</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedGroupId && (
+                    <div>
+                      <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
+                        2. Choose Bank Account
+                      </label>
+                      <InlineSelect
+                        value={selectedPortalId}
+                        onChange={(val) => setSelectedPortalId(val)}
+                        options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
+                        placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
+                        icon={<CreditCard className="w-4 h-4" />}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {depositType === "retailer" && (
                 <div>
                   <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
-                    3. Select Destination Retailer
+                    Select Shop for Refund
                   </label>
                   <InlineSelect
                     value={selectedRetailerId}
                     onChange={(val) => setSelectedRetailerId(val)}
                     options={retailers.map(r => ({ value: r.id, label: r.name }))}
-                    placeholder={retailers.length === 0 ? "Loading retailers..." : "Select Retailer"}
+                    placeholder={retailers.length === 0 ? "Loading retailers..." : "Select Shop"}
                     icon={<Layers className="w-4 h-4" />}
                   />
                 </div>
-              </div>
-            )}
-
-            {depositType === "portal" && (
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
-                    1. Choose Portal
-                  </label>
-                  <InlineSelect
-                    value={selectedGroupId}
-                    onChange={(val) => setSelectedGroupId(val)}
-                    options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
-                    placeholder={portalGroups.length === 0 ? "Loading portals..." : "Select Portal"}
-                    icon={<Building className="w-4 h-4" />}
-                  />
-                  
-                  {selectedGroupId && (
-                    <div className="mt-2.5 flex items-center gap-2">
-                      {portalGroups.find(g => g.id === selectedGroupId)?.toGive > 0 && (
-                        <div className="flex-1 px-3 py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl">
-                          <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest block">To Give</span>
-                          <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400">₹{portalGroups.find(g => g.id === selectedGroupId)?.toGive.toLocaleString()}</span>
-                        </div>
-                      )}
-                      {portalGroups.find(g => g.id === selectedGroupId)?.toTake > 0 && (
-                        <div className="flex-1 px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-xl">
-                          <span className="text-[8px] font-black text-red-600 dark:text-red-500 uppercase tracking-widest block">To Take</span>
-                          <span className="text-[11px] font-black text-red-700 dark:text-red-400">₹{portalGroups.find(g => g.id === selectedGroupId)?.toTake.toLocaleString()}</span>
-                        </div>
-                      )}
-                      {(portalGroups.find(g => g.id === selectedGroupId)?.toGive === 0 || !portalGroups.find(g => g.id === selectedGroupId)?.toGive) && 
-                       (portalGroups.find(g => g.id === selectedGroupId)?.toTake === 0 || !portalGroups.find(g => g.id === selectedGroupId)?.toTake) && (
-                        <div className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl">
-                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block">Balance</span>
-                          <span className="text-[11px] font-black text-slate-600 dark:text-slate-500">Settled</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {selectedGroupId && (
-                  <div>
-                    <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
-                      2. Choose Bank Account
-                    </label>
-                    <InlineSelect
-                      value={selectedPortalId}
-                      onChange={(val) => setSelectedPortalId(val)}
-                      options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
-                      placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
-                      icon={<CreditCard className="w-4 h-4" />}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {depositType === "retailer" && (
-              <div>
-                <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
-                  Select Shop for Refund
-                </label>
-                <InlineSelect
-                  value={selectedRetailerId}
-                  onChange={(val) => setSelectedRetailerId(val)}
-                  options={retailers.map(r => ({ value: r.id, label: r.name }))}
-                  placeholder={retailers.length === 0 ? "Loading retailers..." : "Select Shop"}
-                  icon={<Layers className="w-4 h-4" />}
-                />
-              </div>
-            )}
-
-            {depositType === "staff" && (
-              <div className="space-y-3">
-                <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
-                  Select Staff or Office Receiver
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <button type="button" onClick={() => setToOffice(false)}
-                    className={`flex-1 py-2 rounded-xl text-[10px] font-bold border transition-all ${
-                      !toOffice ? "bg-slate-900 text-white border-slate-900" : "bg-white dark:bg-slate-950 text-slate-500 border-slate-200 dark:border-slate-800"
-                    }`}>Staff Member</button>
-                  <button type="button" onClick={() => setToOffice(true)}
-                    className={`flex-1 py-2 rounded-xl text-[10px] font-bold border transition-all ${
-                      toOffice ? "bg-slate-900 text-white border-slate-900" : "bg-white dark:bg-slate-950 text-slate-500 border-slate-200 dark:border-slate-800"
-                    }`}>Main Office</button>
-                </div>
-                {!toOffice && (
-                  <InlineSelect
-                    value={selectedStaffId}
-                    onChange={(val) => setSelectedStaffId(val)}
-                    options={staffUsers.map(s => ({ value: s.id, label: s.name }))}
-                    placeholder={staffUsers.length === 0 ? "Loading staff..." : "Select Staff"}
-                    icon={<User className="w-4 h-4" />}
-                  />
-                )}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
 
 
@@ -418,58 +458,75 @@ export default function NewDeposit() {
 
             <div className="space-y-3">
               {[
-                { label: "₹500 Notes", key: "note_500", multiplier: 500 },
-                { label: "₹200 Notes", key: "note_200", multiplier: 200 },
-                { label: "₹100 Notes", key: "note_100", multiplier: 100 },
-                { label: "₹50 Notes", key: "note_50", multiplier: 50 },
-                { label: "₹20 Notes", key: "note_20", multiplier: 20 },
-                { label: "₹10 Notes", key: "note_10", multiplier: 10 },
+                { label: "₹500 Notes", key: "note_500", multiplier: 500, img: "/images/notes/500.jpg" },
+                { label: "₹200 Notes", key: "note_200", multiplier: 200, img: "/images/notes/200.jpg" },
+                { label: "₹100 Notes", key: "note_100", multiplier: 100, img: "/images/notes/100.png" },
+                { label: "₹50 Notes", key: "note_50", multiplier: 50, img: "/images/notes/50.jpg" },
+                { label: "₹20 Notes", key: "note_20", multiplier: 20, img: "/images/notes/20.jpg" },
+                { label: "₹10 Notes", key: "note_10", multiplier: 10, img: "/images/notes/10.jpg" },
+                { label: "Coins / ₹1", key: "coins", multiplier: 1, img: "/images/notes/1.jpg" },
               ].map((n) => (
-                <div key={n.key} className="flex items-center gap-3 justify-between">
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-bold w-24">{n.label}</span>
+                <div key={n.key} className="flex items-center gap-3 justify-between py-1 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                  {/* Note label without image */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 w-24 text-left">
+                      {n.label}
+                    </span>
+                  </div>
+
                   <span className="text-slate-300 dark:text-slate-600 text-[10px] font-bold">✖</span>
+
+                  {/* Input box */}
                   <input
                     type="number"
                     placeholder="0"
                     value={denominations[n.key as keyof DenominationCounts] || ""}
                     onChange={(e) => handleDenomChange(n.key as keyof DenominationCounts, e.target.value)}
-                    className="w-16 px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg text-center text-xs text-slate-800 dark:text-slate-200"
+                    onKeyDown={(e) => handleNoNegativeKeyDown(e, n.key === "coins")}
+                    className="w-16 px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 focus:outline-none rounded-lg text-center text-xs text-slate-800 dark:text-slate-200 font-extrabold"
                     min="0"
                   />
-                  <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300 text-right w-16">
-                    ₹{(denominations[n.key as keyof DenominationCounts] as number * n.multiplier).toLocaleString()}
+
+                  <span className="text-slate-300 dark:text-slate-655 text-[10px] font-bold">＝</span>
+
+                  {/* Line total */}
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-350 text-right w-16">
+                    ₹{(Number(denominations[n.key as keyof DenominationCounts] || 0) * n.multiplier).toLocaleString()}
                   </span>
                 </div>
               ))}
 
-              <div className="flex items-center gap-3 justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-                <span className="text-xs text-slate-500 dark:text-slate-400 font-bold w-24">Coins (Change)</span>
-                <span className="text-slate-300 dark:text-slate-600 text-[10px] font-bold">➕</span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={denominations.coins || ""}
-                  onChange={(e) => handleDenomChange("coins", e.target.value)}
-                  className="w-16 px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg text-center text-xs text-slate-800 dark:text-slate-200"
-                  min="0"
-                  step="0.01"
-                />
-                <span className="text-xs font-extrabold text-slate-600 dark:text-slate-300 text-right w-16">
-                  ₹{denominations.coins.toFixed(2)}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3 justify-between pt-3 border-t border-slate-200 dark:border-slate-800">
-                <span className="text-xs font-black text-slate-600 dark:text-slate-300 w-24">Online (GPay/PhonePe)</span>
-                <span className="text-slate-300 dark:text-slate-600 text-[10px] font-bold">➕</span>
-                <input
-                  type="number"
-                  placeholder="₹0.00"
-                  value={denominations.online_amount || ""}
-                  onChange={(e) => handleDenomChange("online_amount", e.target.value)}
-                  className="w-32 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg text-center text-xs text-slate-800 dark:text-slate-200 font-bold"
-                  min="0"
-                />
+              <div className="flex flex-col gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-3 justify-between">
+                  <span 
+                    className="text-xs font-black text-slate-600 dark:text-slate-300 w-28 cursor-pointer"
+                    onClick={() => setShowOnlinePortal(true)}
+                  >
+                    Online (GPay)
+                  </span>
+                  <span className="text-slate-300 dark:text-slate-600 text-[10px] font-bold">➕</span>
+                  <input
+                    type="number"
+                    placeholder="₹0.00"
+                    value={denominations.online_amount || ""}
+                    onChange={(e) => handleDenomChange("online_amount", e.target.value)}
+                    onKeyDown={(e) => handleNoNegativeKeyDown(e, true)}
+                    className="w-32 px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg text-center text-xs text-slate-800 dark:text-slate-200 font-bold"
+                    min="0"
+                  />
+                </div>
+                {(showOnlinePortal || denominations.online_amount > 0) && (
+                  <div className="mt-1 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <select
+                      value={denominations.online_portal_id || ""}
+                      onChange={(e) => handleDenomChange("online_portal_id", e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400"
+                    >
+                      <option value="">Select Portal Account...</option>
+                      {portalsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -496,7 +553,7 @@ export default function NewDeposit() {
             type="submit"
             className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 rounded-xl text-xs font-bold active:scale-[0.98] transition-all cursor-pointer shadow"
           >
-            Submit Cash Out Entry
+            {editId ? "Update Cash Out Entry" : "Submit Cash Out Entry"}
           </button>
         </form>
       </div>

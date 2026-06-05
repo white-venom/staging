@@ -57,3 +57,25 @@ input::-webkit-inner-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+/* Print CSS to isolate PDF report-content */
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  body * {
+    visibility: hidden;
+  }
+  #report-content, #report-content * {
+    visibility: visible;
+  }
+  #report-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+}

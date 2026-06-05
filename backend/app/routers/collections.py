@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime, timedelta
 from typing import List, Optional
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy import select, and_, desc, update
 from sqlalchemy.orm import Session, joinedload
 
@@ -17,6 +18,7 @@ router = APIRouter(prefix="/collections", tags=["Collections Control"])
 @router.post("", response_model=CollectionResponse, status_code=status.HTTP_201_CREATED)
 def submit_collection(
     payload: CollectionCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user=Depends(require_staff)
 ):
@@ -162,6 +164,16 @@ def submit_collection(
             print(f"     🔗 {secure_link}")
             print("="*80 + "\n")
 
+        # Trigger WhatsApp message asynchronously
+        if retailer and retailer.phone:
+            from app.services.whatsapp import send_whatsapp_message
+            background_tasks.add_task(
+                send_whatsapp_message,
+                to_phone_number=retailer.phone,
+                template_name="retailer_payment_receipt",
+                variables=[retailer.retailer_name, str(db_collection.total_amount), secure_link]
+            )
+
         return db_collection
     except Exception as e:
         db.rollback()
@@ -225,6 +237,7 @@ def list_collections(
 @router.put("/{collection_id}/verify", response_model=CollectionResponse)
 def verify_collection(
     collection_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user=Depends(require_admin)
 ):
@@ -296,6 +309,16 @@ def verify_collection(
         print(f"     🔗 {secure_link}")
         print("="*80 + "\n")
         
+    # Trigger WhatsApp message asynchronously
+    if retailer and retailer.phone:
+        from app.services.whatsapp import send_whatsapp_message
+        background_tasks.add_task(
+            send_whatsapp_message,
+            to_phone_number=retailer.phone,
+            template_name="retailer_payment_receipt",
+            variables=[retailer.retailer_name, str(collection.total_amount), secure_link]
+        )
+
     return collection
 
 from app.logic.ledger import recalculate_balances
@@ -304,12 +327,19 @@ from app.logic.ledger import recalculate_balances
 def delete_collection(
     collection_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_any_user)
 ):
-    """Admin-only: Delete a collection and its associated ledger entry, then fix following balances."""
+    """Admin or Staff (within 5 mins): Delete a collection and its associated ledger entry, then fix following balances."""
     collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
+        
+    if current_user.role != "admin":
+        if collection.staff_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to delete this collection")
+        # Check if within 5 minutes
+        if datetime.utcnow() - collection.created_at > timedelta(minutes=5):
+            raise HTTPException(status_code=403, detail="Can only delete collections within 5 minutes of creation")
     
     retailer_id = collection.retailer_id
     
@@ -338,12 +368,19 @@ def update_collection(
     collection_id: uuid.UUID,
     payload: CollectionCreate, # Reusing create schema for simplicity, or could make Update schema
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_any_user)
 ):
-    """Admin-only: Update collection amount or details and recalculate balances."""
+    """Admin or Staff (within 5 mins): Update collection amount or details and recalculate balances."""
     collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
+        
+    if current_user.role != "admin":
+        if collection.staff_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to update this collection")
+        # Check if within 5 minutes
+        if datetime.utcnow() - collection.created_at > timedelta(minutes=5):
+            raise HTTPException(status_code=403, detail="Can only update collections within 5 minutes of creation")
     
     # Calculate amount difference for portal update
     old_amount = collection.total_amount

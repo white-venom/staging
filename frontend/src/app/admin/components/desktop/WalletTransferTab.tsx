@@ -63,14 +63,14 @@ export default function WalletTransferTab() {
       } else {
         alert(`Virtually loaded ₹${amt.toLocaleString()} to ${targetMsg}!`);
       }
-      
+
       setSelectedPortalGroupId("");
       setVSourcePortalId("");
       setVDestRetailerId("");
       setVDestStaffId("");
       setVAmount("");
       setVRemarks("");
-      
+
       if (fetchData) fetchData();
     } catch (err: any) {
       alert("Transfer Error: " + err.message);
@@ -88,84 +88,56 @@ export default function WalletTransferTab() {
             Virtual Money Transfer
           </h3>
         </div>
-        
+
         <form onSubmit={handleVirtualTransfer} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Portal</label>
-              <InlineSelect
-                value={selectedPortalGroupId}
-                onChange={(val) => {
-                  setSelectedPortalGroupId(val);
-                  setVSourcePortalId("");
-                }}
-                options={(portalDirectory || [])
-                  .map((g: any) => ({ value: g.id, label: g.name }))
-                }
-                placeholder="Select Portal"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Bank/Account</label>
-              <InlineSelect
-                value={vSourcePortalId}
-                onChange={(val) => setVSourcePortalId(val)}
-                options={(selectedGroup?.portals || []).map((p: any) => ({
-                  value: p.id,
-                  label: `${p.portal_name} (Bal: ₹${p.balance.toLocaleString()})`
-                }))}
-                placeholder="Select Bank Account"
-                disabled={!selectedPortalGroupId}
-              />
-            </div>
+          <div>
+            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Portal</label>
+            <InlineSelect
+              value={selectedPortalGroupId}
+              onChange={(val) => {
+                setSelectedPortalGroupId(val);
+                const group = (portalDirectory || []).find((g: any) => g.id === val);
+                setVSourcePortalId(group?.portals?.[0]?.id || "");
+              }}
+              options={(portalDirectory || [])
+                .map((g: any) => ({ value: g.id, label: g.name }))
+              }
+              placeholder="Select Portal"
+            />
           </div>
 
-
-
-            <div>
-              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Retailer</label>
-              <InlineSelect
-                value={vDestRetailerId}
-                onChange={(val) => setVDestRetailerId(val)}
-                options={(retailerDirectory || []).map((r: any) => {
-                  const hasVirtualTx = (deposits || []).some(d => d.retailer_id === r.id && d.depositType === "virtual");
-                  const bal = hasVirtualTx ? (r.balance || 0) : (r.opening_to_take || 0);
-                  return {
-                    value: r.id,
-                    label: `${r.name} (Bal: ₹${bal.toLocaleString()})`
-                  };
-                })}
-                placeholder="Select Retailer"
-              />
-            </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Amount to Load (₹)</label>
-              <input 
-                type="number" 
-                value={vAmount} 
-                onChange={e => setVAmount(e.target.value)} 
-                placeholder="e.g. 15000" 
-                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
-                min="1"
-                required 
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Remarks (Optional)</label>
-              <input 
-                type="text" 
-                value={vRemarks} 
-                onChange={e => setVRemarks(e.target.value)} 
-                placeholder="e.g. Loaded via RinovaPay" 
-                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none text-slate-700 dark:text-slate-200"
-              />
-            </div>
+          <div>
+            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Retailer</label>
+            <InlineSelect
+              value={vDestRetailerId}
+              onChange={(val) => setVDestRetailerId(val)}
+              options={(retailerDirectory || []).map((r: any) => {
+                const hasVirtualTx = (deposits || []).some(d => d.retailer_id === r.id && d.depositType === "virtual");
+                const bal = hasVirtualTx ? (r.balance || 0) : (r.opening_to_take || 0);
+                return {
+                  value: r.id,
+                  label: `${r.name} (Bal: ₹${bal.toLocaleString()})`
+                };
+              })}
+              placeholder="Select Retailer"
+            />
           </div>
 
-          <button 
-            type="submit" 
+          <div>
+            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Amount to Load (₹)</label>
+            <input
+              type="number"
+              value={vAmount}
+              onChange={e => setVAmount(e.target.value)}
+              placeholder="e.g. 15000"
+              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
+              min="1"
+              required
+            />
+          </div>
+
+          <button
+            type="submit"
             disabled={isTransferring}
             className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-500 dark:hover:bg-emerald-600 rounded-xl text-xs font-black shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >

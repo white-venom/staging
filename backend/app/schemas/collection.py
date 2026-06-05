@@ -14,6 +14,7 @@ class DenominationSchema(BaseModel):
     note_10: int = Field(0, ge=0)
     coins: Decimal = Field(Decimal("0.00"), ge=0)
     online_amount: Decimal = Field(Decimal("0.00"), ge=0)
+    online_portal_id: Optional[str] = None
 
     class Config:
         from_attributes = True
