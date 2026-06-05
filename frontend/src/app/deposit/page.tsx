@@ -16,7 +16,7 @@ import {
   ChevronDown
 } from "lucide-react";
 
-export default function NewDeposit() {
+function NewDepositContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("editId");
@@ -558,5 +558,17 @@ export default function NewDeposit() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function NewDeposit() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-400 dark:text-slate-500 text-xs font-semibold">Loading...</div>
+      </div>
+    }>
+      <NewDepositContent />
+    </React.Suspense>
   );
 }

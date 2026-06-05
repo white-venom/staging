@@ -23,7 +23,7 @@ import {
   ChevronDown
 } from "lucide-react";
 
-export default function NewCollection() {
+function NewCollectionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("editId");
@@ -610,5 +610,17 @@ export default function NewCollection() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function NewCollection() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-400 dark:text-slate-500 text-xs font-semibold">Loading...</div>
+      </div>
+    }>
+      <NewCollectionContent />
+    </React.Suspense>
   );
 }
