@@ -149,7 +149,7 @@ export default function CashOutLedgerPage() {
         depositType: updated.deposit_type,
         targetName: updated.target_name || "Main Office",
         amount: Number(updated.amount),
-        paymentMode: updated.payment_mode === "cash" ? "cash" : "online",
+        paymentMode: (updated.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
         denominations: updated.denominations ? {
           note_500: Number(updated.denominations.note_500 || 0),
           note_200: Number(updated.denominations.note_200 || 0),
@@ -356,7 +356,7 @@ export default function CashOutLedgerPage() {
                         value={editDenoms[note.key] || ""}
                         onChange={(e) => {
                           const v = e.target.value === "" ? 0 : parseInt(e.target.value);
-                          setEditDenoms(prev => ({ ...prev, [note.key]: isNaN(v) ? 0 : v }));
+                          setEditDenoms((prev: any) => ({ ...prev, [note.key]: isNaN(v) ? 0 : v }));
                         }}
                         className="w-16 px-2 py-1 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
                         min="0"
@@ -375,7 +375,7 @@ export default function CashOutLedgerPage() {
                       value={editDenoms.coins || ""}
                       onChange={(e) => {
                         const v = e.target.value === "" ? 0 : parseFloat(e.target.value);
-                        setEditDenoms(prev => ({ ...prev, coins: isNaN(v) ? 0 : v }));
+                        setEditDenoms((prev: any) => ({ ...prev, coins: isNaN(v) ? 0 : v }));
                       }}
                       className="w-16 px-2 py-1 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs"
                       min="0"
@@ -392,7 +392,7 @@ export default function CashOutLedgerPage() {
                       value={editDenoms.online_amount || ""}
                       onChange={(e) => {
                         const v = e.target.value === "" ? 0 : parseInt(e.target.value);
-                        setEditDenoms(prev => ({ ...prev, online_amount: isNaN(v) ? 0 : v }));
+                        setEditDenoms((prev: any) => ({ ...prev, online_amount: isNaN(v) ? 0 : v }));
                       }}
                       className="w-16 px-2 py-1 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold"
                       min="0"

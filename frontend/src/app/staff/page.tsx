@@ -199,7 +199,7 @@ export default function StaffDashboard() {
           depositType: d.deposit_type,
           targetName: d.target_name || "Main Office",
           amount: Number(d.amount),
-          paymentMode: d.payment_mode === "cash" ? "cash" : "online",
+          paymentMode: (d.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
           denominations: d.denominations ? {
             note_500: Number(d.denominations.note_500 || 0),
             note_200: Number(d.denominations.note_200 || 0),
