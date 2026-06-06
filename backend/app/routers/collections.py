@@ -148,6 +148,11 @@ def submit_collection(
             db_collection.retailer_name = "Office/Cash Chest"
             
         db_collection.staff_name = current_user.name
+        
+        # Portal name for response
+        if db_collection.portal_id:
+            portal_obj = db.scalar(select(Portal).where(Portal.id == db_collection.portal_id))
+            db_collection.portal_name = portal_obj.portal_name if portal_obj else None
 
         # 3. Simulate Email Alert (Task 110: Auto-Verify)
         if retailer and retailer.email:
@@ -212,7 +217,9 @@ def list_collections(
         joinedload(Collection.retailer), 
         joinedload(Collection.store), 
         joinedload(Collection.staff),
-        joinedload(Collection.from_staff)
+        joinedload(Collection.from_staff),
+        joinedload(Collection.portal),
+        joinedload(Collection.denominations)
     )
     collections = db.scalars(query.order_by(desc(Collection.created_at))).all()
     
@@ -230,6 +237,7 @@ def list_collections(
             
         col.store_name = col.store.store_name if col.store else "Direct Handover"
         col.staff_name = col.staff.name if col.staff else "Unknown Staff"
+        col.portal_name = col.portal.portal_name if col.portal else None
         
     return collections
 
@@ -451,5 +459,6 @@ def update_collection(
     collection.retailer_name = collection.retailer.retailer_name if collection.retailer else "Unknown"
     collection.store_name = collection.store.store_name if collection.store else "Direct Retailer Handover"
     collection.staff_name = collection.staff.name if collection.staff else "Unknown"
+    collection.portal_name = collection.portal.portal_name if collection.portal else None
     
     return collection

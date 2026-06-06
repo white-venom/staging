@@ -37,12 +37,15 @@ export default function LedgerTab({
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
   const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
+  const [editingIsDeposit, setEditingIsDeposit] = React.useState(false);
   const [selectedNewRetailerId, setSelectedNewRetailerId] = React.useState("");
   const [selectedNewPortalId, setSelectedNewPortalId] = React.useState("");
   const [isSavingCollection, setIsSavingCollection] = React.useState(false);
 
   const handleStartEditCollection = (tx: any) => {
     const raw = tx.rawRecord;
+    const isDeposit = tx.depositType != null; // deposits have depositType, collections don't
+    setEditingIsDeposit(isDeposit);
     setEditingCollection(raw);
     setSelectedNewRetailerId(raw.retailer_id || "");
     setSelectedNewPortalId(raw.portal_id || "");
@@ -54,28 +57,42 @@ export default function LedgerTab({
     if (!editingCollection) return;
     setIsSavingCollection(true);
     try {
-      await api.updateCollection(editingCollection.id, {
-        retailer_id: selectedNewRetailerId || null,
-        portal_id: selectedNewPortalId || null,
-        store_id: editingCollection.store_id || null,
-        total_amount: editingCollection.totalAmount || editingCollection.total_amount,
-        remarks: editingCollection.remarks || "",
-        denominations: editingCollection.denominations || {
-          note_500: 0,
-          note_200: 0,
-          note_100: 0,
-          note_50: 0,
-          note_20: 0,
-          note_10: 0,
-          coins: 0,
-          online_amount: 0
-        }
-      });
-      adminContext.showToastNotification("Collection updated successfully.");
+      if (editingIsDeposit) {
+        // Virtual deposit: update via deposit endpoint
+        await api.updateDeposit(editingCollection.id, {
+          deposit_type: editingCollection.depositType || "virtual",
+          portal_id: selectedNewPortalId || editingCollection.portal_id || null,
+          retailer_id: selectedNewRetailerId || null,
+          recipient_staff_id: editingCollection.recipient_staff_id || null,
+          payment_mode: editingCollection.paymentMode || "online",
+          amount: editingCollection.amount,
+          deposit_date: (editingCollection.date || "").split(" ")[0] || new Date().toISOString().split("T")[0],
+        });
+      } else {
+        // Collection: update via collection endpoint
+        await api.updateCollection(editingCollection.id, {
+          retailer_id: selectedNewRetailerId || null,
+          portal_id: selectedNewPortalId || null,
+          store_id: editingCollection.store_id || null,
+          total_amount: editingCollection.totalAmount || editingCollection.total_amount,
+          remarks: editingCollection.remarks || "",
+          denominations: editingCollection.denominations || {
+            note_500: 0,
+            note_200: 0,
+            note_100: 0,
+            note_50: 0,
+            note_20: 0,
+            note_10: 0,
+            coins: 0,
+            online_amount: 0
+          }
+        });
+      }
+      adminContext.showToastNotification("Entry updated successfully.");
       setIsEditCollectionModalOpen(false);
       await adminContext.fetchData();
     } catch (err: any) {
-      alert("Failed to update collection: " + err.message);
+      alert("Failed to update: " + err.message);
     } finally {
       setIsSavingCollection(false);
     }
@@ -124,18 +141,32 @@ export default function LedgerTab({
     })),
     ...(deposits || []).map(d => {
       const isRef = d.isRefund === true;
+      const isVirtual = d.depositType === 'virtual';
+      
+      // For virtual deposits targeting a retailer, use the retailer as party
+      // so balance calculations and filtering work correctly
+      let partyId = d.portal_id || d.retailer_id;
+      let party = d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
+      
+      if (isVirtual && d.retailer_id) {
+        partyId = d.retailer_id;
+        const ret = (retailerDirectory || []).find((r: any) => r.id === d.retailer_id);
+        party = ret?.name || d.targetName;
+      }
+      
       return {
         id: d.id,
         date: d.date,
-        partyId: d.portal_id || d.retailer_id,
-        party: d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
-        portal: d.targetName, 
+        partyId,
+        party,
+        portal: isVirtual ? (d.portalName || d.targetName) : d.targetName, 
         staff: d.staffName || "Admin",
         debit: isRef ? 0 : d.amount,
         credit: isRef ? d.amount : 0,
         balance_snapshot: d.balance_snapshot,
         type: isRef ? 'collection' : 'deposit',
-        depositType: d.depositType
+        depositType: d.depositType,
+        rawRecord: d
       };
     })
   ];
@@ -217,14 +248,12 @@ export default function LedgerTab({
     let reportRunning = totalInitial; 
     const globalSnapshots = new Map<string, number>();
     chronological.forEach(tx => {
-      if (isFilteredView || tx.depositType !== 'virtual') {
-        reportRunning += isFilteredView ? (tx.debit - tx.credit) : (tx.credit - tx.debit);
-      }
+      reportRunning += isFilteredView ? (tx.debit - tx.credit) : (tx.credit - tx.debit);
       globalSnapshots.set(tx.id, reportRunning);
     });
 
     const totalCredit = allTransactions.reduce((s, c) => s + c.credit, 0);
-    const totalDebit = allTransactions.reduce((s, d) => s + ((!isFilteredView && d.depositType === 'virtual') ? 0 : d.debit), 0);
+    const totalDebit = allTransactions.reduce((s, d) => s + d.debit, 0);
     const netBalance = isFilteredView 
       ? (totalInitial + totalDebit - totalCredit) 
       : (totalCredit - totalDebit); 
@@ -481,10 +510,15 @@ export default function LedgerTab({
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-col">
-                          <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase">{tx.party}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase">{tx.party}</span>
+                            {tx.depositType === 'virtual' && (
+                              <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
+                            )}
+                          </div>
                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">By {tx.staff}</span>
                       </div>
-                      {tx.party.toLowerCase().trim() === "cms" && tx.type === "collection" && (
+                      {tx.party.toLowerCase().trim() === "cms" && (
                         <button
                           onClick={() => handleStartEditCollection(tx)}
                           className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"

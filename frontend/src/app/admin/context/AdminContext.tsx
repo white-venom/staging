@@ -81,6 +81,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         return {
           id: c.id,
           retailer_id: c.retailer_id,
+          portal_id: c.portal_id,
           store_id: c.store_id,
           retailerName: c.retailer_name || "Unknown Retailer",
           store_name: c.store_name || null,

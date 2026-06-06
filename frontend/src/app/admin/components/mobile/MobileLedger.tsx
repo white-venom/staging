@@ -29,11 +29,14 @@ export default function MobileLedger() {
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState<any | null>(null);
+  const [editingIsDeposit, setEditingIsDeposit] = useState(false);
   const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
   const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
   const [isSavingCollection, setIsSavingCollection] = useState(false);
 
   const handleStartEditCollection = (item: any) => {
+    const isDeposit = item.depositType != null;
+    setEditingIsDeposit(isDeposit);
     setEditingCollection(item);
     setSelectedNewRetailerId(item.retailer_id || "");
     setSelectedNewPortalId(item.portal_id || "");
@@ -45,28 +48,40 @@ export default function MobileLedger() {
     if (!editingCollection) return;
     setIsSavingCollection(true);
     try {
-      await api.updateCollection(editingCollection.id, {
-        retailer_id: selectedNewRetailerId || null,
-        portal_id: selectedNewPortalId || null,
-        store_id: editingCollection.store_id || null,
-        total_amount: editingCollection.totalAmount || editingCollection.total_amount,
-        remarks: editingCollection.remarks || "",
-        denominations: editingCollection.denominations || {
-          note_500: 0,
-          note_200: 0,
-          note_100: 0,
-          note_50: 0,
-          note_20: 0,
-          note_10: 0,
-          coins: 0,
-          online_amount: 0
-        }
-      });
-      showToastNotification("Collection updated successfully.");
+      if (editingIsDeposit) {
+        await api.updateDeposit(editingCollection.id, {
+          deposit_type: editingCollection.depositType || "virtual",
+          portal_id: selectedNewPortalId || editingCollection.portal_id || null,
+          retailer_id: selectedNewRetailerId || null,
+          recipient_staff_id: editingCollection.recipient_staff_id || null,
+          payment_mode: editingCollection.paymentMode || "online",
+          amount: editingCollection.amount,
+          deposit_date: (editingCollection.date || "").split(" ")[0] || new Date().toISOString().split("T")[0],
+        });
+      } else {
+        await api.updateCollection(editingCollection.id, {
+          retailer_id: selectedNewRetailerId || null,
+          portal_id: selectedNewPortalId || null,
+          store_id: editingCollection.store_id || null,
+          total_amount: editingCollection.totalAmount || editingCollection.total_amount,
+          remarks: editingCollection.remarks || "",
+          denominations: editingCollection.denominations || {
+            note_500: 0,
+            note_200: 0,
+            note_100: 0,
+            note_50: 0,
+            note_20: 0,
+            note_10: 0,
+            coins: 0,
+            online_amount: 0
+          }
+        });
+      }
+      showToastNotification("Entry updated successfully.");
       setIsEditCollectionModalOpen(false);
       await fetchData();
     } catch (err: any) {
-      alert("Failed to update collection: " + err.message);
+      alert("Failed to update: " + err.message);
     } finally {
       setIsSavingCollection(false);
     }
@@ -108,13 +123,21 @@ export default function MobileLedger() {
         portal: c.portalName,
         staff: c.staffName || "Admin"
       })),
-      ...(deposits || []).map(d => ({ 
-        ...d, 
-        type: d.isRefund === true ? 'collection' : 'deposit',
-        party: d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
-        portal: d.targetName, 
-        staff: d.staffName || "Admin"
-      }))
+      ...(deposits || []).map(d => {
+        const isVirtual = d.depositType === 'virtual';
+        let party = d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
+        if (isVirtual && d.retailer_id) {
+          const ret = (retailerDirectory || []).find((r: any) => r.id === d.retailer_id);
+          party = ret?.name || d.targetName;
+        }
+        return {
+          ...d, 
+          type: d.isRefund === true ? 'collection' : 'deposit',
+          party,
+          portal: isVirtual ? (d.portalName || d.targetName) : d.targetName, 
+          staff: d.staffName || "Admin"
+        };
+      })
     ];
 
     // Apply Search
@@ -240,7 +263,7 @@ export default function MobileLedger() {
                       <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase truncate block">
                         {item.party || 'General Entry'}
                       </span>
-                      {item.party && item.party.toLowerCase().trim() === "cms" && item.type === "collection" && (
+                      {item.party && item.party.toLowerCase().trim() === "cms" && (
                         <button
                           onClick={() => handleStartEditCollection(item)}
                           className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"
