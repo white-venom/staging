@@ -135,10 +135,10 @@ export default function RetailersTab({
       alert("Failed to update: " + err.message);
     }
   };
-
   const handleDeleteRetailer = async (id: string, name: string) => {
-    if (name.toLowerCase().trim() === "cms") {
-      alert("CMS retailer cannot be deleted.");
+    const normalized = name.toLowerCase().trim();
+    if (normalized === "cms" || normalized === "cmd") {
+      alert("CMS/CMD retailer cannot be deleted.");
       return;
     }
     if (!confirm(`Are you sure you want to delete Retailer "${name}"? This will also delete all associated stores and ledger records.`)) return;

@@ -242,8 +242,9 @@ export default function MobileRetailers({
   };
 
   const handleDeleteRetailer = async (id: string, name: string) => {
-    if (name.toLowerCase().trim() === "cms") {
-      showToastNotification("CMS retailer cannot be deleted");
+    const normalized = name.toLowerCase().trim();
+    if (normalized === "cms" || normalized === "cmd") {
+      showToastNotification("CMS/CMD retailer cannot be deleted");
       return;
     }
     if (!confirm(`Delete retailer "${name}"?`)) return;
