@@ -273,10 +273,12 @@ export default function RetailersTab({
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
-                    <div className="flex items-center gap-1">
-                      <Phone className="w-2.5 h-2.5 text-slate-400" />
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{retailer.phone}</span>
-                    </div>
+                    {retailer.name.toLowerCase().trim() !== "cms" && (
+                      <div className="flex items-center gap-1">
+                        <Phone className="w-2.5 h-2.5 text-slate-400" />
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{retailer.phone}</span>
+                      </div>
+                    )}
                     {retailer.email && (
                       <span className="text-[8px] text-blue-500 font-medium mt-0.5">{retailer.email}</span>
                     )}
@@ -583,24 +585,6 @@ export default function RetailersTab({
                               className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
                               placeholder="Area / Address"
                             />
-                            {selectedRetailer.name.toLowerCase().trim() === "cms" && (
-                              <div className="space-y-1">
-                                <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Move to Retailer</label>
-                                <select
-                                  value={editStoreRetailerId}
-                                  onChange={(e) => setEditStoreRetailerId(e.target.value)}
-                                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                                >
-                                  <option value={selectedRetailer.id}>Keep in CMS</option>
-                                  {retailerDirectory
-                                    .filter((r) => r.id !== selectedRetailer.id)
-                                    .map((r) => (
-                                      <option key={r.id} value={r.id}>{r.name}</option>
-                                    ))
-                                  }
-                                </select>
-                              </div>
-                            )}
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleSaveStoreEdit(s.id)}

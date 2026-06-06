@@ -413,7 +413,7 @@ export default function MobileRetailers({
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  {retailer.phone && (
+                  {retailer.phone && retailer.name.toLowerCase().trim() !== "cms" && (
                     <a 
                       href={`tel:${retailer.phone}`}
                       className="p-2.5 bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400 rounded-xl active:scale-95 transition-transform"
@@ -734,24 +734,6 @@ export default function MobileRetailers({
                               className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
                               placeholder="Area / Address"
                             />
-                            {selectedRetailerStore.name.toLowerCase().trim() === "cms" && (
-                              <div className="space-y-1">
-                                <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Move to Retailer</label>
-                                <select
-                                  value={editStoreRetailerId}
-                                  onChange={(e) => setEditStoreRetailerId(e.target.value)}
-                                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                                >
-                                  <option value={selectedRetailerStore.id}>Keep in CMS</option>
-                                  {retailerDirectory
-                                    .filter((r) => r.id !== selectedRetailerStore.id)
-                                    .map((r) => (
-                                      <option key={r.id} value={r.id}>{r.name}</option>
-                                    ))
-                                  }
-                                </select>
-                              </div>
-                            )}
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleSaveStoreEdit(s.id)}
