@@ -242,9 +242,8 @@ export default function MobileRetailers({
   };
 
   const handleDeleteRetailer = async (id: string, name: string) => {
-    const normalized = name.toLowerCase().trim();
-    if (normalized === "cms" || normalized === "cmd") {
-      showToastNotification("CMS/CMD retailer cannot be deleted");
+    if (name.toLowerCase().trim() === "cms") {
+      showToastNotification("CMS retailer cannot be deleted");
       return;
     }
     if (!confirm(`Delete retailer "${name}"?`)) return;
@@ -426,12 +425,14 @@ export default function MobileRetailers({
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button 
-                    onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
-                    className="p-2.5 bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {retailer.name.toLowerCase().trim() !== "cms" && (
+                    <button 
+                      onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
+                      className="p-2.5 bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
 

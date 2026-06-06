@@ -136,9 +136,8 @@ export default function RetailersTab({
     }
   };
   const handleDeleteRetailer = async (id: string, name: string) => {
-    const normalized = name.toLowerCase().trim();
-    if (normalized === "cms" || normalized === "cmd") {
-      alert("CMS/CMD retailer cannot be deleted.");
+    if (name.toLowerCase().trim() === "cms") {
+      alert("CMS retailer cannot be deleted.");
       return;
     }
     if (!confirm(`Are you sure you want to delete Retailer "${name}"? This will also delete all associated stores and ledger records.`)) return;
@@ -258,13 +257,15 @@ export default function RetailersTab({
                       >
                         <Edit2 className="w-3 h-3" />
                       </button>
-                      <button 
-                        onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
-                        className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
-                        title="Delete Retailer"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                      {retailer.name.toLowerCase().trim() !== "cms" && (
+                        <button 
+                          onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
+                          className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
+                          title="Delete Retailer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end">

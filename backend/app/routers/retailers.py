@@ -115,8 +115,8 @@ def delete_retailer(
     if not retailer:
         raise HTTPException(status_code=404, detail="Retailer not found")
 
-    if retailer.retailer_name.lower().strip() in ["cms", "cmd"]:
-        raise HTTPException(status_code=400, detail="CMS/CMD retailer cannot be deleted")
+    if retailer.retailer_name.lower().strip() == "cms":
+        raise HTTPException(status_code=400, detail="CMS retailer cannot be deleted")
 
     db.delete(retailer)
     db.commit()
