@@ -366,11 +366,11 @@ def delete_collection(
 @router.put("/{collection_id}", response_model=CollectionResponse)
 def update_collection(
     collection_id: uuid.UUID,
-    payload: CollectionCreate, # Reusing create schema for simplicity, or could make Update schema
+    payload: CollectionCreate,
     db: Session = Depends(get_db),
     current_user=Depends(require_any_user)
 ):
-    """Admin or Staff (within 5 mins): Update collection amount or details and recalculate balances."""
+    """Admin or Staff (within 5 mins): Update collection amount, retailer, portal, or details and recalculate balances."""
     collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
@@ -382,22 +382,42 @@ def update_collection(
         if datetime.utcnow() - collection.created_at > timedelta(minutes=5):
             raise HTTPException(status_code=403, detail="Can only update collections within 5 minutes of creation")
     
-    # Calculate amount difference for portal update
     old_amount = collection.total_amount
     new_amount = payload.total_amount
-    diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
+    old_retailer_id = collection.retailer_id
+    new_retailer_id = payload.retailer_id
+    old_portal_id = collection.portal_id
+    new_portal_id = payload.portal_id
+
+    # Handle Portal Balance Adjustments
+    if old_portal_id != new_portal_id:
+        # Revert old portal
+        if old_portal_id:
+            old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
+            if old_portal:
+                old_portal.balance += Decimal(str(old_amount))
+                if old_portal.group:
+                    old_portal.group.balance += Decimal(str(old_amount))
+        # Deduct new portal
+        if new_portal_id:
+            new_portal = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
+            if new_portal:
+                new_portal.balance -= Decimal(str(new_amount))
+                if new_portal.group:
+                    new_portal.group.balance -= Decimal(str(new_amount))
+    elif old_portal_id and new_amount != old_amount:
+        # Same portal, but amount changed
+        diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
+        portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
+        if portal:
+            portal.balance -= diff
+            if portal.group:
+                portal.group.balance -= diff
 
     # Update main fields safely
     for field, value in payload.model_dump(exclude_unset=True, exclude={"denominations"}).items():
         setattr(collection, field, value)
         
-    if collection.portal_id and diff != 0:
-        portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
-        if portal:
-            portal.balance -= diff
-            if portal.group:
-                portal.group.balance -= diff
-    
     # Update denominations
     if collection.denominations:
         d = payload.denominations
@@ -413,12 +433,16 @@ def update_collection(
     # Update ledger entry
     ledger_entry = db.scalar(select(Ledger).where(Ledger.collection_id == collection_id))
     if ledger_entry:
-        ledger_entry.amount = payload.total_amount
+        ledger_entry.amount = new_amount
+        if old_retailer_id != new_retailer_id:
+            ledger_entry.retailer_id = new_retailer_id
     
     db.commit()
     
     # Recalculate balances
-    recalculate_balances(collection.retailer_id, db)
+    if old_retailer_id != new_retailer_id:
+        recalculate_balances(old_retailer_id, db)
+    recalculate_balances(new_retailer_id, db)
     db.commit()
     
     db.refresh(collection)

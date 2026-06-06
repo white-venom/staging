@@ -405,9 +405,11 @@ export default function MobileRetailers({
                   </div>
                   <div>
                     <h3 className="font-black text-slate-900 dark:text-white truncate max-w-[150px]">{retailer.name}</h3>
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
-                      <MapPin className="w-3 h-3" /> {retailer.area || 'Unknown'}
-                    </div>
+                    {retailer.name.toLowerCase().trim() !== "cms" && (
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase">
+                        <MapPin className="w-3 h-3" /> {retailer.area || 'Unknown'}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
@@ -419,12 +421,14 @@ export default function MobileRetailers({
                       <Phone className="w-4 h-4" />
                     </a>
                   )}
-                  <button 
-                    onClick={() => handleStartEditRetailer(retailer)}
-                    className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
+                  {retailer.name.toLowerCase().trim() !== "cms" && (
+                    <button 
+                      onClick={() => handleStartEditRetailer(retailer)}
+                      className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  )}
                   {retailer.name.toLowerCase().trim() !== "cms" && (
                     <button 
                       onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}

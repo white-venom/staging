@@ -243,20 +243,24 @@ export default function RetailersTab({
                   <div className="flex items-start gap-3">
                     <div>
                       <h3 className="text-xs font-black text-slate-800 dark:text-slate-100">{retailer.name}</h3>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <MapPin className="w-2.5 h-2.5 text-slate-400" />
-                        <span className="text-[9px] text-slate-400 uppercase tracking-wide font-bold">Route: {retailer.area}</span>
-                      </div>
+                      {retailer.name.toLowerCase().trim() !== "cms" && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <MapPin className="w-2.5 h-2.5 text-slate-400" />
+                          <span className="text-[9px] text-slate-400 uppercase tracking-wide font-bold">Route: {retailer.area}</span>
+                        </div>
+                      )}
                     </div>
                     {/* Actions Overlay */}
                     <div className="flex items-center gap-1 transition-opacity">
-                      <button 
-                        onClick={() => handleStartEditRetailer(retailer)}
-                        className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
-                        title="Edit Retailer"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
+                      {retailer.name.toLowerCase().trim() !== "cms" && (
+                        <button 
+                          onClick={() => handleStartEditRetailer(retailer)}
+                          className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                          title="Edit Retailer"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      )}
                       {retailer.name.toLowerCase().trim() !== "cms" && (
                         <button 
                           onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}

@@ -57,7 +57,8 @@ def login(
         "access_token": access_token,
         "token_type": "bearer",
         "role": user.role,
-        "name": user.name
+        "name": user.name,
+        "id": user.id
     }
 
 
@@ -118,7 +119,8 @@ def refresh(
         "access_token": new_access_token,
         "token_type": "bearer",
         "role": user.role,
-        "name": user.name
+        "name": user.name,
+        "id": user.id
     }
 
 

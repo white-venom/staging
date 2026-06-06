@@ -52,7 +52,7 @@ export default function LoginPage() {
       }
 
       setCurrentUser({
-        id: `user-${response.role}-${Date.now()}`,
+        id: response.id,
         name: response.name,
         phone,
         role: response.role,

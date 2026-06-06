@@ -12,17 +12,65 @@ import {
   Download,
   FileText,
   Table as TableIcon,
-  X
+  X,
+  Edit2,
+  Save
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { format } from "date-fns";
 import MobileFilterDrawer from "./MobileFilterDrawer";
+import { api } from "../../../utils/api";
 
 export default function MobileLedger() {
-  const { collections, deposits, retailerDirectory, portalDirectory } = useAdmin();
+  const { collections, deposits, retailerDirectory, portalDirectory, fetchData, showToastNotification } = useAdmin();
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+
+  const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<any | null>(null);
+  const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
+  const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
+  const [isSavingCollection, setIsSavingCollection] = useState(false);
+
+  const handleStartEditCollection = (item: any) => {
+    setEditingCollection(item);
+    setSelectedNewRetailerId(item.retailer_id || "");
+    setSelectedNewPortalId(item.portal_id || "");
+    setIsEditCollectionModalOpen(true);
+  };
+
+  const handleSaveCollectionEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCollection) return;
+    setIsSavingCollection(true);
+    try {
+      await api.updateCollection(editingCollection.id, {
+        retailer_id: selectedNewRetailerId || null,
+        portal_id: selectedNewPortalId || null,
+        store_id: editingCollection.store_id || null,
+        total_amount: editingCollection.totalAmount || editingCollection.total_amount,
+        remarks: editingCollection.remarks || "",
+        denominations: editingCollection.denominations || {
+          note_500: 0,
+          note_200: 0,
+          note_100: 0,
+          note_50: 0,
+          note_20: 0,
+          note_10: 0,
+          coins: 0,
+          online_amount: 0
+        }
+      });
+      showToastNotification("Collection updated successfully.");
+      setIsEditCollectionModalOpen(false);
+      await fetchData();
+    } catch (err: any) {
+      alert("Failed to update collection: " + err.message);
+    } finally {
+      setIsSavingCollection(false);
+    }
+  };
   
   const [filters, setFilters] = useState({
     dateFrom: '',
@@ -188,9 +236,20 @@ export default function MobileLedger() {
                     </div>
                   </td>
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800">
-                    <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase truncate block">
-                      {item.party || 'General Entry'}
-                    </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase truncate block">
+                        {item.party || 'General Entry'}
+                      </span>
+                      {item.party && item.party.toLowerCase().trim() === "cms" && item.type === "collection" && (
+                        <button
+                          onClick={() => handleStartEditCollection(item)}
+                          className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+                          title="Edit Route"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-center">
                      <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-md ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
@@ -246,6 +305,83 @@ export default function MobileLedger() {
                  <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-300">PDF Document</span>
                </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {isEditCollectionModalOpen && editingCollection && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter">Edit CMS Collection Route</h3>
+              <button 
+                onClick={() => setIsEditCollectionModalOpen(false)} 
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveCollectionEdit} className="space-y-4">
+              <div className="space-y-3">
+                {/* Store Name (Read-only) */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Store (Read-only)</label>
+                  <input 
+                    type="text" 
+                    value={editingCollection.store_name || "Direct Retailer Handover"} 
+                    className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold text-slate-500" 
+                    readOnly 
+                  />
+                </div>
+
+                {/* Parent Retailer Select */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Parent Retailer</label>
+                  <select
+                    value={selectedNewRetailerId}
+                    onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                  >
+                    {retailerDirectory.map((r: any) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Portal Select */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Portal Channel</label>
+                  <select
+                    value={selectedNewPortalId}
+                    onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                  >
+                    <option value="">None / Cash</option>
+                    {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditCollectionModalOpen(false)}
+                  className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingCollection}
+                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {isSavingCollection ? "Saving..." : "Save Route"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

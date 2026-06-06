@@ -57,3 +57,4 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     role: str
     name: str
+    id: uuid.UUID

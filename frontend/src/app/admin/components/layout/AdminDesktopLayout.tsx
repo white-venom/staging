@@ -69,6 +69,17 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     if (!currentUser?.id) return;
     setIsUpdatingProfile(true);
     try {
+      let userId = currentUser.id;
+      if (userId.startsWith("user-")) {
+        const allUsers = await api.getUsers();
+        const matched = allUsers.find((u: any) => u.phone === currentUser.phone);
+        if (matched) {
+          userId = matched.id;
+        } else {
+          throw new Error("Unable to resolve admin profile ID from database.");
+        }
+      }
+
       const payload: any = {
         name: profileName,
         phone: profilePhone,
@@ -77,9 +88,10 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       if (profilePassword) {
         payload.password = profilePassword;
       }
-      const updatedUser = await api.updateUser(currentUser.id, payload);
+      const updatedUser = await api.updateUser(userId, payload);
       setCurrentUser({
         ...currentUser,
+        id: userId,
         name: updatedUser.name,
         phone: updatedUser.phone
       });
