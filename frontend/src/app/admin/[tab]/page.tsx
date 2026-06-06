@@ -126,7 +126,7 @@ export default function AdminTabPage() {
       case "wallet-transfer":
         return <WalletTransferTab />;
       case "administration":
-        return isMobile ? null : (
+        return (
           <AdministrationTab 
             userDirectory={userDirectory}
             portalDirectory={portalDirectory}

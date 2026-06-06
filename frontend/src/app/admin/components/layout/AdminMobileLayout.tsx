@@ -12,7 +12,10 @@ import {
   Building,
   Globe,
   LogOut,
-  CreditCard
+  CreditCard,
+  Clock,
+  Settings,
+  BarChart2
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -44,6 +47,9 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
     { label: "STAFF MGMT", icon: Users, href: "/admin/staff" },
     { label: "RETAILER MGMT", icon: Building, href: "/admin/retailers" },
     { label: "PORTAL MGMT", icon: Globe, href: "/admin/portals" },
+    { label: "ATTENDANCE", icon: Clock, href: "/admin/attendance" },
+    { label: "ADMINISTRATION", icon: Settings, href: "/admin/administration" },
+    { label: "REPORTS", icon: BarChart2, href: "/admin/reports" },
   ];
 
   const handleLogout = () => {
