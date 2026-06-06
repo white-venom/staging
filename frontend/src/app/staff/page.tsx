@@ -50,6 +50,18 @@ export default function StaffDashboard() {
   const [offlineDeposits, setOfflineDeposits] = useState<OfflineDeposit[]>([]);
   const [syncStatusMsg, setSyncStatusMsg] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isSidebarOpen]);
+
   const [showAttendanceBox, setShowAttendanceBox] = useState(false);
 
   const [startKmInput, setStartKmInput] = useState("");
@@ -531,13 +543,6 @@ export default function StaffDashboard() {
               <FileText className="w-5 h-5" />
             </button>
             <button
-              onClick={handleLogout}
-              className="w-10 h-10 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl flex items-center justify-center text-red-500 active:scale-90 transition-transform cursor-pointer"
-              title="Sign Out"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-            <button
               onClick={() => setIsSidebarOpen(true)}
               className="w-10 h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl flex items-center justify-center text-slate-700 dark:text-slate-200 active:scale-90 transition-transform cursor-pointer"
             >
@@ -632,6 +637,13 @@ export default function StaffDashboard() {
                   <p className="text-xs font-black text-slate-700 dark:text-slate-200 mt-1 truncate">{currentUser?.name || "Staff Member"}</p>
                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Staff</p>
                 </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full py-4 bg-red-50 text-red-650 dark:bg-red-900/10 dark:text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Log Out Securely
+                </button>
               </div>
             </div>
           </div>

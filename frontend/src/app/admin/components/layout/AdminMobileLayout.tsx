@@ -24,6 +24,17 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
   const { currentUser, resetStore } = useAppStore();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  React.useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isMenuOpen]);
+
   const navItems = [
     { label: "HOME", icon: LayoutDashboard, href: "/admin" },
     { label: "CASH IN", icon: ArrowUpRight, href: "/admin/collections" },
@@ -75,13 +86,6 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleLogout}
-            className="w-10 h-10 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-xl flex items-center justify-center text-red-500 active:scale-90 transition-transform cursor-pointer"
-            title="Sign Out"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
           {/* Hamburger Button */}
           <button
             onClick={() => setIsMenuOpen(true)}
