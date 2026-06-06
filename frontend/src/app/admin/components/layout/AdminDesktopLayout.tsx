@@ -17,7 +17,8 @@ import {
   LogOut,
   X,
   CheckCircle2,
-  CreditCard
+  CreditCard,
+  User
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { api } from "@/app/utils/api";
@@ -25,7 +26,7 @@ import { api } from "@/app/utils/api";
 export default function AdminDesktopLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { currentUser, resetStore, theme } = useAppStore();
+  const { currentUser, resetStore, theme, setCurrentUser } = useAppStore();
   const { 
     showToast, 
     toastMessage, 
@@ -48,6 +49,49 @@ export default function AdminDesktopLayout({ children }: { children: React.React
   const [pGroupName, setPGroupName] = useState("");
   const [pGroupBalance, setPGroupBalance] = useState<string>("");
   const [pGroupOnline, setPGroupOnline] = useState(false);
+
+  // Profile Edit States
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profilePassword, setProfilePassword] = useState("");
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+
+  React.useEffect(() => {
+    if (currentUser) {
+      setProfileName(currentUser.name);
+      setProfilePhone(currentUser.phone);
+    }
+  }, [currentUser, showProfileModal]);
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser?.id) return;
+    setIsUpdatingProfile(true);
+    try {
+      const payload: any = {
+        name: profileName,
+        phone: profilePhone,
+        role: currentUser.role
+      };
+      if (profilePassword) {
+        payload.password = profilePassword;
+      }
+      const updatedUser = await api.updateUser(currentUser.id, payload);
+      setCurrentUser({
+        ...currentUser,
+        name: updatedUser.name,
+        phone: updatedUser.phone
+      });
+      showToastNotification("Profile updated successfully!");
+      setShowProfileModal(false);
+      setProfilePassword("");
+    } catch (err: any) {
+      alert("Failed to update profile: " + err.message);
+    } finally {
+      setIsUpdatingProfile(false);
+    }
+  };
 
   const activeTab = pathname.split("/").pop() || "overview";
 
@@ -138,10 +182,17 @@ export default function AdminDesktopLayout({ children }: { children: React.React
           ))}
         </nav>
 
-        <div className="border-t border-slate-150 dark:border-slate-800 pt-5">
+        <div className="border-t border-slate-150 dark:border-slate-800 pt-5 flex flex-col gap-2">
+          <button
+            onClick={() => setShowProfileModal(true)}
+            className="flex items-center gap-2.5 text-slate-500 hover:text-slate-850 dark:hover:text-slate-100 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 rounded-lg w-fit"
+          >
+            <User className="w-4.5 h-4.5 text-slate-400" />
+            Edit Profile
+          </button>
           <button
             onClick={() => { resetStore(); router.push("/login"); }}
-            className="flex items-center gap-2.5 text-red-600 hover:text-red-700 text-sm font-black transition-all px-2 py-1 cursor-pointer hover:bg-red-50/50 rounded-lg w-fit"
+            className="flex items-center gap-2.5 text-red-600 hover:text-red-700 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-red-50/50 rounded-lg w-fit"
           >
             <LogOut className="w-4.5 h-4.5" />
             Sign Out
@@ -269,6 +320,36 @@ export default function AdminDesktopLayout({ children }: { children: React.React
             <button onClick={() => setShowToast(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400">
                <X className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* PROFILE UPDATE DIALOG */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 animate-slide-up shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Edit My Profile</h3>
+              <button onClick={() => setShowProfileModal(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleUpdateProfile} className="space-y-4 text-xs font-semibold">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Full Name</label>
+                <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Phone Number</label>
+                <input type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-slate-400 uppercase ml-1">New Password</label>
+                <input type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" />
+                <p className="text-[9px] text-slate-400 font-bold ml-1 mt-0.5">Leave blank to keep current password (min 6 chars)</p>
+              </div>
+              <button type="submit" disabled={isUpdatingProfile} className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider text-[10px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>
+            </form>
           </div>
         </div>
       )}
