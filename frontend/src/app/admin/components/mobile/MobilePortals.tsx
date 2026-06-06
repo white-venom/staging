@@ -50,35 +50,6 @@ export default function MobilePortals({
   const [editGroupOnline, setEditGroupOnline] = useState(false);
   const [newAccOnline, setNewAccOnline] = useState(false);
 
-  const handleInlinePortalUpdate = async (id: string, field: 'take' | 'give') => {
-    setIsUpdatingBalance(true);
-    try {
-      const group = portalDirectory.find(g => g.id === id);
-      if (!group) return;
-
-      const targetValue = parseFloat(inlineValue || "0");
-      if (targetValue < 0) {
-        showToastNotification("Negative values are not allowed.");
-        setIsUpdatingBalance(false);
-        return;
-      }
-
-      // In the additive model, we send name and ONLY the increment to the backend
-      const payload: any = { name: group.name };
-      if (field === 'take' && targetValue > 0) payload.opening_to_take = targetValue;
-      if (field === 'give' && targetValue > 0) payload.opening_to_give = targetValue;
-
-      await api.updatePortalGroup(id, payload);
-      showToastNotification(`✓ Balance updated for ${group.name}`);
-      setInlineEditing(null);
-      fetchData();
-    } catch (err: any) {
-      showToastNotification("Error: " + err.message);
-    } finally {
-      setIsUpdatingBalance(false);
-    }
-  };
-
   const handleStartEditPortal = (group: any) => {
     setEditingPortalGroup(group);
     setEditPortalName(group.name);
