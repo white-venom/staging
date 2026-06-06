@@ -279,7 +279,7 @@ export default function RetailersTab({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                   {/* To Take Field */}
                   <div>
                     <span className="text-[8px] font-black text-red-500 uppercase tracking-wide block mb-0.5">To Take</span>
@@ -308,7 +308,7 @@ export default function RetailersTab({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black text-red-600 dark:text-red-400">
+                        <span className="text-xs font-black text-red-655 dark:text-red-400">
                           ₹{(retailer.opening_to_take || 0).toLocaleString()}
                         </span>
                         <button 
@@ -353,7 +353,7 @@ export default function RetailersTab({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-500">
+                        <span className="text-xs font-black text-emerald-655 dark:text-emerald-500">
                           ₹{(retailer.opening_to_give || 0).toLocaleString()}
                         </span>
                         <button 
@@ -361,13 +361,21 @@ export default function RetailersTab({
                             setInlineEditingRetailer({ id: retailer.id, field: 'give' });
                             setInlineRetailerValue("");
                           }}
-                          className="p-0.5 text-slate-400 hover:text-emerald-600 transition-all cursor-pointer"
+                          className="p-0.5 text-slate-400 hover:text-emerald-650 transition-all cursor-pointer"
                           title="Add to To Give"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
                     )}
+                  </div>
+
+                  {/* Net Bal Field */}
+                  <div>
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-0.5">Net Bal</span>
+                    <span className={`text-xs font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
+                      ₹{Math.abs(retailer.balance || 0).toLocaleString()}
+                    </span>
                   </div>
                 </div>
 
@@ -480,14 +488,22 @@ export default function RetailersTab({
                 <input type="tel" value={editRetPhone} onChange={(e) => setEditRetPhone(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
                 <input type="text" value={editRetArea} onChange={(e) => setEditRetArea(e.target.value)} placeholder="Area / Route" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
                 <input type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
-                <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none">
-                  <div>
-                    <span className="text-slate-400 block mb-0.5">Current To Take</span>
-                    <span className="font-black text-red-650 dark:text-red-400">₹{(editingRetailer.opening_to_take || 0).toLocaleString()}</span>
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-slate-400 block mb-0.5">Current To Take</span>
+                      <span className="font-black text-red-655 dark:text-red-400">₹{(editingRetailer.opening_to_take || 0).toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block mb-0.5">Current To Give</span>
+                      <span className="font-black text-emerald-655 dark:text-emerald-555">₹{(editingRetailer.opening_to_give || 0).toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400 block mb-0.5">Current To Give</span>
-                    <span className="font-black text-emerald-650 dark:text-emerald-500">₹{(editingRetailer.opening_to_give || 0).toLocaleString()}</span>
+                  <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex justify-between items-center">
+                    <span className="text-slate-400 font-medium">Current Net Balance</span>
+                    <span className={`font-black ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-655 dark:text-emerald-500' : 'text-red-655 dark:text-red-400'}`}>
+                      ₹{Math.abs(editingRetailer.balance || 0).toLocaleString()}
+                    </span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

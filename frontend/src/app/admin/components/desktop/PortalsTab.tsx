@@ -252,12 +252,32 @@ export default function PortalsTab({
                   
                   <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                      <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider block mb-0.5">Portal Balance</span>
+                      <span className="text-[8px] font-black text-slate-455 uppercase tracking-wider block mb-0.5">Portal Balance</span>
                       <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-655 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
                         {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
                       </span>
                     </div>
                   </div>
+
+                  {/* Registered bank accounts with balances */}
+                  {group.portals && group.portals.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Registered Banks</p>
+                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                        {group.portals.map((p: any) => (
+                          <div key={p.id} className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/60">
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{p.portal_name}</span>
+                              <span className="text-[8px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
+                            </div>
+                            <span className="font-black text-slate-700 dark:text-slate-300 flex-shrink-0">
+                              ₹{Number(p.balance || 0).toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     onClick={() => {
@@ -268,7 +288,7 @@ export default function PortalsTab({
                       setEditGroupOnline(false);
                       setIsAccountModalOpen(true);
                     }}
-                    className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-650 dark:text-slate-350 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-955 dark:hover:bg-slate-900 text-slate-655 dark:text-slate-355 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
                   >
                     <Edit className="w-3.5 h-3.5" /> Manage Portal & Banks
                   </button>
@@ -454,9 +474,13 @@ export default function PortalsTab({
                             <div className="text-slate-400">Bank</div>
                             <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.bank_name || "N/A"}</div>
                             <div className="text-slate-400">A/C No</div>
-                            <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.bank_account_no || "N/A"}</div>
+                            <div className="text-slate-707 dark:text-slate-300 font-bold">{acc.bank_account_no || "N/A"}</div>
                             <div className="text-slate-400">IFSC</div>
-                            <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.ifsc_code || "N/A"}</div>
+                            <div className="text-slate-707 dark:text-slate-300 font-bold">{acc.ifsc_code || "N/A"}</div>
+                            <div className="text-slate-400 font-bold text-indigo-600 dark:text-indigo-400">Balance</div>
+                            <div className="text-indigo-650 dark:text-indigo-400 font-black">
+                              ₹{Number(acc.balance || 0).toLocaleString()}
+                            </div>
                           </div>
                         )}
                       </div>
