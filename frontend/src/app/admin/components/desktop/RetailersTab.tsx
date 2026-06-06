@@ -48,6 +48,7 @@ export default function RetailersTab({
   const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
   const [editStoreName, setEditStoreName] = useState("");
   const [editStoreArea, setEditStoreArea] = useState("");
+  const [editStoreRetailerId, setEditStoreRetailerId] = useState("");
 
   useEffect(() => {
     if (selectedRetailer) {
@@ -136,6 +137,10 @@ export default function RetailersTab({
   };
 
   const handleDeleteRetailer = async (id: string, name: string) => {
+    if (name.toLowerCase().trim() === "cms") {
+      alert("CMS retailer cannot be deleted.");
+      return;
+    }
     if (!confirm(`Are you sure you want to delete Retailer "${name}"? This will also delete all associated stores and ledger records.`)) return;
     try {
       await api.deleteRetailer(id);
@@ -184,6 +189,7 @@ export default function RetailersTab({
     setEditingStoreId(store.id);
     setEditStoreName(store.store_name);
     setEditStoreArea(store.address || "");
+    setEditStoreRetailerId(store.retailer_id || selectedRetailer.id);
   };
 
   const handleSaveStoreEdit = async (storeId: string) => {
@@ -191,11 +197,13 @@ export default function RetailersTab({
     try {
       await api.updateStore(selectedRetailer.id, storeId, {
         store_name: editStoreName,
-        address: editStoreArea
+        address: editStoreArea,
+        new_retailer_id: editStoreRetailerId || undefined
       });
       showToastNotification(`Store updated successfully.`);
       setEditingStoreId(null);
       fetchStores(selectedRetailer.id);
+      fetchData();
     } catch (err: any) {
       alert("Failed to update store: " + err.message);
     }
@@ -570,6 +578,24 @@ export default function RetailersTab({
                               className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
                               placeholder="Area / Address"
                             />
+                            {selectedRetailer.name.toLowerCase().trim() === "cms" && (
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Move to Retailer</label>
+                                <select
+                                  value={editStoreRetailerId}
+                                  onChange={(e) => setEditStoreRetailerId(e.target.value)}
+                                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                                >
+                                  <option value={selectedRetailer.id}>Keep in CMS</option>
+                                  {retailerDirectory
+                                    .filter((r) => r.id !== selectedRetailer.id)
+                                    .map((r) => (
+                                      <option key={r.id} value={r.id}>{r.name}</option>
+                                    ))
+                                  }
+                                </select>
+                              </div>
+                            )}
                             <div className="flex gap-2">
                               <button
                                 onClick={() => handleSaveStoreEdit(s.id)}

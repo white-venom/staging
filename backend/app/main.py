@@ -45,6 +45,29 @@ def startup_event():
     except Exception as e:
         print(f"[ERROR] Failed to alter table for business_settings: {str(e)}")
     
+    # Seed CMS Retailer
+    db = SessionLocal()
+    try:
+        from app.database.models import Retailer
+        from sqlalchemy import select, text
+        cms_retailer = db.scalar(select(Retailer).where(text("LOWER(retailer_name) = 'cms'")))
+        if not cms_retailer:
+            cms_retailer = Retailer(
+                retailer_name="CMS",
+                phone="0000000000",
+                address="CMS Managed Stores",
+                opening_to_give=0.00,
+                opening_to_take=0.00,
+                balance=0.00
+            )
+            db.add(cms_retailer)
+            db.commit()
+            print("[INFO] CMS retailer seeded successfully.")
+    except Exception as e:
+        print(f"[ERROR] Failed to seed CMS retailer: {str(e)}")
+    finally:
+        db.close()
+
     # Safety Seed: Ensure at least one admin and one staff exist (only in development and if SEED_ACCOUNTS is enabled)
     is_dev = settings.ENVIRONMENT == "development"
     if os.getenv("SEED_ACCOUNTS", "true").lower() == "true" and is_dev:

@@ -41,6 +41,7 @@ class StoreCreate(BaseModel):
     store_name: str = Field(..., max_length=150)
     address: Optional[str] = Field(None, max_length=255)
     phone: Optional[str] = Field(None, max_length=20)
+    new_retailer_id: Optional[uuid.UUID] = None
 
 
 class StoreResponse(StoreCreate):
