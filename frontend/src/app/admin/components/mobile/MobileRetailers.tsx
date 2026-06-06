@@ -151,12 +151,7 @@ export default function MobileRetailers({
       const retailer = retailerDirectory.find(r => r.id === id);
       if (!retailer) return;
 
-      const payload: any = {
-        retailer_name: retailer.name,
-        phone: retailer.phone,
-        address: retailer.area,
-        email: retailer.email || "",
-      };
+      const payload: any = {};
       if (field === 'take' && targetValue > 0) payload.opening_to_take = targetValue;
       if (field === 'give' && targetValue > 0) payload.opening_to_give = targetValue;
 
