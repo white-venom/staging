@@ -32,6 +32,19 @@ app = FastAPI(
 def startup_event():
     Base.metadata.create_all(bind=engine)
     
+    # Proactive alter table check to add new columns if they don't exist
+    try:
+        from sqlalchemy import text
+        with engine.begin() as conn:
+            try:
+                conn.execute(text("ALTER TABLE business_settings ADD COLUMN auto_checkout_time VARCHAR(10) DEFAULT '20:00'"))
+                print("[INFO] Column auto_checkout_time added to business_settings table successfully.")
+            except Exception:
+                # Column probably already exists, ignore
+                pass
+    except Exception as e:
+        print(f"[ERROR] Failed to alter table for business_settings: {str(e)}")
+    
     # Safety Seed: Ensure at least one admin and one staff exist (only in development and if SEED_ACCOUNTS is enabled)
     is_dev = settings.ENVIRONMENT == "development"
     if os.getenv("SEED_ACCOUNTS", "true").lower() == "true" and is_dev:

@@ -16,6 +16,7 @@ router = APIRouter(prefix="/admin-settings", tags=["Admin Control Panel"])
 class SettingsUpdate(BaseModel):
     late_threshold: str
     late_penalty: float
+    auto_checkout_time: str
 
 class PenaltyApproval(BaseModel):
     attendance_id: uuid.UUID
@@ -33,27 +34,37 @@ class VirtualTransferRequest(BaseModel):
 def get_business_settings(db: Session = Depends(get_db), current_user=Depends(require_admin)):
     settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
     if not settings:
-        return {"late_threshold": "10:00", "late_penalty": 100.0}
+        return {"late_threshold": "10:00", "late_penalty": 100.0, "auto_checkout_time": "20:00"}
     return {
         "late_threshold": settings.late_threshold,
-        "late_penalty": settings.late_penalty
+        "late_penalty": settings.late_penalty,
+        "auto_checkout_time": getattr(settings, 'auto_checkout_time', "20:00")
     }
 
 @router.put("/business")
 def update_business_settings(data: SettingsUpdate, db: Session = Depends(get_db), current_user=Depends(require_admin)):
     settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
     if not settings:
-        settings = BusinessSettings(id=1, late_threshold=data.late_threshold, late_penalty=data.late_penalty)
+        settings = BusinessSettings(
+            id=1, 
+            late_threshold=data.late_threshold, 
+            late_penalty=data.late_penalty,
+            auto_checkout_time=data.auto_checkout_time
+        )
         db.add(settings)
     else:
         settings.late_threshold = data.late_threshold
         settings.late_penalty = data.late_penalty
+        settings.auto_checkout_time = data.auto_checkout_time
     db.commit()
     return {"message": "Settings updated successfully"}
 
 @router.get("/pending-penalties")
 def list_pending_penalties(db: Session = Depends(get_db), current_user=Depends(require_admin)):
     """List all attendance records that are late but penalty is not yet approved."""
+    from app.routers.attendance import check_and_trigger_auto_checkout
+    check_and_trigger_auto_checkout(db)
+    
     stmt = select(Attendance).options(joinedload(Attendance.user)).where(Attendance.is_late == True, Attendance.is_penalty_approved == False)
     records = db.scalars(stmt).all()
     return [
