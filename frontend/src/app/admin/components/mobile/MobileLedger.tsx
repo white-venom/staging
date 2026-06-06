@@ -37,8 +37,8 @@ export default function MobileLedger() {
   // Get unique lists for filters
   const staffList = useMemo(() => {
     return Array.from(new Set([
-      ...(collections || []).map(c => c.staff_name),
-      ...(deposits || []).map(d => d.staff_name)
+      ...(collections || []).map(c => c.staffName),
+      ...(deposits || []).map(d => d.staffName)
     ].filter(Boolean))).sort() as string[];
   }, [collections, deposits]);
 
@@ -53,22 +53,34 @@ export default function MobileLedger() {
   // Combine and Apply ALL Filters
   const filteredLedger = useMemo(() => {
     let combined = [
-      ...(collections || []).map(c => ({ ...c, type: 'collection' })),
-      ...(deposits || []).map(d => ({ ...d, type: 'deposit' }))
+      ...(collections || []).map(c => ({ 
+        ...c, 
+        type: 'collection',
+        party: c.retailerName,
+        portal: c.portalName,
+        staff: c.staffName || "Admin"
+      })),
+      ...(deposits || []).map(d => ({ 
+        ...d, 
+        type: d.isRefund === true ? 'collection' : 'deposit',
+        party: d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
+        portal: d.targetName, 
+        staff: d.staffName || "Admin"
+      }))
     ];
 
     // Apply Search
     if (search) {
       const q = search.toLowerCase();
       combined = combined.filter(tx => 
-        (tx.retailer_name || tx.portal_name || tx.staff_name || "").toLowerCase().includes(q)
+        (tx.party || tx.portal || tx.staff || "").toLowerCase().includes(q)
       );
     }
 
     // Apply Filters
-    if (filters.staff !== 'all') combined = combined.filter(tx => tx.staff_name === filters.staff);
-    if (filters.party !== 'all') combined = combined.filter(tx => tx.retailer_name === filters.party);
-    if (filters.portal !== 'all') combined = combined.filter(tx => tx.portal_name === filters.portal);
+    if (filters.staff !== 'all') combined = combined.filter(tx => tx.staff === filters.staff);
+    if (filters.party !== 'all') combined = combined.filter(tx => tx.party === filters.party);
+    if (filters.portal !== 'all') combined = combined.filter(tx => tx.portal === filters.portal);
     if (filters.type !== 'all') combined = combined.filter(tx => tx.type === filters.type);
 
     // Apply Date Range
@@ -95,11 +107,11 @@ export default function MobileLedger() {
   const getTxAmount = (tx: any) => tx.totalAmount ?? tx.amount ?? 0;
 
   const handleExportCSV = () => {
-    const headers = ["Date", "Party", "Staff", "Type", "Amount"];
+    const headers = ["Date", "Description", "Staff", "Type", "Received"];
     const rows = filteredLedger.map(tx => [
       format(new Date(tx.created_at || tx.date), "yyyy-MM-dd HH:mm"),
-      tx.retailer_name || tx.portal_name || 'N/A',
-      tx.staff_name || 'Admin',
+      tx.party || 'N/A',
+      tx.staff || 'Admin',
       tx.type,
       getTxAmount(tx)
     ]);
@@ -156,9 +168,9 @@ export default function MobileLedger() {
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-tight text-slate-500 border-b border-slate-200 dark:border-slate-800">
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800 w-28">Date & Time</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800">Party</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800">Description</th>
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-center w-20">Type</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right w-24 bg-slate-100/50 dark:bg-slate-800/50">Amount</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right w-24 bg-slate-100/50 dark:bg-slate-800/50">Received</th>
                 <th className="p-4 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24">Staff</th>
               </tr>
             </thead>
@@ -177,7 +189,7 @@ export default function MobileLedger() {
                   </td>
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800">
                     <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase truncate block">
-                      {item.retailer_name || item.portal_name || 'General Entry'}
+                      {item.party || 'General Entry'}
                     </span>
                   </td>
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-center">
@@ -189,7 +201,7 @@ export default function MobileLedger() {
                     {item.type === 'collection' ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
                   </td>
                   <td className="p-4 text-right font-bold text-slate-500 uppercase text-[9px]">
-                    {item.staff_name || 'Admin'}
+                    {item.staff || 'Admin'}
                   </td>
                 </tr>
               ))}

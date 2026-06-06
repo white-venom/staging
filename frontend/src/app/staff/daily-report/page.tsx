@@ -95,7 +95,7 @@ export default function DailyReportPage() {
       itemType: "deposit",
       inAmount: null,
       outAmount: d.amount,
-      detailsText: d.target_name || "Main Office"
+      detailsText: d.target_name || "Super Distributor"
     }))
   ].sort((a, b) => getUtcDate(a.created_at).getTime() - getUtcDate(b.created_at).getTime());
 
@@ -302,13 +302,13 @@ export default function DailyReportPage() {
                       let destination = "";
                       if (isCol) {
                         source = item.from_office
-                          ? "Office"
+                          ? "Super Distributor"
                           : (item.from_staff_name || item.retailer_name || "Retailer");
                         destination = staffName;
                       } else {
                         source = staffName;
                         destination = item.to_office
-                          ? "Office"
+                          ? "Super Distributor"
                           : (item.target_name || "Recipient");
                       }
                       const narration = `From ${source} to ${destination} by ${staffName}`;

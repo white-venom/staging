@@ -61,9 +61,11 @@ class DepositResponse(BaseModel):
     
     # Virtual fields populated by router
     target_name: Optional[str] = None
+    portal_name: Optional[str] = None
     portal_group_name: Optional[str] = None
     portal_group_id: Optional[uuid.UUID] = None
     staff_name: Optional[str] = None
+    is_refund: Optional[bool] = None  # True when this is a "Move to Distributor" reverse transfer
 
     class Config:
         from_attributes = True

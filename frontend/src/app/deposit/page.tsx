@@ -205,7 +205,7 @@ function NewDepositContent() {
       const retailerName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer";
       targetName = `Virtual: ${portalName} ➔ ${retailerName}`;
     } else {
-      targetName = "Main Office";
+      targetName = "Super Distributor";
     }
 
     // Build proper backend payload with UUIDs
@@ -289,7 +289,7 @@ function NewDepositContent() {
               {[
                 { type: "portal", label: "Portals", desc: "To Bank Account" },
                 { type: "retailer", label: "Shops", desc: "Retailer Refund" },
-                { type: "staff", label: "Office", desc: "Main Office" },
+                { type: "staff", label: "Super Distributor", desc: "Super Distributor" },
               ].map((opt) => (
                 <button
                   key={opt.type}

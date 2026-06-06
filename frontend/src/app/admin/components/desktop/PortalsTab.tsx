@@ -32,48 +32,18 @@ export default function PortalsTab({
   // Edit states
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState("");
-  const [editingGroupToGive, setEditingGroupToGive] = useState<string>("");
-  const [editingGroupToTake, setEditingGroupToTake] = useState<string>("");
-  
-  const [inlineEditing, setInlineEditing] = useState<{id: string, field: 'take' | 'give'} | null>(null);
-  const [inlineValue, setInlineValue] = useState<string>("");
-  const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
+  const [editingGroupBalanceAdjustment, setEditingGroupBalanceAdjustment] = useState<string>("");
 
   const [editingAccId, setEditingAccId] = useState<string | null>(null);
   const [editAccName, setEditAccName] = useState("");
   const [editAccBank, setEditAccBank] = useState("");
   const [editAccNo, setEditAccNo] = useState("");
   const [editAccIfsc, setEditAccIfsc] = useState("");
+  const [editGroupOnline, setEditGroupOnline] = useState(false);
+  const [newAccOnline, setNewAccOnline] = useState(false);
+  const [editAccOnline, setEditAccOnline] = useState(false);
 
-  // Function to handle focused balance updates
-  const handleInlineUpdate = async (id: string, field: 'take' | 'give') => {
-    setIsUpdatingBalance(true);
-    try {
-      const group = portalDirectory.find(g => g.id === id);
-      if (!group) return;
-      
-      const targetValue = parseFloat(inlineValue || "0");
-      if (targetValue < 0) {
-        alert("Negative values are not allowed.");
-        return;
-      }
-      
-      // In the additive model, we send only the increment to the backend
-      // Only send the field that was actually edited; omit the other
-      const payload: any = { name: group.name };
-      if (field === 'take' && targetValue > 0) payload.opening_to_take = targetValue;
-      if (field === 'give' && targetValue > 0) payload.opening_to_give = targetValue;
-      await api.updatePortalGroup(id, payload);
-      
-      showToastNotification("Balance updated.");
-      setInlineEditing(null);
-      if (fetchData) fetchData();
-    } catch (err: any) {
-      alert("Failed to update: " + err.message);
-    } finally {
-      setIsUpdatingBalance(false);
-    }
-  };
+
 
   useEffect(() => {
     if (selectedGroup) {
@@ -138,6 +108,7 @@ export default function PortalsTab({
       setNewAccBank("");
       setNewAccNo("");
       setNewAccIfsc("");
+      setNewAccOnline(false);
       fetchAccounts(selectedGroup.id);
     } catch (err: any) {
       alert("Failed to add account: " + err.message);
@@ -158,32 +129,23 @@ export default function PortalsTab({
   };
 
   const handleUpdateGroup = async (groupId: string) => {
-    console.log("handleUpdateGroup called with:", { groupId, editingGroupName, editingGroupToGive, editingGroupToTake });
-    if (!groupId || !editingGroupName) {
-      console.warn("handleUpdateGroup missing params:", { groupId, editingGroupName });
-      return;
-    }
-    const addTake = parseFloat(editingGroupToTake || "0");
-    const addGive = parseFloat(editingGroupToGive || "0");
-    if (addTake < 0 || addGive < 0) {
-      alert("Negative values are not allowed.");
-      return;
-    }
+    if (!groupId || !editingGroupName) return;
+    const adjustVal = parseFloat(editingGroupBalanceAdjustment || "0");
     
     try {
-      // In the additive model, we send only the incremental additions (deltas)
-      // Only include non-zero values to avoid unnecessary additive-zero operations
       const payload: any = { name: editingGroupName };
-      if (addTake > 0) payload.opening_to_take = addTake;
-      if (addGive > 0) payload.opening_to_give = addGive;
-      console.log("Sending updatePortalGroup payload:", payload);
+      if (adjustVal > 0) {
+        payload.opening_to_take = adjustVal;
+      } else if (adjustVal < 0) {
+        payload.opening_to_give = Math.abs(adjustVal);
+      }
       await api.updatePortalGroup(groupId, payload);
       showToastNotification(`Portal "${editingGroupName}" updated.`);
       setEditingGroupId(null);
+      setEditGroupOnline(false);
       setIsAccountModalOpen(false);
       if (fetchData) fetchData();
     } catch (err: any) {
-      console.error("Failed to update portal group API error:", err);
       alert("Failed to update portal: " + err.message);
     }
   };
@@ -214,6 +176,7 @@ export default function PortalsTab({
       });
       showToastNotification(`Account "${editAccName}" updated.`);
       setEditingAccId(null);
+      setEditAccOnline(false);
       fetchAccounts(selectedGroup.id);
     } catch (err: any) {
       alert("Failed to update account: " + err.message);
@@ -268,8 +231,8 @@ export default function PortalsTab({
                           setSelectedGroup(group);
                           setEditingGroupId(group.id);
                           setEditingGroupName(group.name);
-                          setEditingGroupToGive("");
-                          setEditingGroupToTake("");
+                          setEditingGroupBalanceAdjustment("");
+                          setEditGroupOnline(false);
                           setIsAccountModalOpen(true);
                         }}
                         className="p-1.5 text-slate-400 hover:text-blue-650 dark:text-slate-500 dark:hover:text-blue-400 transition-colors cursor-pointer"
@@ -287,103 +250,12 @@ export default function PortalsTab({
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                    {/* To Take Field */}
+                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-0.5">To Take</span>
-                      {inlineEditing?.id === group.id && inlineEditing?.field === 'take' ? (
-                        <div className="flex items-center gap-1 animate-fade-in flex-wrap">
-                          <input 
-                            type="number" 
-                            min="0"
-                            placeholder="+ Add"
-                            autoFocus
-                            value={inlineValue}
-                            onChange={e => setInlineValue(e.target.value)}
-                            onFocus={e => {
-                              if (Number(e.target.value) === 0) setInlineValue("");
-                              e.target.select();
-                            }}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') handleInlineUpdate(group.id, 'take');
-                              if (e.key === 'Escape') setInlineEditing(null);
-                            }}
-                            className="w-20 px-1.5 py-1 text-xs font-bold bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none shadow-sm"
-                          />
-                          <button 
-                            onClick={() => handleInlineUpdate(group.id, 'take')} 
-                            disabled={isUpdatingBalance}
-                            className="text-[9px] font-black text-blue-600 hover:text-blue-700 cursor-pointer p-1"
-                          >
-                            SAVE
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 group/edit">
-                          <span className="text-xs font-black text-red-600 dark:text-red-400">
-                            ₹{(group.opening_to_take || 0).toLocaleString()}
-                          </span>
-                          <button 
-                            onClick={() => {
-                              setInlineEditing({ id: group.id, field: 'take' });
-                              setInlineValue("");
-                            }}
-                            className="p-0.5 text-slate-400 hover:text-red-650 transition-all cursor-pointer"
-                            title="Add to To Take"
-                          >
-                            <Plus className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* To Give Field */}
-                    <div>
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-0.5">To Give</span>
-                      {inlineEditing?.id === group.id && inlineEditing?.field === 'give' ? (
-                        <div className="flex items-center gap-1 animate-fade-in flex-wrap">
-                          <input 
-                            type="number" 
-                            min="0"
-                            placeholder="+ Add"
-                            autoFocus
-                            value={inlineValue}
-                            onChange={e => setInlineValue(e.target.value)}
-                            onFocus={e => {
-                              if (Number(e.target.value) === 0) setInlineValue("");
-                              e.target.select();
-                            }}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') handleInlineUpdate(group.id, 'give');
-                              if (e.key === 'Escape') setInlineEditing(null);
-                            }}
-                            className="w-20 px-1.5 py-1 text-xs font-bold bg-white dark:bg-slate-800 border border-blue-400 rounded outline-none shadow-sm"
-                          />
-                          <button 
-                            onClick={() => handleInlineUpdate(group.id, 'give')} 
-                            disabled={isUpdatingBalance}
-                            className="text-[9px] font-black text-blue-600 hover:text-blue-700 cursor-pointer p-1"
-                          >
-                            SAVE
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 group/edit2">
-                          <span className="text-xs font-black text-emerald-600 dark:text-emerald-500">
-                            ₹{(group.opening_to_give || 0).toLocaleString()}
-                          </span>
-                          <button 
-                            onClick={() => {
-                              setInlineEditing({ id: group.id, field: 'give' });
-                              setInlineValue("");
-                            }}
-                            className="p-0.5 text-slate-400 hover:text-emerald-650 transition-all cursor-pointer"
-                            title="Add to To Give"
-                          >
-                            <Plus className="w-2.5 h-2.5" />
-                          </button>
-                        </div>
-                      )}
+                      <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider block mb-0.5">Portal Balance</span>
+                      <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-655 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                        {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
+                      </span>
                     </div>
                   </div>
 
@@ -392,8 +264,8 @@ export default function PortalsTab({
                       setSelectedGroup(group);
                       setEditingGroupId(group.id);
                       setEditingGroupName(group.name);
-                      setEditingGroupToGive("");
-                      setEditingGroupToTake("");
+                      setEditingGroupBalanceAdjustment("");
+                      setEditGroupOnline(false);
                       setIsAccountModalOpen(true);
                     }}
                     className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-650 dark:text-slate-350 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
@@ -455,51 +327,41 @@ export default function PortalsTab({
                       className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] mb-2">
-                    <div>
-                      <span className="text-slate-400 block mb-0.5">Current To Take</span>
-                      <span className="font-black text-red-600 dark:text-red-400">₹{(selectedGroup.opening_to_take || 0).toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block mb-0.5">Current To Give</span>
-                      <span className="font-black text-emerald-600 dark:text-emerald-500">₹{(selectedGroup.opening_to_give || 0).toLocaleString()}</span>
-                    </div>
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] mb-2">
+                    <span className="text-slate-400 block mb-0.5">Current Balance</span>
+                    <span className={`font-black ${selectedGroup.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                      {selectedGroup.balance < 0 ? '-' : ''}₹{Math.abs(selectedGroup.balance || 0).toLocaleString()}
+                    </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[9px] text-red-500 uppercase font-black mb-1">Add to To Take</label>
-                      <input 
-                        type="number" 
-                        min="0"
-                        placeholder="Amount to Add"
-                        value={editingGroupToTake} 
-                        onChange={e => setEditingGroupToTake(e.target.value)}
-                        onFocus={e => {
-                          if (Number(e.target.value) === 0) setEditingGroupToTake("");
-                          e.target.select();
-                        }}
-                        className="w-full px-3 py-2 bg-red-50/50 dark:bg-red-950 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold text-red-600 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] text-emerald-500 uppercase font-black mb-1">Add to To Give</label>
-                      <input 
-                        type="number" 
-                        min="0"
-                        placeholder="Amount to Add"
-                        value={editingGroupToGive} 
-                        onChange={e => setEditingGroupToGive(e.target.value)}
-                        onFocus={e => {
-                          if (Number(e.target.value) === 0) setEditingGroupToGive("");
-                          e.target.select();
-                        }}
-                        className="w-full px-3 py-2 bg-emerald-50/50 dark:bg-emerald-950 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none"
-                      />
-                    </div>
+                  <div className="space-y-1">
+                    <label className="block text-[9px] text-slate-500 uppercase font-black mb-1">Adjust Balance (₹)</label>
+                    <input 
+                      type="number" 
+                      placeholder="e.g. +1000 to add, -1000 to subtract"
+                      value={editingGroupBalanceAdjustment} 
+                      onChange={e => setEditingGroupBalanceAdjustment(e.target.value)}
+                      onFocus={e => {
+                        if (Number(e.target.value) === 0) setEditingGroupBalanceAdjustment("");
+                        e.target.select();
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 px-1 py-1">
+                    <input 
+                      type="checkbox" 
+                      id="editGroupOnline"
+                      checked={editGroupOnline} 
+                      onChange={(e) => setEditGroupOnline(e.target.checked)} 
+                      className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
+                    />
+                    <label htmlFor="editGroupOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                      Online
+                    </label>
                   </div>
                   <button 
                     onClick={() => handleUpdateGroup(selectedGroup.id)}
-                    className="w-full py-2 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-indigo-600/20"
+                    className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-indigo-600/20 cursor-pointer"
                   >
                     Save Portal Settings
                   </button>
@@ -535,6 +397,7 @@ export default function PortalsTab({
                                   setEditAccBank(acc.bank_name || "");
                                   setEditAccNo(acc.bank_account_no || "");
                                   setEditAccIfsc(acc.ifsc_code || "");
+                                  setEditAccOnline(false);
                                 }}
                                 className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-blue-600 transition-all"
                               >
@@ -571,6 +434,18 @@ export default function PortalsTab({
                                 onChange={(e) => setEditAccIfsc(e.target.value)}
                                 className="w-full text-[10px] bg-white dark:bg-slate-800 border rounded px-2 py-1 outline-none"
                               />
+                            </div>
+                            <div className="flex items-center gap-2 py-1">
+                              <input 
+                                type="checkbox" 
+                                id={`editAccOnline-${acc.id}`}
+                                checked={editAccOnline} 
+                                onChange={(e) => setEditAccOnline(e.target.checked)} 
+                                className="w-3.5 h-3.5 rounded text-blue-655 focus:ring-blue-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
+                              />
+                              <label htmlFor={`editAccOnline-${acc.id}`} className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                                Online
+                              </label>
                             </div>
                             <button onClick={() => setEditingAccId(null)} className="text-[9px] text-slate-400 font-bold block w-full text-center">Cancel</button>
                           </div>
@@ -626,8 +501,20 @@ export default function PortalsTab({
                     placeholder="IFSC Code"
                     value={newAccIfsc}
                     onChange={(e) => setNewAccIfsc(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
                   />
+                  <div className="flex items-center gap-2 px-1 py-1">
+                    <input 
+                      type="checkbox" 
+                      id="newAccOnline"
+                      checked={newAccOnline} 
+                      onChange={(e) => setNewAccOnline(e.target.checked)} 
+                      className="w-4 h-4 rounded text-blue-650 focus:ring-blue-500 border-slate-200 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
+                    />
+                    <label htmlFor="newAccOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                      Online
+                    </label>
+                  </div>
                   <button
                     type="submit"
                     disabled={isCreatingAcc}

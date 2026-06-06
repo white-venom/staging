@@ -147,7 +147,7 @@ export default function CashOutLedgerPage() {
         retailer_id: updated.retailer_id,
         recipient_staff_id: updated.recipient_staff_id,
         depositType: updated.deposit_type,
-        targetName: updated.target_name || "Main Office",
+        targetName: updated.target_name || "Super Distributor",
         amount: Number(updated.amount),
         paymentMode: (updated.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
         denominations: updated.denominations ? {

@@ -31,8 +31,7 @@ export default function MobilePortals({
 
   // Portal form states
   const [pName, setPName] = useState("");
-  const [pToTake, setPToTake] = useState("");
-  const [pToGive, setPToGive] = useState("");
+  const [pGroupBalance, setPGroupBalance] = useState("");
 
   // Add Bank Account states
   const [selectedGroupIdForNewBank, setSelectedGroupIdForNewBank] = useState<string | null>(null);
@@ -46,13 +45,10 @@ export default function MobilePortals({
   const [isEditPortalModalOpen, setIsEditPortalModalOpen] = useState(false);
   const [editingPortalGroup, setEditingPortalGroup] = useState<any | null>(null);
   const [editPortalName, setEditPortalName] = useState("");
-  const [editPortalToGive, setEditPortalToGive] = useState<string>("");
-  const [editPortalToTake, setEditPortalToTake] = useState<string>("");
-
-  // Inline balance editing states
-  const [inlineEditing, setInlineEditing] = useState<{ id: string, field: 'take' | 'give' } | null>(null);
-  const [inlineValue, setInlineValue] = useState("");
-  const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
+  const [editPortalBalanceAdjustment, setEditPortalBalanceAdjustment] = useState<string>("");
+  const [pGroupOnline, setPGroupOnline] = useState(false);
+  const [editGroupOnline, setEditGroupOnline] = useState(false);
+  const [newAccOnline, setNewAccOnline] = useState(false);
 
   const handleInlinePortalUpdate = async (id: string, field: 'take' | 'give') => {
     setIsUpdatingBalance(true);
@@ -86,29 +82,28 @@ export default function MobilePortals({
   const handleStartEditPortal = (group: any) => {
     setEditingPortalGroup(group);
     setEditPortalName(group.name);
-    setEditPortalToGive("");
-    setEditPortalToTake("");
+    setEditPortalBalanceAdjustment("");
+    setEditGroupOnline(false);
     setIsEditPortalModalOpen(true);
   };
 
   const handleSavePortalEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingPortalGroup) return;
-    const addTake = parseFloat(editPortalToTake || "0");
-    const addGive = parseFloat(editPortalToGive || "0");
-    if (addTake < 0 || addGive < 0) {
-      showToastNotification("Negative values are not allowed.");
-      return;
-    }
+    const adjustVal = parseFloat(editPortalBalanceAdjustment || "0");
     setSubmitting(true);
     try {
       const payload: any = { name: editPortalName };
-      if (addTake > 0) payload.opening_to_take = addTake;
-      if (addGive > 0) payload.opening_to_give = addGive;
+      if (adjustVal > 0) {
+        payload.opening_to_take = adjustVal;
+      } else if (adjustVal < 0) {
+        payload.opening_to_give = Math.abs(adjustVal);
+      }
 
       await api.updatePortalGroup(editingPortalGroup.id, payload);
       showToastNotification(`✓ Portal "${editPortalName}" updated`);
       setIsEditPortalModalOpen(false);
+      setEditGroupOnline(false);
       fetchData();
     } catch (err: any) {
       showToastNotification("Error: " + err.message);
@@ -120,21 +115,16 @@ export default function MobilePortals({
   const handleCreatePortal = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const takeVal = parseFloat(pToTake || "0");
-    const giveVal = parseFloat(pToGive || "0");
-    if (takeVal < 0 || giveVal < 0) {
-      showToastNotification("Opening balances cannot be negative");
-      setSubmitting(false);
-      return;
-    }
+    const val = parseFloat(pGroupBalance || "0");
     try {
       await api.createPortalGroup({
         name: pName,
-        opening_to_give: giveVal,
-        opening_to_take: takeVal
+        opening_to_give: val < 0 ? Math.abs(val) : 0,
+        opening_to_take: val > 0 ? val : 0
       });
       showToastNotification(`✓ Portal "${pName}" registered`);
-      setPName(""); setPToTake(""); setPToGive("");
+      setPName(""); setPGroupBalance("");
+      setPGroupOnline(false);
       setShowAddForm(false);
       fetchData();
     } catch (err: any) {
@@ -171,6 +161,7 @@ export default function MobilePortals({
       });
       showToastNotification(`✓ Account "${bAccLabel}" registered`);
       setBAccLabel(""); setBBankName(""); setBAccNo(""); setBIfsc("");
+      setNewAccOnline(false);
       setSelectedGroupIdForNewBank(null);
       fetchData();
     } catch (err: any) {
@@ -232,30 +223,29 @@ export default function MobilePortals({
                 required
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Opening To Take (₹)</label>
-                <input
-                  type="number"
-                  step="any"
-                  value={pToTake}
-                  onChange={e => setPToTake(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            <div>
+               <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Opening Balance (₹)</label>
+               <input
+                 type="number"
+                 step="any"
+                 value={pGroupBalance}
+                 onChange={e => setPGroupBalance(e.target.value)}
+                 placeholder="e.g. 5000 (negative for To Give)"
+                 className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+               />
+             </div>
+             <div className="flex items-center gap-2 px-1 py-1">
+                <input 
+                  type="checkbox" 
+                  id="pGroupOnlineMobile"
+                  checked={pGroupOnline} 
+                  onChange={(e) => setPGroupOnline(e.target.checked)} 
+                  className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-100 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
                 />
+                <label htmlFor="pGroupOnlineMobile" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                  Online
+                </label>
               </div>
-              <div>
-                <label className="block text-[9px] font-black text-slate-400 uppercase mb-1">Opening To Give (₹)</label>
-                <input
-                  type="number"
-                  step="any"
-                  value={pToGive}
-                  onChange={e => setPToGive(e.target.value)}
-                  placeholder="0.00"
-                  className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
-                />
-              </div>
-            </div>
             <button
               type="submit"
               disabled={submitting}
@@ -292,8 +282,6 @@ export default function MobilePortals({
           </div>
         ) : (
           filtered.map((group) => {
-            const isEditingThis = inlineEditing?.id === group.id;
-            const editingField = inlineEditing && inlineEditing.id === group.id ? inlineEditing.field : null;
             return (
               <div 
                 key={group.id}
@@ -325,83 +313,14 @@ export default function MobilePortals({
                 </div>
               </div>
 
-              {/* Group To Take & To Give raw inputs */}
-              <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-850 p-3 rounded-2xl border border-slate-100/50 dark:border-slate-800/40">
+              <div className="bg-slate-50 dark:bg-slate-850 p-3 rounded-2xl border border-slate-100/50 dark:border-slate-800/40 flex items-center justify-between">
                 <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-black text-red-500 uppercase tracking-tighter block mb-0.5">To Take</span>
-                    <button
-                      onClick={() => {
-                        setInlineEditing({ id: group.id, field: 'take' });
-                        setInlineValue("");
-                      }}
-                      className="p-0.5 bg-slate-100 dark:bg-slate-800 rounded text-red-500 hover:bg-slate-200 transition-colors"
-                    >
-                      <Plus className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
-                  <span className="text-xs font-black text-red-650 dark:text-red-400">
-                    ₹{(group.opening_to_take || 0).toLocaleString()}
-                  </span>
-                </div>
-                <div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter block mb-0.5">To Give</span>
-                    <button
-                      onClick={() => {
-                        setInlineEditing({ id: group.id, field: 'give' });
-                        setInlineValue("");
-                      }}
-                      className="p-0.5 bg-slate-100 dark:bg-slate-800 rounded text-emerald-500 hover:bg-slate-200 transition-colors"
-                    >
-                      <Plus className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
-                  <span className="text-xs font-black text-emerald-650 dark:text-emerald-555">
-                    ₹{(group.opening_to_give || 0).toLocaleString()}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter block mb-0.5">Net Bal</span>
-                  <span className={`text-xs font-black ${(group.balance || 0) <= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    ₹{Math.abs(group.balance || 0).toLocaleString()}
+                  <span className="text-[8px] font-black text-slate-450 uppercase tracking-tighter block mb-0.5">Portal Balance</span>
+                  <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-655 dark:text-red-400' : 'text-emerald-650 dark:text-emerald-555'}`}>
+                    {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
                   </span>
                 </div>
               </div>
-
-              {isEditingThis && editingField && (
-                <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl space-y-2 animate-in fade-in duration-200">
-                  <p className="text-[9px] font-black text-slate-450 uppercase tracking-wider">
-                    Add more to {editingField === 'take' ? 'To Take (Red)' : 'To Give (Green)'}
-                  </p>
-                  <div className="flex flex-col gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      placeholder="Amount to Add"
-                      value={inlineValue}
-                      onChange={e => setInlineValue(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
-                      autoFocus
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleInlinePortalUpdate(group.id, editingField)}
-                        disabled={isUpdatingBalance}
-                        className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                      >
-                        Add
-                      </button>
-                      <button
-                        onClick={() => setInlineEditing(null)}
-                        className="flex-1 py-2 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Sub-portals List */}
               {group.portals && group.portals.length > 0 && (
@@ -461,8 +380,20 @@ export default function MobilePortals({
                           placeholder="IFSC Code"
                           value={bIfsc}
                           onChange={e => setBIfsc(e.target.value)}
-                          className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
                         />
+                      </div>
+                      <div className="flex items-center gap-2 px-1 py-1">
+                        <input 
+                          type="checkbox" 
+                          id="newAccOnlineMobile"
+                          checked={newAccOnline} 
+                          onChange={(e) => setNewAccOnline(e.target.checked)} 
+                          className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
+                        />
+                        <label htmlFor="newAccOnlineMobile" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                          Online
+                        </label>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -529,40 +460,34 @@ export default function MobilePortals({
                     required 
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[10px]">
-                  <div>
-                    <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current To Take</span>
-                    <span className="font-black text-red-650 dark:text-red-400">₹{(editingPortalGroup.opening_to_take || 0).toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current To Give</span>
-                    <span className="font-black text-emerald-650 dark:text-emerald-555">₹{(editingPortalGroup.opening_to_give || 0).toLocaleString()}</span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                   <div>
-                     <label className="text-[8px] font-black text-red-500 uppercase tracking-wider block mb-1">Add to To Take</label>
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[10px]">
+                   <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current Balance</span>
+                   <span className={`font-black ${editingPortalGroup.balance < 0 ? 'text-red-655 dark:text-red-400' : 'text-emerald-650 dark:text-emerald-555'}`}>
+                     {editingPortalGroup.balance < 0 ? '-' : ''}₹{Math.abs(editingPortalGroup.balance || 0).toLocaleString()}
+                   </span>
+                 </div>
+                 <div className="space-y-1">
+                    <label className="text-[8px] font-black text-slate-500 uppercase tracking-wider block mb-1">Adjust Balance (₹)</label>
+                    <input 
+                      type="number" 
+                      placeholder="e.g. +1000 to add, -1000 to subtract"
+                      value={editPortalBalanceAdjustment} 
+                      onChange={(e) => setEditPortalBalanceAdjustment(e.target.value)}
+                      className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none" 
+                    />
+                 </div>
+                 <div className="flex items-center gap-2 px-1 py-1">
                      <input 
-                       type="number" 
-                       min="0"
-                       placeholder="Amount to Add"
-                       value={editPortalToTake} 
-                       onChange={(e) => setEditPortalToTake(e.target.value)}
-                       className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20" 
+                       type="checkbox" 
+                       id="editGroupOnlineMobile"
+                       checked={editGroupOnline} 
+                       onChange={(e) => setEditGroupOnline(e.target.checked)} 
+                       className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
                      />
-                   </div>
-                   <div>
-                     <label className="text-[8px] font-black text-emerald-500 uppercase tracking-wider block mb-1">Add to To Give</label>
-                     <input 
-                       type="number" 
-                       min="0"
-                       placeholder="Amount to Add"
-                       value={editPortalToGive} 
-                       onChange={(e) => setEditPortalToGive(e.target.value)}
-                       className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20" 
-                     />
-                   </div>
-                </div>
+                     <label htmlFor="editGroupOnlineMobile" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                       Online
+                     </label>
+                  </div>
               </div>
               <button 
                 type="submit" 

@@ -73,6 +73,7 @@ export default function CollectionsTab({
       await api.verifyCollection(selectedCollectionId);
       if (showToastNotification) showToastNotification("Cash In verified!");
       setSelectedCollectionId(null);
+      if (fetchData) fetchData();
     } catch (err: any) {
       alert("Verification failed: " + err.message);
     }

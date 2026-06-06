@@ -46,8 +46,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
   const [retailerToGive, setRetailerToGive] = useState<string>("");
   const [retailerToTake, setRetailerToTake] = useState<string>("");
   const [pGroupName, setPGroupName] = useState("");
-  const [pGroupToGive, setPGroupToGive] = useState<string>("");
-  const [pGroupToTake, setPGroupToTake] = useState<string>("");
+  const [pGroupBalance, setPGroupBalance] = useState<string>("");
+  const [pGroupOnline, setPGroupOnline] = useState(false);
 
   const activeTab = pathname.split("/").pop() || "overview";
 
@@ -79,17 +79,18 @@ export default function AdminDesktopLayout({ children }: { children: React.React
   const handleCreatePortalGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const val = parseFloat(pGroupBalance || "0");
       await api.createPortalGroup({ 
         name: pGroupName,
-        opening_to_give: parseFloat(pGroupToGive || "0"),
-        opening_to_take: parseFloat(pGroupToTake || "0")
+        opening_to_give: val < 0 ? Math.abs(val) : 0,
+        opening_to_take: val > 0 ? val : 0
       });
 
       showToastNotification(`Portal Group "${pGroupName}" registered!`);
       setShowPortalDrawer(false);
       setPGroupName("");
-      setPGroupToGive("");
-      setPGroupToTake("");
+      setPGroupBalance("");
+      setPGroupOnline(false);
       fetchData();
     } catch (err: any) {
       alert("Failed to register portal: " + err.message);
@@ -225,35 +226,27 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Portal Name</label>
                   <input type="text" placeholder="e.g. RevaPay" value={pGroupName} onChange={(e) => setPGroupName(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg font-bold" required />
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-red-500 uppercase ml-1">To Take</label>
-                    <input 
-                      type="number" 
-                      placeholder="To Take" 
-                      value={pGroupToTake} 
-                      onChange={(e) => setPGroupToTake(e.target.value)} 
-                      onFocus={e => {
-                        if (Number(e.target.value) === 0) setPGroupToTake("");
-                        e.target.select();
-                      }}
-                      className="w-full px-3 py-2 border border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10 rounded-lg font-bold text-red-600 focus:outline-none" 
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-emerald-500 uppercase ml-1">To Give</label>
-                    <input 
-                      type="number" 
-                      placeholder="To Give" 
-                      value={pGroupToGive} 
-                      onChange={(e) => setPGroupToGive(e.target.value)} 
-                      onFocus={e => {
-                        if (Number(e.target.value) === 0) setPGroupToGive("");
-                        e.target.select();
-                      }}
-                      className="w-full px-3 py-2 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-lg font-bold text-emerald-600 focus:outline-none" 
-                    />
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Opening Balance (₹)</label>
+                  <input 
+                    type="number" 
+                    placeholder="Enter Opening Balance (negative if To Give)" 
+                    value={pGroupBalance} 
+                    onChange={(e) => setPGroupBalance(e.target.value)} 
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg font-bold focus:outline-none" 
+                  />
+                </div>
+                <div className="flex items-center gap-2 px-1 py-1">
+                  <input 
+                    type="checkbox" 
+                    id="pGroupOnline"
+                    checked={pGroupOnline} 
+                    onChange={(e) => setPGroupOnline(e.target.checked)} 
+                    className="w-4 h-4 rounded text-blue-650 focus:ring-blue-500 border-slate-300 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
+                  />
+                  <label htmlFor="pGroupOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                    Online
+                  </label>
                 </div>
               </div>
               <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors text-xs uppercase tracking-wider">Register Portal</button>

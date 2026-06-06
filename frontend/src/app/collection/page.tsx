@@ -284,7 +284,7 @@ function NewCollectionContent() {
         addCollection({
           retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
           store_id: selectedStoreId || undefined,
-          retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Office"),
+          retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
           portalName: selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash",
           totalAmount: totalCollectionAmount,
           denominations,
@@ -301,7 +301,7 @@ function NewCollectionContent() {
       addCollection({
         retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
         store_id: selectedStoreId || undefined,
-        retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Office"),
+        retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
         portalName: selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash",
         totalAmount: totalCollectionAmount,
         denominations,
@@ -371,7 +371,7 @@ function NewCollectionContent() {
               onClick={() => setSourceType("office")}
               className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all ${sourceType === "office" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-600"}`}
             >
-              Office
+              Super Distributor
             </button>
           </div>
 

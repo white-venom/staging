@@ -3,6 +3,10 @@
 import React, { useEffect } from "react";
 import { useAdmin } from "../../context/AdminContext";
 
+function getExportFilename() {
+  return `Ledger_${Date.now()}.csv`;
+}
+
 interface LedgerTabProps {
   collections?: any[];
   deposits?: any[];
@@ -30,10 +34,13 @@ export default function LedgerTab({
   const [sortBy, setSortBy] = React.useState("date-desc");
 
   useEffect(() => {
-    if (ledgerSearchTerm) {
-      setSearchQuery(ledgerSearchTerm);
+    if (ledgerSearchTerm && ledgerSearchTerm !== searchQuery) {
+      const timer = setTimeout(() => {
+        setSearchQuery(ledgerSearchTerm);
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }, [ledgerSearchTerm]);
+  }, [ledgerSearchTerm, searchQuery]);
 
   // Get unique lists
   const staffList = Array.from(new Set([
@@ -56,7 +63,7 @@ export default function LedgerTab({
     ...(collections || []).map(c => ({
       id: c.id,
       date: c.date,
-      partyId: c.retailerId,
+      partyId: c.retailer_id,
       party: c.retailerName,
       portal: c.portalName,
       staff: c.staffName || "Admin",
@@ -66,19 +73,22 @@ export default function LedgerTab({
       type: 'collection',
       depositType: null
     })),
-    ...(deposits || []).map(d => ({
-      id: d.id,
-      date: d.date,
-      partyId: d.portalId || d.retailerId,
-      party: d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
-      portal: d.targetName, 
-      staff: d.staffName || "Admin",
-      debit: d.amount,
-      credit: 0,
-      balance_snapshot: d.balance_snapshot,
-      type: 'deposit',
-      depositType: d.depositType
-    }))
+    ...(deposits || []).map(d => {
+      const isRef = d.isRefund === true;
+      return {
+        id: d.id,
+        date: d.date,
+        partyId: d.portal_id || d.retailer_id,
+        party: d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
+        portal: d.targetName, 
+        staff: d.staffName || "Admin",
+        debit: isRef ? 0 : d.amount,
+        credit: isRef ? d.amount : 0,
+        balance_snapshot: d.balance_snapshot,
+        type: isRef ? 'collection' : 'deposit',
+        depositType: d.depositType
+      };
+    })
   ];
 
   // Calculate Initial Balance for Summary Section (starts with opening_to_take, no netting/subtraction)
@@ -140,7 +150,7 @@ export default function LedgerTab({
     chronological.forEach(tx => {
       const currentPartyBal = partyRunningBalances.get(tx.partyId) || 0;
       const old = currentPartyBal;
-      const newVal = old + (tx.credit - tx.debit);
+      const newVal = old + (tx.debit - tx.credit);
       partyRunningBalances.set(tx.partyId, newVal);
       snapshots.set(tx.id, { old, new: newVal });
     });
@@ -159,14 +169,16 @@ export default function LedgerTab({
     const globalSnapshots = new Map<string, number>();
     chronological.forEach(tx => {
       if (isFilteredView || tx.depositType !== 'virtual') {
-        reportRunning += (tx.credit - tx.debit);
+        reportRunning += isFilteredView ? (tx.debit - tx.credit) : (tx.credit - tx.debit);
       }
       globalSnapshots.set(tx.id, reportRunning);
     });
 
     const totalCredit = allTransactions.reduce((s, c) => s + c.credit, 0);
     const totalDebit = allTransactions.reduce((s, d) => s + ((!isFilteredView && d.depositType === 'virtual') ? 0 : d.debit), 0);
-    const netBalance = totalInitial + totalCredit - totalDebit; 
+    const netBalance = isFilteredView 
+      ? (totalInitial + totalDebit - totalCredit) 
+      : (totalCredit - totalDebit); 
 
   return (
     <div className="space-y-4 animate-fade-in pt-2">
@@ -282,7 +294,7 @@ export default function LedgerTab({
             </button>
             <button 
               onClick={() => {
-                const headers = ["Date Time", "Party", "Staff", "Old Due", "Amount", "Balance"];
+                const headers = ["Date Time", "Description", "Staff", "Opening Balance", "Received", "Balance"];
                 const rows = allTransactions.map(tx => {
                     const snap = snapshots.get(tx.id) || { old: 0, new: 0 };
                     return [`"${tx.date}"`, `"${tx.party}"`, `"${tx.staff}"`, snap.old, tx.credit || -tx.debit, snap.new];
@@ -291,7 +303,7 @@ export default function LedgerTab({
                 const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
                 const link = document.createElement("a");
                 link.setAttribute("href", encodeURI(csvContent));
-                link.setAttribute("download", `Ledger_${Date.now()}.csv`);
+                link.setAttribute("download", getExportFilename());
                 link.click();
               }}
               className="px-4 py-1.5 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 transition-all"
@@ -348,8 +360,8 @@ export default function LedgerTab({
           </div>
           <div className="p-4 bg-slate-50/50 dark:bg-slate-950/50 text-center">
             <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Net Balance</span>
-            <span className={`text-sm font-black ${netBalance >= 0 ? "text-blue-600" : "text-red-600"}`}>
-              ₹{netBalance.toLocaleString()}.00 {netBalance >= 0 ? "Cr" : "Dr"}
+            <span className={`text-sm font-black ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
+              ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
             </span>
           </div>
         </div>
@@ -371,7 +383,9 @@ export default function LedgerTab({
              </div>
              <div className="text-center">
                 <span className="text-[10px] block uppercase text-slate-400 font-black mb-1">Net Balance</span>
-                <span className="text-xl font-black text-blue-600">₹{netBalance.toLocaleString()}.00</span>
+                <span className={`text-xl font-black ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
+                  ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
+                </span>
              </div>
           </div>
         </div>
@@ -381,22 +395,20 @@ export default function LedgerTab({
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-tight text-slate-500 border-b border-slate-200 dark:border-slate-800">
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800 w-32">Date & Time</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800">Party</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right w-24">Old Bal</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right bg-slate-100/50 dark:bg-slate-800/50 w-24">Amount</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24">Party Bal</th>
-                <th className="p-4 text-right bg-emerald-50/20 dark:bg-emerald-950/5 w-24">Net Balance</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800">Description</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right w-24">Opening Balance</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right bg-slate-100/50 dark:bg-slate-800/50 w-24">Received</th>
+                <th className="p-4 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24">Party Bal</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {allTransactions.length === 0 ? (
-                <tr><td colSpan={6} className="p-20 text-center text-slate-400 italic font-bold">No entries match your filters.</td></tr>
+                <tr><td colSpan={5} className="p-20 text-center text-slate-400 italic font-bold">No entries match your filters.</td></tr>
               ) : allTransactions.map((tx) => {
                 const txNew = tx.balance_snapshot !== undefined ? tx.balance_snapshot : (snapshots.get(tx.id)?.new || 0);
                 const txOld = tx.balance_snapshot !== undefined 
                     ? (tx.type === 'collection' ? Number(txNew) + Number(tx.credit) : Number(txNew) - Number(tx.debit)) 
                     : (snapshots.get(tx.id)?.old || 0);
-                const runningNet = globalSnapshots.get(tx.id) || 0;
 
                 return (
                 <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors">
@@ -407,7 +419,9 @@ export default function LedgerTab({
                         {(() => {
                           const timePart = tx.date.split(" ")[1];
                           if (!timePart) return "";
-                          let [hour, min] = timePart.split(":").map(Number);
+                          const parts = timePart.split(":");
+                          let hour = Number(parts[0]);
+                          const min = Number(parts[1]);
                           const ampm = hour >= 12 ? 'PM' : 'AM';
                           hour = hour % 12 || 12;
                           return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
@@ -427,11 +441,8 @@ export default function LedgerTab({
                   <td className={`p-4 border-r border-slate-50 dark:border-slate-800 text-right font-black ${tx.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
                     {tx.type === 'collection' ? '+' : '-'}₹{(tx.credit || tx.debit).toLocaleString()}
                   </td>
-                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-right font-black text-blue-700 bg-blue-50/10 dark:bg-blue-950/5">
+                  <td className="p-4 text-right font-black text-blue-700 bg-blue-50/10 dark:bg-blue-950/5">
                     ₹{txNew.toLocaleString()}
-                  </td>
-                  <td className="p-4 text-right font-black text-slate-900 dark:text-white bg-slate-50/30">
-                    ₹{runningNet.toLocaleString()}
                   </td>
                 </tr>
                 );
@@ -457,13 +468,12 @@ export default function LedgerTab({
                       )}
                     </div>
                   </td>
-                  <td className="p-4 text-right text-blue-600 bg-blue-50/10">
-                    {/* Party Balance Total usually doesn't apply in 'All' view */}
-                  </td>
                   <td className="p-4 text-right text-slate-900 dark:text-white bg-slate-200/50">
                     <div className="flex flex-col items-end">
                       <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Final Net</span>
-                      <span className="text-sm">₹{netBalance.toLocaleString()}.00</span>
+                      <span className={`text-sm font-black ${netBalance >= 0 ? "text-blue-700" : "text-emerald-700"}`}>
+                        ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
+                      </span>
                     </div>
                   </td>
                 </tr>

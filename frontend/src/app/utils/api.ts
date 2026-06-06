@@ -264,7 +264,7 @@ export const api = {
     method: "POST",
     body: JSON.stringify({ attendance_id: attendanceId, approve }),
   }),
-  virtualTransfer: (data: { portal_id: string; retailer_id?: string; staff_id?: string; amount: number; remarks?: string }) => request<any>("/admin-settings/virtual-transfer", {
+  virtualTransfer: (data: { portal_id: string; retailer_id?: string; staff_id?: string; amount: number; remarks?: string; direction?: string }) => request<any>("/admin-settings/virtual-transfer", {
     method: "POST",
     body: JSON.stringify(data),
   }),

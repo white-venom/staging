@@ -15,11 +15,41 @@ import {
   Clock,
   X,
   MapPin,
-  Camera
+  Camera,
+  ChevronDown
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../utils/api";
-import InlineSelect from "../../../../app/components/InlineSelect";
+
+interface VisitedStore {
+  id: string;
+  retailerName: string;
+  time: string;
+  amount: number;
+  status: string;
+}
+
+interface StaffCompliance {
+  status?: string;
+  startTime?: string;
+  startKm?: string | number;
+  endKm?: string | number;
+  startLatitude?: number;
+  startLongitude?: number;
+  startKmImageUrl?: string;
+  endLatitude?: number;
+  endLongitude?: number;
+  endKmImageUrl?: string;
+}
+
+interface StaffListData {
+  name: string;
+  collectedToday: number;
+  depositedToday: number;
+  remainingToday: number;
+  visitedStores: VisitedStore[];
+  compliance?: StaffCompliance;
+}
 
 interface OverviewTabProps {
   collections: any[];
@@ -54,68 +84,66 @@ export default function OverviewTab({
 
   // Filter for field staff
   const staffUsers = React.useMemo(() => {
-    return (userDirectory || []).filter((u: any) => u.role === "field_staff" || u.role === "staff");
+    return (userDirectory || []).filter((u: { role: string }) => u.role === "field_staff" || u.role === "staff");
   }, [userDirectory]);
 
-  // State to hold selected staff name
-  const [selectedStaffName, setSelectedStaffName] = React.useState<string>("");
+  // State to track expanded staff accordions
+  const [expandedStaffNames, setExpandedStaffNames] = React.useState<Record<string, boolean>>({});
 
-  // Set default selected staff once list is loaded
-  React.useEffect(() => {
-    if (staffUsers.length > 0 && !selectedStaffName) {
-      setSelectedStaffName(staffUsers[0].name);
-    }
-  }, [staffUsers, selectedStaffName]);
-
-  // Calculations for selected staff member
-  const staffMetrics = React.useMemo(() => {
-    if (!selectedStaffName) {
-      return { collectedToday: 0, depositedToday: 0, remainingToday: 0, visitedStores: [] };
-    }
-
-    const todayStr = new Date().toISOString().split("T")[0];
-
-    // Filter collections today by selected staff name
-    const staffColsToday = safeCollections.filter(
-      (c) => c.staffName === selectedStaffName && c.date?.startsWith(todayStr)
-    );
-
-    // Filter deposits today by selected staff name
-    const staffDepsToday = safeDeposits.filter(
-      (d) => d.staffName === selectedStaffName && d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
-    );
-
-    const collectedToday = staffColsToday.reduce((s, c) => s + (c.totalAmount || 0), 0);
-    const depositedToday = staffDepsToday.reduce((s, d) => s + (d.amount || 0), 0);
-    const remainingToday = collectedToday - depositedToday;
-
-    // Get visited stores today (unique store/retailer name with visit details)
-    const visitedStores = staffColsToday.map((c) => ({
-      id: c.id,
-      retailerName: c.retailerName,
-      time: c.date ? c.date.split(" ")[1] : "N/A",
-      amount: c.totalAmount,
-      status: c.status || "verified",
+  const toggleStaffExpanded = (name: string) => {
+    setExpandedStaffNames(prev => ({
+      ...prev,
+      [name]: !prev[name]
     }));
+  };
 
-    return {
-      collectedToday,
-      depositedToday,
-      remainingToday,
-      visitedStores,
-    };
-  }, [selectedStaffName, safeCollections, safeDeposits]);
+  // State for active modal visited stores
+  const [activeModalStaff, setActiveModalStaff] = React.useState<{ name: string; visitedStores: VisitedStore[] } | null>(null);
 
-  // Live compliance/attendance matching
-  const selectedStaffCompliance = React.useMemo(() => {
-    if (!selectedStaffName) return null;
-    return (staffComplianceLogs || []).find(
-      (log) => log.name?.toLowerCase() === selectedStaffName.toLowerCase()
-    );
-  }, [selectedStaffName, staffComplianceLogs]);
+  // Precalculate daily metrics for all active field staff
+  const staffListData = React.useMemo<StaffListData[]>(() => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    return (staffUsers || []).map((user: { name: string }) => {
+      const name = user.name;
+      
+      // Filter collections today by staff name
+      const staffColsToday = safeCollections.filter(
+        (c) => c.staffName === name && c.date?.startsWith(todayStr)
+      );
 
-  // State for visited stores modal popup
-  const [showVisitedModal, setShowVisitedModal] = React.useState(false);
+      // Filter deposits today by staff name
+      const staffDepsToday = safeDeposits.filter(
+        (d) => d.staffName === name && d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
+      );
+
+      const collectedToday = staffColsToday.reduce((s, c) => s + (c.totalAmount || 0), 0);
+      const depositedToday = staffDepsToday.reduce((s, d) => s + (d.amount || 0), 0);
+      const remainingToday = collectedToday - depositedToday;
+
+      // Get visited stores today (unique store/retailer name with visit details)
+      const visitedStores = staffColsToday.map((c) => ({
+        id: c.id,
+        retailerName: c.retailerName,
+        time: c.date ? c.date.split(" ")[1] : "N/A",
+        amount: c.totalAmount,
+        status: c.status || "verified",
+      }));
+
+      // Get compliance/attendance log for this staff member
+      const compliance = (staffComplianceLogs || []).find(
+        (log) => log.name?.toLowerCase() === name.toLowerCase()
+      );
+
+      return {
+        name,
+        collectedToday,
+        depositedToday,
+        remainingToday,
+        visitedStores,
+        compliance,
+      };
+    });
+  }, [staffUsers, safeCollections, safeDeposits, staffComplianceLogs]);
 
   // Pre-calculate running balances for all transactions (excluding virtual deposits)
   const combinedTimeline = [
@@ -167,156 +195,177 @@ export default function OverviewTab({
               <span className="text-sm font-black text-blue-700 dark:text-blue-400 group-hover:underline">View Reports</span>
             </div>
           </div>
-        </div>
-
-        {/* Staff Live Status & Cash Tracker Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 animate-fade-in flex flex-col justify-between gap-4">
-          {/* Header & Dropdown */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-lg">
-                <Users className="w-4 h-4" />
-              </div>
-              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide">Staff Tracking</span>
+        </div>        {/* Staff Live Status & Cash Tracker Card */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 animate-fade-in flex flex-col gap-4">
+          {/* Header */}
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-lg">
+              <Users className="w-4 h-4" />
             </div>
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide">Staff Tracking</span>
           </div>
 
-          {/* Dropdown for selecting Staff – renders inline below */}
-          <InlineSelect
-            value={selectedStaffName}
-            onChange={(val) => setSelectedStaffName(val)}
-            options={staffUsers.length === 0
-              ? [{ value: "", label: "No Staff Active" }]
-              : staffUsers.map((u) => ({ value: u.name, label: u.name }))
-            }
-            placeholder="Select Staff Member"
-            icon={<Users className="w-4 h-4" />}
-          />
+          {/* List of active field staff */}
+          <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+            {staffListData.length === 0 ? (
+              <p className="text-[10px] text-slate-450 dark:text-slate-550 font-bold italic text-center py-4">No staff members found.</p>
+            ) : (
+              staffListData.map((staff) => {
+                const isExpanded = !!expandedStaffNames[staff.name];
+                const isActive = staff.compliance?.status === "Active Duty";
+                return (
+                  <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/20 dark:bg-slate-950/10 space-y-2.5">
+                    {/* Header Row (Clickable to Expand) */}
+                    <div 
+                      onClick={() => toggleStaffExpanded(staff.name)}
+                      className="flex items-center justify-between cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-350 dark:bg-slate-700'}`} />
+                        <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-455 transition-colors">
+                          {staff.name}
+                        </span>
+                        <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                          {isActive ? "Active" : "Offline"}
+                        </span>
+                      </div>
+                      <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                    </div>
 
-          {/* Core Metrics Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            {/* Collected today */}
-            <div className="p-3 bg-emerald-50/50 dark:bg-emerald-950/10 border border-emerald-100/60 dark:border-emerald-900/20 rounded-xl flex flex-col justify-between">
-              <span className="text-[8px] font-black uppercase text-emerald-600 dark:text-emerald-450 tracking-wide block">Collected</span>
-              <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 block mt-1">
-                ₹{staffMetrics.collectedToday.toLocaleString()}
-              </span>
-            </div>
+                    {/* Stats Summary columns */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-1.5 bg-emerald-50/25 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/10 rounded-lg flex flex-col">
+                        <span className="text-[7px] font-black uppercase text-emerald-600 tracking-wide">Collected</span>
+                        <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-450 mt-0.5">
+                          ₹{staff.collectedToday.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="p-1.5 bg-red-50/25 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/10 rounded-lg flex flex-col">
+                        <span className="text-[7px] font-black uppercase text-red-600 tracking-wide">Deposited</span>
+                        <span className="text-[10px] font-black text-red-700 dark:text-red-450 mt-0.5">
+                          ₹{staff.depositedToday.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="p-1.5 bg-blue-50/25 dark:bg-blue-950/5 border border-blue-100/30 dark:border-blue-900/10 rounded-lg flex flex-col">
+                        <span className="text-[7px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
+                        <span className={`text-[10px] font-black mt-0.5 ${staff.remainingToday < 0 ? 'text-red-655 dark:text-red-400' : 'text-blue-700 dark:text-blue-450'}`}>
+                          ₹{staff.remainingToday.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
 
-            {/* Deposited today */}
-            <div className="p-3 bg-red-50/50 dark:bg-red-950/10 border border-red-100/60 dark:border-red-900/20 rounded-xl flex flex-col justify-between">
-              <span className="text-[8px] font-black uppercase text-red-600 dark:text-red-450 tracking-wide block">Deposited</span>
-              <span className="text-sm font-black text-red-700 dark:text-red-400 block mt-1">
-                ₹{staffMetrics.depositedToday.toLocaleString()}
-              </span>
-            </div>
+                    {/* Collapsible Details */}
+                    {isExpanded && (
+                      <div className="border-t border-slate-100 dark:border-slate-800/80 pt-2.5 space-y-2.5 animate-fade-in">
+                        <div className="flex items-center justify-between text-[9px]">
+                          <span className="font-bold text-slate-450 uppercase tracking-wide">Shift Status</span>
+                          <span className="font-extrabold text-slate-700 dark:text-slate-300">
+                            {staff.compliance ? (
+                              `${staff.compliance.status} ${staff.compliance.startTime ? `(IN: ${staff.compliance.startTime})` : ""}`
+                            ) : (
+                              "Not Checked In"
+                            )}
+                          </span>
+                        </div>
 
-            {/* Net remaining in hand */}
-            <div className="p-3 bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100/60 dark:border-blue-900/20 rounded-xl flex flex-col justify-between">
-              <span className="text-[8px] font-black uppercase text-blue-600 dark:text-blue-455 tracking-wide block">Remaining</span>
-              <span className="text-sm font-black text-blue-700 dark:text-blue-400 block mt-1">
-                ₹{staffMetrics.remainingToday.toLocaleString()}
-              </span>
-            </div>
+                        {staff.compliance && (
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center justify-between text-[9px]">
+                              <span className="font-bold text-slate-455 uppercase tracking-wide">Odometer Reading</span>
+                              <span className="font-extrabold text-slate-700 dark:text-slate-355">
+                                {staff.compliance.startKm ? `${staff.compliance.startKm} KM` : "0 KM"}
+                                {staff.compliance.endKm ? ` → ${staff.compliance.endKm} KM` : " Started"}
+                              </span>
+                            </div>
+
+                            {/* Odometer & GPS actions links */}
+                            <div className="flex items-center gap-1.5 pt-1">
+                              {/* Start Route GPS */}
+                              {staff.compliance.startLatitude && staff.compliance.startLongitude && (
+                                <a
+                                  href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.startLatitude},${staff.compliance.startLongitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                  title="View starting location on Google Maps"
+                                >
+                                  <MapPin className="w-2.5 h-2.5 text-blue-500" />
+                                  <span>Start Route</span>
+                                </a>
+                              )}
+
+                              {/* Start Odometer Photo */}
+                              {staff.compliance.startKmImageUrl && (
+                                <a
+                                  href={staff.compliance.startKmImageUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-650 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                  title="View starting odometer photo"
+                                >
+                                  <Camera className="w-2.5 h-2.5 text-slate-500" />
+                                  <span>Start Photo</span>
+                                </a>
+                              )}
+
+                              {/* End Route GPS */}
+                              {staff.compliance.endLatitude && staff.compliance.endLongitude && (
+                                <a
+                                  href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.endLatitude},${staff.compliance.endLongitude}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
+                                  title="View ending location on Google Maps"
+                                >
+                                  <MapPin className="w-2.5 h-2.5 text-indigo-500" />
+                                  <span>End Route</span>
+                                </a>
+                              )}
+
+                              {/* End Odometer Photo */}
+                              {staff.compliance.endKmImageUrl && (
+                                <a
+                                  href={staff.compliance.endKmImageUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-650 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                  title="View ending odometer photo"
+                                >
+                                  <Camera className="w-2.5 h-2.5 text-slate-500" />
+                                  <span>End Photo</span>
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Stores visited trigger row */}
+                        <div className="border-t border-slate-100 dark:border-slate-800/40 pt-2 flex items-center justify-between">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Outings</span>
+                          <button
+                            onClick={() => staff.visitedStores.length > 0 && setActiveModalStaff({ name: staff.name, visitedStores: staff.visitedStores })}
+                            className={`flex items-center gap-1 font-black uppercase tracking-wide text-[9px] px-2 py-1.5 rounded-lg transition-all ${
+                              staff.visitedStores.length > 0 
+                              ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-950/80 cursor-pointer" 
+                              : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-950/20 cursor-not-allowed"
+                            }`}
+                            disabled={staff.visitedStores.length === 0}
+                          >
+                            <Store className="w-3.5 h-3.5" />
+                            <span>Stores Visited: {staff.visitedStores.length}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
           </div>
-
-          {/* Outings compliance & stores visited link */}
-          <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 text-[10px]">
-            {/* Live duty check-in */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-2">
-                <span className={`w-2 h-2 rounded-full ${
-                  selectedStaffCompliance?.status === "Active Duty" ? "bg-emerald-500 animate-pulse" : "bg-slate-350 dark:bg-slate-700"
-                }`} />
-                <span className="font-extrabold text-slate-550 dark:text-slate-400">
-                  {selectedStaffCompliance ? (
-                    `${selectedStaffCompliance.status} (${selectedStaffCompliance.endKm ? (selectedStaffCompliance.endKm - selectedStaffCompliance.startKm) : 0} km)`
-                  ) : (
-                    "Not Checked In"
-                  )}
-                </span>
-              </div>
-              
-              {selectedStaffCompliance && (
-                <div className="flex items-center gap-2 mt-1">
-                  {/* Start route */}
-                  {selectedStaffCompliance.startLatitude && selectedStaffCompliance.startLongitude && (
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${selectedStaffCompliance.startLatitude},${selectedStaffCompliance.startLongitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-                      title="View starting location on Google Maps"
-                    >
-                      <MapPin className="w-2.5 h-2.5 text-blue-500" />
-                      <span>Start Route</span>
-                    </a>
-                  )}
-
-                  {/* Start Odometer Photo */}
-                  {selectedStaffCompliance.startKmImageUrl && (
-                    <a
-                      href={selectedStaffCompliance.startKmImageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                      title="View starting odometer photo"
-                    >
-                      <Camera className="w-2.5 h-2.5 text-slate-500" />
-                      <span>Start Photo</span>
-                    </a>
-                  )}
-
-                  {/* End Route */}
-                  {selectedStaffCompliance.endLatitude && selectedStaffCompliance.endLongitude && (
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${selectedStaffCompliance.endLatitude},${selectedStaffCompliance.endLongitude}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
-                      title="View ending location on Google Maps"
-                    >
-                      <MapPin className="w-2.5 h-2.5 text-indigo-500" />
-                      <span>End Route</span>
-                    </a>
-                  )}
-
-                  {/* End Odometer Photo */}
-                  {selectedStaffCompliance.endKmImageUrl && (
-                    <a
-                      href={selectedStaffCompliance.endKmImageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                      title="View ending odometer photo"
-                    >
-                      <Camera className="w-2.5 h-2.5 text-slate-500" />
-                      <span>End Photo</span>
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Clickable Stores Visited element */}
-            <button
-              onClick={() => staffMetrics.visitedStores.length > 0 && setShowVisitedModal(true)}
-              className={`flex items-center gap-1 font-black uppercase tracking-wide px-2.5 py-1.5 rounded-lg transition-all ${
-                staffMetrics.visitedStores.length > 0 
-                ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-950/80 cursor-pointer" 
-                : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-950/20 cursor-not-allowed"
-              }`}
-              disabled={staffMetrics.visitedStores.length === 0}
-            >
-              <Store className="w-3.5 h-3.5" />
-              <span>Stores Visited: {staffMetrics.visitedStores.length}</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
+        </div>      </div>
+      
       {/* Stores Visited Modal Popup */}
-      {showVisitedModal && (
+      {activeModalStaff && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-fade-in relative">
             
@@ -328,13 +377,13 @@ export default function OverviewTab({
                   <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">
                     Stores Visited Today
                   </h3>
-                  <p className="text-[9px] font-bold text-slate-450 dark:text-slate-550">
-                    {selectedStaffName.toUpperCase()}'S ACTIVE OUTINGS
+                  <p className="text-[9px] font-bold text-slate-455 dark:text-slate-555">
+                    {activeModalStaff.name.toUpperCase()}&apos;S ACTIVE OUTINGS
                   </p>
                 </div>
               </div>
               <button
-                onClick={() => setShowVisitedModal(false)}
+                onClick={() => setActiveModalStaff(null)}
                 className="p-1.5 rounded-lg bg-slate-105 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 <X className="w-4.5 h-4.5" />
@@ -343,7 +392,7 @@ export default function OverviewTab({
 
             {/* Modal Body: Stores list */}
             <div className="max-h-60 overflow-y-auto pr-1 divide-y divide-slate-100 dark:divide-slate-850">
-              {staffMetrics.visitedStores.map((item: any, idx: number) => (
+              {activeModalStaff.visitedStores.map((item: VisitedStore, idx: number) => (
                 <div key={idx} className="py-3 flex items-center justify-between text-xs hover:bg-slate-50/50 dark:hover:bg-slate-850/10 px-2 rounded-xl transition-all">
                   <div className="flex flex-col gap-0.5">
                     <span className="font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
@@ -353,9 +402,9 @@ export default function OverviewTab({
                       <Clock className="w-3.5 h-3.5 text-slate-400" />
                       <span>{(() => {
                         try {
-                          let [hour, min] = item.time.split(":").map(Number);
-                          const ampm = hour >= 12 ? 'PM' : 'AM';
-                          hour = hour % 12 || 12;
+                          const [rawHour, min] = item.time.split(":").map(Number);
+                          const ampm = rawHour >= 12 ? 'PM' : 'AM';
+                          const hour = rawHour % 12 || 12;
                           return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
                         } catch (e) {
                           return item.time;
@@ -385,11 +434,11 @@ export default function OverviewTab({
               <div className="flex flex-col">
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Total Visited Today</span>
                 <span className="text-xs font-black text-slate-700 dark:text-slate-350">
-                  {staffMetrics.visitedStores.length} Stores
+                  {activeModalStaff.visitedStores.length} Stores
                 </span>
               </div>
               <button
-                onClick={() => setShowVisitedModal(false)}
+                onClick={() => setActiveModalStaff(null)}
                 className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-[10px] font-black rounded-xl hover:bg-slate-850 dark:hover:bg-slate-100 transition-all cursor-pointer"
               >
                 Close Window
@@ -402,7 +451,7 @@ export default function OverviewTab({
       {/* Today's Activity Heading */}
       <div className="flex items-center gap-2 mb-2 px-1">
         <div className="w-1 h-4 bg-blue-600 rounded-full" />
-        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Today's Activity</h2>
+        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Today&apos;s Activity</h2>
       </div>
 
       {/* KPI Summary Grid */}
@@ -416,7 +465,7 @@ export default function OverviewTab({
               <TrendingUp className="w-4.5 h-4.5 text-emerald-100" />
             </div>
              <span className="text-[8px] font-black uppercase tracking-wide text-emerald-100/70 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/10">
-               Today's Collection
+               Today&apos;s Collection
              </span>
           </div>
           <div className="mt-4">
@@ -437,7 +486,7 @@ export default function OverviewTab({
               <FileText className="w-4.5 h-4.5 text-red-100" />
             </div>
              <span className="text-[8px] font-black uppercase tracking-wide text-red-100/70 bg-red-950/30 px-2 py-0.5 rounded-full border border-red-500/10">
-               Today's Deposits
+               Today&apos;s Deposits
              </span>
           </div>
           <div className="mt-4">
@@ -490,7 +539,7 @@ export default function OverviewTab({
             party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
             staff: d.staffName || "Admin",
             amount: d.amount,
-            type: 'deposit',
+            type: d.isRefund === true ? 'collection' : 'deposit',
             balance: d.balance_snapshot
           }))
         ].sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime())
@@ -552,7 +601,7 @@ export default function OverviewTab({
                         <td className={`px-4 py-3 text-right font-black ${item.type === 'collection' ? 'text-emerald-600 bg-emerald-50/5 dark:bg-emerald-950/2' : 'text-red-600 bg-red-50/5 dark:bg-red-950/2'}`}>
                           {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
                           {item.balance !== undefined && item.balance !== null && (
-                            <div className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">Bal: ₹{Number(item.balance).toLocaleString()}</div>
+                            <div className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">Due: ₹{Number(item.balance).toLocaleString()}</div>
                           )}
                         </td>
                       </tr>

@@ -27,6 +27,7 @@ class VirtualTransferRequest(BaseModel):
     staff_id: Optional[uuid.UUID] = None
     amount: Decimal = Field(..., gt=0)
     remarks: Optional[str] = None
+    direction: str = "load"  # "load" (Portal -> Retailer) or "refund" (Retailer -> Portal)
 
 @router.get("/business", response_model=dict)
 def get_business_settings(db: Session = Depends(get_db), current_user=Depends(require_admin)):
@@ -99,21 +100,51 @@ def process_virtual_transfer(
         raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
         
     try:
-        # Step A: Decrement Portal Balance and To Give
-        portal.balance -= payload.amount
-        portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - payload.amount
-        if portal.group:
-            portal.group.balance -= payload.amount
-            portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - payload.amount
+        # Step A: Adjust Portal Balance and To Give
+        if payload.direction == "refund":
+            portal.balance += payload.amount
+            portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - payload.amount
+            if portal.group:
+                portal.group.balance += payload.amount
+                portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - payload.amount
+        else:
+            portal.balance -= payload.amount
+            portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + payload.amount
+            if portal.group:
+                portal.group.balance -= payload.amount
+                portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + payload.amount
             
         if payload.retailer_id:
-            # Transfer to Retailer
+            # Transfer to/from Retailer
             retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
             if not retailer:
                 raise HTTPException(status_code=404, detail="Destination retailer not found.")
                 
-            # Add virtual transfer amount to retailer's "To Give" balance
-            retailer.opening_to_give = (retailer.opening_to_give or Decimal("0.00")) + payload.amount
+            from app.database.models import Ledger
+            from sqlalchemy import desc
+            from datetime import date
+            
+            # Fetch latest ledger entry to calculate new running balance
+            latest_ledger = db.scalar(
+                select(Ledger)
+                .where(Ledger.retailer_id == payload.retailer_id)
+                .order_by(desc(Ledger.created_at), desc(Ledger.id))
+                .limit(1)
+            )
+            
+            if latest_ledger:
+                prev_balance = latest_ledger.balance
+            else:
+                prev_balance = Decimal(str(retailer.opening_to_take or 0))
+                
+            if payload.direction == "refund":
+                new_balance = prev_balance - payload.amount
+                desc_text = f"Virtual Portal Refund to {portal.portal_name}"
+                transaction_type = "credit"
+            else:
+                new_balance = prev_balance + payload.amount
+                desc_text = f"Virtual Portal Transfer from {portal.portal_name}"
+                transaction_type = "debit"
             
             # Log in bank deposits to keep audit trail
             db_deposit = BankDeposit(
@@ -122,14 +153,28 @@ def process_virtual_transfer(
                 portal_id=payload.portal_id,
                 retailer_id=payload.retailer_id,
                 amount=payload.amount,
-                payment_mode="online",
+                payment_mode="refund" if payload.direction == "refund" else "online",
                 deposit_date=date.today(),
                 status="verified",
-                balance_snapshot=retailer.opening_to_give
+                balance_snapshot=new_balance
             )
             db.add(db_deposit)
+            db.flush() # flush to get db_deposit.id
             
-            # Recalculate ledger balances to reflect the updated opening_to_give
+            # Log entry in Retailer's Ledger
+            ledger_entry = Ledger(
+                retailer_id=payload.retailer_id,
+                transaction_type=transaction_type,
+                amount=payload.amount,
+                balance=new_balance,
+                description=desc_text,
+                deposit_id=db_deposit.id
+            )
+            db.add(ledger_entry)
+            
+            retailer.balance = new_balance
+            
+            # Recalculate ledger balances to ensure absolute consistency
             from app.logic.ledger import recalculate_balances
             recalculate_balances(payload.retailer_id, db)
             
@@ -140,7 +185,7 @@ def process_virtual_transfer(
                 "portal_name": portal.portal_name,
                 "target_name": retailer.retailer_name,
                 "new_portal_balance": float(portal.balance),
-                "new_target_balance": float(retailer.opening_to_give)
+                "new_target_balance": float(retailer.balance)
             }
         else:
             # Transfer to Staff
@@ -148,7 +193,10 @@ def process_virtual_transfer(
             if not staff:
                 raise HTTPException(status_code=404, detail="Destination staff member not found.")
                 
-            staff.virtual_balance += payload.amount
+            if payload.direction == "refund":
+                staff.virtual_balance -= payload.amount
+            else:
+                staff.virtual_balance += payload.amount
             
             # Record in bank deposits to keep log details
             db_deposit = BankDeposit(
@@ -157,7 +205,7 @@ def process_virtual_transfer(
                 portal_id=payload.portal_id,
                 recipient_staff_id=payload.staff_id,
                 amount=payload.amount,
-                payment_mode="online",
+                payment_mode="refund" if payload.direction == "refund" else "online",
                 deposit_date=date.today(),
                 status="verified",
                 balance_snapshot=staff.virtual_balance

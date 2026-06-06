@@ -83,6 +83,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           retailer_id: c.retailer_id,
           store_id: c.store_id,
           retailerName: c.retailer_name || "Unknown Retailer",
+          store_name: c.store_name || null,
           portalName: c.portal_name || "Standard Channel",
           staffName: c.staff_name || "Unknown Staff",
           totalAmount: parseFloat(c.total_amount),
@@ -117,12 +118,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           portalGroupName: d.portal_group_name,
           depositType: d.deposit_type,
           targetName: d.target_name || "Direct Deposit",
+          portalName: d.portal_name || null,
           amount: parseFloat(d.amount),
           balance_snapshot: d.balance_snapshot,
           paymentMode: d.payment_mode,
           denominations: d.denominations,
           status: d.status,
           staffName: d.staff_name || "System",
+          isRefund: d.is_refund === true,
           date: dtStr,
           created_at: d.created_at
         };

@@ -42,6 +42,7 @@ export default function AdministrationTab({
   const [pName, setPName] = useState("");
   const [pToTake, setPToTake] = useState<string>("");
   const [pToGive, setPToGive] = useState<string>("");
+  const [pGroupOnline, setPGroupOnline] = useState(false);
   const [bAccName, setBAccName] = useState("");
   const [bBankName, setBBankName] = useState("");
   const [bBranchName, setBBranchName] = useState("");
@@ -109,6 +110,7 @@ export default function AdministrationTab({
 
       showToastNotification(`Portal "${pName}" & Bank Account registered!`);
       setPName(""); setPToTake(""); setPToGive("");
+      setPGroupOnline(false);
       setBAccName(""); setBBankName(""); setBBranchName(""); setBAccNo(""); setBIfsc("");
       fetchData();
     } catch (err: any) {
@@ -304,6 +306,18 @@ export default function AdministrationTab({
                       className="w-full px-3 py-2 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none" 
                     />
                   </div>
+                </div>
+                <div className="flex items-center gap-2 px-1 py-1">
+                  <input 
+                    type="checkbox" 
+                    id="adminPortalOnline"
+                    checked={pGroupOnline} 
+                    onChange={(e) => setPGroupOnline(e.target.checked)} 
+                    className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
+                  />
+                  <label htmlFor="adminPortalOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                    Online
+                  </label>
                 </div>
               </div>
 
