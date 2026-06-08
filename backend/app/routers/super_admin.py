@@ -45,6 +45,9 @@ class TenantMaintenanceRequest(BaseModel):
 class TenantUpdateRequest(BaseModel):
     name: str = Field(..., max_length=100)
     status: str = Field(..., max_length=20)
+    subdomain: Optional[str] = Field(None, max_length=50)
+    admin_phone: Optional[str] = Field(None, max_length=20)
+    admin_password: Optional[str] = Field(None, min_length=6)
 
 class TenantResponse(BaseModel):
     id: uuid.UUID
@@ -54,6 +57,7 @@ class TenantResponse(BaseModel):
     status: str
     maintenance_mode: bool
     created_at: datetime
+    admin_phone: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -187,7 +191,10 @@ def create_tenant(
     db.add(new_tenant)
     db.commit()
     db.refresh(new_tenant)
-    return new_tenant
+    
+    res = TenantResponse.model_validate(new_tenant)
+    res.admin_phone = tenant_data.admin_phone
+    return res
 
 @router.get("/tenants", response_model=List[TenantResponse])
 def list_tenants(
@@ -195,7 +202,28 @@ def list_tenants(
     current_admin: SuperAdmin = Depends(get_current_super_admin)
 ):
     tenants = db.scalars(select(Tenant)).all()
-    return tenants
+    response_list = []
+    for t in tenants:
+        admin_phone = None
+        try:
+            tenant_url = get_tenant_connection_string(t.db_name)
+            tenant_engine = create_engine(tenant_url)
+            TenantSession = sessionmaker(bind=tenant_engine)
+            tenant_db = TenantSession()
+            try:
+                from app.database import models
+                admin_user = tenant_db.query(models.User).filter(models.User.role == "admin").first()
+                if admin_user:
+                    admin_phone = admin_user.phone
+            finally:
+                tenant_db.close()
+        except Exception as e:
+            print(f"Failed to fetch admin phone for {t.db_name}: {str(e)}")
+            
+        res_t = TenantResponse.model_validate(t)
+        res_t.admin_phone = admin_phone
+        response_list.append(res_t)
+    return response_list
 
 @router.post("/tenants/{tenant_id}/maintenance", response_model=TenantResponse)
 def toggle_tenant_maintenance(
@@ -222,11 +250,58 @@ def update_tenant(
     tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
+        
     tenant.name = payload.name
     tenant.status = payload.status
+    
+    # Update subdomain if provided and changed
+    if payload.subdomain:
+        new_subdomain = payload.subdomain.lower().replace(/\s+/g, "-")
+        if new_subdomain != tenant.subdomain:
+            existing = db.scalar(select(Tenant).where(Tenant.subdomain == new_subdomain))
+            if existing:
+                raise HTTPException(status_code=400, detail="Subdomain already registered")
+            tenant.subdomain = new_subdomain
+
+    admin_phone = None
+    # Update admin credentials in the isolated tenant database if provided
+    try:
+        tenant_url = get_tenant_connection_string(tenant.db_name)
+        tenant_engine = create_engine(tenant_url)
+        TenantSession = sessionmaker(bind=tenant_engine)
+        tenant_db = TenantSession()
+        try:
+            from app.database import models
+            admin_user = tenant_db.query(models.User).filter(models.User.role == "admin").first()
+            if admin_user:
+                if payload.admin_phone:
+                    dup = tenant_db.query(models.User).filter(
+                        models.User.phone == payload.admin_phone,
+                        models.User.id != admin_user.id
+                    ).first()
+                    if dup:
+                        raise HTTPException(status_code=400, detail="Phone number already in use by another user in this tenant")
+                    admin_user.phone = payload.admin_phone
+                if payload.admin_password:
+                    admin_user.password_hash = get_password_hash(payload.admin_password)
+                tenant_db.commit()
+                admin_phone = admin_user.phone
+        finally:
+            tenant_db.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to update tenant admin credentials: {str(e)}"
+        )
+
     db.commit()
     db.refresh(tenant)
-    return tenant
+    
+    res = TenantResponse.model_validate(tenant)
+    res.admin_phone = admin_phone
+    return res
 
 @router.delete("/tenants/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_tenant(
