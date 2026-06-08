@@ -608,7 +608,7 @@ export default function DashboardPage() {
                 <div className="space-y-1 text-xs">
                   <div className="flex justify-between"><span className="text-slate-500">Uvicorn Status</span><span className="font-bold text-slate-200">OPERATIONAL</span></div>
                   <div className="flex justify-between"><span className="text-slate-500">CORS Policy</span><span className="font-bold text-indigo-400 uppercase tracking-widest text-[10px]">*.crediiflow.in</span></div>
-                  <div className="flex justify-between"><span className="text-slate-500">Port Mapping</span><span className="font-mono text-slate-400">8000 -> 8000</span></div>
+                  <div className="flex justify-between"><span className="text-slate-500">Port Mapping</span><span className="font-mono text-slate-400">{"8000 -> 8000"}</span></div>
                 </div>
               </div>
 
@@ -646,21 +646,21 @@ export default function DashboardPage() {
                       <td className="px-6 py-4 font-bold text-slate-200">doit_frontend</td>
                       <td className="px-6 py-4 font-mono text-slate-500">do-it-services-frontend:latest</td>
                       <td className="px-6 py-4 font-mono text-slate-400">doit_frontend</td>
-                      <td className="px-6 py-4 font-mono text-slate-400">3000 -> 3000</td>
+                      <td className="px-6 py-4 font-mono text-slate-400">{"3000 -> 3000"}</td>
                       <td className="px-6 py-4 text-center"><span className="px-2 py-0.5 bg-emerald-950/40 border border-emerald-900 text-emerald-400 rounded-full font-bold uppercase tracking-wider text-[9px]">Running</span></td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 font-bold text-slate-200">doit_backend</td>
                       <td className="px-6 py-4 font-mono text-slate-500">do-it-services-backend:latest</td>
                       <td className="px-6 py-4 font-mono text-slate-400">doit_backend</td>
-                      <td className="px-6 py-4 font-mono text-slate-400">8000 -> 8000</td>
+                      <td className="px-6 py-4 font-mono text-slate-400">{"8000 -> 8000"}</td>
                       <td className="px-6 py-4 text-center"><span className="px-2 py-0.5 bg-emerald-950/40 border border-emerald-900 text-emerald-400 rounded-full font-bold uppercase tracking-wider text-[9px]">Running</span></td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 font-bold text-slate-200">doit_superadmin_frontend</td>
                       <td className="px-6 py-4 font-mono text-slate-500">do-it-services-superadmin-frontend:latest</td>
                       <td className="px-6 py-4 font-mono text-slate-400">doit_superadmin_frontend</td>
-                      <td className="px-6 py-4 font-mono text-slate-400">3001 -> 3001</td>
+                      <td className="px-6 py-4 font-mono text-slate-400">{"3001 -> 3001"}</td>
                       <td className="px-6 py-4 text-center"><span className="px-2 py-0.5 bg-emerald-950/40 border border-emerald-900 text-emerald-400 rounded-full font-bold uppercase tracking-wider text-[9px]">Running</span></td>
                     </tr>
                     <tr>
