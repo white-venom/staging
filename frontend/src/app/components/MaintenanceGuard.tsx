@@ -47,11 +47,25 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
         const res = await fetch(`${API_BASE_URL}/tenant/info`, { headers });
         if (res.ok) {
           const data = await res.json();
+          if (data.status !== "active") {
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("doit-services-storage");
+              window.location.href = "/";
+            }
+            return;
+          }
           setIsMaintenance(data.maintenance_mode);
           if (data.name) {
             setTenantName(data.name);
           }
         } else {
+          if (res.status === 404) {
+            if (typeof window !== "undefined") {
+              localStorage.removeItem("doit-services-storage");
+              window.location.href = "/";
+            }
+            return;
+          }
           setIsMaintenance(false);
         }
       } catch (err) {

@@ -144,6 +144,19 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
     if (contentType && contentType.includes("application/json")) {
       const errorData = await response.json().catch(() => ({ detail: "Unknown error" }));
       const detail = typeof errorData.detail === "object" ? JSON.stringify(errorData.detail) : errorData.detail;
+      
+      // Auto-logout if tenant is suspended or deleted
+      if ((response.status === 404 || response.status === 400) && detail && (detail.toLowerCase().includes("tenant") || detail.toLowerCase().includes("not found") || detail.toLowerCase().includes("not active"))) {
+        const store = useAppStore.getState();
+        if (store.currentUser) {
+          store.resetStore();
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("doit-services-storage");
+            window.location.href = "/";
+          }
+        }
+      }
+      
       throw new Error(detail || response.statusText);
     } else {
       const text = await response.text();
