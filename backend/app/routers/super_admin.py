@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, text, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.database.db import get_master_db, MasterSessionLocal, Base, get_tenant_connection_string
+from app.database.db import get_master_db, MasterSessionLocal, Base, get_tenant_connection_string, evict_tenant_cache
 from app.database.master_models import Tenant, SuperAdmin
 from app.core.config import settings
 from app.core.security import (
@@ -324,7 +324,11 @@ def update_tenant(
             existing = db.scalar(select(Tenant).where(Tenant.subdomain == new_subdomain))
             if existing:
                 raise HTTPException(status_code=400, detail="Subdomain already registered")
+            old_subdomain = tenant.subdomain
             tenant.subdomain = new_subdomain
+            # Swap Cloudflare DNS: remove old record, create new one
+            cloudflare_delete_dns(old_subdomain)
+            cloudflare_add_dns(new_subdomain)
 
     admin_phone = None
     # Update admin credentials in the isolated tenant database if provided
@@ -392,6 +396,9 @@ def delete_tenant(
     except Exception as e:
         # Log error but don't crash if DB was already dropped or has issues
         print(f"Failed to drop database {tenant.db_name}: {str(e)}")
+
+    # Evict stale cached SQLAlchemy engine so next API call from this tenant gets 404 immediately
+    evict_tenant_cache(tenant.db_name)
 
     # Remove Cloudflare DNS A record for the deleted subdomain
     cloudflare_delete_dns(tenant.subdomain)

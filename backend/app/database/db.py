@@ -67,6 +67,18 @@ def get_tenant_session(tenant_subdomain: str) -> Session:
         
     return _tenant_sessionmakers[db_name]()
 
+def evict_tenant_cache(db_name: str):
+    """Remove cached engine and sessionmaker for a deleted/renamed tenant DB.
+    Call this after dropping the database so stale pool connections
+    don't linger and bypass the 404 check in get_db."""
+    engine = _tenant_engines.pop(db_name, None)
+    _tenant_sessionmakers.pop(db_name, None)
+    if engine:
+        try:
+            engine.dispose()
+        except Exception:
+            pass
+
 # DB Dependency generator helper (for FastAPI integration)
 # Automatically extracts the tenant from header, subdomain, or environment variables
 def get_db(request: Request = None):
