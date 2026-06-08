@@ -209,7 +209,7 @@ export default function StaffDashboard() {
           retailer_id: d.retailer_id,
           recipient_staff_id: d.recipient_staff_id,
           depositType: d.deposit_type,
-          targetName: d.target_name || "Super Distributor",
+          targetName: (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : (d.target_name || "Super Distributor"),
           amount: Number(d.amount),
           paymentMode: (d.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
           denominations: d.denominations ? {

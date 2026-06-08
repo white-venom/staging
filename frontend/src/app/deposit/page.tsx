@@ -196,8 +196,7 @@ function NewDepositContent() {
     let targetName = "";
     if (depositType === "portal") {
       const groupName = portalGroups.find(g => g.id === selectedGroupId)?.name || "Portal";
-      const accName = groupAccounts.find(a => a.id === selectedPortalId)?.name || "Account";
-      targetName = `${groupName} - ${accName}`;
+      targetName = groupName;
     } else if (depositType === "retailer") {
       targetName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer Store";
     } else if (depositType === "virtual") {

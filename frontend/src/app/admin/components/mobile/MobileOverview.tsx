@@ -103,6 +103,7 @@ export default function MobileOverview({
         id: c.id,
         date: c.date,
         party: c.retailerName,
+        store_name: c.store_name || null,
         staff: c.staffName || "Admin",
         amount: c.totalAmount,
         type: 'collection',
@@ -112,6 +113,7 @@ export default function MobileOverview({
         id: d.id,
         date: d.date,
         party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
+        store_name: null,
         staff: d.staffName || "Admin",
         amount: d.amount,
         type: 'deposit',
@@ -415,7 +417,7 @@ export default function MobileOverview({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-black text-slate-800 dark:text-white truncate">
-                    {item.party}
+                    {item.party} {item.store_name && <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>}
                   </p>
                   <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
                     {(() => {

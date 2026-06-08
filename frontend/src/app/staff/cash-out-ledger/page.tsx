@@ -147,7 +147,7 @@ export default function CashOutLedgerPage() {
         retailer_id: updated.retailer_id,
         recipient_staff_id: updated.recipient_staff_id,
         depositType: updated.deposit_type,
-        targetName: updated.target_name || "Super Distributor",
+        targetName: (updated.deposit_type === "portal" && updated.portal_group_name) ? updated.portal_group_name : (updated.target_name || "Super Distributor"),
         amount: Number(updated.amount),
         paymentMode: (updated.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
         denominations: updated.denominations ? {
@@ -175,7 +175,8 @@ export default function CashOutLedgerPage() {
   };
 
   const filteredDeposits = deposits.filter(d => {
-    const targetMatch = d.target_name?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+    const displayName = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : d.target_name;
+    const targetMatch = displayName?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
     return targetMatch;
   });
 
@@ -251,7 +252,9 @@ export default function CashOutLedgerPage() {
                         className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors"
                       >
                         <div>
-                          <h3 className="text-xs font-extrabold text-slate-800 dark:text-slate-200">{d.target_name}</h3>
+                          <h3 className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
+                             {d.deposit_type === "portal" && d.portal_group_name ? d.portal_group_name : d.target_name}
+                           </h3>
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-2 font-medium">
                             <span className="capitalize">{d.deposit_type}</span>
                             <span>•</span>

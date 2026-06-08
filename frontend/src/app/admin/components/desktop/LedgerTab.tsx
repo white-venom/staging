@@ -130,6 +130,7 @@ export default function LedgerTab({
       date: c.date,
       partyId: c.retailer_id,
       party: c.retailerName,
+      store_name: c.store_name || null,
       portal: c.portalName,
       staff: c.staffName || "Admin",
       debit: 0,
@@ -159,6 +160,7 @@ export default function LedgerTab({
         date: d.date,
         partyId,
         party,
+        store_name: null,
         portal: isVirtual ? (d.portalName || d.targetName) : d.targetName, 
         staff: d.staffName || "Admin",
         debit: isRef ? 0 : d.amount,
@@ -510,8 +512,11 @@ export default function LedgerTab({
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-col">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase">{tx.party}</span>
+                            {tx.store_name && (
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">({tx.store_name})</span>
+                            )}
                             {tx.depositType === 'virtual' && (
                               <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
                             )}

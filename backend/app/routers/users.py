@@ -41,7 +41,10 @@ def create_user(
         name=user_data.name,
         phone=user_data.phone,
         role=user_data.role,
-        password_hash=get_password_hash(user_data.password)
+        password_hash=get_password_hash(user_data.password),
+        late_threshold=user_data.late_threshold,
+        late_penalty=user_data.late_penalty,
+        auto_checkout_time=user_data.auto_checkout_time
     )
     db.add(db_user)
     db.commit()
@@ -72,6 +75,9 @@ def update_user(
     user.name = user_data.name
     user.phone = user_data.phone
     user.role = user_data.role
+    user.late_threshold = user_data.late_threshold
+    user.late_penalty = user_data.late_penalty
+    user.auto_checkout_time = user_data.auto_checkout_time
     if user_data.password:
         user.password_hash = get_password_hash(user_data.password)
     

@@ -528,6 +528,7 @@ export default function OverviewTab({
             id: c.id,
             date: c.date,
             party: c.retailerName,
+            store_name: c.store_name || null,
             staff: c.staffName || "Admin",
             amount: c.totalAmount,
             type: 'collection',
@@ -537,6 +538,7 @@ export default function OverviewTab({
             id: d.id,
             date: d.date,
             party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
+            store_name: null,
             staff: d.staffName || "Admin",
             amount: d.amount,
             type: d.isRefund === true ? 'collection' : 'deposit',
@@ -593,7 +595,7 @@ export default function OverviewTab({
                         </td>
                         <td className="px-4 py-3 font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
                           <span className={`inline-block mr-2 w-1.5 h-1.5 rounded-full ${item.type === 'collection' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                          {item.party}
+                          {item.party} {item.store_name && <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold ml-1">({item.store_name})</span>}
                         </td>
                         <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
                           {item.staff}

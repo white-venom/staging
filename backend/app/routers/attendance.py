@@ -17,12 +17,7 @@ def check_and_trigger_auto_checkout(db: Session):
     for a shift's date, auto-completes that shift.
     """
     settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
-    auto_checkout_time_str = settings.auto_checkout_time if settings and settings.auto_checkout_time else "20:00"
-    
-    try:
-        threshold_hour, threshold_min = map(int, auto_checkout_time_str.split(":"))
-    except ValueError:
-        threshold_hour, threshold_min = 20, 0
+    global_auto_checkout = settings.auto_checkout_time if settings and settings.auto_checkout_time else "20:00"
 
     ist = pytz.timezone('Asia/Kolkata')
     now_ist = datetime.now(ist)
@@ -33,6 +28,14 @@ def check_and_trigger_auto_checkout(db: Session):
     
     updated_any = False
     for shift in active_shifts:
+        user_checkout_time = shift.user.auto_checkout_time if shift.user else None
+        auto_checkout_time_str = user_checkout_time or global_auto_checkout
+        
+        try:
+            threshold_hour, threshold_min = map(int, auto_checkout_time_str.split(":"))
+        except ValueError:
+            threshold_hour, threshold_min = 20, 0
+            
         shift_date = shift.date
         threshold_dt = ist.localize(datetime.combine(shift_date, time(threshold_hour, threshold_min)))
         
@@ -108,21 +111,32 @@ def check_in(
             detail=f"You already have an active shift started at {existing.start_time.strftime('%H:%M:%S')} today!"
         )
 
-    # Get late penalty settings
-    settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
-    if not settings:
-        # Fallback if settings not found
+    # Get late penalty settings (field-by-field fallback to global settings)
+    late_threshold_str = current_user.late_threshold
+    late_penalty_val = current_user.late_penalty
+
+    if late_threshold_str is None or late_penalty_val is None:
+        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+        if settings:
+            if late_threshold_str is None:
+                late_threshold_str = settings.late_threshold
+            if late_penalty_val is None:
+                late_penalty_val = settings.late_penalty
+
+    # Hard default fallbacks if still None
+    if late_threshold_str is None:
         late_threshold_str = "10:00"
+    if late_penalty_val is None:
         late_penalty_val = 100.0
-    else:
-        late_threshold_str = settings.late_threshold
-        late_penalty_val = settings.late_penalty
 
     # Check for lateness (IST Time)
     ist = pytz.timezone('Asia/Kolkata')
     now_ist = datetime.now(ist)
     
-    threshold_hour, threshold_min = map(int, late_threshold_str.split(":"))
+    try:
+        threshold_hour, threshold_min = map(int, late_threshold_str.split(":"))
+    except ValueError:
+        threshold_hour, threshold_min = 10, 0
     threshold_time = now_ist.replace(hour=threshold_hour, minute=threshold_min, second=0, microsecond=0)
     
     is_late = now_ist > threshold_time

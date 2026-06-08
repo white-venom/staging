@@ -261,7 +261,7 @@ export default function MobileLedger() {
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase truncate block">
-                        {item.party || 'General Entry'}
+                        {item.party || 'General Entry'} {item.store_name && <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>}
                       </span>
                       {item.party && item.party.toLowerCase().trim() === "cms" && (
                         <button

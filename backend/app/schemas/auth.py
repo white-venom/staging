@@ -7,6 +7,9 @@ class UserBase(BaseModel):
     name: str = Field(..., max_length=100, examples=["John Doe"])
     phone: str = Field(..., examples=["9876543210"])
     role: str = Field(..., examples=["staff"])  # 'admin', 'staff'
+    late_threshold: Optional[str] = Field(None, max_length=10, examples=["10:00"])
+    late_penalty: Optional[float] = Field(None, examples=[100.0])
+    auto_checkout_time: Optional[str] = Field(None, max_length=10, examples=["20:00"])
 
     @field_validator("phone")
     @classmethod

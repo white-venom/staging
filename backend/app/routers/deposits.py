@@ -216,16 +216,19 @@ def submit_deposit(
         
         # Trigger WhatsApp message asynchronously for payouts to retailer
         if dt in ["retailer", "virtual"] and retailer and retailer.phone:
-            import os
-            from app.services.whatsapp import send_whatsapp_message
-            frontend_url = os.getenv("FRONTEND_BASE_URL", "https://doitservice.com")
-            secure_link = f"{frontend_url}/public/ledger/{retailer.ledger_token}"
-            background_tasks.add_task(
-                send_whatsapp_message,
-                to_phone_number=retailer.phone,
-                template_name="retailer_deposit_receipt",
-                variables=[retailer.retailer_name, str(payload.amount), secure_link]
-            )
+            try:
+                import os
+                from app.services.whatsapp import send_whatsapp_message
+                frontend_url = os.getenv("FRONTEND_BASE_URL", "https://doitservice.com")
+                secure_link = f"{frontend_url}/public/ledger/{retailer.ledger_token}"
+                background_tasks.add_task(
+                    send_whatsapp_message,
+                    to_phone_number=retailer.phone,
+                    template_name="retailer_deposit_receipt",
+                    variables=[retailer.retailer_name, str(payload.amount), secure_link]
+                )
+            except Exception as whatsapp_err:
+                print(f"Error queueing WhatsApp message for deposit: {whatsapp_err}")
         
         return db_deposit
     except Exception as e:

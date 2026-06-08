@@ -30,6 +30,11 @@ class User(Base):
     virtual_balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
+    # Custom staff-wise late policy settings (overrides global settings if set)
+    late_threshold: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    late_penalty: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    auto_checkout_time: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+
     # Relationships
     attendances: Mapped[List["Attendance"]] = relationship("Attendance", back_populates="user")
     collections: Mapped[List["Collection"]] = relationship("Collection", foreign_keys="[Collection.staff_id]", back_populates="staff")

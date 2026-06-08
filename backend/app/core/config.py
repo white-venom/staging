@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # Database
     MASTER_DATABASE_URL: str = "postgresql://doit_admin:securepassword@localhost:5432/crediiflow_master"
+    DATABASE_URL: Optional[str] = None
     DB_USER: str = "doit_admin"
     DB_PASSWORD: str = "securepassword"
     DB_HOST: str = "localhost"

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Clock, ShieldAlert, Check, X, Settings2, Sparkles, UserCheck, Calendar, MapPin } from "lucide-react";
 import { api, API_BASE_URL } from "../../../utils/api";
+import { useAdmin } from "../../context/AdminContext";
 
 interface AttendanceTabProps {
   showToastNotification: (msg: string) => void;
@@ -52,13 +53,24 @@ function LocationName({ lat, lon }: { lat: number; lon: number }) {
 }
 
 export default function AttendanceTab({ showToastNotification }: AttendanceTabProps) {
+  const { userDirectory, fetchData } = useAdmin();
+  
+  const [selectedUserId, setSelectedUserId] = useState("global");
+  const [globalSettings, setGlobalSettings] = useState({
+    lateThreshold: "10:00",
+    latePenalty: 100,
+    autoCheckoutTime: "20:00"
+  });
+
   const [lateThreshold, setLateThreshold] = useState("10:00");
-  const [latePenalty, setLatePenalty] = useState(100);
+  const [latePenalty, setLatePenalty] = useState<number | "">(100);
   const [autoCheckoutTime, setAutoCheckoutTime] = useState("20:00");
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [pendingPenalties, setPendingPenalties] = useState<any[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any[]>([]);
   const [activeLightboxImage, setActiveLightboxImage] = useState<string | null>(null);
+
+  const staffMembers = (userDirectory || []).filter((u: any) => u.role === "staff" || u.role === "admin");
 
   useEffect(() => {
     loadSettings();
@@ -69,10 +81,18 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
   const loadSettings = async () => {
     try {
       const data = await api.getAdminSettings();
-      setLateThreshold(data.late_threshold);
-      setLatePenalty(data.late_penalty);
-      if (data.auto_checkout_time) {
-        setAutoCheckoutTime(data.auto_checkout_time);
+      const gs = {
+        lateThreshold: data.late_threshold || "10:00",
+        latePenalty: data.late_penalty !== undefined ? Number(data.late_penalty) : 100,
+        autoCheckoutTime: data.auto_checkout_time || "20:00"
+      };
+      setGlobalSettings(gs);
+      
+      // If editing global, sync input states
+      if (selectedUserId === "global") {
+        setLateThreshold(gs.lateThreshold);
+        setLatePenalty(gs.latePenalty);
+        setAutoCheckoutTime(gs.autoCheckoutTime);
       }
     } catch (err) {
       console.error("Failed to load settings:", err);
@@ -97,16 +117,49 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
     }
   };
 
+  // Keep input values synced when toggling target or when directory updates
+  useEffect(() => {
+    if (selectedUserId === "global") {
+      setLateThreshold(globalSettings.lateThreshold);
+      setLatePenalty(globalSettings.latePenalty);
+      setAutoCheckoutTime(globalSettings.autoCheckoutTime);
+    } else {
+      const user = staffMembers.find((u: any) => u.id === selectedUserId);
+      if (user) {
+        setLateThreshold(user.late_threshold !== null && user.late_threshold !== undefined ? user.late_threshold : "");
+        setLatePenalty(user.late_penalty !== null && user.late_penalty !== undefined ? user.late_penalty : "");
+        setAutoCheckoutTime(user.auto_checkout_time !== null && user.auto_checkout_time !== undefined ? user.auto_checkout_time : "");
+      }
+    }
+  }, [selectedUserId, userDirectory, globalSettings]);
+
   const handleUpdateSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingSettings(true);
     try {
-      await api.updateAdminSettings({
-        late_threshold: lateThreshold,
-        late_penalty: latePenalty,
-        auto_checkout_time: autoCheckoutTime
-      });
-      showToastNotification("Attendance configuration updated!");
+      if (selectedUserId === "global") {
+        await api.updateAdminSettings({
+          late_threshold: lateThreshold || "10:00",
+          late_penalty: latePenalty === "" ? 100 : Number(latePenalty),
+          auto_checkout_time: autoCheckoutTime || "20:00"
+        });
+        showToastNotification("Global attendance configuration updated!");
+      } else {
+        const user = staffMembers.find((u: any) => u.id === selectedUserId);
+        if (!user) throw new Error("Selected user not found");
+        
+        await api.updateUser(selectedUserId, {
+          name: user.name,
+          phone: user.phone,
+          role: user.role,
+          late_threshold: lateThreshold === "" ? null : lateThreshold,
+          late_penalty: latePenalty === "" ? null : Number(latePenalty),
+          auto_checkout_time: autoCheckoutTime === "" ? null : autoCheckoutTime
+        });
+        showToastNotification(`Late policy updated for ${user.name}!`);
+      }
+      await loadSettings();
+      await fetchData();
     } catch (err: any) {
       alert("Failed to update settings: " + err.message);
     } finally {
@@ -124,6 +177,14 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
     }
   };
 
+  const isInheritedThreshold = selectedUserId !== "global" && (lateThreshold === "" || lateThreshold === null);
+  const isInheritedPenalty = selectedUserId !== "global" && (latePenalty === "" || latePenalty === null);
+  const isInheritedCheckout = selectedUserId !== "global" && (autoCheckoutTime === "" || autoCheckoutTime === null);
+
+  const activeThreshold = selectedUserId === "global" ? lateThreshold : (lateThreshold || globalSettings.lateThreshold);
+  const activePenalty = selectedUserId === "global" ? latePenalty : (latePenalty !== "" ? latePenalty : globalSettings.latePenalty);
+  const activeCheckout = selectedUserId === "global" ? autoCheckoutTime : (autoCheckoutTime || globalSettings.autoCheckoutTime);
+
   return (
     <div className="space-y-6 animate-fade-in pb-10">
       <div className="grid md:grid-cols-12 gap-6">
@@ -136,31 +197,69 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
           </div>
           <form onSubmit={handleUpdateSettings} className="space-y-4">
              <div>
-               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Late Threshold (Time)</label>
-               <input 
-                 type="time" 
-                 value={lateThreshold} 
-                 onChange={e => setLateThreshold(e.target.value)} 
-                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
-               />
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Configure Target</label>
+                <select 
+                  value={selectedUserId} 
+                  onChange={e => setSelectedUserId(e.target.value)} 
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none cursor-pointer text-slate-700 dark:text-slate-200"
+                >
+                  <option value="global">Global Settings (All Staff)</option>
+                  {staffMembers.map(m => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.role})
+                    </option>
+                  ))}
+                </select>
+                {selectedUserId !== "global" && (
+                  <p className="text-[9px] text-slate-450 dark:text-slate-500 mt-1 font-semibold">
+                    * Clear fields to inherit global settings.
+                  </p>
+                )}
              </div>
              <div>
-               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Penalty Amount (₹)</label>
-               <input 
-                 type="number" 
-                 value={latePenalty} 
-                 onChange={e => setLatePenalty(Number(e.target.value))} 
-                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
-               />
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Late Threshold (Time)</label>
+                <input 
+                  type="time" 
+                  value={lateThreshold} 
+                  onChange={e => setLateThreshold(e.target.value)} 
+                  placeholder={globalSettings.lateThreshold}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
+                />
+                {isInheritedThreshold && (
+                  <span className="text-[9px] text-emerald-600 font-bold block mt-1">
+                    Inheriting global: {globalSettings.lateThreshold}
+                  </span>
+                )}
              </div>
              <div>
-               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Auto Checkout Time</label>
-               <input 
-                 type="time" 
-                 value={autoCheckoutTime} 
-                 onChange={e => setAutoCheckoutTime(e.target.value)} 
-                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
-               />
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Penalty Amount (₹)</label>
+                <input 
+                  type="number" 
+                  value={latePenalty} 
+                  onChange={e => setLatePenalty(e.target.value === "" ? "" : Number(e.target.value))} 
+                  placeholder={String(globalSettings.latePenalty)}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
+                />
+                {isInheritedPenalty && (
+                  <span className="text-[9px] text-emerald-600 font-bold block mt-1">
+                    Inheriting global: ₹{globalSettings.latePenalty}
+                  </span>
+                )}
+             </div>
+             <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Auto Checkout Time</label>
+                <input 
+                  type="time" 
+                  value={autoCheckoutTime} 
+                  onChange={e => setAutoCheckoutTime(e.target.value)} 
+                  placeholder={globalSettings.autoCheckoutTime}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
+                />
+                {isInheritedCheckout && (
+                  <span className="text-[9px] text-emerald-600 font-bold block mt-1">
+                    Inheriting global: {globalSettings.autoCheckoutTime}
+                  </span>
+                )}
              </div>
              <button 
                type="submit" 
@@ -172,7 +271,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
           </form>
           <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl">
              <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold leading-relaxed">
-               Staff checking in after {lateThreshold} will automatically be flagged for a ₹{latePenalty} penalty for admin review. Staff who forget to check out will be auto checked out at {autoCheckoutTime}.
+               {selectedUserId === "global" ? "Staff" : "This staff member"} checking in after {activeThreshold} will automatically be flagged for a ₹{activePenalty} penalty for admin review. Staff who forget to check out will be auto checked out at {activeCheckout}.
              </p>
           </div>
         </div>
