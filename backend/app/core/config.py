@@ -5,7 +5,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "sqlite:///./doit_services.db"
+    MASTER_DATABASE_URL: str = "postgresql://doit_admin:securepassword@localhost:5432/crediiflow_master"
+    DB_USER: str = "doit_admin"
+    DB_PASSWORD: str = "securepassword"
+    DB_HOST: str = "localhost"
+    DB_PORT: str = "5432"
 
     ENVIRONMENT: str = "production"
     JWT_SECRET_KEY: str

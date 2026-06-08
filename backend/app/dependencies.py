@@ -1,6 +1,6 @@
 import uuid
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -15,7 +15,37 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 security = HTTPBearer(auto_error=False)
 
 
+def check_maintenance_mode(request: Request, user_role: str):
+    if user_role == "admin":
+        return
+    tenant_id = request.headers.get("X-Tenant-ID")
+    if not tenant_id:
+        host = request.headers.get("host", "")
+        parts = host.split(".")
+        if len(parts) >= 3:
+            tenant_id = parts[0]
+            if tenant_id in ("superadmin", "www", "api"):
+                tenant_id = None
+    if not tenant_id:
+        import os
+        tenant_id = os.getenv("TEST_TENANT_ID")
+    if tenant_id:
+        from app.database.db import MasterSessionLocal
+        from app.database.master_models import Tenant
+        master_db = MasterSessionLocal()
+        try:
+            tenant = master_db.query(Tenant).filter(Tenant.subdomain == tenant_id).first()
+            if tenant and tenant.maintenance_mode:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Maintenance Mode Active"
+                )
+        finally:
+            master_db.close()
+
+
 def get_current_user(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security), 
     db: Session = Depends(get_db)
 ) -> User:
@@ -54,6 +84,9 @@ def get_current_user(
             detail="Account is deactivated"
         )
         
+    # Check if maintenance mode blocks this user
+    check_maintenance_mode(request, user.role)
+
     return user
 
 

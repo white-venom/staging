@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import PWARegister from "./components/PWARegister";
 import QueryProvider from "./components/QueryProvider";
+import MaintenanceGuard from "./components/MaintenanceGuard";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -25,7 +26,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans transition-colors duration-200" suppressHydrationWarning>
         <PWARegister />
         <QueryProvider>
-          {children}
+          <MaintenanceGuard>
+            {children}
+          </MaintenanceGuard>
         </QueryProvider>
       </body>
     </html>

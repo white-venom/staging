@@ -21,7 +21,7 @@ const getApiBaseUrl = () => {
     if (window.location.port === "3000" || window.location.port === "5173" || 
         window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || 
         /^192\.168\./.test(window.location.hostname) || window.location.hostname.endsWith(".local")) {
-       return `http://${window.location.hostname}:8000`;
+       return "http://127.0.0.1:8000";
     }
   }
   return "https://api.crediiflow.in";
@@ -66,16 +66,31 @@ async function refreshAccessToken(): Promise<string | null> {
 
 async function request<T>(endpoint: string, options: RequestInit = {}, retry = true): Promise<T> {
   const token = useAppStore.getState().currentUser?.token;
+  
+  // Extract tenant subdomain from window location hostname
+  let tenantId: string | null = null;
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    const parts = host.split(".");
+    if (parts.length >= 3 || (host.endsWith("localhost") && parts.length >= 2)) {
+      tenantId = parts[0];
+      if (tenantId === "www" || tenantId === "superadmin" || tenantId === "api") {
+        tenantId = null;
+      }
+    }
+  }
+
   // Bulletproof URL joining to prevent double slashes
   const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const fullUrl = `${baseUrl}${path}`;
   
-  console.log(`[API] Requesting: ${fullUrl}`);
+  console.log(`[API] Requesting: ${fullUrl} (Tenant: ${tenantId})`);
   
   const headers = {
     "Content-Type": "application/json",
     ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...(tenantId ? { "X-Tenant-ID": tenantId } : {}),
     ...options.headers,
   };
 
