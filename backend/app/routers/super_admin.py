@@ -256,7 +256,7 @@ def update_tenant(
     
     # Update subdomain if provided and changed
     if payload.subdomain:
-        new_subdomain = payload.subdomain.lower().replace(/\s+/g, "-")
+        new_subdomain = payload.subdomain.lower().replace(" ", "-")
         if new_subdomain != tenant.subdomain:
             existing = db.scalar(select(Tenant).where(Tenant.subdomain == new_subdomain))
             if existing:
