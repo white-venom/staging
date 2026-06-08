@@ -54,6 +54,7 @@ function LocationName({ lat, lon }: { lat: number; lon: number }) {
 export default function AttendanceTab({ showToastNotification }: AttendanceTabProps) {
   const [lateThreshold, setLateThreshold] = useState("10:00");
   const [latePenalty, setLatePenalty] = useState(100);
+  const [autoCheckoutTime, setAutoCheckoutTime] = useState("20:00");
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [pendingPenalties, setPendingPenalties] = useState<any[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any[]>([]);
@@ -70,6 +71,9 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
       const data = await api.getAdminSettings();
       setLateThreshold(data.late_threshold);
       setLatePenalty(data.late_penalty);
+      if (data.auto_checkout_time) {
+        setAutoCheckoutTime(data.auto_checkout_time);
+      }
     } catch (err) {
       console.error("Failed to load settings:", err);
     }
@@ -99,7 +103,8 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
     try {
       await api.updateAdminSettings({
         late_threshold: lateThreshold,
-        late_penalty: latePenalty
+        late_penalty: latePenalty,
+        auto_checkout_time: autoCheckoutTime
       });
       showToastNotification("Attendance configuration updated!");
     } catch (err: any) {
@@ -148,6 +153,15 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
                />
              </div>
+             <div>
+               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Auto Checkout Time</label>
+               <input 
+                 type="time" 
+                 value={autoCheckoutTime} 
+                 onChange={e => setAutoCheckoutTime(e.target.value)} 
+                 className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
+               />
+             </div>
              <button 
                type="submit" 
                disabled={isSavingSettings}
@@ -158,7 +172,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
           </form>
           <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl">
              <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold leading-relaxed">
-               Staff checking in after {lateThreshold} will automatically be flagged for a ₹{latePenalty} penalty for admin review.
+               Staff checking in after {lateThreshold} will automatically be flagged for a ₹{latePenalty} penalty for admin review. Staff who forget to check out will be auto checked out at {autoCheckoutTime}.
              </p>
           </div>
         </div>

@@ -42,6 +42,7 @@ export default function AdministrationTab({
   const [pName, setPName] = useState("");
   const [pToTake, setPToTake] = useState<string>("");
   const [pToGive, setPToGive] = useState<string>("");
+  const [pGroupOnline, setPGroupOnline] = useState(false);
   const [bAccName, setBAccName] = useState("");
   const [bBankName, setBBankName] = useState("");
   const [bBranchName, setBBranchName] = useState("");
@@ -109,6 +110,7 @@ export default function AdministrationTab({
 
       showToastNotification(`Portal "${pName}" & Bank Account registered!`);
       setPName(""); setPToTake(""); setPToGive("");
+      setPGroupOnline(false);
       setBAccName(""); setBBankName(""); setBBranchName(""); setBAccNo(""); setBIfsc("");
       fetchData();
     } catch (err: any) {
@@ -305,6 +307,18 @@ export default function AdministrationTab({
                     />
                   </div>
                 </div>
+                <div className="flex items-center gap-2 px-1 py-1">
+                  <input 
+                    type="checkbox" 
+                    id="adminPortalOnline"
+                    checked={pGroupOnline} 
+                    onChange={(e) => setPGroupOnline(e.target.checked)} 
+                    className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
+                  />
+                  <label htmlFor="adminPortalOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                    Online
+                  </label>
+                </div>
               </div>
 
               <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -356,7 +370,6 @@ export default function AdministrationTab({
                     <th className="px-6 py-3">Full Name</th>
                     <th className="px-6 py-3">Phone</th>
                     <th className="px-6 py-3">Role</th>
-                    <th className="px-6 py-3 text-right">Virtual Balance</th>
                     <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -371,9 +384,6 @@ export default function AdministrationTab({
                         }`}>
                           {u.role}
                         </span>
-                      </td>
-                      <td className="px-6 py-3 text-right font-bold text-slate-700 dark:text-slate-300">
-                        {u.role === 'staff' ? `₹${Number(u.virtual_balance || 0).toLocaleString()}` : '-'}
                       </td>
                       <td className="px-6 py-3 text-right">
                         {u.role !== "admin" && (

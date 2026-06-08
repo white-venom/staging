@@ -41,6 +41,7 @@ from decimal import Decimal
 class UserResponse(UserBase):
     id: uuid.UUID
     virtual_balance: Decimal
+    is_active: bool
 
     class Config:
         from_attributes = True
@@ -56,3 +57,4 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     role: str
     name: str
+    id: uuid.UUID

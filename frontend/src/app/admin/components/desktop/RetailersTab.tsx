@@ -48,6 +48,7 @@ export default function RetailersTab({
   const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
   const [editStoreName, setEditStoreName] = useState("");
   const [editStoreArea, setEditStoreArea] = useState("");
+  const [editStoreRetailerId, setEditStoreRetailerId] = useState("");
 
   useEffect(() => {
     if (selectedRetailer) {
@@ -76,13 +77,7 @@ export default function RetailersTab({
       const retailer = retailerDirectory.find(r => r.id === id);
       if (!retailer) return;
 
-      // In the additive model, we send name, phone, address, and ONLY the increment to the backend
-      const payload: any = {
-        retailer_name: retailer.name,
-        phone: retailer.phone,
-        address: retailer.area,
-        email: retailer.email || "",
-      };
+      const payload: any = {};
       if (field === 'take' && targetValue > 0) payload.opening_to_take = targetValue;
       if (field === 'give' && targetValue > 0) payload.opening_to_give = targetValue;
 
@@ -134,8 +129,11 @@ export default function RetailersTab({
       alert("Failed to update: " + err.message);
     }
   };
-
   const handleDeleteRetailer = async (id: string, name: string) => {
+    if (name.toLowerCase().trim() === "cms") {
+      alert("CMS retailer cannot be deleted.");
+      return;
+    }
     if (!confirm(`Are you sure you want to delete Retailer "${name}"? This will also delete all associated stores and ledger records.`)) return;
     try {
       await api.deleteRetailer(id);
@@ -184,6 +182,7 @@ export default function RetailersTab({
     setEditingStoreId(store.id);
     setEditStoreName(store.store_name);
     setEditStoreArea(store.address || "");
+    setEditStoreRetailerId(store.retailer_id || selectedRetailer.id);
   };
 
   const handleSaveStoreEdit = async (storeId: string) => {
@@ -191,11 +190,13 @@ export default function RetailersTab({
     try {
       await api.updateStore(selectedRetailer.id, storeId, {
         store_name: editStoreName,
-        address: editStoreArea
+        address: editStoreArea,
+        new_retailer_id: editStoreRetailerId || undefined
       });
       showToastNotification(`Store updated successfully.`);
       setEditingStoreId(null);
       fetchStores(selectedRetailer.id);
+      fetchData();
     } catch (err: any) {
       alert("Failed to update store: " + err.message);
     }
@@ -236,39 +237,49 @@ export default function RetailersTab({
                   <div className="flex items-start gap-3">
                     <div>
                       <h3 className="text-xs font-black text-slate-800 dark:text-slate-100">{retailer.name}</h3>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <MapPin className="w-2.5 h-2.5 text-slate-400" />
-                        <span className="text-[9px] text-slate-400 uppercase tracking-wide font-bold">Route: {retailer.area}</span>
-                      </div>
+                      {retailer.name.toLowerCase().trim() !== "cms" && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <MapPin className="w-2.5 h-2.5 text-slate-400" />
+                          <span className="text-[9px] text-slate-400 uppercase tracking-wide font-bold">Route: {retailer.area}</span>
+                        </div>
+                      )}
                     </div>
                     {/* Actions Overlay */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button 
-                        onClick={() => handleStartEditRetailer(retailer)}
-                        className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
-                        className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
+                    <div className="flex items-center gap-1 transition-opacity">
+                      {retailer.name.toLowerCase().trim() !== "cms" && (
+                        <button 
+                          onClick={() => handleStartEditRetailer(retailer)}
+                          className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                          title="Edit Retailer"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                        </button>
+                      )}
+                      {retailer.name.toLowerCase().trim() !== "cms" && (
+                        <button 
+                          onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
+                          className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
+                          title="Delete Retailer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end">
-                    <div className="flex items-center gap-1">
-                      <Phone className="w-2.5 h-2.5 text-slate-400" />
-                      <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{retailer.phone}</span>
-                    </div>
+                    {retailer.name.toLowerCase().trim() !== "cms" && (
+                      <div className="flex items-center gap-1">
+                        <Phone className="w-2.5 h-2.5 text-slate-400" />
+                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{retailer.phone}</span>
+                      </div>
+                    )}
                     {retailer.email && (
                       <span className="text-[8px] text-blue-500 font-medium mt-0.5">{retailer.email}</span>
                     )}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                   {/* To Take Field */}
                   <div>
                     <span className="text-[8px] font-black text-red-500 uppercase tracking-wide block mb-0.5">To Take</span>
@@ -297,7 +308,7 @@ export default function RetailersTab({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black text-red-600 dark:text-red-400">
+                        <span className="text-xs font-black text-red-655 dark:text-red-400">
                           ₹{(retailer.opening_to_take || 0).toLocaleString()}
                         </span>
                         <button 
@@ -342,7 +353,7 @@ export default function RetailersTab({
                       </div>
                     ) : (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black text-emerald-600 dark:text-emerald-500">
+                        <span className="text-xs font-black text-emerald-655 dark:text-emerald-500">
                           ₹{(retailer.opening_to_give || 0).toLocaleString()}
                         </span>
                         <button 
@@ -350,13 +361,21 @@ export default function RetailersTab({
                             setInlineEditingRetailer({ id: retailer.id, field: 'give' });
                             setInlineRetailerValue("");
                           }}
-                          className="p-0.5 text-slate-400 hover:text-emerald-600 transition-all cursor-pointer"
+                          className="p-0.5 text-slate-400 hover:text-emerald-650 transition-all cursor-pointer"
                           title="Add to To Give"
                         >
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
                     )}
+                  </div>
+
+                  {/* Net Bal Field */}
+                  <div>
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-0.5">Net Bal</span>
+                    <span className={`text-xs font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
+                      ₹{Math.abs(retailer.balance || 0).toLocaleString()}
+                    </span>
                   </div>
                 </div>
 
@@ -469,14 +488,22 @@ export default function RetailersTab({
                 <input type="tel" value={editRetPhone} onChange={(e) => setEditRetPhone(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
                 <input type="text" value={editRetArea} onChange={(e) => setEditRetArea(e.target.value)} placeholder="Area / Route" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
                 <input type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
-                <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none">
-                  <div>
-                    <span className="text-slate-400 block mb-0.5">Current To Take</span>
-                    <span className="font-black text-red-650 dark:text-red-400">₹{(editingRetailer.opening_to_take || 0).toLocaleString()}</span>
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <span className="text-slate-400 block mb-0.5">Current To Take</span>
+                      <span className="font-black text-red-655 dark:text-red-400">₹{(editingRetailer.opening_to_take || 0).toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block mb-0.5">Current To Give</span>
+                      <span className="font-black text-emerald-655 dark:text-emerald-555">₹{(editingRetailer.opening_to_give || 0).toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400 block mb-0.5">Current To Give</span>
-                    <span className="font-black text-emerald-650 dark:text-emerald-500">₹{(editingRetailer.opening_to_give || 0).toLocaleString()}</span>
+                  <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex justify-between items-center">
+                    <span className="text-slate-400 font-medium">Current Net Balance</span>
+                    <span className={`font-black ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-655 dark:text-emerald-500' : 'text-red-655 dark:text-red-400'}`}>
+                      ₹{Math.abs(editingRetailer.balance || 0).toLocaleString()}
+                    </span>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">

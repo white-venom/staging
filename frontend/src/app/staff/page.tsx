@@ -25,8 +25,20 @@ import {
   RefreshCw,
   Sparkles,
   Camera,
-  MapPin
+  MapPin,
+  Menu,
+  X,
+  FileText
 } from "lucide-react";
+
+const getUtcDate = (dateStr: any) => {
+  if (!dateStr) return new Date();
+  const s = String(dateStr);
+  if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
+    return new Date(s + "Z");
+  }
+  return new Date(s);
+};
 
 export default function StaffDashboard() {
   const router = useRouter();
@@ -37,6 +49,20 @@ export default function StaffDashboard() {
   const [offlineCollections, setOfflineCollections] = useState<OfflineCollection[]>([]);
   const [offlineDeposits, setOfflineDeposits] = useState<OfflineDeposit[]>([]);
   const [syncStatusMsg, setSyncStatusMsg] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isSidebarOpen]);
+
+  const [showAttendanceBox, setShowAttendanceBox] = useState(false);
 
   const [startKmInput, setStartKmInput] = useState("");
   const [endKmInput, setEndKmInput] = useState("");
@@ -141,6 +167,76 @@ export default function StaffDashboard() {
     return () => cleanupSync();
   }, [currentUser, router, collections, deposits, mounted]);
 
+  // Sync Zustand store with backend data on mount or online status change
+  useEffect(() => {
+    if (!mounted || !currentUser || !isOnline) return;
+    const syncWithAPI = async () => {
+      try {
+        const [apiCols, apiDeps] = await Promise.all([
+          api.getCollections(),
+          api.getDeposits()
+        ]);
+        
+        // Map collections
+        const mappedCollections = apiCols.map((c: any) => ({
+          id: c.id,
+          retailer_id: c.retailer_id,
+          store_id: c.store_id,
+          retailerName: c.retailer_name || "Unknown Retailer",
+          portalName: c.portal_name || "Cash",
+          staffName: c.staff_name,
+          totalAmount: Number(c.total_amount),
+          denominations: {
+            note_500: Number(c.denominations?.note_500 || 0),
+            note_200: Number(c.denominations?.note_200 || 0),
+            note_100: Number(c.denominations?.note_100 || 0),
+            note_50: Number(c.denominations?.note_50 || 0),
+            note_20: Number(c.denominations?.note_20 || 0),
+            note_10: Number(c.denominations?.note_10 || 0),
+            coins: Number(c.denominations?.coins || 0),
+            online_amount: Number(c.denominations?.online_amount || 0),
+            online_portal_id: c.denominations?.online_portal_id,
+          },
+          status: c.status,
+          remarks: c.remarks,
+          date: getUtcDate(c.created_at).toLocaleString("sv-SE").substring(0, 16),
+        }));
+
+        // Map deposits
+        const mappedDeposits = apiDeps.map((d: any) => ({
+          id: d.id,
+          portal_id: d.portal_id,
+          retailer_id: d.retailer_id,
+          recipient_staff_id: d.recipient_staff_id,
+          depositType: d.deposit_type,
+          targetName: d.target_name || "Super Distributor",
+          amount: Number(d.amount),
+          paymentMode: (d.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
+          denominations: d.denominations ? {
+            note_500: Number(d.denominations.note_500 || 0),
+            note_200: Number(d.denominations.note_200 || 0),
+            note_100: Number(d.denominations.note_100 || 0),
+            note_50: Number(d.denominations.note_50 || 0),
+            note_20: Number(d.denominations.note_20 || 0),
+            note_10: Number(d.denominations.note_10 || 0),
+            coins: Number(d.denominations.coins || 0),
+            online_amount: Number(d.denominations.online_amount || 0),
+            online_portal_id: d.denominations.online_portal_id,
+          } : undefined,
+          status: d.status,
+          date: getUtcDate(d.created_at).toLocaleString("sv-SE").substring(0, 16),
+        }));
+
+        const { setCollections, setDeposits } = useAppStore.getState();
+        setCollections(mappedCollections);
+        setDeposits(mappedDeposits);
+      } catch (err) {
+        console.error("Failed to sync store with API:", err);
+      }
+    };
+    syncWithAPI();
+  }, [mounted, currentUser, isOnline]);
+
   if (!mounted || !currentUser) return null;
 
   // Calculators
@@ -153,44 +249,38 @@ export default function StaffDashboard() {
   let coins = 0;
 
   collections.forEach((c) => {
-    note500 += c.denominations.note_500;
-    note200 += c.denominations.note_200;
-    note100 += c.denominations.note_100;
-    note50 += c.denominations.note_50;
-    note20 += c.denominations.note_20;
-    note10 += c.denominations.note_10;
-    coins += c.denominations.coins;
+    if (c.denominations) {
+      note500 += Number(c.denominations.note_500) || 0;
+      note200 += Number(c.denominations.note_200) || 0;
+      note100 += Number(c.denominations.note_100) || 0;
+      note50 += Number(c.denominations.note_50) || 0;
+      note20 += Number(c.denominations.note_20) || 0;
+      note10 += Number(c.denominations.note_10) || 0;
+      coins += Number(c.denominations.coins) || 0;
+    }
   });
 
   deposits.forEach((d) => {
     if (d.denominations) {
-      note500 -= d.denominations.note_500;
-      note200 -= d.denominations.note_200;
-      note100 -= d.denominations.note_100;
-      note50 -= d.denominations.note_50;
-      note20 -= d.denominations.note_20;
-      note10 -= d.denominations.note_10;
-      coins -= d.denominations.coins;
+      note500 -= Number(d.denominations.note_500) || 0;
+      note200 -= Number(d.denominations.note_200) || 0;
+      note100 -= Number(d.denominations.note_100) || 0;
+      note50 -= Number(d.denominations.note_50) || 0;
+      note20 -= Number(d.denominations.note_20) || 0;
+      note10 -= Number(d.denominations.note_10) || 0;
+      coins -= Number(d.denominations.coins) || 0;
     }
   });
 
-  const totalCollected = collections.reduce((s, c) => s + c.totalAmount, 0);
-  const totalDeposited = deposits.filter(d => d.depositType !== "virtual").reduce((s, d) => s + d.amount, 0);
+  const totalCollected = collections.reduce((s, c) => s + (c.totalAmount || 0), 0);
+  const totalDeposited = deposits.filter(d => d.depositType !== "virtual").reduce((s, d) => s + (d.amount || 0), 0);
   
-  const totalCashNotes = Math.max(0, (
-    note500 * 500 +
-    note200 * 200 +
-    note100 * 100 +
-    note50 * 50 +
-    note20 * 20 +
-    note10 * 10 +
-    coins
-  ));
+  const netPortfolio = totalCollected - totalDeposited;
 
-  const totalOnline = collections.reduce((s, c) => s + (c.denominations.online_amount || 0), 0) - 
-                      deposits.filter(d => d.depositType !== "virtual").reduce((s, d) => s + (d.denominations?.online_amount || 0), 0);
+  const totalOnline = collections.reduce((s, c) => s + Number(c.denominations?.online_amount || 0), 0) - 
+                      deposits.filter(d => d.depositType !== "virtual").reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
   
-  const netPortfolio = totalCashNotes + totalOnline;
+  const totalCashNotes = netPortfolio - totalOnline;
  
   // Calculate running balances for the ledger
   const combinedLedger = [
@@ -409,132 +499,179 @@ export default function StaffDashboard() {
           </div>
         )}
 
-        {/* PREMIUM REDESIGNED HEADER */}
-        <div className="flex items-center justify-between bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl p-3 pl-4 rounded-[2rem] border border-white/50 dark:border-slate-800/80 shadow-sm shadow-slate-200/20 dark:shadow-none">
-          {/* Logo & Status */}
-          <div className="flex items-center gap-3.5">
-            <div className="bg-slate-900 w-12 h-12 rounded-[1.2rem] shadow-inner flex items-center justify-center flex-shrink-0 border border-slate-700/50">
-              <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+        {/* REPLICATED ADMIN HEADER */}
+        <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-[1.5rem] p-3 shadow-sm flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-blue-500/20 blur-lg rounded-xl scale-110" />
+              <div className="relative w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                <img 
+                  src="/logo.png" 
+                  alt="DOIT Logo" 
+                  className="w-full h-full object-contain brightness-100 dark:brightness-0"
+                />
+              </div>
             </div>
             <div>
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight leading-none">{currentUser.name}</span>
+              <div className="flex items-center gap-1.5">
+                <h1 className="font-black text-slate-900 dark:text-white tracking-tighter uppercase text-sm leading-none">Do It Services</h1>
                 {isOnline ? (
                   <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" title="Online"></div>
                 ) : (
                   <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" title="Offline"></div>
                 )}
               </div>
-              <div className="text-[9px] text-slate-500 font-black uppercase tracking-[0.2em]">
-                Staff Member
-              </div>
+              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Staff Panel</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pr-1">
+          <div className="flex items-center gap-2">
             {currentUser?.role === "admin" && (
               <button
                 onClick={() => router.push("/admin")}
-                className="w-10 h-10 rounded-[1.1rem] bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center shadow-lg transition-transform active:scale-95"
+                className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl flex items-center justify-center text-blue-500 active:scale-90 transition-transform cursor-pointer"
                 title="Admin Dashboard"
               >
-                <ArrowUpRight className="w-4 h-4" />
+                <ArrowUpRight className="w-5 h-5" />
               </button>
             )}
             <button
-              onClick={handleLogout}
-              className="w-10 h-10 rounded-[1.1rem] bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 flex items-center justify-center shadow-sm transition-all active:scale-95"
-              title="Sign Out"
+              onClick={() => router.push("/staff/daily-report")}
+              className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl flex items-center justify-center text-blue-500 active:scale-90 transition-transform cursor-pointer"
+              title="Daily Report"
             >
-              <LogOut className="w-4 h-4" />
+              <FileText className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="w-10 h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl flex items-center justify-center text-slate-700 dark:text-slate-200 active:scale-90 transition-transform cursor-pointer"
+            >
+              <Menu className="w-5 h-5" />
             </button>
           </div>
+        </header>
+
+        {/* SIDEBAR OVERLAY AND DRAWER MATCHING ADMIN PANEL */}
+        {isSidebarOpen && (
+          <div className="fixed inset-0 z-50 flex">
+            {/* Backdrop overlay */}
+            <div 
+              className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-300"
+              onClick={() => setIsSidebarOpen(false)}
+            />
+
+            {/* Drawer Content */}
+            <div className="relative ml-auto w-64 max-w-[80vw] h-full bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.3)] p-6 flex flex-col justify-between animate-in slide-in-from-right duration-300">
+              <div>
+                {/* Drawer Header */}
+                <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800 mb-6">
+                  <div className="flex flex-col">
+                    <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">Do-It-Services</span>
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Staff Panel</span>
+                  </div>
+                  <button
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Navigation Items list */}
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      setIsSidebarOpen(false);
+                      router.push("/attendance");
+                    }}
+                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
+                  >
+                    <div className="flex-shrink-0">
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs tracking-wider uppercase">{attendance.isCheckedIn ? "Check Out" : "Check In"}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsSidebarOpen(false);
+                      router.push("/staff/cash-in-ledger");
+                    }}
+                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
+                  >
+                    <div className="flex-shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs tracking-wider uppercase">Cash In Ledger</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsSidebarOpen(false);
+                      router.push("/staff/cash-out-ledger");
+                    }}
+                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
+                  >
+                    <div className="flex-shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs tracking-wider uppercase">Cash Out Ledger</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsSidebarOpen(false);
+                      router.push("/staff/daily-report");
+                    }}
+                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
+                  >
+                    <div className="flex-shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs tracking-wider uppercase">Daily Report</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Drawer Footer */}
+              <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+                <div>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Logged in as</p>
+                  <p className="text-xs font-black text-slate-700 dark:text-slate-200 mt-1 truncate">{currentUser?.name || "Staff Member"}</p>
+                  <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Staff</p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full py-4 bg-red-50 text-red-650 dark:bg-red-900/10 dark:text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Log Out Securely
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MAIN DASHBOARD CONTENT */}
+        <SummaryBlocks totalCollected={totalCollected} totalDeposited={totalDeposited} netPortfolio={netPortfolio} />
+
+        <div className="mt-4 mb-2">
+          <NavigationGrid isCheckedIn={attendance.isCheckedIn} router={router} onClickLink={() => {}} />
         </div>
 
-        {/* DYNAMIC REORDERING BASED ON ATTENDANCE */}
-        {!attendance.isCheckedIn ? (
-          <>
-            {/* ATTENDANCE FIRST IF NOT CHECKED IN */}
-            <AttendanceCard
-              attendance={attendance}
-              handleCheckInSubmit={handleCheckInSubmit}
-              handleCheckOutSubmit={handleCheckOutSubmit}
-              startKmInput={startKmInput}
-              setStartKmInput={setStartKmInput}
-              endKmInput={endKmInput}
-              setEndKmInput={setEndKmInput}
-              kmError={kmError}
-              uploadedImageBase64={uploadedImageBase64}
-              setUploadedImageBase64={setUploadedImageBase64}
-              gpsCoords={gpsCoords}
-              isLocating={isLocating}
-              locationError={locationError}
-              handleFileChange={handleFileChange}
-              fetchLiveGPS={fetchLiveGPS}
-            />
-
-            {/* GREYED OUT NAVIGATION */}
-            <NavigationGrid isCheckedIn={false} router={router} />
-
-            <WalletCard
-              totalCollected={totalCollected}
-              totalDeposited={totalDeposited}
-              totalCashNotes={totalCashNotes}
-              totalOnline={totalOnline}
-              netPortfolio={netPortfolio}
-              showNotesBreakdown={showNotesBreakdown}
-              setShowNotesBreakdown={setShowNotesBreakdown}
-              note500={note500}
-              note200={note200}
-              note100={note100}
-              note50={note50}
-              note20={note20}
-              note10={note10}
-              coins={coins}
-            />
-          </>
-        ) : (
-          <>
-            {/* NAVIGATION FIRST IF CHECKED IN */}
-            <NavigationGrid isCheckedIn={true} router={router} />
-
-            <WalletCard
-              totalCollected={totalCollected}
-              totalDeposited={totalDeposited}
-              totalCashNotes={totalCashNotes}
-              totalOnline={totalOnline}
-              netPortfolio={netPortfolio}
-              showNotesBreakdown={showNotesBreakdown}
-              setShowNotesBreakdown={setShowNotesBreakdown}
-              note500={note500}
-              note200={note200}
-              note100={note100}
-              note50={note50}
-              note20={note20}
-              note10={note10}
-              coins={coins}
-            />
-
-            {/* ATTENDANCE MOVES TO BOTTOM */}
-            <AttendanceCard
-              attendance={attendance}
-              handleCheckInSubmit={handleCheckInSubmit}
-              handleCheckOutSubmit={handleCheckOutSubmit}
-              startKmInput={startKmInput}
-              setStartKmInput={setStartKmInput}
-              endKmInput={endKmInput}
-              setEndKmInput={setEndKmInput}
-              kmError={kmError}
-              uploadedImageBase64={uploadedImageBase64}
-              setUploadedImageBase64={setUploadedImageBase64}
-              gpsCoords={gpsCoords}
-              isLocating={isLocating}
-              locationError={locationError}
-              handleFileChange={handleFileChange}
-              fetchLiveGPS={fetchLiveGPS}
-            />
-          </>
-        )}
+        <WalletCard
+          totalCollected={totalCollected}
+          totalDeposited={totalDeposited}
+          totalCashNotes={totalCashNotes}
+          totalOnline={totalOnline}
+          netPortfolio={netPortfolio}
+          showNotesBreakdown={showNotesBreakdown}
+          setShowNotesBreakdown={setShowNotesBreakdown}
+          note500={note500}
+          note200={note200}
+          note100={note100}
+          note50={note50}
+          note20={note20}
+          note10={note10}
+          coins={coins}
+        />
 
         {/* Offline Queues */}
         {(offlineCollections.length > 0 || offlineDeposits.length > 0) && (
@@ -903,6 +1040,25 @@ function AttendanceCard({
   );
 }
 
+function SummaryBlocks({ totalCollected, totalDeposited, netPortfolio }: any) {
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash In</span>
+        <span className="text-xs font-black text-emerald-600 tracking-tight">₹{totalCollected.toLocaleString()}</span>
+      </div>
+      <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash Out</span>
+        <span className="text-xs font-black text-red-600 tracking-tight">₹{totalDeposited.toLocaleString()}</span>
+      </div>
+      <div className="bg-slate-900 dark:bg-slate-100 p-3 rounded-2xl border border-slate-800 dark:border-white shadow-lg">
+        <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Total Cash</span>
+        <span className="text-xs font-black text-white dark:text-slate-950 tracking-tight">₹{netPortfolio.toLocaleString()}</span>
+      </div>
+    </div>
+  );
+}
+
 function WalletCard({
   totalCollected,
   totalDeposited,
@@ -921,22 +1077,6 @@ function WalletCard({
 }: any) {
   return (
     <div className="space-y-4">
-      {/* Three Summary Blocks */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash In</span>
-          <span className="text-xs font-black text-emerald-600 tracking-tight">₹{totalCollected.toLocaleString()}</span>
-        </div>
-        <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash Out</span>
-          <span className="text-xs font-black text-red-600 tracking-tight">₹{totalDeposited.toLocaleString()}</span>
-        </div>
-        <div className="bg-slate-900 dark:bg-slate-100 p-3 rounded-2xl border border-slate-800 dark:border-white shadow-lg">
-          <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Total Cash</span>
-          <span className="text-xs font-black text-white dark:text-slate-950 tracking-tight">₹{netPortfolio.toLocaleString()}</span>
-        </div>
-      </div>
-
       <div className="p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none relative overflow-hidden">
         <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10"></div>
 
@@ -951,19 +1091,8 @@ function WalletCard({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 my-4 relative z-10">
-          <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash (In Hand)</span>
-            <span className="text-xl font-black text-slate-900 dark:text-white">₹{totalCashNotes.toLocaleString()}</span>
-          </div>
-          <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Online Balance</span>
-            <span className="text-xl font-black text-slate-900 dark:text-white">₹{totalOnline.toLocaleString()}</span>
-          </div>
-        </div>
-
         {/* Notes breakdowns */}
-        <div className="border-t border-slate-100 dark:border-slate-800/60 pt-5 relative z-10">
+        <div className="pt-2 relative z-10">
           <button
             onClick={() => setShowNotesBreakdown(!showNotesBreakdown)}
             className="w-full flex items-center justify-between text-xs font-black text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 focus:outline-none transition-colors"
@@ -991,6 +1120,16 @@ function WalletCard({
                 <span className="text-slate-400 font-black uppercase tracking-widest text-[9px]">Coins</span>
                 <span className="font-black text-slate-800 dark:text-slate-200 text-sm">₹{coins.toFixed(2)}</span>
               </div>
+              
+              <div className="col-span-2 flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/20 px-4 py-3.5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 mt-1">
+                <span className="text-emerald-600 dark:text-emerald-500 font-black uppercase tracking-widest text-[9px]">Cash (In Hand)</span>
+                <span className="font-black text-emerald-700 dark:text-emerald-400 text-sm">₹{totalCashNotes.toLocaleString()}</span>
+              </div>
+              
+              <div className="col-span-2 flex items-center justify-between bg-blue-50 dark:bg-blue-950/20 px-4 py-3.5 rounded-2xl border border-blue-100 dark:border-blue-900/30 mt-1">
+                <span className="text-blue-600 dark:text-blue-500 font-black uppercase tracking-widest text-[9px]">Online Balance</span>
+                <span className="font-black text-blue-700 dark:text-blue-400 text-sm">₹{totalOnline.toLocaleString()}</span>
+              </div>
             </div>
           )}
         </div>
@@ -999,7 +1138,7 @@ function WalletCard({
   );
 }
 
-function NavigationGrid({ isCheckedIn, router }: any) {
+function NavigationGrid({ isCheckedIn, router, onClickLink }: any) {
   return (
     <div className="grid grid-cols-2 gap-4">
       <button
@@ -1008,17 +1147,18 @@ function NavigationGrid({ isCheckedIn, router }: any) {
             alert("Shift is locked! Please start shift attendance mileage first.");
             return;
           }
+          if (onClickLink) onClickLink();
           router.push("/collection");
         }}
-        className={`relative overflow-hidden p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 text-left transition-all duration-300 group shadow-lg shadow-slate-200/40 dark:shadow-none hover:-translate-y-1 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""
-          }`}
+        className={`relative overflow-hidden p-5 pt-6 pb-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-500/50 hover:shadow-lg text-left transition-all duration-300 group shadow-sm flex flex-col gap-4 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
       >
-        <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-50 dark:bg-emerald-900/20 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:scale-150 pointer-events-none"></div>
-        <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-5 border border-emerald-200/50 dark:border-emerald-800/50 relative z-10 shadow-inner group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
-          <PlusCircle className="w-5 h-5" />
+        <div className="w-12 h-12 rounded-[1.2rem] bg-[#00a86b] dark:bg-emerald-600 flex items-center justify-center flex-shrink-0 text-white shadow-md">
+          <PlusCircle className="w-6 h-6" strokeWidth={2.5} />
         </div>
-        <h3 className="text-[13px] font-black text-slate-800 dark:text-slate-100 relative z-10 tracking-wide">Cash In Entry</h3>
-        <p className="text-[10px] font-bold text-slate-400 mt-1.5 relative z-10">Record retailer payments</p>
+        <div>
+          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-wide mb-1">Cash In Entry</h3>
+          <p className="text-[10px] font-bold text-slate-400">Record retailer payments</p>
+        </div>
       </button>
 
       <button
@@ -1027,17 +1167,18 @@ function NavigationGrid({ isCheckedIn, router }: any) {
             alert("Shift is locked! Please start shift attendance mileage first.");
             return;
           }
+          if (onClickLink) onClickLink();
           router.push("/deposit");
         }}
-        className={`relative overflow-hidden p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-red-300 dark:hover:border-red-700 text-left transition-all duration-300 group shadow-lg shadow-slate-200/40 dark:shadow-none hover:-translate-y-1 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""
-          }`}
+        className={`relative overflow-hidden p-5 pt-6 pb-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-red-200 dark:hover:border-red-900/50 hover:shadow-lg text-left transition-all duration-300 group shadow-sm flex flex-col gap-4 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
       >
-        <div className="absolute top-0 right-0 w-24 h-24 bg-red-50 dark:bg-red-900/20 rounded-full blur-2xl -mr-10 -mt-10 transition-all group-hover:scale-150 pointer-events-none"></div>
-        <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600 dark:text-red-400 mb-5 border border-red-200/50 dark:border-red-800/50 relative z-10 shadow-inner group-hover:bg-red-600 group-hover:text-white transition-colors duration-300">
-          <ArrowUpRight className="w-5 h-5" />
+        <div className="w-12 h-12 rounded-[1.2rem] bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0 text-red-500 dark:text-red-400">
+          <ArrowUpRight className="w-6 h-6" strokeWidth={2.5} />
         </div>
-        <h3 className="text-[13px] font-black text-slate-800 dark:text-slate-100 relative z-10 tracking-wide">Cash Out Entry</h3>
-        <p className="text-[10px] font-bold text-slate-400 mt-1.5 relative z-10">Process payouts</p>
+        <div>
+          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-wide mb-1">Cash Out Entry</h3>
+          <p className="text-[10px] font-bold text-slate-400">Process payouts</p>
+        </div>
       </button>
     </div>
   );

@@ -2,6 +2,12 @@
 
 import React, { useEffect } from "react";
 import { useAdmin } from "../../context/AdminContext";
+import { Edit2, X, Save } from "lucide-react";
+import { api } from "../../../utils/api";
+
+function getExportFilename() {
+  return `Ledger_${Date.now()}.csv`;
+}
 
 interface LedgerTabProps {
   collections?: any[];
@@ -29,11 +35,77 @@ export default function LedgerTab({
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortBy, setSortBy] = React.useState("date-desc");
 
-  useEffect(() => {
-    if (ledgerSearchTerm) {
-      setSearchQuery(ledgerSearchTerm);
+  const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
+  const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
+  const [editingIsDeposit, setEditingIsDeposit] = React.useState(false);
+  const [selectedNewRetailerId, setSelectedNewRetailerId] = React.useState("");
+  const [selectedNewPortalId, setSelectedNewPortalId] = React.useState("");
+  const [isSavingCollection, setIsSavingCollection] = React.useState(false);
+
+  const handleStartEditCollection = (tx: any) => {
+    const raw = tx.rawRecord;
+    const isDeposit = tx.depositType != null; // deposits have depositType, collections don't
+    setEditingIsDeposit(isDeposit);
+    setEditingCollection(raw);
+    setSelectedNewRetailerId(raw.retailer_id || "");
+    setSelectedNewPortalId(raw.portal_id || "");
+    setIsEditCollectionModalOpen(true);
+  };
+
+  const handleSaveCollectionEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCollection) return;
+    setIsSavingCollection(true);
+    try {
+      if (editingIsDeposit) {
+        // Virtual deposit: update via deposit endpoint
+        await api.updateDeposit(editingCollection.id, {
+          deposit_type: editingCollection.depositType || "virtual",
+          portal_id: selectedNewPortalId || editingCollection.portal_id || null,
+          retailer_id: selectedNewRetailerId || null,
+          recipient_staff_id: editingCollection.recipient_staff_id || null,
+          payment_mode: editingCollection.paymentMode || "online",
+          amount: editingCollection.amount,
+          deposit_date: (editingCollection.date || "").split(" ")[0] || new Date().toISOString().split("T")[0],
+        });
+      } else {
+        // Collection: update via collection endpoint
+        await api.updateCollection(editingCollection.id, {
+          retailer_id: selectedNewRetailerId || null,
+          portal_id: selectedNewPortalId || null,
+          store_id: editingCollection.store_id || null,
+          total_amount: editingCollection.totalAmount || editingCollection.total_amount,
+          remarks: editingCollection.remarks || "",
+          denominations: editingCollection.denominations || {
+            note_500: 0,
+            note_200: 0,
+            note_100: 0,
+            note_50: 0,
+            note_20: 0,
+            note_10: 0,
+            coins: 0,
+            online_amount: 0
+          }
+        });
+      }
+      adminContext.showToastNotification("Entry updated successfully.");
+      setIsEditCollectionModalOpen(false);
+      await adminContext.fetchData();
+    } catch (err: any) {
+      alert("Failed to update: " + err.message);
+    } finally {
+      setIsSavingCollection(false);
     }
-  }, [ledgerSearchTerm]);
+  };
+
+  useEffect(() => {
+    if (ledgerSearchTerm && ledgerSearchTerm !== searchQuery) {
+      const timer = setTimeout(() => {
+        setSearchQuery(ledgerSearchTerm);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [ledgerSearchTerm, searchQuery]);
 
   // Get unique lists
   const staffList = Array.from(new Set([
@@ -56,27 +128,47 @@ export default function LedgerTab({
     ...(collections || []).map(c => ({
       id: c.id,
       date: c.date,
-      partyId: c.retailerId,
+      partyId: c.retailer_id,
       party: c.retailerName,
       portal: c.portalName,
       staff: c.staffName || "Admin",
       debit: 0,
       credit: c.totalAmount,
       balance_snapshot: c.balance_snapshot,
-      type: 'collection'
+      type: 'collection',
+      depositType: null,
+      rawRecord: c
     })),
-    ...(deposits || []).map(d => ({
-      id: d.id,
-      date: d.date,
-      partyId: d.portalId || d.retailerId,
-      party: d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
-      portal: d.targetName, 
-      staff: d.staffName || "Admin",
-      debit: d.amount,
-      credit: 0,
-      balance_snapshot: d.balance_snapshot,
-      type: 'deposit'
-    }))
+    ...(deposits || []).map(d => {
+      const isRef = d.isRefund === true;
+      const isVirtual = d.depositType === 'virtual';
+      
+      // For virtual deposits targeting a retailer, use the retailer as party
+      // so balance calculations and filtering work correctly
+      let partyId = d.portal_id || d.retailer_id;
+      let party = d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
+      
+      if (isVirtual && d.retailer_id) {
+        partyId = d.retailer_id;
+        const ret = (retailerDirectory || []).find((r: any) => r.id === d.retailer_id);
+        party = ret?.name || d.targetName;
+      }
+      
+      return {
+        id: d.id,
+        date: d.date,
+        partyId,
+        party,
+        portal: isVirtual ? (d.portalName || d.targetName) : d.targetName, 
+        staff: d.staffName || "Admin",
+        debit: isRef ? 0 : d.amount,
+        credit: isRef ? d.amount : 0,
+        balance_snapshot: d.balance_snapshot,
+        type: isRef ? 'collection' : 'deposit',
+        depositType: d.depositType,
+        rawRecord: d
+      };
+    })
   ];
 
   // Calculate Initial Balance for Summary Section (starts with opening_to_take, no netting/subtraction)
@@ -138,7 +230,7 @@ export default function LedgerTab({
     chronological.forEach(tx => {
       const currentPartyBal = partyRunningBalances.get(tx.partyId) || 0;
       const old = currentPartyBal;
-      const newVal = old + (tx.credit - tx.debit);
+      const newVal = old + (tx.debit - tx.credit);
       partyRunningBalances.set(tx.partyId, newVal);
       snapshots.set(tx.id, { old, new: newVal });
     });
@@ -152,16 +244,19 @@ export default function LedgerTab({
         totalInitial = 0;
     }
 
+    const isFilteredView = partyFilter !== "all" || portalFilter !== "all";
     let reportRunning = totalInitial; 
     const globalSnapshots = new Map<string, number>();
     chronological.forEach(tx => {
-      reportRunning += (tx.credit - tx.debit);
+      reportRunning += isFilteredView ? (tx.debit - tx.credit) : (tx.credit - tx.debit);
       globalSnapshots.set(tx.id, reportRunning);
     });
 
     const totalCredit = allTransactions.reduce((s, c) => s + c.credit, 0);
     const totalDebit = allTransactions.reduce((s, d) => s + d.debit, 0);
-    const netBalance = totalInitial + totalCredit - totalDebit; 
+    const netBalance = isFilteredView 
+      ? (totalInitial + totalDebit - totalCredit) 
+      : (totalCredit - totalDebit); 
 
   return (
     <div className="space-y-4 animate-fade-in pt-2">
@@ -277,7 +372,7 @@ export default function LedgerTab({
             </button>
             <button 
               onClick={() => {
-                const headers = ["Date Time", "Party", "Staff", "Old Due", "Amount", "Balance"];
+                const headers = ["Date Time", "Description", "Staff", "Opening Balance", "Received", "Balance"];
                 const rows = allTransactions.map(tx => {
                     const snap = snapshots.get(tx.id) || { old: 0, new: 0 };
                     return [`"${tx.date}"`, `"${tx.party}"`, `"${tx.staff}"`, snap.old, tx.credit || -tx.debit, snap.new];
@@ -286,7 +381,7 @@ export default function LedgerTab({
                 const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
                 const link = document.createElement("a");
                 link.setAttribute("href", encodeURI(csvContent));
-                link.setAttribute("download", `Ledger_${Date.now()}.csv`);
+                link.setAttribute("download", getExportFilename());
                 link.click();
               }}
               className="px-4 py-1.5 bg-emerald-600 text-white text-[10px] font-black rounded-lg hover:bg-emerald-700 transition-all"
@@ -343,8 +438,8 @@ export default function LedgerTab({
           </div>
           <div className="p-4 bg-slate-50/50 dark:bg-slate-950/50 text-center">
             <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Net Balance</span>
-            <span className={`text-sm font-black ${netBalance >= 0 ? "text-blue-600" : "text-red-600"}`}>
-              ₹{netBalance.toLocaleString()}.00 {netBalance >= 0 ? "Cr" : "Dr"}
+            <span className={`text-sm font-black ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
+              ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
             </span>
           </div>
         </div>
@@ -366,7 +461,9 @@ export default function LedgerTab({
              </div>
              <div className="text-center">
                 <span className="text-[10px] block uppercase text-slate-400 font-black mb-1">Net Balance</span>
-                <span className="text-xl font-black text-blue-600">₹{netBalance.toLocaleString()}.00</span>
+                <span className={`text-xl font-black ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
+                  ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
+                </span>
              </div>
           </div>
         </div>
@@ -376,22 +473,20 @@ export default function LedgerTab({
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-tight text-slate-500 border-b border-slate-200 dark:border-slate-800">
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800 w-32">Date & Time</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800">Party</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right w-24">Old Bal</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right bg-slate-100/50 dark:bg-slate-800/50 w-24">Amount</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24">Party Bal</th>
-                <th className="p-4 text-right bg-emerald-50/20 dark:bg-emerald-950/5 w-24">Net Balance</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800">Description</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right w-24">Opening Balance</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right bg-slate-100/50 dark:bg-slate-800/50 w-24">Received</th>
+                <th className="p-4 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24">Party Bal</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {allTransactions.length === 0 ? (
-                <tr><td colSpan={6} className="p-20 text-center text-slate-400 italic font-bold">No entries match your filters.</td></tr>
+                <tr><td colSpan={5} className="p-20 text-center text-slate-400 italic font-bold">No entries match your filters.</td></tr>
               ) : allTransactions.map((tx) => {
                 const txNew = tx.balance_snapshot !== undefined ? tx.balance_snapshot : (snapshots.get(tx.id)?.new || 0);
                 const txOld = tx.balance_snapshot !== undefined 
                     ? (tx.type === 'collection' ? Number(txNew) + Number(tx.credit) : Number(txNew) - Number(tx.debit)) 
                     : (snapshots.get(tx.id)?.old || 0);
-                const runningNet = globalSnapshots.get(tx.id) || 0;
 
                 return (
                 <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors">
@@ -402,7 +497,9 @@ export default function LedgerTab({
                         {(() => {
                           const timePart = tx.date.split(" ")[1];
                           if (!timePart) return "";
-                          let [hour, min] = timePart.split(":").map(Number);
+                          const parts = timePart.split(":");
+                          let hour = Number(parts[0]);
+                          const min = Number(parts[1]);
                           const ampm = hour >= 12 ? 'PM' : 'AM';
                           hour = hour % 12 || 12;
                           return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
@@ -411,9 +508,25 @@ export default function LedgerTab({
                     </div>
                   </td>
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800">
-                    <div className="flex flex-col">
-                        <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase">{tx.party}</span>
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">By {tx.staff}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-col">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase">{tx.party}</span>
+                            {tx.depositType === 'virtual' && (
+                              <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
+                            )}
+                          </div>
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">By {tx.staff}</span>
+                      </div>
+                      {tx.party.toLowerCase().trim() === "cms" && (
+                        <button
+                          onClick={() => handleStartEditCollection(tx)}
+                          className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+                          title="Edit Route"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-right font-bold text-slate-500">
@@ -422,11 +535,8 @@ export default function LedgerTab({
                   <td className={`p-4 border-r border-slate-50 dark:border-slate-800 text-right font-black ${tx.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
                     {tx.type === 'collection' ? '+' : '-'}₹{(tx.credit || tx.debit).toLocaleString()}
                   </td>
-                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-right font-black text-blue-700 bg-blue-50/10 dark:bg-blue-950/5">
+                  <td className="p-4 text-right font-black text-blue-700 bg-blue-50/10 dark:bg-blue-950/5">
                     ₹{txNew.toLocaleString()}
-                  </td>
-                  <td className="p-4 text-right font-black text-slate-900 dark:text-white bg-slate-50/30">
-                    ₹{runningNet.toLocaleString()}
                   </td>
                 </tr>
                 );
@@ -452,13 +562,12 @@ export default function LedgerTab({
                       )}
                     </div>
                   </td>
-                  <td className="p-4 text-right text-blue-600 bg-blue-50/10">
-                    {/* Party Balance Total usually doesn't apply in 'All' view */}
-                  </td>
                   <td className="p-4 text-right text-slate-900 dark:text-white bg-slate-200/50">
                     <div className="flex flex-col items-end">
                       <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Final Net</span>
-                      <span className="text-sm">₹{netBalance.toLocaleString()}.00</span>
+                      <span className={`text-sm font-black ${netBalance >= 0 ? "text-blue-700" : "text-emerald-700"}`}>
+                        ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
+                      </span>
                     </div>
                   </td>
                 </tr>
@@ -467,6 +576,83 @@ export default function LedgerTab({
           </table>
         </div>
       </div>
+
+      {isEditCollectionModalOpen && editingCollection && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-6 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter">Edit CMS Collection Route</h3>
+              <button 
+                onClick={() => setIsEditCollectionModalOpen(false)} 
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveCollectionEdit} className="space-y-4">
+              <div className="space-y-3">
+                {/* Store Name (Read-only) */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Store (Read-only)</label>
+                  <input 
+                    type="text" 
+                    value={editingCollection.store_name || "Direct Retailer Handover"} 
+                    className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold text-slate-500" 
+                    readOnly 
+                  />
+                </div>
+
+                {/* Parent Retailer Select */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Parent Retailer</label>
+                  <select
+                    value={selectedNewRetailerId}
+                    onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                  >
+                    {retailerDirectory.map((r: any) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Portal Select */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Portal Channel</label>
+                  <select
+                    value={selectedNewPortalId}
+                    onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                  >
+                    <option value="">None / Cash</option>
+                    {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditCollectionModalOpen(false)}
+                  className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingCollection}
+                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  {isSavingCollection ? "Saving..." : "Save Route"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

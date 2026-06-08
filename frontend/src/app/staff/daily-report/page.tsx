@@ -1,0 +1,366 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "../../utils/api";
+import { useAppStore } from "../../utils/store";
+import { 
+  ArrowLeft, 
+  Calendar, 
+  Download, 
+  RefreshCw,
+  FileText
+} from "lucide-react";
+import Script from "next/script";
+
+const getUtcDate = (dateStr: any) => {
+  if (!dateStr) return new Date();
+  const s = String(dateStr);
+  if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
+    return new Date(s + "Z");
+  }
+  return new Date(s);
+};
+
+export default function DailyReportPage() {
+  const router = useRouter();
+  const { currentUser } = useAppStore();
+  const [collections, setCollections] = useState<any[]>([]);
+  const [deposits, setDeposits] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().substring(0, 10)); // "YYYY-MM-DD"
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [cols, deps] = await Promise.all([
+        api.getCollections(),
+        api.getDeposits()
+      ]);
+      setCollections(cols);
+      setDeposits(deps);
+    } catch (err) {
+      console.error("Failed to fetch ledger report data:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    const dateObj = getUtcDate(dateStr);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const day = String(dateObj.getDate()).padStart(2, '0');
+    const month = months[dateObj.getMonth()];
+    
+    let hours = dateObj.getHours();
+    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const formattedHour = String(hours).padStart(2, '0');
+    
+    return {
+      date: `${day}-${month}`,
+      time: `${formattedHour}:${minutes} ${ampm}`
+    };
+  };
+
+  // Filter lists based on the selected date
+  const filteredCollections = collections.filter(c => {
+    const localDateStr = getUtcDate(c.created_at).toISOString().substring(0, 10);
+    return localDateStr === selectedDate;
+  });
+
+  const filteredDeposits = deposits.filter(d => {
+    const localDateStr = getUtcDate(d.created_at).toISOString().substring(0, 10);
+    return localDateStr === selectedDate;
+  });
+
+  // Combine items chronologically
+  const reportItems = [
+    ...filteredCollections.map(c => ({
+      ...c,
+      itemType: "collection",
+      inAmount: c.total_amount,
+      outAmount: null,
+      detailsText: c.retailer_name || "Unknown Retailer"
+    })),
+    ...filteredDeposits.map(d => ({
+      ...d,
+      itemType: "deposit",
+      inAmount: null,
+      outAmount: d.amount,
+      detailsText: d.target_name || "Super Distributor"
+    }))
+  ].sort((a, b) => getUtcDate(a.created_at).getTime() - getUtcDate(b.created_at).getTime());
+
+  // Generate breakdown content cell in the format matching SS
+  const renderNotesBreakdown = (item: any) => {
+    const denoms = item.denominations || {};
+    const isOut = item.itemType === "deposit";
+    const prefix = isOut ? "-" : "";
+
+    const lines: string[] = [];
+    let noteCountSum = 0;
+
+    const notesConfig = [
+      { key: "note_500", label: "500" },
+      { key: "note_200", label: "200" },
+      { key: "note_100", label: "100" },
+      { key: "note_50", label: "50" },
+      { key: "note_20", label: "20" },
+      { key: "note_10", label: "10" }
+    ];
+
+    notesConfig.forEach(n => {
+      const val = Number(denoms[n.key] || 0);
+      if (val > 0) {
+        noteCountSum += val;
+        lines.push(`${n.label}x${prefix}${val}=${prefix}${val * Number(n.label)}`);
+      }
+    });
+
+    const coinsVal = Number(denoms.coins || 0);
+    if (coinsVal > 0) {
+      noteCountSum += coinsVal; // coins count towards notes in screenshot total count
+      lines.push(`01x${prefix}${Math.floor(coinsVal)}=${prefix}${coinsVal.toFixed(0)}`);
+    }
+
+    const onlineVal = Number(denoms.online_amount || 0);
+    if (onlineVal > 0) {
+      lines.push(`[+${prefix}${onlineVal}]`);
+    }
+
+    // Append total note line
+    lines.push(`Total_${prefix}${noteCountSum}_Note`);
+
+    return (
+      <div className="text-[10px] leading-tight font-semibold text-slate-700 dark:text-slate-300 text-right whitespace-pre-line font-mono">
+        {lines.join("\n")}
+      </div>
+    );
+  };
+
+  const downloadPDF = () => {
+    setIsDownloading(true);
+    const element = document.getElementById("report-content");
+    if (!element) {
+      setIsDownloading(false);
+      return;
+    }
+
+    const opt = {
+      margin:       [0.3, 0.3, 0.3, 0.3],
+      filename:     `Detailed_Cash_Report_${selectedDate}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    const runDownload = () => {
+      try {
+        (window as any).html2pdf().set(opt).from(element).save().then(() => {
+          setIsDownloading(false);
+        }).catch((e: any) => {
+          console.error("PDF generation failed, falling back to print:", e);
+          window.print();
+          setIsDownloading(false);
+        });
+      } catch (err) {
+        console.error("html2pdf call failed, falling back to print:", err);
+        window.print();
+        setIsDownloading(false);
+      }
+    };
+
+    if ((window as any).html2pdf) {
+      runDownload();
+    } else {
+      console.warn("html2pdf not found on window, falling back to print");
+      window.print();
+      setIsDownloading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
+      <div className="w-full max-w-2xl mx-auto px-4 py-6 flex flex-col gap-5 pb-24">
+        
+        {/* Navigation Block */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/staff")}
+              className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-xl cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </button>
+            <div>
+              <h1 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Daily Cash Report</h1>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Export transaction breakdown report</p>
+            </div>
+          </div>
+
+          <button
+            onClick={downloadPDF}
+            disabled={isDownloading || reportItems.length === 0}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shadow disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+            {isDownloading ? "Downloading..." : "Download PDF"}
+          </button>
+        </div>
+
+        {/* Date Filter & Refresh */}
+        <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex-1 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-slate-400" />
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent border-none text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer w-full"
+            />
+          </div>
+          <button
+            onClick={fetchData}
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            title="Refresh Report Data"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Report Content Container for PDF Generation */}
+        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm p-1">
+          {isLoading ? (
+            <div className="flex justify-center p-12">
+              <RefreshCw className="w-6 h-6 animate-spin text-slate-400" />
+            </div>
+          ) : reportItems.length === 0 ? (
+            <div className="p-12 text-center text-xs text-slate-400 bg-white">
+              <FileText className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+              No transaction records found for {new Date(selectedDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}.
+            </div>
+          ) : (
+            <div id="report-content" className="bg-white text-black p-6 font-sans flex flex-col gap-4">
+              
+              {/* Premium Heading block matching screenshot */}
+              <div className="relative border border-slate-200 rounded-2xl overflow-hidden">
+                {/* Visual blue top-right gradient banner */}
+                <div className="absolute top-0 right-0 w-36 h-full bg-gradient-to-l from-cyan-400 via-sky-400 to-blue-500 opacity-90 transform skew-x-12 origin-top-right -mr-4" />
+                
+                <div className="relative p-5 pr-40 z-10">
+                  <h2 className="text-xl font-black text-sky-850 tracking-tight leading-none text-sky-900">{currentUser?.name || "Staff Member"}</h2>
+                  
+                  
+                  {/* Color dots row */}
+                  <div className="flex items-center gap-1.5 mt-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-pink-300"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-300"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-300"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-300"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-300"></span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-200"></span>
+                  </div>
+                </div>
+
+                {/* Centered Report Title bar at bottom */}
+                <div className="border-t border-slate-200 bg-slate-50/50 py-2.5 text-center">
+                  <span className="text-xs font-black text-sky-900 uppercase tracking-widest">
+                    Detailed Cash Report (Today)
+                  </span>
+                </div>
+              </div>
+
+              {/* Transaction Data Table */}
+              <div className="border border-slate-200 rounded-xl overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse min-w-[650px]">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-sky-900 font-bold">
+                      <th className="py-2.5 px-2 border-r border-slate-200 text-center w-8">No</th>
+                      <th className="py-2.5 px-2 border-r border-slate-200 text-center w-20">Date</th>
+                      <th className="py-2.5 px-3 border-r border-slate-200 text-center w-36">Description</th>
+                      <th className="py-2.5 px-3 border-r border-slate-200 text-center">In</th>
+                      <th className="py-2.5 px-3 border-r border-slate-200 text-center">Out</th>
+                      <th className="py-2.5 px-2 border-r border-slate-200 text-center w-20">Remarks</th>
+                      <th className="py-2.5 px-3 text-center">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {reportItems.map((item, idx) => {
+                      const dt = formatDateTime(item.created_at);
+                      const isCol = item.itemType === "collection";
+                      
+                      const staffName = item.staff_name || currentUser?.name || "Staff";
+                      let source = "";
+                      let destination = "";
+                      if (isCol) {
+                        source = item.from_office
+                          ? "Super Distributor"
+                          : (item.from_staff_name || item.retailer_name || "Retailer");
+                        destination = staffName;
+                      } else {
+                        source = staffName;
+                        destination = item.to_office
+                          ? "Super Distributor"
+                          : (item.target_name || "Recipient");
+                      }
+                      const narration = `From ${source} to ${destination} by ${staffName}`;
+
+                      return (
+                        <tr key={item.id} className="border-b border-slate-200 hover:bg-slate-50/30">
+                          {/* No */}
+                          <td className="py-3 px-2 border-r border-slate-200 text-center font-bold text-slate-800">
+                            {idx + 1}
+                          </td>
+                          
+                          {/* Date & Time */}
+                          <td className="py-3 px-2 border-r border-slate-200 text-center text-[10px] leading-tight font-semibold text-slate-700">
+                            <div>{dt.date}</div>
+                            <div className="text-slate-400 mt-0.5">{dt.time}</div>
+                          </td>
+                          
+                          {/* Description */}
+                          <td className="py-3 px-3 border-r border-slate-200 text-center font-bold text-slate-800 break-words text-[10px] leading-normal whitespace-pre-line">
+                            <div className="text-slate-700 font-bold text-[10px]">{narration}</div>
+                          </td>
+                          
+                          {/* In */}
+                          <td className="py-3 px-3 border-r border-slate-200 text-center font-extrabold text-emerald-600 text-xs">
+                            {isCol ? `₹${Number(item.inAmount).toLocaleString()}` : <span className="text-red-500">-</span>}
+                          </td>
+                          
+                          {/* Out */}
+                          <td className="py-3 px-3 border-r border-slate-200 text-center font-extrabold text-red-500 text-xs">
+                            {!isCol ? `-₹${Number(item.outAmount).toLocaleString()}` : <span className="text-red-500">-</span>}
+                          </td>
+                          
+                          {/* Remarks */}
+                          <td className="py-3 px-2 border-r border-slate-200 text-center font-semibold text-slate-500 text-[10px] break-words">
+                            {item.remarks || "-"}
+                          </td>
+                          
+                          {/* Notes */}
+                          <td className="py-3 px-3 align-middle bg-slate-50/20">
+                            {renderNotesBreakdown(item)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+        <Script src="/html2pdf.bundle.min.js" strategy="lazyOnload" />
+      </div>
+    </div>
+  );
+}

@@ -14,6 +14,7 @@ class DenominationSchema(BaseModel):
     note_10: int = Field(0, ge=0)
     coins: Decimal = Field(Decimal("0.00"), ge=0)
     online_amount: Decimal = Field(Decimal("0.00"), ge=0)
+    online_portal_id: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -49,6 +50,7 @@ class CollectionResponse(BaseModel):
     store_name: Optional[str] = None
     staff_name: Optional[str] = None
     from_staff_name: Optional[str] = None
+    portal_name: Optional[str] = None
 
     class Config:
         from_attributes = True

@@ -18,7 +18,7 @@ def list_staff_only(
     current_user=Depends(require_any_user)
 ):
     """Returns basic id+name list of all staff users. Accessible to any authenticated user (for deposit form dropdowns)."""
-    users = db.scalars(select(User).where(User.role == "staff").order_by(User.name)).all()
+    users = db.scalars(select(User).where(User.role == "staff", User.is_active == True).order_by(User.name)).all()
     return [{"id": str(u.id), "name": u.name, "virtual_balance": float(u.virtual_balance)} for u in users]
 
 
@@ -54,7 +54,7 @@ def list_users(
     current_user=Depends(require_admin)
 ):
     """Admin-only endpoint to list all users."""
-    users = db.scalars(select(User).order_by(User.name)).all()
+    users = db.scalars(select(User).where(User.is_active == True).order_by(User.name)).all()
     return users
 
 @router.put("/{user_id}", response_model=UserResponse)
@@ -96,6 +96,7 @@ def delete_user(
     if user.role == "admin":
         raise HTTPException(status_code=400, detail="Admins cannot be deleted.")
 
-    db.delete(user)
+    # Soft delete instead of hard delete to preserve past records
+    user.is_active = False
     db.commit()
     return None

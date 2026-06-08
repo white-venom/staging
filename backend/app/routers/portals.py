@@ -44,6 +44,18 @@ def create_portal_group(
     db.add(db_group)
     db.commit()
     db.refresh(db_group)
+
+    # Automatically create a default Primary Account for the new Portal Group
+    db_portal = Portal(
+        group_id=db_group.id,
+        portal_name="Primary Account",
+        opening_to_give=db_group.opening_to_give,
+        opening_to_take=db_group.opening_to_take,
+        balance=db_group.balance
+    )
+    db.add(db_portal)
+    db.commit()
+    db.refresh(db_group)
     return db_group
 
 
@@ -53,7 +65,8 @@ def list_portal_groups(
     current_user=Depends(require_any_user)
 ):
     """Get all Portal Groups."""
-    groups = db.scalars(select(PortalGroup).order_by(PortalGroup.name)).all()
+    from sqlalchemy.orm import joinedload
+    groups = db.scalars(select(PortalGroup).options(joinedload(PortalGroup.portals)).order_by(PortalGroup.name)).unique().all()
     return groups
 
 
@@ -78,7 +91,9 @@ def update_portal_group(
     
     db_group.name = group_data.name
     if group_data.opening_to_give is not None:
-        db_group.opening_to_give = (db_group.opening_to_give or Decimal("0.00")) + Decimal(str(group_data.opening_to_give))
+        delta_give = Decimal(str(group_data.opening_to_give))
+        db_group.opening_to_give = (db_group.opening_to_give or Decimal("0.00")) + delta_give
+        db_group.balance = (db_group.balance or Decimal("0.00")) - delta_give
     if group_data.opening_to_take is not None:
         delta_take = Decimal(str(group_data.opening_to_take))
         db_group.opening_to_take = (db_group.opening_to_take or Decimal("0.00")) + delta_take
@@ -194,7 +209,11 @@ def update_portal(
     
     from decimal import Decimal
     if portal_data.opening_to_give is not None:
-        db_portal.opening_to_give = (db_portal.opening_to_give or Decimal("0.00")) + Decimal(str(portal_data.opening_to_give))
+        delta_give = Decimal(str(portal_data.opening_to_give))
+        db_portal.opening_to_give = (db_portal.opening_to_give or Decimal("0.00")) + delta_give
+        db_portal.balance = (db_portal.balance or Decimal("0.00")) - delta_give
+        if db_portal.group:
+            db_portal.group.balance = (db_portal.group.balance or Decimal("0.00")) - delta_give
     if portal_data.opening_to_take is not None:
         delta_take = Decimal(str(portal_data.opening_to_take))
         db_portal.opening_to_take = (db_portal.opening_to_take or Decimal("0.00")) + delta_take

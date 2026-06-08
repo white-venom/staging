@@ -1,11 +1,12 @@
 import uuid
+from datetime import datetime, timedelta
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy import select, and_, desc
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database.db import get_db
-from app.database.models import BankDeposit, Denomination, Portal, Retailer, User, Ledger
+from app.database.models import BankDeposit, Denomination, Portal, PortalGroup, Retailer, User, Ledger
 from app.logic.ledger import recalculate_balances
 from sqlalchemy import update, delete
 from decimal import Decimal
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/bank-deposits", tags=["Deposits & Payouts Tracking"]
 @router.post("", response_model=DepositResponse, status_code=status.HTTP_201_CREATED)
 def submit_deposit(
     payload: DepositCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user=Depends(require_staff)
 ):
@@ -136,10 +138,10 @@ def submit_deposit(
 
             # Step A: Decrement Portal Balance and To Give
             portal.balance -= payload.amount
-            portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - payload.amount
+            portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + payload.amount
             if portal.group:
                 portal.group.balance -= payload.amount
-                portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - payload.amount
+                portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + payload.amount
                 
             # Step B: Fetch latest ledger entry to calculate new running balance
             latest_ledger = db.scalar(
@@ -212,6 +214,19 @@ def submit_deposit(
         
         db_deposit.staff_name = current_user.name
         
+        # Trigger WhatsApp message asynchronously for payouts to retailer
+        if dt in ["retailer", "virtual"] and retailer and retailer.phone:
+            import os
+            from app.services.whatsapp import send_whatsapp_message
+            frontend_url = os.getenv("FRONTEND_BASE_URL", "https://doitservice.com")
+            secure_link = f"{frontend_url}/public/ledger/{retailer.ledger_token}"
+            background_tasks.add_task(
+                send_whatsapp_message,
+                to_phone_number=retailer.phone,
+                template_name="retailer_deposit_receipt",
+                variables=[retailer.retailer_name, str(payload.amount), secure_link]
+            )
+        
         return db_deposit
     except Exception as e:
         db.rollback()
@@ -241,10 +256,11 @@ def list_deposits(
         query = query.where(and_(*filters))
 
     query = query.options(
-        joinedload(BankDeposit.portal),
+        joinedload(BankDeposit.portal).joinedload(Portal.group),
         joinedload(BankDeposit.retailer),
         joinedload(BankDeposit.recipient_staff),
-        joinedload(BankDeposit.staff)
+        joinedload(BankDeposit.staff),
+        selectinload(BankDeposit.ledgers)
     )
     deposits = db.scalars(query.order_by(desc(BankDeposit.created_at))).all()
     
@@ -263,12 +279,27 @@ def list_deposits(
             else:
                 dep.target_name = dep.recipient_staff.name if dep.recipient_staff else "Field Staff"
         elif dep.deposit_type == "virtual":
+            portal_obj = dep.portal
             if dep.retailer:
                 dep.target_name = f"Retailer Limit: {dep.retailer.retailer_name}"
             elif dep.recipient_staff:
                 dep.target_name = f"Staff Limit: {dep.recipient_staff.name}"
             else:
                 dep.target_name = "Virtual Transfer"
+            # Set portal name for narration
+            dep.portal_name = portal_obj.portal_name if portal_obj else "Portal"
+            if portal_obj and portal_obj.group:
+                dep.portal_group_name = portal_obj.group.name
+                dep.portal_group_id = portal_obj.group.id
+            # Determine direction and use linked ledger for accurate balance
+            is_ref = (dep.payment_mode == "refund")
+            if dep.ledgers:
+                is_ref = is_ref or any(le.transaction_type == "credit" or "refund" in (le.description or "").lower() for le in dep.ledgers if le is not None)
+            
+            dep.is_refund = is_ref
+            linked_ledger = next((le for le in dep.ledgers if le is not None), None)
+            if linked_ledger:
+                dep.balance_snapshot = linked_ledger.balance  # Always use recalculated balance
         else:
             dep.target_name = "Direct Deposit"
             
@@ -301,12 +332,19 @@ def verify_deposit(
 def delete_deposit(
     deposit_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_any_user)
 ):
-    """Admin-only: Delete a deposit and its associated ledger entry, then fix following balances."""
+    """Admin or Staff (within 5 mins): Delete a deposit and its associated ledger entry, then fix following balances."""
     deposit = db.scalar(select(BankDeposit).where(BankDeposit.id == deposit_id).with_for_update())
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit record not found")
+        
+    if current_user.role != "admin":
+        if deposit.staff_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to delete this deposit")
+        # Check if within 5 minutes
+        if datetime.utcnow() - deposit.created_at > timedelta(minutes=5):
+            raise HTTPException(status_code=403, detail="Can only delete deposits within 5 minutes of creation")
     
     retailer_id = deposit.retailer_id
     
@@ -323,25 +361,40 @@ def delete_deposit(
                 if portal.group:
                     portal.group.balance -= Decimal(str(deposit.amount))
             elif deposit.deposit_type == "virtual":
-                # Deleting virtual transfer: restore portal balance since virtual funds are returned
-                portal.balance += Decimal(str(deposit.amount))
-                portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
-                if portal.group:
-                    portal.group.balance += Decimal(str(deposit.amount))
-                    portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
+                # Deleting virtual transfer: restore/revert portal balance
+                if deposit.payment_mode == "refund":
+                    # Deleting virtual refund: decrease portal balance since refund is reverted
+                    portal.balance -= Decimal(str(deposit.amount))
+                    portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
+                    if portal.group:
+                        portal.group.balance -= Decimal(str(deposit.amount))
+                        portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
+                else:
+                    # Deleting virtual load: increase portal balance since load is reverted
+                    portal.balance += Decimal(str(deposit.amount))
+                    portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
+                    if portal.group:
+                        portal.group.balance += Decimal(str(deposit.amount))
+                        portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
 
     # Reverse staff virtual limit if virtual limit transfer is deleted
     if deposit.deposit_type == "virtual":
         if deposit.recipient_staff_id:
-            # Reversing virtual transfer to staff: subtract from recipient's limit
+            # Reversing virtual transfer to staff: adjust recipient's limit
             recipient = db.scalar(select(User).where(User.id == deposit.recipient_staff_id).with_for_update())
             if recipient:
-                recipient.virtual_balance -= Decimal(str(deposit.amount))
+                if deposit.payment_mode == "refund":
+                    recipient.virtual_balance += Decimal(str(deposit.amount))
+                else:
+                    recipient.virtual_balance -= Decimal(str(deposit.amount))
         else:
             # Reversing portal-to-retailer transfer: refund creator's limit if they are staff
             creator = db.scalar(select(User).where(User.id == deposit.staff_id).with_for_update())
             if creator and creator.role != "admin":
-                creator.virtual_balance += Decimal(str(deposit.amount))
+                if deposit.payment_mode == "refund":
+                    creator.virtual_balance -= Decimal(str(deposit.amount))
+                else:
+                    creator.virtual_balance += Decimal(str(deposit.amount))
     
     db.delete(deposit)
     db.commit()
@@ -352,3 +405,145 @@ def delete_deposit(
         db.commit()
         
     return None
+
+@router.put("/{deposit_id}", response_model=DepositResponse)
+def update_deposit(
+    deposit_id: uuid.UUID,
+    payload: DepositCreate,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_any_user)
+):
+    """Admin or Staff (within 5 mins): Update a deposit by reversing the old one and applying the new one."""
+    deposit = db.scalar(select(BankDeposit).where(BankDeposit.id == deposit_id).with_for_update())
+    if not deposit:
+        raise HTTPException(status_code=404, detail="Deposit record not found")
+        
+    if current_user.role != "admin":
+        if deposit.staff_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to update this deposit")
+        # Check if within 5 minutes
+        if datetime.utcnow() - deposit.created_at > timedelta(minutes=5):
+            raise HTTPException(status_code=403, detail="Can only update deposits within 5 minutes of creation")
+            
+    # For a full update, it's safest to rely on the delete logic to reverse balances, 
+    # and then the submit logic to re-apply them. However, since the endpoint is PUT
+    # and we want to keep the same ID and created_at, we will do it manually.
+    
+    # First, reverse old balances (similar to delete_deposit)
+    if deposit.portal_id:
+        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
+        if portal:
+            if deposit.deposit_type == "portal":
+                portal.balance -= Decimal(str(deposit.amount))
+                if portal.group:
+                    portal.group.balance -= Decimal(str(deposit.amount))
+            elif deposit.deposit_type == "virtual":
+                if deposit.payment_mode == "refund":
+                    portal.balance -= Decimal(str(deposit.amount))
+                    portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
+                    if portal.group:
+                        portal.group.balance -= Decimal(str(deposit.amount))
+                        portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
+                else:
+                    portal.balance += Decimal(str(deposit.amount))
+                    portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
+                    if portal.group:
+                        portal.group.balance += Decimal(str(deposit.amount))
+                        portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
+
+    if deposit.deposit_type == "virtual":
+        if deposit.recipient_staff_id:
+            recipient = db.scalar(select(User).where(User.id == deposit.recipient_staff_id).with_for_update())
+            if recipient:
+                if deposit.payment_mode == "refund":
+                    recipient.virtual_balance += Decimal(str(deposit.amount))
+                else:
+                    recipient.virtual_balance -= Decimal(str(deposit.amount))
+        else:
+            creator = db.scalar(select(User).where(User.id == deposit.staff_id).with_for_update())
+            if creator and creator.role != "admin":
+                if deposit.payment_mode == "refund":
+                    creator.virtual_balance -= Decimal(str(deposit.amount))
+                else:
+                    creator.virtual_balance += Decimal(str(deposit.amount))
+
+    # Apply new values
+    old_retailer_id = deposit.retailer_id
+    
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(deposit, field, value)
+        
+    # Re-apply new balances (similar to submit_deposit)
+    dt = payload.deposit_type.lower().strip()
+    if dt == "portal":
+        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
+        if portal:
+            portal.balance += Decimal(str(deposit.amount))
+            if portal.group:
+                portal.group.balance += Decimal(str(deposit.amount))
+    elif dt == "virtual":
+        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
+        if portal:
+            if deposit.payment_mode == "refund":
+                portal.balance += Decimal(str(deposit.amount))
+                portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
+                if portal.group:
+                    portal.group.balance += Decimal(str(deposit.amount))
+                    portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
+            else:
+                portal.balance -= Decimal(str(deposit.amount))
+                portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
+                if portal.group:
+                    portal.group.balance -= Decimal(str(deposit.amount))
+                    portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
+        
+        if payload.recipient_staff_id:
+            recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id).with_for_update())
+            if recipient:
+                if payload.payment_mode == "refund":
+                    recipient.virtual_balance -= Decimal(str(deposit.amount))
+                else:
+                    recipient.virtual_balance += Decimal(str(deposit.amount))
+        else:
+            creator = db.scalar(select(User).where(User.id == current_user.id).with_for_update())
+            if creator and creator.role != "admin":
+                if payload.payment_mode == "refund":
+                    creator.virtual_balance += Decimal(str(deposit.amount))
+                else:
+                    creator.virtual_balance -= Decimal(str(deposit.amount))
+
+    # Update ledger entry
+    ledger_entry = db.scalar(select(Ledger).where(Ledger.deposit_id == deposit_id))
+    if ledger_entry:
+        ledger_entry.amount = payload.amount
+        ledger_entry.portal_id = payload.portal_id
+        ledger_entry.retailer_id = payload.retailer_id
+        
+    db.commit()
+    
+    # Recalculate retailer balances if changed
+    if old_retailer_id:
+        recalculate_balances(old_retailer_id, db)
+    if deposit.retailer_id and deposit.retailer_id != old_retailer_id:
+        recalculate_balances(deposit.retailer_id, db)
+        
+    db.commit()
+    db.refresh(deposit)
+    
+    # Populate virtual fields
+    deposit.staff_name = deposit.staff.name if deposit.staff else "Unknown"
+    deposit.portal_name = deposit.portal.portal_name if deposit.portal else "Main Office"
+    if deposit.portal and deposit.portal.group:
+        deposit.portal_group_name = deposit.portal.group.name
+        deposit.portal_group_id = deposit.portal.group.id
+    deposit.is_refund = (deposit.payment_mode == "refund")
+    
+    if deposit.retailer_id and deposit.retailer:
+        deposit.target_name = f"Retailer Limit: {deposit.retailer.retailer_name}" if deposit.deposit_type == "virtual" else deposit.retailer.retailer_name
+    elif deposit.recipient_staff_id and deposit.recipient_staff:
+        deposit.target_name = f"Staff Limit: {deposit.recipient_staff.name}" if deposit.deposit_type == "virtual" else deposit.recipient_staff.name
+    else:
+        deposit.target_name = deposit.portal_name
+
+    return deposit
+

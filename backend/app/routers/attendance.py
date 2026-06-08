@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, time
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, and_
 from sqlalchemy.orm import Session
@@ -10,6 +10,40 @@ from app.schemas.attendance import CheckInRequest, CheckOutRequest, AttendanceRe
 from app.dependencies import require_staff, require_admin
 
 router = APIRouter(prefix="/attendance", tags=["Attendance & Shifts"])
+
+def check_and_trigger_auto_checkout(db: Session):
+    """
+    Checks all active shifts. If current IST time is past the auto-checkout threshold
+    for a shift's date, auto-completes that shift.
+    """
+    settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+    auto_checkout_time_str = settings.auto_checkout_time if settings and settings.auto_checkout_time else "20:00"
+    
+    try:
+        threshold_hour, threshold_min = map(int, auto_checkout_time_str.split(":"))
+    except ValueError:
+        threshold_hour, threshold_min = 20, 0
+
+    ist = pytz.timezone('Asia/Kolkata')
+    now_ist = datetime.now(ist)
+    
+    active_shifts = db.scalars(
+        select(Attendance).where(Attendance.status == "active")
+    ).all()
+    
+    updated_any = False
+    for shift in active_shifts:
+        shift_date = shift.date
+        threshold_dt = ist.localize(datetime.combine(shift_date, time(threshold_hour, threshold_min)))
+        
+        if now_ist > threshold_dt:
+            shift.status = "completed"
+            shift.end_km = shift.start_km
+            shift.end_time = threshold_dt.replace(tzinfo=None)
+            updated_any = True
+            
+    if updated_any:
+        db.commit()
 
 import base64
 import uuid
@@ -56,6 +90,9 @@ def check_in(
     current_user=Depends(require_staff)
 ):
     """Staff checks in for the day, logging their starting vehicle KM, meter image, and GPS location."""
+    # Trigger auto-checkout check first to complete any pending shifts
+    check_and_trigger_auto_checkout(db)
+    
     # Check if they already have an active check-in session for today
     existing = db.scalar(
         select(Attendance).where(
@@ -175,6 +212,7 @@ def get_my_attendance_status(
     current_user=Depends(require_staff)
 ):
     """Get the current user's active attendance session for today."""
+    check_and_trigger_auto_checkout(db)
     active_shift = db.scalar(
         select(Attendance).where(
             and_(
@@ -194,6 +232,7 @@ def get_today_attendance(
     current_user=Depends(require_admin)
 ):
     """Get all attendance records for today (for admin)."""
+    check_and_trigger_auto_checkout(db)
     ist = pytz.timezone('Asia/Kolkata')
     today = datetime.now(ist).date()
     

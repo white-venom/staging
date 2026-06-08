@@ -15,7 +15,7 @@ from app.core.security import (
     create_refresh_token,
     decode_token
 )
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, check_maintenance_mode
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -37,6 +37,9 @@ def login(
             detail="Incorrect phone number or password"
         )
 
+    # Check if maintenance mode is active for non-admin users
+    check_maintenance_mode(request, user.role)
+
     # Generate access & refresh tokens
     access_token = create_access_token(data={"sub": str(user.id)})
     refresh_token = create_refresh_token(data={"sub": str(user.id)})
@@ -57,7 +60,8 @@ def login(
         "access_token": access_token,
         "token_type": "bearer",
         "role": user.role,
-        "name": user.name
+        "name": user.name,
+        "id": user.id
     }
 
 
@@ -118,7 +122,8 @@ def refresh(
         "access_token": new_access_token,
         "token_type": "bearer",
         "role": user.role,
-        "name": user.name
+        "name": user.name,
+        "id": user.id
     }
 
 

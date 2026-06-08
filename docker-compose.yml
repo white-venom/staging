@@ -76,6 +76,23 @@ services:
       timeout: 10s
       retries: 3
 
+  superadmin-frontend:
+    build:
+      context: ./superadmin-frontend
+      dockerfile: Dockerfile
+    container_name: doit_superadmin_frontend
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_API_URL=https://api.crediiflow.in
+    networks:
+      - doit_network
+    depends_on:
+      - backend
+
   nginx:
     image: nginx:alpine
     container_name: doit_nginx
@@ -85,10 +102,11 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - letsencrypt_certs:/etc/letsencrypt:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot:ro
     depends_on:
       - frontend
       - backend
+      - superadmin-frontend
     networks:
       - doit_network

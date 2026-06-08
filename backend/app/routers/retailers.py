@@ -115,6 +115,9 @@ def delete_retailer(
     if not retailer:
         raise HTTPException(status_code=404, detail="Retailer not found")
 
+    if retailer.retailer_name.lower().strip() == "cms":
+        raise HTTPException(status_code=400, detail="CMS retailer cannot be deleted")
+
     db.delete(retailer)
     db.commit()
     return None
@@ -172,7 +175,58 @@ def update_store(
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
 
-    for field, value in store_data.model_dump(exclude_unset=True).items():
+    # Get current retailer
+    current_retailer = db.scalar(select(Retailer).where(Retailer.id == store.retailer_id))
+    is_cms = current_retailer and current_retailer.retailer_name.lower().strip() == "cms"
+
+    # If new_retailer_id is specified and is different from current retailer_id
+    new_ret_id = store_data.new_retailer_id
+    if new_ret_id and new_ret_id != store.retailer_id:
+        if not is_cms:
+            raise HTTPException(
+                status_code=400, 
+                detail="Retailer can only be changed for stores belonging to CMS retailer."
+            )
+        
+        # Verify new retailer exists
+        new_retailer = db.scalar(select(Retailer).where(Retailer.id == new_ret_id))
+        if not new_retailer:
+            raise HTTPException(status_code=404, detail="New parent retailer not found")
+
+        # Update the store's retailer_id
+        old_retailer_id = store.retailer_id
+        store.retailer_id = new_ret_id
+
+        # Update all collections of this store to the new retailer_id
+        from app.database.models import Collection
+        db.execute(
+            Collection.__table__.update()
+            .where(Collection.store_id == store.id)
+            .values(retailer_id=new_ret_id)
+        )
+
+        # Update all ledger entries of those collections to the new retailer_id
+        collection_ids = db.scalars(select(Collection.id).where(Collection.store_id == store.id)).all()
+        if collection_ids:
+            from app.database.models import Ledger
+            db.execute(
+                Ledger.__table__.update()
+                .where(Ledger.collection_id.in_(collection_ids))
+                .values(retailer_id=new_ret_id)
+            )
+
+        db.commit()
+
+        # Recalculate balances for both retailers
+        from app.logic.ledger import recalculate_balances
+        recalculate_balances(old_retailer_id, db)
+        recalculate_balances(new_ret_id, db)
+        db.commit()
+
+    # Update other fields safely
+    update_dict = store_data.model_dump(exclude_unset=True)
+    update_dict.pop("new_retailer_id", None)
+    for field, value in update_dict.items():
         setattr(store, field, value)
 
     db.commit()

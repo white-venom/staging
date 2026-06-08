@@ -7,8 +7,8 @@ const getApiBaseUrl = () => {
   
   if (typeof window !== "undefined") {
     // Production VPS domains
-    if (window.location.hostname === "app.doitservices.in") {
-      return "https://api.doitservices.in";
+    if (window.location.hostname === "app.crediiflow.in") {
+      return "https://api.crediiflow.in";
     }
     
     // Legacy Vercel/Render fallback
@@ -19,11 +19,12 @@ const getApiBaseUrl = () => {
     
     // Local dev
     if (window.location.port === "3000" || window.location.port === "5173" || 
-        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+        window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || 
+        /^192\.168\./.test(window.location.hostname) || window.location.hostname.endsWith(".local")) {
        return "http://127.0.0.1:8000";
     }
   }
-  return "https://api.doitservices.in";
+  return "https://api.crediiflow.in";
 };
 
 export const API_BASE_URL = getApiBaseUrl();
@@ -65,16 +66,31 @@ async function refreshAccessToken(): Promise<string | null> {
 
 async function request<T>(endpoint: string, options: RequestInit = {}, retry = true): Promise<T> {
   const token = useAppStore.getState().currentUser?.token;
+  
+  // Extract tenant subdomain from window location hostname
+  let tenantId: string | null = null;
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    const parts = host.split(".");
+    if (parts.length >= 3 || (host.endsWith("localhost") && parts.length >= 2)) {
+      tenantId = parts[0];
+      if (tenantId === "www" || tenantId === "superadmin" || tenantId === "api") {
+        tenantId = null;
+      }
+    }
+  }
+
   // Bulletproof URL joining to prevent double slashes
   const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const fullUrl = `${baseUrl}${path}`;
   
-  console.log(`[API] Requesting: ${fullUrl}`);
+  console.log(`[API] Requesting: ${fullUrl} (Tenant: ${tenantId})`);
   
   const headers = {
     "Content-Type": "application/json",
     ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...(tenantId ? { "X-Tenant-ID": tenantId } : {}),
     ...options.headers,
   };
 
@@ -263,7 +279,7 @@ export const api = {
     method: "POST",
     body: JSON.stringify({ attendance_id: attendanceId, approve }),
   }),
-  virtualTransfer: (data: { portal_id: string; retailer_id?: string; staff_id?: string; amount: number; remarks?: string }) => request<any>("/admin-settings/virtual-transfer", {
+  virtualTransfer: (data: { portal_id: string; retailer_id?: string; staff_id?: string; amount: number; remarks?: string; direction?: string }) => request<any>("/admin-settings/virtual-transfer", {
     method: "POST",
     body: JSON.stringify(data),
   }),

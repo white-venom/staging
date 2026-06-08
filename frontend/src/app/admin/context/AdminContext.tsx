@@ -57,12 +57,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     if (showLoading) setIsLoading(true);
     try {
       const [cols, deps, rets, fetchedUsers, pGroups, attendanceLogs] = await Promise.all([
-        api.getCollections(),
-        api.getDeposits(),
-        api.getRetailers(),
-        api.getUsers(),
-        api.getPortalGroups(),
-        api.getTodayAttendance()
+        api.getCollections().catch((e) => { console.error("Cols err:", e); return []; }),
+        api.getDeposits().catch((e) => { console.error("Deps err:", e); return []; }),
+        api.getRetailers().catch((e) => { console.error("Rets err:", e); return []; }),
+        api.getUsers().catch((e) => { console.error("Users err:", e); return []; }),
+        api.getPortalGroups().catch((e) => { console.error("Portals err:", e); return []; }),
+        api.getTodayAttendance().catch((e) => { console.error("Att err:", e); return []; })
       ]);
       
       const mappedCols = cols.map((c: any) => {
@@ -81,8 +81,10 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         return {
           id: c.id,
           retailer_id: c.retailer_id,
+          portal_id: c.portal_id,
           store_id: c.store_id,
           retailerName: c.retailer_name || "Unknown Retailer",
+          store_name: c.store_name || null,
           portalName: c.portal_name || "Standard Channel",
           staffName: c.staff_name || "Unknown Staff",
           totalAmount: parseFloat(c.total_amount),
@@ -117,12 +119,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           portalGroupName: d.portal_group_name,
           depositType: d.deposit_type,
           targetName: d.target_name || "Direct Deposit",
+          portalName: d.portal_name || null,
           amount: parseFloat(d.amount),
           balance_snapshot: d.balance_snapshot,
           paymentMode: d.payment_mode,
           denominations: d.denominations,
           status: d.status,
           staffName: d.staff_name || "System",
+          isRefund: d.is_refund === true,
           date: dtStr,
           created_at: d.created_at
         };

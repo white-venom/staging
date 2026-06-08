@@ -18,6 +18,7 @@ export interface DenominationCounts {
   note_10: number;
   coins: number;
   online_amount: number;
+  online_portal_id?: string;
 }
 
 export interface AttendanceState {

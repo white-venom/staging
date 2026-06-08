@@ -257,11 +257,7 @@ export default function MobileStaff() {
                   </span>
                   <span className="text-[9px] font-bold text-slate-450">{u.phone}</span>
                 </div>
-                {u.role === 'staff' && (
-                  <p className="text-[9px] font-bold text-slate-400 mt-1">
-                    Virtual balance: <span className="font-extrabold text-slate-700 dark:text-slate-300">₹{Number(u.virtual_balance || 0).toLocaleString()}</span>
-                  </p>
-                )}
+
               </div>
               <div className="flex gap-2">
                 <button

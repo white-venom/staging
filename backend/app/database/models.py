@@ -155,6 +155,7 @@ class BusinessSettings(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     late_threshold: Mapped[str] = mapped_column(String(10), default="10:00") # HH:MM format
     late_penalty: Mapped[float] = mapped_column(Float, default=100.0)
+    auto_checkout_time: Mapped[str] = mapped_column(String(10), default="20:00", server_default="20:00")
     
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

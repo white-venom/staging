@@ -94,10 +94,16 @@ def run_auth_verification():
             }
 
     # Execute Login for Staff
+    class MockRequest:
+        class URL:
+            scheme = "http"
+        url = URL()
+        base_url = "http://localhost:8000"
+
     mock_response = MockResponse()
     login_payload = LoginRequest(phone="9876543210", password="StaffPass123")
     
-    login_result = login(login_data=login_payload, response=mock_response, db=db_session)
+    login_result = login(login_data=login_payload, response=mock_response, request=MockRequest(), db=db_session)
     assert login_result["access_token"] is not None, "❌ Access Token not returned on login!"
     assert login_result["role"] == "staff", "❌ Returned role is incorrect!"
     print("   ✅ Access Token returned successfully!")

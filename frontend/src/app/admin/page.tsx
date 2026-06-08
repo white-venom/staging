@@ -11,13 +11,13 @@ export default function AdminPage() {
   const { isMobile } = useDevice();
 
   const totalCollectedAmount = (collections || []).reduce((s, c) => s + (c.totalAmount || 0), 0);
-  const totalDepositedAmount = (deposits || []).reduce((s, d) => s + (d.amount || 0), 0);
+  const totalDepositedAmount = (deposits || []).filter(d => d.depositType?.toLowerCase() !== 'virtual').reduce((s, d) => s + (d.amount || 0), 0);
   const netCashBalance = totalCollectedAmount - totalDepositedAmount;
   
   // Today's specific totals for KPI blocks
   const todayStr = new Date().toISOString().split('T')[0];
   const todayCollected = (collections || []).filter(c => c.date?.startsWith(todayStr)).reduce((s, c) => s + (c.totalAmount || 0), 0);
-  const todayDeposited = (deposits || []).filter(d => d.date?.startsWith(todayStr)).reduce((s, d) => s + (d.amount || 0), 0);
+  const todayDeposited = (deposits || []).filter(d => d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual').reduce((s, d) => s + (d.amount || 0), 0);
   const todayNet = todayCollected - todayDeposited;
   const todayCount = (collections || []).filter(c => c.date?.startsWith(todayStr)).length;
 
@@ -34,9 +34,9 @@ export default function AdminPage() {
       <MobileOverview 
         collections={collections}
         deposits={deposits}
-        totalCollectedAmount={todayCollected}
-        totalDepositedAmount={todayDeposited}
-        netCashBalance={todayNet}
+        totalCollectedAmount={totalCollectedAmount}
+        totalDepositedAmount={totalDepositedAmount}
+        netCashBalance={netCashBalance}
         totalToTake={totalToTake}
         totalToGive={totalToGive}
         fetchData={fetchData}
@@ -51,9 +51,9 @@ export default function AdminPage() {
     <OverviewTab 
       collections={collections}
       deposits={deposits}
-      totalCollectedAmount={todayCollected}
-      totalDepositedAmount={todayDeposited}
-      netCashBalance={todayNet}
+      totalCollectedAmount={totalCollectedAmount}
+      totalDepositedAmount={totalDepositedAmount}
+      netCashBalance={netCashBalance}
       totalToTake={totalToTake}
       totalToGive={totalToGive}
       fetchData={fetchData}

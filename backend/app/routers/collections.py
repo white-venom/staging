@@ -1,7 +1,8 @@
 import uuid
+from datetime import datetime, timedelta
 from typing import List, Optional
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy import select, and_, desc, update
 from sqlalchemy.orm import Session, joinedload
 
@@ -17,6 +18,7 @@ router = APIRouter(prefix="/collections", tags=["Collections Control"])
 @router.post("", response_model=CollectionResponse, status_code=status.HTTP_201_CREATED)
 def submit_collection(
     payload: CollectionCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user=Depends(require_staff)
 ):
@@ -146,6 +148,11 @@ def submit_collection(
             db_collection.retailer_name = "Office/Cash Chest"
             
         db_collection.staff_name = current_user.name
+        
+        # Portal name for response
+        if db_collection.portal_id:
+            portal_obj = db.scalar(select(Portal).where(Portal.id == db_collection.portal_id))
+            db_collection.portal_name = portal_obj.portal_name if portal_obj else None
 
         # 3. Simulate Email Alert (Task 110: Auto-Verify)
         if retailer and retailer.email:
@@ -161,6 +168,16 @@ def submit_collection(
             print(f"     You can view your secure, real-time live statement anytime here:")
             print(f"     🔗 {secure_link}")
             print("="*80 + "\n")
+
+        # Trigger WhatsApp message asynchronously
+        if retailer and retailer.phone:
+            from app.services.whatsapp import send_whatsapp_message
+            background_tasks.add_task(
+                send_whatsapp_message,
+                to_phone_number=retailer.phone,
+                template_name="retailer_payment_receipt",
+                variables=[retailer.retailer_name, str(db_collection.total_amount), secure_link]
+            )
 
         return db_collection
     except Exception as e:
@@ -200,7 +217,9 @@ def list_collections(
         joinedload(Collection.retailer), 
         joinedload(Collection.store), 
         joinedload(Collection.staff),
-        joinedload(Collection.from_staff)
+        joinedload(Collection.from_staff),
+        joinedload(Collection.portal),
+        joinedload(Collection.denominations)
     )
     collections = db.scalars(query.order_by(desc(Collection.created_at))).all()
     
@@ -218,6 +237,7 @@ def list_collections(
             
         col.store_name = col.store.store_name if col.store else "Direct Handover"
         col.staff_name = col.staff.name if col.staff else "Unknown Staff"
+        col.portal_name = col.portal.portal_name if col.portal else None
         
     return collections
 
@@ -225,6 +245,7 @@ def list_collections(
 @router.put("/{collection_id}/verify", response_model=CollectionResponse)
 def verify_collection(
     collection_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user=Depends(require_admin)
 ):
@@ -296,6 +317,16 @@ def verify_collection(
         print(f"     🔗 {secure_link}")
         print("="*80 + "\n")
         
+    # Trigger WhatsApp message asynchronously
+    if retailer and retailer.phone:
+        from app.services.whatsapp import send_whatsapp_message
+        background_tasks.add_task(
+            send_whatsapp_message,
+            to_phone_number=retailer.phone,
+            template_name="retailer_payment_receipt",
+            variables=[retailer.retailer_name, str(collection.total_amount), secure_link]
+        )
+
     return collection
 
 from app.logic.ledger import recalculate_balances
@@ -304,12 +335,19 @@ from app.logic.ledger import recalculate_balances
 def delete_collection(
     collection_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_any_user)
 ):
-    """Admin-only: Delete a collection and its associated ledger entry, then fix following balances."""
+    """Admin or Staff (within 5 mins): Delete a collection and its associated ledger entry, then fix following balances."""
     collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
+        
+    if current_user.role != "admin":
+        if collection.staff_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to delete this collection")
+        # Check if within 5 minutes
+        if datetime.utcnow() - collection.created_at > timedelta(minutes=5):
+            raise HTTPException(status_code=403, detail="Can only delete collections within 5 minutes of creation")
     
     retailer_id = collection.retailer_id
     
@@ -336,31 +374,58 @@ def delete_collection(
 @router.put("/{collection_id}", response_model=CollectionResponse)
 def update_collection(
     collection_id: uuid.UUID,
-    payload: CollectionCreate, # Reusing create schema for simplicity, or could make Update schema
+    payload: CollectionCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_any_user)
 ):
-    """Admin-only: Update collection amount or details and recalculate balances."""
+    """Admin or Staff (within 5 mins): Update collection amount, retailer, portal, or details and recalculate balances."""
     collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
+        
+    if current_user.role != "admin":
+        if collection.staff_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Not authorized to update this collection")
+        # Check if within 5 minutes
+        if datetime.utcnow() - collection.created_at > timedelta(minutes=5):
+            raise HTTPException(status_code=403, detail="Can only update collections within 5 minutes of creation")
     
-    # Calculate amount difference for portal update
     old_amount = collection.total_amount
     new_amount = payload.total_amount
-    diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
+    old_retailer_id = collection.retailer_id
+    new_retailer_id = payload.retailer_id
+    old_portal_id = collection.portal_id
+    new_portal_id = payload.portal_id
+
+    # Handle Portal Balance Adjustments
+    if old_portal_id != new_portal_id:
+        # Revert old portal
+        if old_portal_id:
+            old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
+            if old_portal:
+                old_portal.balance += Decimal(str(old_amount))
+                if old_portal.group:
+                    old_portal.group.balance += Decimal(str(old_amount))
+        # Deduct new portal
+        if new_portal_id:
+            new_portal = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
+            if new_portal:
+                new_portal.balance -= Decimal(str(new_amount))
+                if new_portal.group:
+                    new_portal.group.balance -= Decimal(str(new_amount))
+    elif old_portal_id and new_amount != old_amount:
+        # Same portal, but amount changed
+        diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
+        portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
+        if portal:
+            portal.balance -= diff
+            if portal.group:
+                portal.group.balance -= diff
 
     # Update main fields safely
     for field, value in payload.model_dump(exclude_unset=True, exclude={"denominations"}).items():
         setattr(collection, field, value)
         
-    if collection.portal_id and diff != 0:
-        portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
-        if portal:
-            portal.balance -= diff
-            if portal.group:
-                portal.group.balance -= diff
-    
     # Update denominations
     if collection.denominations:
         d = payload.denominations
@@ -376,12 +441,16 @@ def update_collection(
     # Update ledger entry
     ledger_entry = db.scalar(select(Ledger).where(Ledger.collection_id == collection_id))
     if ledger_entry:
-        ledger_entry.amount = payload.total_amount
+        ledger_entry.amount = new_amount
+        if old_retailer_id != new_retailer_id:
+            ledger_entry.retailer_id = new_retailer_id
     
     db.commit()
     
     # Recalculate balances
-    recalculate_balances(collection.retailer_id, db)
+    if old_retailer_id != new_retailer_id:
+        recalculate_balances(old_retailer_id, db)
+    recalculate_balances(new_retailer_id, db)
     db.commit()
     
     db.refresh(collection)
@@ -390,5 +459,6 @@ def update_collection(
     collection.retailer_name = collection.retailer.retailer_name if collection.retailer else "Unknown"
     collection.store_name = collection.store.store_name if collection.store else "Direct Retailer Handover"
     collection.staff_name = collection.staff.name if collection.staff else "Unknown"
+    collection.portal_name = collection.portal.portal_name if collection.portal else None
     
     return collection
