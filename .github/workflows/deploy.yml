@@ -21,8 +21,9 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         port: 22
         script: |
-          # Go to the deployment directory on VPS (adjust this path if it's different on your VPS)
-          cd /var/www/doit-services
+          set -e
+          # Go to the deployment directory on VPS
+          cd /opt/do-it-services
           
           # Pull the latest changes from Git
           git pull origin main
