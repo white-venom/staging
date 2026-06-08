@@ -257,7 +257,7 @@ function NewCollectionContent() {
         date: new Date().toISOString().replace("T", " ").substring(0, 16),
         synced: 0
       });
-      alert("⚠️ Offline! Collection saved to local device browser database. It will automatically sync as soon as you connect to internet!");
+      alert("[Offline Mode]  Collection saved to local device browser database. It will automatically sync as soon as you connect to internet!");
       router.push("/staff");
       return;
     }
@@ -508,7 +508,7 @@ function NewCollectionContent() {
                     </span>
                   </div>
 
-                  <span className="text-slate-300 dark:text-slate-600 text-[10px] font-bold">✖</span>
+                  <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">&times;</span>
 
                   {/* Input box */}
                   <input
@@ -538,7 +538,7 @@ function NewCollectionContent() {
                   >
                     Online (GPay)
                   </span>
-                  <span className="text-slate-300 dark:text-slate-600 text-[10px] font-bold">➕</span>
+                  <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">+</span>
                   <input
                     type="number"
                     placeholder="₹0.00"

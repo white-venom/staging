@@ -203,7 +203,7 @@ function NewDepositContent() {
     } else if (depositType === "virtual") {
       const portalName = groupAccounts.find(a => a.id === selectedPortalId)?.name || "Portal";
       const retailerName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer";
-      targetName = `Virtual: ${portalName} ➔ ${retailerName}`;
+      targetName = `Virtual: ${portalName} → ${retailerName}`;
     } else {
       targetName = "Super Distributor";
     }
@@ -474,7 +474,7 @@ function NewDepositContent() {
                     </span>
                   </div>
 
-                  <span className="text-slate-300 dark:text-slate-600 text-[10px] font-bold">✖</span>
+                  <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">&times;</span>
 
                   {/* Input box */}
                   <input
@@ -504,7 +504,7 @@ function NewDepositContent() {
                   >
                     Online (GPay)
                   </span>
-                  <span className="text-slate-300 dark:text-slate-600 text-[10px] font-bold">➕</span>
+                  <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">+</span>
                   <input
                     type="number"
                     placeholder="₹0.00"

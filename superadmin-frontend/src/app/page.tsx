@@ -695,9 +695,9 @@ export default function DashboardPage() {
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Onboard New Client Instance</h3>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm focus:outline-none cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
               >
-                ✕
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
@@ -824,9 +824,9 @@ export default function DashboardPage() {
               <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Edit Client Configuration</h3>
               <button 
                 onClick={() => setShowEditModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm focus:outline-none cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
               >
-                ✕
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
@@ -887,13 +887,14 @@ export default function DashboardPage() {
           <div className="w-full max-w-md bg-white border border-red-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-700">
             <div className="px-6 py-5 border-b border-red-100 flex items-center justify-between bg-red-50/50">
               <h3 className="text-sm font-black uppercase tracking-wider text-red-650 flex items-center gap-2">
-                ⚠️ Danger: Drop Tenant DB Cluster
+                <svg className="w-4 h-4 text-red-650 animate-pulse flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                <span>Danger: Drop Tenant DB Cluster</span>
               </h3>
               <button 
                 onClick={() => setShowDeleteModal(false)}
-                className="text-slate-400 hover:text-slate-600 text-sm focus:outline-none cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
               >
-                ✕
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 

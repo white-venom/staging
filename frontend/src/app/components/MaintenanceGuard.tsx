@@ -67,8 +67,8 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-violet-600/30 border-t-violet-500 rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -76,14 +76,14 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
   // If maintenance is enabled and the user is NOT an admin, show maintenance screen
   if (isMaintenance && currentUser?.role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-950 relative overflow-hidden select-none font-sans text-slate-100">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 relative overflow-hidden select-none font-sans text-slate-800">
         {/* Ambient Blur Spheres */}
-        <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-violet-950/20 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] left-[-20%] w-[70%] h-[70%] rounded-full bg-indigo-950/15 blur-[120px] pointer-events-none" />
+        <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-10%] left-[-20%] w-[70%] h-[70%] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none" />
 
-        <div className="w-full max-w-lg relative z-10 flex flex-col items-center text-center gap-8 px-6 py-12 bg-slate-900/50 backdrop-blur-xl border border-slate-800 rounded-[2.5rem] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.5)]">
+        <div className="w-full max-w-lg relative z-10 flex flex-col items-center text-center gap-8 px-6 py-12 bg-white/85 backdrop-blur-xl border border-slate-200/80 rounded-[2.5rem] shadow-[0_40px_120px_-20px_rgba(15,23,42,0.08)]">
           {/* Maintenance Icon Area */}
-          <div className="relative w-24 h-24 bg-gradient-to-tr from-violet-600 to-indigo-600 rounded-full flex items-center justify-center shadow-lg shadow-violet-950/50">
+          <div className="relative w-24 h-24 bg-gradient-to-tr from-indigo-600 to-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/25">
             <svg
               className="w-12 h-12 text-white animate-spin"
               style={{ animationDuration: "12s" }}
@@ -108,23 +108,23 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
           </div>
 
           <div className="space-y-4">
-            <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent uppercase">
+            <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent uppercase">
               Under Maintenance
             </h1>
-            <p className="text-slate-450 text-sm leading-relaxed max-w-md">
+            <p className="text-slate-600 text-sm leading-relaxed max-w-md">
               {tenantName} is currently undergoing scheduled system upgrades. We are optimizing our services to bring you a better experience.
             </p>
-            <p className="text-violet-400/90 font-bold text-xs uppercase tracking-widest mt-4">
+            <p className="text-indigo-600 font-bold text-xs uppercase tracking-widest mt-4">
               We regret the inconvenience caused.
             </p>
           </div>
 
-          <div className="w-full h-[1px] bg-slate-800/80 my-2" />
+          <div className="w-full h-[1px] bg-slate-200/60 my-2" />
 
           {/* Subtle bypass mechanism */}
           <div className="text-xs text-slate-500">
             Are you a system administrator?{" "}
-            <a href="/?bypass=true" className="text-indigo-400 hover:text-indigo-300 hover:underline font-semibold transition-colors duration-150">
+            <a href="/?bypass=true" className="text-indigo-650 hover:text-indigo-700 hover:underline font-semibold transition-colors duration-150">
               Sign In Here
             </a>
           </div>
