@@ -113,7 +113,7 @@ origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if orig
 
 # Enable wildcard origin regex in local/development mode for easy Wi-Fi testing
 is_development = settings.ENVIRONMENT == "development"
-allow_origin_regex = r"https?://.*" if is_development else None
+allow_origin_regex = r"https?://.*" if is_development else r"https://([a-zA-Z0-9-]+\.)*crediiflow\.in"
 
 app.add_middleware(
     CORSMiddleware,
