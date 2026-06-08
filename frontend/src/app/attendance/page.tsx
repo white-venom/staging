@@ -172,7 +172,7 @@ export default function AttendancePage() {
           ctx.textAlign = "right";
           ctx.fillStyle = "#60a5fa";
           ctx.font = `bold ${fontSize - 1}px sans-serif`;
-          ctx.fillText("DO IT SERVICES", width - 30, height - barHeight / 2);
+          ctx.fillText("CREDIITFLOW", width - 30, height - barHeight / 2);
           
           const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
           setUploadedImageBase64(dataUrl);

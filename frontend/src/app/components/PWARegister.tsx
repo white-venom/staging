@@ -16,10 +16,10 @@ export default function PWARegister() {
       navigator.serviceWorker
         .register("/sw.js")
         .then((reg) => {
-          console.log("DO IT SERVICES: Service Worker registered successfully! Scope: ", reg.scope);
+          console.log("CrediiFlow: Service Worker registered successfully! Scope: ", reg.scope);
         })
         .catch((err) => {
-          console.error("DO IT SERVICES: Service Worker registration failed: ", err);
+          console.error("CrediiFlow: Service Worker registration failed: ", err);
         });
     }
   }, []);

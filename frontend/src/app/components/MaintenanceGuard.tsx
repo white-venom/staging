@@ -7,7 +7,7 @@ import { API_BASE_URL } from "../utils/api";
 export default function MaintenanceGuard({ children }: { children: React.ReactNode }) {
   const currentUser = useAppStore((state) => state.currentUser);
   const [isMaintenance, setIsMaintenance] = useState<boolean | null>(null);
-  const [tenantName, setTenantName] = useState<string>("CrediFlow");
+  const [tenantName, setTenantName] = useState<string>("CrediiFlow");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

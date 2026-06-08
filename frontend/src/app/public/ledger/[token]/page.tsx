@@ -64,7 +64,7 @@ export default function LedgerReceiptPage() {
         )}
         
         <div className="mt-8 text-sm text-gray-400">
-          Powered by DO IT SERVICES
+          Powered by CrediiFlow
         </div>
       </div>
     </div>
