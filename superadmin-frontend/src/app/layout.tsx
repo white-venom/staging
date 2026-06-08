@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CrediFlow - Super Admin Console",
-  description: "CrediFlow operations control console",
+  title: "CrediiFlow - Super Admin Console",
+  description: "CrediiFlow operations control console",
 };
 
 export default function RootLayout({

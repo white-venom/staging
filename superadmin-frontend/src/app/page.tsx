@@ -115,7 +115,7 @@ export default function DashboardPage() {
           </div>
           <div>
             <span className="font-extrabold tracking-tight bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
-              CrediFlow
+              CrediiFlow
             </span>
             <span className="text-xs bg-slate-900 border border-slate-800 text-slate-400 rounded-md px-1.5 py-0.5 ml-2">Console</span>
           </div>

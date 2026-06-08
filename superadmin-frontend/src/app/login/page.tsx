@@ -46,7 +46,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 mx-4 bg-slate-900/40 border border-slate-800/80 backdrop-blur-xl rounded-2xl shadow-2xl relative z-10">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-violet-400 via-indigo-400 to-blue-400 bg-clip-text text-transparent">
-            CrediFlow
+            CrediiFlow
           </h1>
           <p className="text-sm text-slate-400 mt-2">Super Admin Control Center</p>
         </div>
