@@ -28,8 +28,13 @@ jobs:
           # Pull the latest changes from Git
           git pull origin main
           
-          # Rebuild and restart the Docker containers
-          docker compose down
+          # Stop and remove all containers including orphans from previous deploys
+          docker compose down --remove-orphans
+          
+          # Force-remove any stale named containers that may conflict
+          docker rm -f doit_db doit_backend doit_frontend doit_superadmin 2>/dev/null || true
+          
+          # Rebuild and start all services
           docker compose up -d --build
           
           # Clean up unused/dangling docker images to save space
