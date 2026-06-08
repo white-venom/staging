@@ -44,7 +44,17 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
           headers["X-Tenant-ID"] = tenantId;
         }
 
-        const res = await fetch(`${API_BASE_URL}/tenant/info`, { headers });
+        // Use a 5-second timeout so the app doesn't hang after a laptop restart
+        // when the network/server is still reconnecting
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        let res: Response;
+        try {
+          res = await fetch(`${API_BASE_URL}/tenant/info`, { headers, signal: controller.signal });
+        } finally {
+          clearTimeout(timeoutId);
+        }
         if (res.ok) {
           const data = await res.json();
           if (data.status !== "active") {
@@ -68,8 +78,14 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
           }
           setIsMaintenance(false);
         }
-      } catch (err) {
-        console.error("Failed to check maintenance mode:", err);
+      } catch (err: any) {
+        if (err?.name === "AbortError") {
+          // Timed out — network not yet available (e.g., just after laptop restart)
+          // Safe to proceed: show the app normally, maintenance check will re-run on next load
+          console.warn("Maintenance check timed out (network may be slow). Proceeding normally.");
+        } else {
+          console.error("Failed to check maintenance mode:", err);
+        }
         setIsMaintenance(false);
       } finally {
         setLoading(false);
