@@ -42,6 +42,10 @@ class TenantCreateRequest(BaseModel):
 class TenantMaintenanceRequest(BaseModel):
     maintenance_mode: bool
 
+class TenantUpdateRequest(BaseModel):
+    name: str = Field(..., max_length=100)
+    status: str = Field(..., max_length=20)
+
 class TenantResponse(BaseModel):
     id: uuid.UUID
     name: str
@@ -207,3 +211,50 @@ def toggle_tenant_maintenance(
     db.commit()
     db.refresh(tenant)
     return tenant
+
+@router.put("/tenants/{tenant_id}", response_model=TenantResponse)
+def update_tenant(
+    tenant_id: uuid.UUID,
+    payload: TenantUpdateRequest,
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    tenant.name = payload.name
+    tenant.status = payload.status
+    db.commit()
+    db.refresh(tenant)
+    return tenant
+
+@router.delete("/tenants/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_tenant(
+    tenant_id: uuid.UUID,
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    
+    # Try to drop the tenant's database to clean up resources
+    try:
+        pg_url = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
+        pg_engine = create_engine(pg_url, isolation_level="AUTOCOMMIT")
+        with pg_engine.connect() as conn:
+            # Terminate active connections to the database to prevent drop database locks
+            conn.execute(text(
+                f"SELECT pg_terminate_backend(pg_stat_activity.pid) "
+                f"FROM pg_stat_activity "
+                f"WHERE pg_stat_activity.datname = '{tenant.db_name}' "
+                f"AND pid <> pg_backend_pid()"
+            ))
+            conn.execute(text(f"DROP DATABASE IF EXISTS {tenant.db_name}"))
+    except Exception as e:
+        # Log error but don't crash if DB was already dropped or has issues
+        print(f"Failed to drop database {tenant.db_name}: {str(e)}")
+
+    db.delete(tenant)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

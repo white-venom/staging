@@ -53,4 +53,11 @@ export const superAdminApi = {
     method: "POST",
     body: JSON.stringify({ maintenance_mode: enabled }),
   }),
+  editTenant: (tenantId: string, data: any) => request<any>(`/superadmin/tenants/${tenantId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  deleteTenant: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}`, {
+    method: "DELETE",
+  }),
 };
