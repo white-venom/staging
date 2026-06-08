@@ -1,4 +1,6 @@
 import uuid
+import os
+import httpx
 from datetime import datetime
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Response
@@ -17,6 +19,64 @@ from app.core.security import (
     decode_token
 )
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+# ─── Cloudflare DNS Auto-Provisioning ────────────────────────────────────────
+CF_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
+CF_ZONE_ID   = os.environ.get("CLOUDFLARE_ZONE_ID", "")
+CF_DOMAIN    = os.environ.get("CF_ROOT_DOMAIN", "crediiflow.in")
+VPS_IP       = os.environ.get("VPS_IP", "187.127.176.149")
+
+def _cf_headers():
+    return {"Authorization": f"Bearer {CF_API_TOKEN}", "Content-Type": "application/json"}
+
+def cloudflare_add_dns(subdomain: str) -> None:
+    """Create a proxied A record for <subdomain>.<CF_DOMAIN> on Cloudflare.
+    Silently skips if env vars are not configured."""
+    if not CF_API_TOKEN or not CF_ZONE_ID:
+        print(f"[CF DNS] Skipped — CLOUDFLARE_API_TOKEN/CLOUDFLARE_ZONE_ID not set")
+        return
+    fqdn = f"{subdomain}.{CF_DOMAIN}"
+    try:
+        with httpx.Client(timeout=10) as client:
+            r = client.post(
+                f"https://api.cloudflare.com/client/v4/zones/{CF_ZONE_ID}/dns_records",
+                headers=_cf_headers(),
+                json={"type": "A", "name": fqdn, "content": VPS_IP, "ttl": 1, "proxied": True}
+            )
+            data = r.json()
+            if r.status_code == 200 and data.get("success"):
+                print(f"[CF DNS] Created A record: {fqdn} → {VPS_IP}")
+            else:
+                # Record may already exist — log but don't crash
+                print(f"[CF DNS] Could not create {fqdn}: {data.get('errors')}")
+    except Exception as e:
+        print(f"[CF DNS] Exception adding {fqdn}: {e}")
+
+def cloudflare_delete_dns(subdomain: str) -> None:
+    """Delete all A records for <subdomain>.<CF_DOMAIN> from Cloudflare.
+    Silently skips if env vars are not configured."""
+    if not CF_API_TOKEN or not CF_ZONE_ID:
+        return
+    fqdn = f"{subdomain}.{CF_DOMAIN}"
+    try:
+        with httpx.Client(timeout=10) as client:
+            # List existing records matching this name
+            r = client.get(
+                f"https://api.cloudflare.com/client/v4/zones/{CF_ZONE_ID}/dns_records",
+                headers=_cf_headers(),
+                params={"type": "A", "name": fqdn}
+            )
+            records = r.json().get("result", [])
+            for rec in records:
+                del_r = client.delete(
+                    f"https://api.cloudflare.com/client/v4/zones/{CF_ZONE_ID}/dns_records/{rec['id']}",
+                    headers=_cf_headers()
+                )
+                if del_r.status_code == 200:
+                    print(f"[CF DNS] Deleted A record: {fqdn}")
+    except Exception as e:
+        print(f"[CF DNS] Exception deleting {fqdn}: {e}")
+# ─────────────────────────────────────────────────────────────────────────────
 
 router = APIRouter(prefix="/superadmin", tags=["Super Admin"])
 security = HTTPBearer(auto_error=False)
@@ -191,7 +251,10 @@ def create_tenant(
     db.add(new_tenant)
     db.commit()
     db.refresh(new_tenant)
-    
+
+    # Auto-provision Cloudflare DNS A record for the new subdomain
+    cloudflare_add_dns(tenant_data.subdomain)
+
     res = TenantResponse.model_validate(new_tenant)
     res.admin_phone = tenant_data.admin_phone
     return res
@@ -329,6 +392,9 @@ def delete_tenant(
     except Exception as e:
         # Log error but don't crash if DB was already dropped or has issues
         print(f"Failed to drop database {tenant.db_name}: {str(e)}")
+
+    # Remove Cloudflare DNS A record for the deleted subdomain
+    cloudflare_delete_dns(tenant.subdomain)
 
     db.delete(tenant)
     db.commit()

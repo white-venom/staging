@@ -11,4 +11,5 @@ python-multipart==0.0.9
 email-validator>=2.0.0
 pytz==2024.1
 boto3==1.34.116
+httpx==0.27.0
 
