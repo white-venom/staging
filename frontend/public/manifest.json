@@ -1,6 +1,6 @@
 {
-  "name": "DO IT SERVICES Operational Platform",
-  "short_name": "DO IT",
+  "name": "CrediiFlow Operational Platform",
+  "short_name": "CrediiFlow",
   "description": "Next-generation operational ledger sheet, cash notes audit & payout turnovers PWA.",
   "start_url": "/",
   "display": "standalone",

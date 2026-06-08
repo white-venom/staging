@@ -158,7 +158,7 @@ export default function LoginPage() {
                
                <img 
                  src="/logo.png" 
-                 alt="Do It Services Logo" 
+                 alt="CrediiFlow Logo" 
                  className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]" 
                />
             </div>
@@ -253,7 +253,7 @@ export default function LoginPage() {
 
         {/* System Labels Footer */}
         <div className="text-center space-y-1 opacity-50">
-           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Do It Services Portal v3.0</p>
+           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">CrediiFlow Portal v3.0</p>
            <p className="text-[8px] font-bold text-slate-500">Secure AES-256 Encrypted Session</p>
         </div>
 

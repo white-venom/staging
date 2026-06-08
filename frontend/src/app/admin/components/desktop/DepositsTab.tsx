@@ -300,7 +300,7 @@ export default function DepositsTab({
 
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm print-area">
         <div className="hidden print:block p-8 text-center border-b border-slate-100">
-          <h1 className="text-2xl font-black text-slate-900 uppercase tracking-wide">Do It Services</h1>
+          <h1 className="text-2xl font-black text-slate-900 uppercase tracking-wide">CrediiFlow</h1>
           <p className="text-xs font-bold text-slate-500 mt-1">Official Cash Out Statement</p>
           <div className="flex items-center justify-center gap-10 mt-8 border-y py-6">
              <div className="text-center">

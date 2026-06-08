@@ -63,13 +63,13 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
             <div className="relative w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
               <img 
                 src="/logo.png" 
-                alt="DOIT Logo" 
+                alt="CrediiFlow Logo" 
                 className="w-full h-full object-contain brightness-100 dark:brightness-0"
               />
             </div>
           </div>
           <div>
-            <h1 className="font-black text-slate-900 dark:text-white tracking-tighter uppercase text-sm leading-none">Do It Services</h1>
+            <h1 className="font-black text-slate-900 dark:text-white tracking-tighter uppercase text-sm leading-none">CrediiFlow</h1>
             <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Admin Panel</p>
           </div>
         </div>
@@ -112,7 +112,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
               {/* Drawer Header */}
               <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800 mb-6">
                 <div className="flex flex-col">
-                  <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">Do-It-Services</span>
+                  <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">CrediiFlow</span>
                   <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Admin Panel</span>
                 </div>
                 <button

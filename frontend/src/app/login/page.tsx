@@ -87,7 +87,7 @@ export default function LoginPage() {
               <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center">
                 <ShieldCheck className="w-4 h-4 text-white" />
               </div>
-              <span className="text-white font-black tracking-tighter text-sm uppercase">Do It Services</span>
+              <span className="text-white font-black tracking-tighter text-sm uppercase">CrediiFlow</span>
             </div>
           </div>
         </div>
