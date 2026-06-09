@@ -264,26 +264,23 @@ export default function DashboardPage() {
       )}
 
       {/* Header Bar */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-[#0d1b3e] border-b border-blue-900/40 px-6 py-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
           <img 
             src="/logo.png" 
             alt="CrediiFlow Logo" 
             className="h-9 w-auto object-contain"
           />
-          <span className="text-[10px] font-black bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-md px-2 py-0.5 uppercase tracking-widest">
-            Console
-          </span>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="text-right hidden sm:block">
-            <p className="text-xs font-black uppercase text-slate-800 tracking-wider">{adminName}</p>
-            <p className="text-[10px] font-bold text-slate-400 uppercase mt-0.5">@{username}</p>
+            <p className="text-xs font-black uppercase text-slate-100 tracking-wider">{adminName}</p>
+            <p className="text-[10px] font-bold text-blue-200/70 uppercase mt-0.5">@{username}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-slate-500 hover:text-red-650 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer"
+            className="px-4 py-2 border border-blue-800 hover:border-red-400 hover:bg-red-950/30 text-blue-200 hover:text-red-400 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer"
           >
             Sign Out
           </button>
