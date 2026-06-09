@@ -94,7 +94,7 @@ class SuperAdminTokenResponse(BaseModel):
 
 class TenantCreateRequest(BaseModel):
     name: str = Field(..., max_length=100)
-    subdomain: str = Field(..., max_length=50)
+    subdomain: str = Field(..., max_length=50, pattern=r"^[a-z0-9-]+$")
     admin_name: str = Field(..., max_length=100)
     admin_phone: str = Field(..., max_length=20)
     admin_password: str = Field(..., min_length=6)
@@ -105,7 +105,7 @@ class TenantMaintenanceRequest(BaseModel):
 class TenantUpdateRequest(BaseModel):
     name: str = Field(..., max_length=100)
     status: str = Field(..., max_length=20)
-    subdomain: Optional[str] = Field(None, max_length=50)
+    subdomain: Optional[str] = Field(None, max_length=50, pattern=r"^[a-z0-9-]+$")
     admin_phone: Optional[str] = Field(None, max_length=20)
     admin_password: Optional[str] = Field(None, min_length=6)
 
