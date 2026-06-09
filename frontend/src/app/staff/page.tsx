@@ -262,30 +262,60 @@ export default function StaffDashboard() {
 
   deposits.forEach((d) => {
     if (d.denominations) {
-      note500 -= Number(d.denominations.note_500) || 0;
-      note200 -= Number(d.denominations.note_200) || 0;
-      note100 -= Number(d.denominations.note_100) || 0;
-      note50 -= Number(d.denominations.note_50) || 0;
-      note20 -= Number(d.denominations.note_20) || 0;
-      note10 -= Number(d.denominations.note_10) || 0;
-      coins -= Number(d.denominations.coins) || 0;
+      const isRecipient = d.recipient_staff_id === currentUser.id && d.depositType === "staff";
+      if (isRecipient) {
+        note500 += Number(d.denominations.note_500) || 0;
+        note200 += Number(d.denominations.note_200) || 0;
+        note100 += Number(d.denominations.note_100) || 0;
+        note50 += Number(d.denominations.note_50) || 0;
+        note20 += Number(d.denominations.note_20) || 0;
+        note10 += Number(d.denominations.note_10) || 0;
+        coins += Number(d.denominations.coins) || 0;
+      } else {
+        note500 -= Number(d.denominations.note_500) || 0;
+        note200 -= Number(d.denominations.note_200) || 0;
+        note100 -= Number(d.denominations.note_100) || 0;
+        note50 -= Number(d.denominations.note_50) || 0;
+        note20 -= Number(d.denominations.note_20) || 0;
+        note10 -= Number(d.denominations.note_10) || 0;
+        coins -= Number(d.denominations.coins) || 0;
+      }
     }
   });
 
-  const totalCollected = collections.reduce((s, c) => s + (c.totalAmount || 0), 0);
-  const totalDeposited = deposits.filter(d => d.depositType !== "virtual").reduce((s, d) => s + (d.amount || 0), 0);
+  const totalHandoversReceived = deposits
+    .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
+    .reduce((s, d) => s + (d.amount || 0), 0);
+
+  const totalCollected = collections.reduce((s, c) => s + (c.totalAmount || 0), 0) + totalHandoversReceived;
+  
+  const totalDeposited = deposits
+    .filter(d => d.depositType !== "virtual" && !(d.recipient_staff_id === currentUser.id && d.depositType === "staff"))
+    .reduce((s, d) => s + (d.amount || 0), 0);
   
   const netPortfolio = totalCollected - totalDeposited;
 
-  const totalOnline = collections.reduce((s, c) => s + Number(c.denominations?.online_amount || 0), 0) - 
-                      deposits.filter(d => d.depositType !== "virtual").reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
+  const totalOnline = collections.reduce((s, c) => s + Number(c.denominations?.online_amount || 0), 0) +
+                      deposits
+                        .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
+                        .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0) - 
+                      deposits
+                        .filter(d => d.depositType !== "virtual" && !(d.recipient_staff_id === currentUser.id && d.depositType === "staff"))
+                        .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
   
   const totalCashNotes = netPortfolio - totalOnline;
  
   // Calculate running balances for the ledger
   const combinedLedger = [
     ...collections.map(c => ({ ...c, type: 'collection' })),
-    ...deposits.map(d => ({ ...d, type: 'deposit', totalAmount: d.amount }))
+    ...deposits.map(d => {
+      const isRecipient = d.recipient_staff_id === currentUser.id && d.depositType === "staff";
+      return { 
+        ...d, 
+        type: isRecipient ? 'collection' : 'deposit', 
+        totalAmount: d.amount 
+      };
+    })
   ].filter(item => item.date)
    .sort((a, b) => new Date(a.date.replace(' ', 'T')).getTime() - new Date(b.date.replace(' ', 'T')).getTime());
 
@@ -735,10 +765,10 @@ export default function StaffDashboard() {
                        </div>
                        <div>
                          <div className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight">
-                           {c.type === 'collection' ? c.retailerName : c.targetName}
+                           {c.type === 'collection' ? (c.retailerName || c.targetName) : c.targetName}
                          </div>
                          <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1 flex items-center gap-1.5">
-                           <span className="text-blue-500">{c.type === 'collection' ? c.portalName : (c.depositType || 'Deposit')}</span>
+                           <span className="text-blue-500">{c.type === 'collection' ? (c.portalName || "Handover") : (c.depositType || 'Deposit')}</span>
                            <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                            <span>{c.date}</span>
                          </div>

@@ -90,13 +90,16 @@ export default function DailyReportPage() {
       outAmount: null,
       detailsText: c.retailer_name || "Unknown Retailer"
     })),
-    ...filteredDeposits.map(d => ({
-      ...d,
-      itemType: "deposit",
-      inAmount: null,
-      outAmount: d.amount,
-      detailsText: d.target_name || "Super Distributor"
-    }))
+    ...filteredDeposits.map(d => {
+      const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+      return {
+        ...d,
+        itemType: isRecipient ? "collection" : "deposit",
+        inAmount: isRecipient ? d.amount : null,
+        outAmount: isRecipient ? null : d.amount,
+        detailsText: isRecipient ? `Received from ${d.staff_name}` : (d.target_name || "Super Distributor")
+      };
+    })
   ].sort((a, b) => getUtcDate(a.created_at).getTime() - getUtcDate(b.created_at).getTime());
 
   // Generate breakdown content cell in the format matching SS
@@ -271,8 +274,8 @@ export default function DailyReportPage() {
                 </div>
 
                 {/* Centered Report Title bar at bottom */}
-                <div className="border-t border-slate-200 bg-slate-50/50 py-2.5 text-center">
-                  <span className="text-xs font-black text-sky-900 uppercase tracking-widest">
+                <div className="border-t border-slate-200 bg-slate-50/50 py-2.5 text-center relative z-10">
+                  <span className="text-xs font-black text-slate-950 uppercase tracking-widest">
                     Detailed Cash Report (Today)
                   </span>
                 </div>

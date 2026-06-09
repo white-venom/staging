@@ -115,7 +115,8 @@ export default function CashOutLedgerPage() {
 
   const handleShareEntry = async (entry: any) => {
     const den = entry.denominations || {};
-    const mult = -1; // Deposits/Cash Out are always negative
+    const isRecipient = entry.recipient_staff_id === currentUser?.id && entry.deposit_type === "staff";
+    const mult = isRecipient ? 1 : -1; // Deposits/Cash Out are negative, received handovers are positive
     
     const notes = [
       { value: 500, count: Number(den.note_500 || 0) * mult },
@@ -374,9 +375,15 @@ ${dateFormatted}
 
                         <div className="flex items-center gap-3">
                           <div className="text-right">
-                            <span className="text-xs font-black text-red-600 dark:text-red-500 block">
-                              -₹{d.amount?.toLocaleString()}
-                            </span>
+                            {d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff" ? (
+                              <span className="text-xs font-black text-emerald-600 dark:text-emerald-500 block">
+                                +₹{d.amount?.toLocaleString()}
+                              </span>
+                            ) : (
+                              <span className="text-xs font-black text-red-650 dark:text-red-500 block">
+                                -₹{d.amount?.toLocaleString()}
+                              </span>
+                            )}
                           </div>
                           <button
                             onClick={(e) => {
@@ -420,7 +427,7 @@ ${dateFormatted}
                           )}
 
                           {/* Edit/Delete Actions */}
-                          {(new Date().getTime() - getUtcDate(d.created_at).getTime()) < 5 * 60 * 1000 && (
+                          {d.staff_id === currentUser?.id && (new Date().getTime() - getUtcDate(d.created_at).getTime()) < 5 * 60 * 1000 && (
                             <div className="border-t border-slate-200/40 dark:border-slate-800/40 pt-3 flex items-center justify-end gap-2">
                               <button
                                 onClick={(e) => handleEdit(d, e)}

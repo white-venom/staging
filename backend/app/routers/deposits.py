@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy import select, and_, desc
+from sqlalchemy import select, and_, or_, desc
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database.db import get_db
@@ -247,7 +247,15 @@ def list_deposits(
     """List deposit records. Staff is restricted to viewing only their own entries; Admins see all."""
     query = select(BankDeposit)
     if current_user.role != "admin":
-        query = query.where(BankDeposit.staff_id == current_user.id)
+        query = query.where(
+            or_(
+                BankDeposit.staff_id == current_user.id,
+                and_(
+                    BankDeposit.recipient_staff_id == current_user.id,
+                    BankDeposit.deposit_type == "staff"
+                )
+            )
+        )
 
     filters = []
     if deposit_type:
@@ -280,7 +288,10 @@ def list_deposits(
             if dep.to_office:
                 dep.target_name = "Main Office Cashier"
             else:
-                dep.target_name = dep.recipient_staff.name if dep.recipient_staff else "Field Staff"
+                if current_user.role != "admin" and dep.recipient_staff_id == current_user.id:
+                    dep.target_name = f"Received from {dep.staff.name if dep.staff else 'Staff'}"
+                else:
+                    dep.target_name = dep.recipient_staff.name if dep.recipient_staff else "Field Staff"
         elif dep.deposit_type == "virtual":
             portal_obj = dep.portal
             if dep.retailer:

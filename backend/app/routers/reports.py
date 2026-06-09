@@ -130,6 +130,19 @@ def get_staff_cash_in_hand(
         .where(BankDeposit.staff_id == current_user.id)
     ).all()
 
+    # 3. Summarize all handovers received by this staff member from other staff
+    received_denoms = db.scalars(
+        select(Denomination)
+        .join(BankDeposit, Denomination.deposit_id == BankDeposit.id)
+        .where(
+            and_(
+                BankDeposit.recipient_staff_id == current_user.id,
+                BankDeposit.deposit_type == "staff",
+                BankDeposit.status == "verified"
+            )
+        )
+    ).all()
+
     # Aggregate collected notes
     collected = {
         "note_500": 0, "note_200": 0, "note_100": 0, "note_50": 0, "note_20": 0, "note_10": 0, "coins": Decimal("0.00")
@@ -142,6 +155,19 @@ def get_staff_cash_in_hand(
         collected["note_20"] += d.note_20
         collected["note_10"] += d.note_10
         collected["coins"] += d.coins
+
+    # Aggregate received notes
+    received = {
+        "note_500": 0, "note_200": 0, "note_100": 0, "note_50": 0, "note_20": 0, "note_10": 0, "coins": Decimal("0.00")
+    }
+    for r in received_denoms:
+        received["note_500"] += r.note_500
+        received["note_200"] += r.note_200
+        received["note_100"] += r.note_100
+        received["note_50"] += r.note_50
+        received["note_20"] += r.note_20
+        received["note_10"] += r.note_10
+        received["coins"] += r.coins
 
     # Aggregate deposited notes
     deposited = {
@@ -156,15 +182,15 @@ def get_staff_cash_in_hand(
         deposited["note_10"] += d.note_10
         deposited["coins"] += d.coins
 
-    # Subtract pocket notes
+    # Calculate net pocket notes: collected + received - deposited
     pocket = {
-        "note_500": max(0, collected["note_500"] - deposited["note_500"]),
-        "note_200": max(0, collected["note_200"] - deposited["note_200"]),
-        "note_100": max(0, collected["note_100"] - deposited["note_100"]),
-        "note_50": max(0, collected["note_50"] - deposited["note_50"]),
-        "note_20": max(0, collected["note_20"] - deposited["note_20"]),
-        "note_10": max(0, collected["note_10"] - deposited["note_10"]),
-        "coins": float(max(Decimal("0.00"), collected["coins"] - deposited["coins"]))
+        "note_500": max(0, collected["note_500"] + received["note_500"] - deposited["note_500"]),
+        "note_200": max(0, collected["note_200"] + received["note_200"] - deposited["note_200"]),
+        "note_100": max(0, collected["note_100"] + received["note_100"] - deposited["note_100"]),
+        "note_50": max(0, collected["note_50"] + received["note_50"] - deposited["note_50"]),
+        "note_20": max(0, collected["note_20"] + received["note_20"] - deposited["note_20"]),
+        "note_10": max(0, collected["note_10"] + received["note_10"] - deposited["note_10"]),
+        "coins": float(max(Decimal("0.00"), collected["coins"] + received["coins"] - deposited["coins"]))
     }
 
     # Calculate actual physical cash-in-hand value
