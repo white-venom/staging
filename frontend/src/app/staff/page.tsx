@@ -514,7 +514,7 @@ export default function StaffDashboard() {
               )}
               <span className="text-[10px] font-bold text-blue-650 uppercase tracking-widest">Staff Panel</span>
             </div>
-          </div>>
+          </div>
 
           <div className="flex items-center gap-2">
             {currentUser?.role === "admin" && (
