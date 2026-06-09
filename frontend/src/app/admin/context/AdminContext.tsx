@@ -181,7 +181,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         startTime: log.start_time,
         endTime: log.end_time,
         duration: log.duration,
-        status: log.status === "active" ? "Active Duty" : "Completed",
+        status: log.status?.toLowerCase() === "active" ? "Active Duty" : "Completed",
         startLatitude: log.start_latitude,
         startLongitude: log.start_longitude,
         endLatitude: log.end_latitude,

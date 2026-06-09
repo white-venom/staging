@@ -13,7 +13,8 @@ import {
   Search,
   RefreshCw,
   Edit2,
-  Trash2
+  Trash2,
+  Share2
 } from "lucide-react";
 
 const getUtcDate = (dateStr: any) => {
@@ -27,6 +28,7 @@ const getUtcDate = (dateStr: any) => {
 
 export default function CashOutLedgerPage() {
   const router = useRouter();
+  const { currentUser } = useAppStore();
   const [deposits, setDeposits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -65,6 +67,114 @@ export default function CashOutLedgerPage() {
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => (prev === id ? null : id));
+  };
+
+  const numberToWordsIndian = (num: number): string => {
+    const absNum = Math.abs(num);
+    if (absNum === 0) return "Zero";
+    
+    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+    
+    const helper = (n: number): string => {
+      if (n < 20) return ones[n];
+      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
+      if (n < 1000) return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + helper(n % 100) : "");
+      if (n < 100000) return helper(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + helper(n % 1000) : "");
+      if (n < 10000000) return helper(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + helper(n % 100000) : "");
+      return helper(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + helper(n % 10000000) : "");
+    };
+    
+    const words = helper(absNum);
+    return (num < 0 ? "Minus " : "") + words;
+  };
+
+  const formatShareDate = (dateStr: string): string => {
+    try {
+      const d = new Date(dateStr.replace(" ", "T"));
+      if (isNaN(d.getTime())) return dateStr;
+      
+      const day = d.getDate();
+      const month = d.getMonth() + 1;
+      const year = d.getFullYear();
+      
+      let hours = d.getHours();
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'pm' : 'am';
+      hours = hours % 12 || 12;
+      const hoursStr = hours.toString().padStart(2, '0');
+      
+      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+      const dayName = days[d.getDay()];
+      
+      return `${day}/${month}/${year} ${hoursStr}:${minutes} ${ampm} ${dayName}`;
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  const handleShareEntry = async (entry: any) => {
+    const den = entry.denominations || {};
+    const mult = -1; // Deposits/Cash Out are always negative
+    
+    const notes = [
+      { value: 500, count: Number(den.note_500 || 0) * mult },
+      { value: 200, count: Number(den.note_200 || 0) * mult },
+      { value: 100, count: Number(den.note_100 || 0) * mult },
+      { value: 50, count: Number(den.note_50 || 0) * mult },
+      { value: 20, count: Number(den.note_20 || 0) * mult },
+      { value: 10, count: Number(den.note_10 || 0) * mult },
+    ];
+
+    let lines: string[] = [];
+    let totalNotesCount = 0;
+    notes.forEach(note => {
+      if (note.count !== 0) {
+        lines.push(`${note.value} × ${note.count} = ${(note.value * note.count).toLocaleString('en-IN')}`);
+        totalNotesCount += note.count;
+      }
+    });
+    if (Number(den.coins || 0) !== 0) {
+      const coinsVal = Number(den.coins) * mult;
+      lines.push(`Coins = ${coinsVal.toLocaleString('en-IN')}`);
+    }
+    if (Number(den.online_amount || 0) !== 0) {
+      const onlineVal = Number(den.online_amount) * mult;
+      lines.push(`UPI/Online = ${onlineVal.toLocaleString('en-IN')}`);
+    }
+
+    const totalVal = Number(entry.amount) * mult;
+    const totalWords = numberToWordsIndian(totalVal);
+    const dateFormatted = entry.created_at ? formatShareDate(getUtcDate(entry.created_at).toLocaleString("sv-SE").substring(0, 19)) : "";
+    const collectorName = currentUser?.name || "Mehruddin";
+
+    const text = `${lines.join("\n")}
+┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+Total : *₹ ${totalVal.toLocaleString('en-IN')}*  (Note: ${totalNotesCount})
+
+${totalWords} 
+
+${collectorName} 
+${dateFormatted} 
+📲 Install App : goo.gl/uVSDgA`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Deposit Slip',
+          text: text,
+        });
+      } catch (err) {
+        console.log('Error sharing:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('Receipt details copied to clipboard!');
+      } catch (err) {
+        alert('Could not copy to clipboard.');
+      }
+    }
   };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
@@ -268,6 +378,16 @@ export default function CashOutLedgerPage() {
                               -₹{d.amount?.toLocaleString()}
                             </span>
                           </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleShareEntry(d);
+                            }}
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/80 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                            title="Share Entry"
+                          >
+                            <Share2 className="w-3.5 h-3.5" />
+                          </button>
                           {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                         </div>
                       </div>

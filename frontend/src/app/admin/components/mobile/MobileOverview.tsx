@@ -147,7 +147,7 @@ export default function MobileOverview({
 
   // Precalculate daily metrics for all active field staff
   const staffListData = useMemo<StaffListData[]>(() => {
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
     return (staffUsers || []).map((user: { name: string }) => {
       const name = user.name;
       
@@ -174,10 +174,14 @@ export default function MobileOverview({
         status: c.status || "verified",
       }));
 
-      // Get compliance/attendance log for this staff member
-      const compliance = (staffComplianceLogs || []).find(
-        (log) => log.name?.toLowerCase() === name.toLowerCase()
-      );
+      // Get compliance/attendance log for this staff member (prioritize active/latest shift, trim and ignore case)
+      const compliance = (staffComplianceLogs || [])
+        .filter((log) => log.name?.trim().toLowerCase() === name.trim().toLowerCase())
+        .sort((a, b) => {
+          if (a.status === "Active Duty" && b.status !== "Active Duty") return -1;
+          if (a.status !== "Active Duty" && b.status === "Active Duty") return 1;
+          return 0;
+        })[0];
 
       return {
         name,

@@ -498,30 +498,21 @@ export default function StaffDashboard() {
             <span className="uppercase tracking-wider">{syncStatusMsg}</span>
           </div>
         )}
-
-        {/* REPLICATED ADMIN HEADER */}
+        {/* REPLICATED ADMIN HEADER */}
         <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-[1.5rem] p-3 shadow-sm flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-blue-500/20 blur-lg rounded-xl scale-110" />
-              <div className="relative w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
-                <img 
-                  src="/favicon.png" 
-                  alt="CrediiFlow Logo" 
-                  className="w-full h-full object-contain brightness-100 dark:brightness-0"
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-black text-slate-900 dark:text-white tracking-tighter uppercase text-sm leading-none">CrediiFlow</h1>
-                {isOnline ? (
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" title="Online"></div>
-                ) : (
-                  <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" title="Offline"></div>
-                )}
-              </div>
-              <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Staff Panel</p>
+            <img 
+              src="/logo.png" 
+              alt="CrediiFlow Logo" 
+              className="h-8 w-auto object-contain dark:invert"
+            />
+            <div className="flex items-center gap-1.5 ml-1">
+              {isOnline ? (
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" title="Online"></div>
+              ) : (
+                <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" title="Offline"></div>
+              )}
+              <span className="text-[10px] font-bold text-blue-650 uppercase tracking-widest">Staff Panel</span>
             </div>
           </div>
 
@@ -565,9 +556,9 @@ export default function StaffDashboard() {
               <div>
                 {/* Drawer Header */}
                 <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800 mb-6">
-                  <div className="flex flex-col">
-                    <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">CrediiFlow</span>
-                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Staff Panel</span>
+                  <div className="flex items-center gap-2">
+                    <img src="/logo.png" alt="CrediiFlow Logo" className="h-7 w-auto object-contain dark:invert" />
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Staff Panel</span>
                   </div>
                   <button
                     onClick={() => setIsSidebarOpen(false)}

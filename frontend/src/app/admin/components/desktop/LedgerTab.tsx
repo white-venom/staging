@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useAdmin } from "../../context/AdminContext";
-import { Edit2, X, Save } from "lucide-react";
+import { Edit2, X, Save, Trash2 } from "lucide-react";
 import { api } from "../../../utils/api";
 
 function getExportFilename() {
@@ -38,54 +38,126 @@ export default function LedgerTab({
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
   const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
   const [editingIsDeposit, setEditingIsDeposit] = React.useState(false);
+  
   const [selectedNewRetailerId, setSelectedNewRetailerId] = React.useState("");
   const [selectedNewPortalId, setSelectedNewPortalId] = React.useState("");
+  const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = React.useState("");
+  const [selectedNewToOffice, setSelectedNewToOffice] = React.useState(false);
+  const [selectedNewDepositType, setSelectedNewDepositType] = React.useState("");
+  const [selectedNewPaymentMode, setSelectedNewPaymentMode] = React.useState("");
+  const [selectedNewAmount, setSelectedNewAmount] = React.useState(0);
+  const [selectedNewDate, setSelectedNewDate] = React.useState("");
+  const [selectedNewRefNo, setSelectedNewRefNo] = React.useState("");
+  const [selectedNewRemarks, setSelectedNewRemarks] = React.useState("");
   const [isSavingCollection, setIsSavingCollection] = React.useState(false);
+  
+  const [selectedNewDenoms, setSelectedNewDenoms] = React.useState({
+    note_500: 0,
+    note_200: 0,
+    note_100: 0,
+    note_50: 0,
+    note_20: 0,
+    note_10: 0,
+    coins: 0,
+    online_amount: 0,
+  });
 
   const handleStartEditCollection = (tx: any) => {
     const raw = tx.rawRecord;
-    const isDeposit = tx.depositType != null; // deposits have depositType, collections don't
+    const isDeposit = tx.depositType != null;
     setEditingIsDeposit(isDeposit);
     setEditingCollection(raw);
+    
     setSelectedNewRetailerId(raw.retailer_id || "");
     setSelectedNewPortalId(raw.portal_id || "");
+    setSelectedNewRemarks(raw.remarks || "");
+    
+    if (isDeposit) {
+      setSelectedNewDepositType(raw.deposit_type || raw.depositType || "virtual");
+      setSelectedNewPaymentMode(raw.payment_mode || raw.paymentMode || "online");
+      setSelectedNewAmount(Number(raw.amount || 0));
+      setSelectedNewDate(raw.deposit_date ? raw.deposit_date : (raw.date || "").split(" ")[0]);
+      setSelectedNewRefNo(raw.reference_no || "");
+      setSelectedNewRecipientStaffId(raw.recipient_staff_id || "");
+      setSelectedNewToOffice(raw.to_office === true);
+    }
+    
+    const den = raw.denominations || {};
+    setSelectedNewDenoms({
+      note_500: Number(den.note_500 || 0),
+      note_200: Number(den.note_200 || 0),
+      note_100: Number(den.note_100 || 0),
+      note_50: Number(den.note_50 || 0),
+      note_20: Number(den.note_20 || 0),
+      note_10: Number(den.note_10 || 0),
+      coins: Number(den.coins || 0),
+      online_amount: Number(den.online_amount || 0),
+    });
+    
     setIsEditCollectionModalOpen(true);
+  };
+
+  const handleDeleteEntry = async (tx: any) => {
+    if (!window.confirm("Are you sure you want to delete this ledger entry? This will permanently delete the entry and recalculate all following balances.")) {
+      return;
+    }
+    try {
+      const isDeposit = tx.depositType != null;
+      if (isDeposit) {
+        await api.deleteDeposit(tx.id);
+      } else {
+        await api.deleteCollection(tx.id);
+      }
+      adminContext.showToastNotification("Entry deleted successfully.");
+      await adminContext.fetchData();
+    } catch (err: any) {
+      alert("Failed to delete: " + err.message);
+    }
   };
 
   const handleSaveCollectionEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCollection) return;
     setIsSavingCollection(true);
+    
     try {
       if (editingIsDeposit) {
-        // Virtual deposit: update via deposit endpoint
+        const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+        const retailerId = selectedNewDepositType === "retailer" || selectedNewDepositType === "virtual" ? selectedNewRetailerId : null;
+        const recipientStaffId = selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null;
+        const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
+
         await api.updateDeposit(editingCollection.id, {
-          deposit_type: editingCollection.depositType || "virtual",
-          portal_id: selectedNewPortalId || editingCollection.portal_id || null,
-          retailer_id: selectedNewRetailerId || null,
-          recipient_staff_id: editingCollection.recipient_staff_id || null,
-          payment_mode: editingCollection.paymentMode || "online",
-          amount: editingCollection.amount,
-          deposit_date: (editingCollection.date || "").split(" ")[0] || new Date().toISOString().split("T")[0],
+          deposit_type: selectedNewDepositType,
+          portal_id: portalId || null,
+          retailer_id: retailerId || null,
+          recipient_staff_id: recipientStaffId || null,
+          to_office: toOffice,
+          payment_mode: selectedNewPaymentMode,
+          amount: Number(selectedNewAmount),
+          deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          reference_no: selectedNewRefNo || null,
+          denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null
         });
       } else {
-        // Collection: update via collection endpoint
+        const computedCollectionTotal = (
+          selectedNewDenoms.note_500 * 500 +
+          selectedNewDenoms.note_200 * 200 +
+          selectedNewDenoms.note_100 * 100 +
+          selectedNewDenoms.note_50 * 50 +
+          selectedNewDenoms.note_20 * 20 +
+          selectedNewDenoms.note_10 * 10 +
+          selectedNewDenoms.coins +
+          selectedNewDenoms.online_amount
+        );
+
         await api.updateCollection(editingCollection.id, {
           retailer_id: selectedNewRetailerId || null,
           portal_id: selectedNewPortalId || null,
           store_id: editingCollection.store_id || null,
-          total_amount: editingCollection.totalAmount || editingCollection.total_amount,
-          remarks: editingCollection.remarks || "",
-          denominations: editingCollection.denominations || {
-            note_500: 0,
-            note_200: 0,
-            note_100: 0,
-            note_50: 0,
-            note_20: 0,
-            note_10: 0,
-            coins: 0,
-            online_amount: 0
-          }
+          total_amount: computedCollectionTotal,
+          remarks: selectedNewRemarks || "",
+          denominations: selectedNewDenoms
         });
       }
       adminContext.showToastNotification("Entry updated successfully.");
@@ -523,15 +595,22 @@ export default function LedgerTab({
                           </div>
                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">By {tx.staff}</span>
                       </div>
-                      {tx.party.toLowerCase().trim() === "cms" && (
+                      <div className="flex items-center gap-1.5 no-print">
                         <button
                           onClick={() => handleStartEditCollection(tx)}
-                          className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"
-                          title="Edit Route"
+                          className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
+                          title="Edit Entry"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                      )}
+                        <button
+                          onClick={() => handleDeleteEntry(tx)}
+                          className="p-1 bg-red-50 text-red-650 dark:bg-red-950/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer active:scale-95 transition-transform"
+                          title="Delete Entry"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </td>
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-right font-bold text-slate-500">
@@ -581,12 +660,13 @@ export default function LedgerTab({
           </table>
         </div>
       </div>
-
       {isEditCollectionModalOpen && editingCollection && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-6 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter">Edit CMS Collection Route</h3>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter">
+                {editingIsDeposit ? "Edit Cash Out (Deposit) Entry" : "Edit Cash In (Collection) Entry"}
+              </h3>
               <button 
                 onClick={() => setIsEditCollectionModalOpen(false)} 
                 className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
@@ -595,63 +675,306 @@ export default function LedgerTab({
               </button>
             </div>
             <form onSubmit={handleSaveCollectionEdit} className="space-y-4">
-              <div className="space-y-3">
-                {/* Store Name (Read-only) */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Store (Read-only)</label>
-                  <input 
-                    type="text" 
-                    value={editingCollection.store_name || "Direct Retailer Handover"} 
-                    className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold text-slate-500" 
-                    readOnly 
-                  />
-                </div>
+              
+              {!editingIsDeposit ? (
+                // Collection Form Fields
+                <div className="space-y-3">
+                  {/* Parent Retailer Select */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Parent Retailer</label>
+                    <select
+                      value={selectedNewRetailerId}
+                      onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    >
+                      <option value="">No Retailer</option>
+                      {retailerDirectory.map((r: any) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* Parent Retailer Select */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Parent Retailer</label>
-                  <select
-                    value={selectedNewRetailerId}
-                    onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                  >
-                    {retailerDirectory.map((r: any) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
-                  </select>
-                </div>
+                  {/* Portal Select */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Portal Channel</label>
+                    <select
+                      value={selectedNewPortalId}
+                      onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    >
+                      <option value="">None / Cash</option>
+                      {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                      ))}
+                    </select>
+                  </div>
 
-                {/* Portal Select */}
-                <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Portal Channel</label>
-                  <select
-                    value={selectedNewPortalId}
-                    onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-905 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                  >
-                    <option value="">None / Cash</option>
-                    {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
-                      <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+                  {/* Denominations editor for Collection */}
+                  <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-950/50 space-y-2">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Denominations</span>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {[
+                        { label: "₹500 Notes", key: "note_500", factor: 500 },
+                        { label: "₹200 Notes", key: "note_200", factor: 200 },
+                        { label: "₹100 Notes", key: "note_100", factor: 100 },
+                        { label: "₹50 Notes", key: "note_50", factor: 50 },
+                        { label: "₹20 Notes", key: "note_20", factor: 20 },
+                        { label: "₹10 Notes", key: "note_10", factor: 10 },
+                      ].map(item => (
+                        <div key={item.key} className="flex flex-col gap-1">
+                          <label className="text-[9px] font-bold text-slate-400">{item.label}</label>
+                          <input
+                            type="number"
+                            value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0}
+                            onChange={(e) => {
+                              const val = Math.max(0, parseInt(e.target.value) || 0);
+                              setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
+                            }}
+                            className="px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
+                          />
+                        </div>
+                      ))}
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-slate-400">Coins Sum</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={selectedNewDenoms.coins}
+                          onChange={(e) => {
+                            const val = Math.max(0, parseFloat(e.target.value) || 0);
+                            setSelectedNewDenoms(prev => ({ ...prev, coins: val }));
+                          }}
+                          className="px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[9px] font-bold text-slate-400">UPI / Online Amount</label>
+                        <input
+                          type="number"
+                          value={selectedNewDenoms.online_amount}
+                          onChange={(e) => {
+                            const val = Math.max(0, parseFloat(e.target.value) || 0);
+                            setSelectedNewDenoms(prev => ({ ...prev, online_amount: val }));
+                          }}
+                          className="px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-              <div className="flex gap-3 pt-2">
+                  {/* Calculated total amount */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Total Amount (Calculated)</label>
+                    <input
+                      type="text"
+                      value={`₹${(
+                        selectedNewDenoms.note_500 * 500 +
+                        selectedNewDenoms.note_200 * 200 +
+                        selectedNewDenoms.note_100 * 100 +
+                        selectedNewDenoms.note_50 * 50 +
+                        selectedNewDenoms.note_20 * 20 +
+                        selectedNewDenoms.note_10 * 10 +
+                        selectedNewDenoms.coins +
+                        selectedNewDenoms.online_amount
+                      ).toLocaleString()}`}
+                      className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-black text-slate-800 dark:text-slate-100"
+                      readOnly
+                    />
+                  </div>
+
+                  {/* Remarks */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Remarks</label>
+                    <textarea
+                      value={selectedNewRemarks}
+                      onChange={(e) => setSelectedNewRemarks(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      rows={2}
+                      placeholder="Remarks..."
+                    />
+                  </div>
+                </div>
+              ) : (
+                // Deposit Form Fields
+                <div className="space-y-3">
+                  {/* Deposit Type */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Deposit/Payout Type</label>
+                    <select
+                      value={selectedNewDepositType}
+                      onChange={(e) => setSelectedNewDepositType(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    >
+                      <option value="portal">Portal Bank Deposit</option>
+                      <option value="retailer">Retailer Payout</option>
+                      <option value="staff">Staff/Office Handover</option>
+                      <option value="virtual">Virtual Limit Transfer</option>
+                    </select>
+                  </div>
+
+                  {/* Target Fields depending on deposit type */}
+                  {selectedNewDepositType === "portal" && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Portal</label>
+                      <select
+                        value={selectedNewPortalId}
+                        onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      >
+                        <option value="">Select Portal Bank Account</option>
+                        {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                          <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {selectedNewDepositType === "retailer" && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Retailer</label>
+                      <select
+                        value={selectedNewRetailerId}
+                        onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      >
+                        <option value="">Select Retailer</option>
+                        {retailerDirectory.map((r: any) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {selectedNewDepositType === "staff" && (
+                    <>
+                      <div className="flex items-center gap-2 py-1">
+                        <input
+                          type="checkbox"
+                          id="editToOfficeCheckbox"
+                          checked={selectedNewToOffice}
+                          onChange={(e) => setSelectedNewToOffice(e.target.checked)}
+                          className="w-4 h-4 text-blue-650 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor="editToOfficeCheckbox" className="text-xs font-bold text-slate-700 dark:text-slate-350">Handover to Main Office Cashier</label>
+                      </div>
+
+                      {!selectedNewToOffice && (
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Recipient Staff</label>
+                          <select
+                            value={selectedNewRecipientStaffId}
+                            onChange={(e) => setSelectedNewRecipientStaffId(e.target.value)}
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                          >
+                            <option value="">Select Staff Member</option>
+                            {(adminContext.userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => (
+                              <option key={u.id} value={u.id}>{u.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {selectedNewDepositType === "virtual" && (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Source Portal</label>
+                        <select
+                          value={selectedNewPortalId}
+                          onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                        >
+                          <option value="">Select Portal Bank Account</option>
+                          {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                            <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Retailer</label>
+                        <select
+                          value={selectedNewRetailerId}
+                          onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                        >
+                          <option value="">Select Retailer</option>
+                          {retailerDirectory.map((r: any) => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Payment Mode */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Payment Mode</label>
+                    <select
+                      value={selectedNewPaymentMode}
+                      onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="online">Online</option>
+                      <option value="refund">Refund (Virtual only)</option>
+                    </select>
+                  </div>
+
+                  {/* Amount */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Amount</label>
+                    <input
+                      type="number"
+                      value={selectedNewAmount}
+                      onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Date */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Date</label>
+                    <input
+                      type="date"
+                      value={selectedNewDate}
+                      onChange={(e) => setSelectedNewDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      required
+                    />
+                  </div>
+
+                  {/* Reference No */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Reference No</label>
+                    <input
+                      type="text"
+                      value={selectedNewRefNo}
+                      onChange={(e) => setSelectedNewRefNo(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setIsEditCollectionModalOpen(false)}
-                  className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingCollection}
-                  className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  {isSavingCollection ? "Saving..." : "Save Route"}
+                  {isSavingCollection ? "Saving..." : "Save Entry"}
                 </button>
               </div>
             </form>
