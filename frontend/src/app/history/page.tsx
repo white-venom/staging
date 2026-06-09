@@ -110,7 +110,13 @@ export default function HistoryPage() {
 
     let headerLines: string[] = [];
     if (entry.retailerName) {
-      headerLines.push(`Retailer: ${entry.retailerName}`);
+      if (entry.retailerName.startsWith("Staff:")) {
+        headerLines.push(entry.retailerName);
+      } else if (entry.retailerName === "Office" || entry.retailerName === "Unknown Source") {
+        headerLines.push(entry.retailerName);
+      } else {
+        headerLines.push(`Retailer: ${entry.retailerName}`);
+      }
     }
     if (entry.portalName && entry.portalName !== "Cash" && entry.portalName !== "N/A") {
       headerLines.push(`Store: ${entry.portalName}`);

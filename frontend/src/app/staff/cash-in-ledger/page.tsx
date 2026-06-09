@@ -150,7 +150,13 @@ export default function CashInLedgerPage() {
 
     let headerLines: string[] = [];
     if (entry.retailer_name) {
-      headerLines.push(`Retailer: ${entry.retailer_name}`);
+      if (entry.retailer_name.startsWith("Staff:")) {
+        headerLines.push(entry.retailer_name);
+      } else if (entry.retailer_name === "Office" || entry.retailer_name === "Unknown Source") {
+        headerLines.push(entry.retailer_name);
+      } else {
+        headerLines.push(`Retailer: ${entry.retailer_name}`);
+      }
     }
     if (entry.portal_name && entry.portal_name !== "Cash" && entry.portal_name !== "N/A") {
       headerLines.push(`Store: ${entry.portal_name}`);
