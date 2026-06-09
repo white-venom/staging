@@ -266,21 +266,14 @@ export default function DashboardPage() {
       {/* Header Bar */}
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center p-1.5 shadow-sm border border-slate-200/50">
-            <img 
-              src="/favicon.png" 
-              alt="CrediiFlow Logo" 
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <div>
-            <span className="font-black text-sm uppercase tracking-wider bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-              CrediiFlow
-            </span>
-            <span className="text-[10px] font-black bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-md px-2 py-0.5 ml-2.5 uppercase tracking-widest">
-              Console
-            </span>
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="CrediiFlow Logo" 
+            className="h-9 w-auto object-contain"
+          />
+          <span className="text-[10px] font-black bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-md px-2 py-0.5 uppercase tracking-widest">
+            Console
+          </span>
         </div>
 
         <div className="flex items-center gap-4">
