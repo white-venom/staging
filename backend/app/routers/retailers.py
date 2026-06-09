@@ -116,7 +116,10 @@ def delete_retailer(
         raise HTTPException(status_code=404, detail="Retailer not found")
 
     if retailer.retailer_name.lower().strip() == "cms":
-        raise HTTPException(status_code=400, detail="CMS retailer cannot be deleted")
+        from sqlalchemy import text
+        cms_count = db.query(Retailer).filter(text("LOWER(retailer_name) = 'cms'")).count()
+        if cms_count <= 1:
+            raise HTTPException(status_code=400, detail="CMS retailer cannot be deleted")
 
     db.delete(retailer)
     db.commit()

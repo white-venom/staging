@@ -65,7 +65,10 @@ def get_admin_summary(
     current_user=Depends(require_admin)
 ):
     """Admin dashboard summary: metrics for Today's Collections, Active Staff, and pending queues."""
-    today = date.today()
+    import pytz
+    from datetime import datetime
+    ist = pytz.timezone('Asia/Kolkata')
+    today = datetime.now(ist).date()
 
     # 1. Today's collections sum
     collections_today = db.scalar(
