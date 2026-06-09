@@ -149,11 +149,21 @@ export default function CashOutLedgerPage() {
     const dateFormatted = entry.created_at ? formatShareDate(getUtcDate(entry.created_at).toLocaleString("sv-SE").substring(0, 19)) : "";
     const collectorName = currentUser?.name || "Mehruddin";
 
-    const targetName = entry.deposit_type === "portal" && entry.portal_group_name 
-      ? entry.portal_group_name 
-      : (entry.target_name || "Super Distributor");
-    const targetLabel = targetName ? `${targetName}\n` : "";
-    const text = `${targetLabel}${lines.join("\n")}
+    let headerLines: string[] = [];
+    if (entry.deposit_type === "staff") {
+      const isRecipient = entry.recipient_staff_id === currentUser?.id;
+      headerLines.push(isRecipient ? `Received from: ${entry.staff_name}` : `Staff Handover: ${entry.target_name}`);
+    } else if (entry.deposit_type === "portal") {
+      headerLines.push(`Store/Portal: ${entry.portal_group_name || entry.target_name}`);
+    } else if (entry.deposit_type === "retailer") {
+      headerLines.push(`Retailer Payout: ${entry.target_name}`);
+    } else if (entry.deposit_type === "virtual") {
+      headerLines.push(`Virtual Transfer`);
+      if (entry.target_name) headerLines.push(`Retailer: ${entry.target_name}`);
+      if (entry.portal_group_name) headerLines.push(`Store: ${entry.portal_group_name}`);
+    }
+    const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
+    const text = `${headerText}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 Total : *₹ ${totalVal.toLocaleString('en-IN')}*  (Note: ${totalNotesCount})
 

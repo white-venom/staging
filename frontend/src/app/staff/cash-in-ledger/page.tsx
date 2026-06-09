@@ -148,8 +148,15 @@ export default function CashInLedgerPage() {
     const dateFormatted = entry.created_at ? formatShareDate(getUtcDate(entry.created_at).toLocaleString("sv-SE").substring(0, 19)) : "";
     const collectorName = currentUser?.name || "Mehruddin";
 
-    const retailerLabel = entry.retailer_name ? `${entry.retailer_name}\n` : "";
-    const text = `${retailerLabel}${lines.join("\n")}
+    let headerLines: string[] = [];
+    if (entry.retailer_name) {
+      headerLines.push(`Retailer: ${entry.retailer_name}`);
+    }
+    if (entry.portal_name && entry.portal_name !== "Cash" && entry.portal_name !== "N/A") {
+      headerLines.push(`Store: ${entry.portal_name}`);
+    }
+    const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
+    const text = `${headerText}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 Total : *₹ ${totalVal.toLocaleString('en-IN')}*  (Note: ${totalNotesCount})
 

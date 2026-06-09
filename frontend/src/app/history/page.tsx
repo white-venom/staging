@@ -108,8 +108,15 @@ export default function HistoryPage() {
     const dateFormatted = formatShareDate(entry.date);
     const collectorName = currentUser?.name || "Mehruddin";
 
-    const retailerLabel = entry.retailerName ? `${entry.retailerName}\n` : "";
-    const text = `${retailerLabel}${lines.join("\n")}
+    let headerLines: string[] = [];
+    if (entry.retailerName) {
+      headerLines.push(`Retailer: ${entry.retailerName}`);
+    }
+    if (entry.portalName && entry.portalName !== "Cash" && entry.portalName !== "N/A") {
+      headerLines.push(`Store: ${entry.portalName}`);
+    }
+    const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
+    const text = `${headerText}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 Total : *₹ ${totalVal.toLocaleString('en-IN')}*  (Note: ${totalNotesCount})
 
