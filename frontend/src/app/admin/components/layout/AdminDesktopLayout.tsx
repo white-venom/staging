@@ -203,7 +203,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
             Edit Profile
           </button>
           <button
-            onClick={() => { resetStore(); router.push("/login"); }}
+            onClick={() => { resetStore(); router.push("/"); }}
             className="flex items-center gap-2.5 text-red-600 hover:text-red-700 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-red-50/50 rounded-lg w-fit"
           >
             <LogOut className="w-4.5 h-4.5" />

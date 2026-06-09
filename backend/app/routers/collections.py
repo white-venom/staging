@@ -171,13 +171,16 @@ def submit_collection(
 
         # Trigger WhatsApp message asynchronously
         if retailer and retailer.phone:
-            from app.services.whatsapp import send_whatsapp_message
-            background_tasks.add_task(
-                send_whatsapp_message,
-                to_phone_number=retailer.phone,
-                template_name="retailer_payment_receipt",
-                variables=[retailer.retailer_name, str(db_collection.total_amount), secure_link]
-            )
+            try:
+                from app.services.whatsapp import send_whatsapp_message
+                background_tasks.add_task(
+                    send_whatsapp_message,
+                    to_phone_number=retailer.phone,
+                    template_name="retailer_payment_receipt",
+                    variables=[retailer.retailer_name, str(db_collection.total_amount), secure_link]
+                )
+            except Exception as whatsapp_err:
+                print(f"Error queueing WhatsApp message for collection: {whatsapp_err}")
 
         return db_collection
     except Exception as e:
@@ -319,13 +322,16 @@ def verify_collection(
         
     # Trigger WhatsApp message asynchronously
     if retailer and retailer.phone:
-        from app.services.whatsapp import send_whatsapp_message
-        background_tasks.add_task(
-            send_whatsapp_message,
-            to_phone_number=retailer.phone,
-            template_name="retailer_payment_receipt",
-            variables=[retailer.retailer_name, str(collection.total_amount), secure_link]
-        )
+        try:
+            from app.services.whatsapp import send_whatsapp_message
+            background_tasks.add_task(
+                send_whatsapp_message,
+                to_phone_number=retailer.phone,
+                template_name="retailer_payment_receipt",
+                variables=[retailer.retailer_name, str(collection.total_amount), secure_link]
+            )
+        except Exception as whatsapp_err:
+            print(f"Error queueing WhatsApp message for collection verification: {whatsapp_err}")
 
     return collection
 

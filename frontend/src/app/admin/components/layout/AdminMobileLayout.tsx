@@ -111,7 +111,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
 
   const handleLogout = () => {
     resetStore();
-    router.push("/login");
+    router.push("/");
   };
 
   return (
