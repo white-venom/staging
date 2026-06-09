@@ -71,13 +71,13 @@ export default function WelcomePage() {
         
         {/* Overlapping Dark Rectangular Logo Card (Matching Login Page) */}
         <div className="flex flex-col items-center gap-12 animate-fade-in-down">
-          <div className="relative w-56 h-28 flex items-center justify-center">
+          <div className="relative w-64 h-32 flex items-center justify-center">
             {/* Pulsating Aura */}
             <div className="absolute inset-0 bg-indigo-600/20 rounded-3xl blur-3xl animate-pulse"></div>
             <div className="absolute inset-4 bg-emerald-500/10 rounded-3xl blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
             
             {/* Main Rectangular Card */}
-            <div className="relative w-48 h-20 bg-slate-900 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden flex items-center justify-center p-4">
+            <div className="relative w-56 h-24 bg-slate-900 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden flex items-center justify-center p-3">
                {/* Shimmer Effect */}
                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer"></div>
                

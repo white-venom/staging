@@ -136,7 +136,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
             {/* The Coloured Box Container */}
             <div className="relative w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
               <img 
-                src="/logo.png" 
+                src="/favicon.png" 
                 alt="CrediiFlow Logo" 
                 className="w-full h-full object-contain brightness-100 dark:brightness-0"
               />

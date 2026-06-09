@@ -506,7 +506,7 @@ export default function StaffDashboard() {
               <div className="absolute inset-0 bg-blue-500/20 blur-lg rounded-xl scale-110" />
               <div className="relative w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
                 <img 
-                  src="/logo.png" 
+                  src="/favicon.png" 
                   alt="CrediiFlow Logo" 
                   className="w-full h-full object-contain brightness-100 dark:brightness-0"
                 />

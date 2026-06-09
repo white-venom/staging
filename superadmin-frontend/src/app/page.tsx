@@ -268,7 +268,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-slate-50 flex items-center justify-center p-1.5 shadow-sm border border-slate-200/50">
             <img 
-              src="/logo.png" 
+              src="/favicon.png" 
               alt="CrediiFlow Logo" 
               className="w-full h-full object-contain"
             />
