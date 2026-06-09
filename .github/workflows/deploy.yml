@@ -32,7 +32,11 @@ jobs:
           docker compose down --remove-orphans
           
           # Force-remove any stale named containers that may conflict
-          docker rm -f doit_db doit_backend doit_frontend doit_superadmin 2>/dev/null || true
+          docker rm -f doit_db doit_backend doit_frontend doit_superadmin_frontend doit_nginx 2>/dev/null || true
+          
+          # Safely prune stopped containers and unused networks to clear stale references
+          docker container prune -f
+          docker network prune -f
           
           # Rebuild and start all services
           docker compose up -d --build

@@ -127,21 +127,21 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
       `}</style>
 
       {/* Mobile Header with Logo and Hamburger Button */}
-      <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between no-print">
+      <header className="sticky top-0 z-40 bg-[#0d1b3e] border-b border-blue-900/40 px-6 py-4 flex items-center justify-between no-print shadow-md">
         <div className="flex items-center gap-3">
           <img 
             src="/logo.png" 
             alt="CrediiFlow Logo" 
-            className="h-8 w-auto object-contain dark:invert"
+            className="h-8 w-auto object-contain"
           />
-          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Admin Panel</span>
+          <span className="text-[10px] font-bold text-blue-200 uppercase tracking-widest mt-0.5">Admin Panel</span>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Hamburger Button */}
           <button
             onClick={() => setIsMenuOpen(true)}
-            className="w-10 h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl flex items-center justify-center text-slate-700 dark:text-slate-200 active:scale-90 transition-transform cursor-pointer"
+            className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-slate-200 hover:bg-white/10 active:scale-90 transition-transform cursor-pointer"
           >
             <Menu className="w-5 h-5" />
           </button>
