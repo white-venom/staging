@@ -169,9 +169,8 @@ function NewCollectionContent() {
       const cached = await db.retailers.toArray();
       const validRetailers = cached.filter(r => !r.id.startsWith("ret-"));
       setRetailers(validRetailers);
-      if (validRetailers.length > 0) {
-        setSelectedRetailer(validRetailers[0]);
-      }
+      // Do not auto-select the first retailer on mount, keep it null for search
+      setSelectedRetailer(null);
 
       // Fetch Staff Members and Portals
       try {
@@ -392,7 +391,7 @@ function NewCollectionContent() {
                         setSelectedRetailer(match || null);
                       }}
                       options={retailers.map((r) => ({ value: r.id, label: `${r.name}${r.phone ? ` (${r.phone})` : ""}` }))}
-                      placeholder="Choose Retailer"
+                      placeholder="Search Retailer..."
                       icon={<StoreIcon className="w-4 h-4" />}
                     />
                   </div>
@@ -441,24 +440,25 @@ function NewCollectionContent() {
                             );
                           })()}
                         </div>
+
+                        {/* Select Shop (Branch) inside selectedRetailer block */}
+                        <div className="mt-3">
+                          <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
+                            Select Shop (Branch)
+                          </label>
+                          <InlineSelect
+                            value={selectedStoreId}
+                            onChange={(val) => setSelectedStoreId(val)}
+                            options={[
+                              { value: "", label: "Cash" },
+                              ...retailerStores.map((store) => ({ value: store.id, label: store.store_name }))
+                            ]}
+                            placeholder="Cash"
+                            icon={<StoreIcon className="w-4 h-4" />}
+                          />
+                        </div>
                       </div>
                     )}
-
-                  <div>
-                    <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 mb-1.5">
-                      Select Shop (Branch)
-                    </label>
-                    <InlineSelect
-                      value={selectedStoreId}
-                      onChange={(val) => setSelectedStoreId(val)}
-                      options={[
-                        { value: "", label: "Cash" },
-                        ...retailerStores.map((store) => ({ value: store.id, label: store.store_name }))
-                      ]}
-                      placeholder="Cash"
-                      icon={<StoreIcon className="w-4 h-4" />}
-                    />
-                  </div>
                 </div>
               )}
 

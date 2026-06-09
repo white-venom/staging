@@ -311,7 +311,7 @@ export default function DailyReportPage() {
                           ? "Super Distributor"
                           : (item.target_name || "Recipient");
                       }
-                      const narration = `From ${source} to ${destination} by ${staffName}`;
+                      const narration = `From ${source} to ${destination}`;
 
                       return (
                         <tr key={item.id} className="border-b border-slate-200 hover:bg-slate-50/30">

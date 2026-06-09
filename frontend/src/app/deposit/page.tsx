@@ -156,7 +156,8 @@ function NewDepositContent() {
         setPortalsList(portals.map((p: any) => ({ id: p.id, name: p.portal_name })));
         
         if (mappedGroups.length > 0) setSelectedGroupId(mappedGroups[0].id);
-        if (mappedRetailers.length > 0) setSelectedRetailerId(mappedRetailers[0].id);
+        // Do not auto-select the first retailer on mount, keep it empty for search selection
+        setSelectedRetailerId("");
         if (mappedStaff.length > 0) setSelectedStaffId(mappedStaff[0].id);
       } catch (err) {
         console.error("Failed to load deposit options:", err);
@@ -420,7 +421,7 @@ function NewDepositContent() {
                     value={selectedRetailerId}
                     onChange={(val) => setSelectedRetailerId(val)}
                     options={retailers.map(r => ({ value: r.id, label: r.name }))}
-                    placeholder={retailers.length === 0 ? "Loading retailers..." : "Select Shop"}
+                    placeholder={retailers.length === 0 ? "Loading retailers..." : "Search Shop..."}
                     icon={<Layers className="w-4 h-4" />}
                   />
                 </div>
