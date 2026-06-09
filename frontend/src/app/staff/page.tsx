@@ -499,12 +499,12 @@ export default function StaffDashboard() {
           </div>
         )}
         {/* REPLICATED ADMIN HEADER */}
-        <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-[1.5rem] p-3 shadow-sm flex items-center justify-between">
+        <header className="bg-[#0d1b3e] border border-blue-900/40 rounded-[1.5rem] p-3 shadow-md flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
               src="/logo.png" 
               alt="CrediiFlow Logo" 
-              className="h-8 w-auto object-contain dark:invert"
+              className="h-8 w-auto object-contain"
             />
             <div className="flex items-center gap-1.5 ml-1">
               {isOnline ? (
@@ -512,7 +512,7 @@ export default function StaffDashboard() {
               ) : (
                 <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" title="Offline"></div>
               )}
-              <span className="text-[10px] font-bold text-blue-650 uppercase tracking-widest">Staff Panel</span>
+              <span className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">Staff Panel</span>
             </div>
           </div>
 
@@ -520,7 +520,7 @@ export default function StaffDashboard() {
             {currentUser?.role === "admin" && (
               <button
                 onClick={() => router.push("/admin")}
-                className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl flex items-center justify-center text-blue-500 active:scale-90 transition-transform cursor-pointer"
+                className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-blue-300 active:scale-90 transition-transform cursor-pointer hover:bg-white/10"
                 title="Admin Dashboard"
               >
                 <ArrowUpRight className="w-5 h-5" />
@@ -528,14 +528,14 @@ export default function StaffDashboard() {
             )}
             <button
               onClick={() => router.push("/staff/daily-report")}
-              className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl flex items-center justify-center text-blue-500 active:scale-90 transition-transform cursor-pointer"
+              className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-blue-300 active:scale-90 transition-transform cursor-pointer hover:bg-white/10"
               title="Daily Report"
             >
               <FileText className="w-5 h-5" />
             </button>
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="w-10 h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl flex items-center justify-center text-slate-700 dark:text-slate-200 active:scale-90 transition-transform cursor-pointer"
+              className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-slate-200 active:scale-90 transition-transform cursor-pointer hover:bg-white/10"
             >
               <Menu className="w-5 h-5" />
             </button>
