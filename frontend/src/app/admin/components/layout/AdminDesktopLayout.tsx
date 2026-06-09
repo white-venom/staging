@@ -169,10 +169,11 @@ export default function AdminDesktopLayout({ children }: { children: React.React
 
   return (
     <div className={`flex min-h-screen ${theme === "dark" ? "dark bg-slate-950 text-slate-100" : "bg-[#f8fafc] text-slate-900"}`}>
-      <aside className="w-64 bg-[#0b0f19] border-r border-slate-800/60 p-6 flex flex-col fixed h-full z-20 transition-all shadow-sm">
+      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-150 dark:border-slate-800 p-6 flex flex-col fixed h-full z-20 transition-all shadow-sm">
         <div className="mb-6">
-          <div className="w-full h-18 bg-transparent rounded-xl flex items-center justify-center p-1 relative overflow-hidden group">
-             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105" />
+          <div className="w-full h-18 bg-slate-950 rounded-xl flex items-center justify-center shadow-2xl shadow-black/40 p-3 border border-white/5 relative overflow-hidden group">
+             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer"></div>
+             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-transform duration-500 group-hover:scale-110" />
           </div>
         </div>
 
@@ -183,29 +184,29 @@ export default function AdminDesktopLayout({ children }: { children: React.React
               onClick={() => router.push(lnk.path)}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-extrabold transition-all text-left cursor-pointer ${
                 (activeTab === lnk.id || (lnk.id === "overview" && activeTab === "admin"))
-                  ? "bg-slate-800/80 text-white shadow-sm" 
-                  : "text-slate-400 hover:text-white hover:bg-slate-900/60"
+                  ? "bg-slate-100 dark:bg-slate-800 text-slate-850 dark:text-slate-50" 
+                  : "text-slate-500 hover:text-slate-850 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-950/40"
               }`}
             >
-              <lnk.icon className={`w-4.5 h-4.5 ${(activeTab === lnk.id || (lnk.id === "overview" && activeTab === "admin")) ? "text-blue-400" : "text-slate-500"}`} />
+              <lnk.icon className={`w-4.5 h-4.5 ${(activeTab === lnk.id || (lnk.id === "overview" && activeTab === "admin")) ? "text-[#1e40af] dark:text-blue-400" : "text-slate-400"}`} />
               {lnk.label}
             </button>
           ))}
         </nav>
 
-        <div className="border-t border-slate-800/60 pt-5 flex flex-col gap-2">
+        <div className="border-t border-slate-150 dark:border-slate-800 pt-5 flex flex-col gap-2">
           <button
             onClick={() => setShowProfileModal(true)}
-            className="flex items-center gap-2.5 text-slate-400 hover:text-white text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-slate-900/60 rounded-lg w-fit"
+            className="flex items-center gap-2.5 text-slate-500 hover:text-slate-850 dark:hover:text-slate-100 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 rounded-lg w-fit"
           >
-            <User className="w-4.5 h-4.5 text-slate-500" />
+            <User className="w-4.5 h-4.5 text-slate-400" />
             Edit Profile
           </button>
           <button
             onClick={() => { resetStore(); router.push("/login"); }}
-            className="flex items-center gap-2.5 text-red-400 hover:text-red-300 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-red-950/20 rounded-lg w-fit"
+            className="flex items-center gap-2.5 text-red-600 hover:text-red-700 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-red-50/50 rounded-lg w-fit"
           >
-            <LogOut className="w-4.5 h-4.5 text-red-500/70" />
+            <LogOut className="w-4.5 h-4.5" />
             Sign Out
           </button>
         </div>
