@@ -146,13 +146,13 @@ export default function LoginPage() {
         {/* ── MAIN LOGIN CARD (Minimal Professional Polish) ── */}
         <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.5)] p-10 pt-28 relative border border-white/10 overflow-visible">
           
-          {/* Overlapping Dark Circular Logo Card */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 flex items-center justify-center pointer-events-none">
+          {/* Overlapping Dark Rectangular Logo Card */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-56 h-28 flex items-center justify-center pointer-events-none">
             {/* Pulsating Aura */}
-            <div className="absolute inset-0 bg-indigo-600/20 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute inset-0 bg-indigo-600/20 rounded-3xl blur-3xl animate-pulse"></div>
             
-            {/* Main Circular Card */}
-            <div className="relative w-32 h-32 bg-slate-950 rounded-full shadow-[0_20px_60px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden flex items-center justify-center p-4">
+            {/* Main Rectangular Card */}
+            <div className="relative w-48 h-20 bg-slate-950 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden flex items-center justify-center p-3">
                {/* Shimmer Effect */}
                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer"></div>
                

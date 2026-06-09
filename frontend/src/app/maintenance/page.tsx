@@ -113,13 +113,13 @@ export default function MaintenancePage() {
         {/* Glassmorphic Container */}
         <div className="bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_40px_100px_-20px_rgba(15,23,42,0.08)] p-10 pt-24 relative border border-slate-200/80 overflow-visible text-center">
           
-          {/* Pulsing Logo Sphere */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-36 h-36 flex items-center justify-center pointer-events-none">
+          {/* Pulsing Logo Rectangle */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-24 flex items-center justify-center pointer-events-none">
             {/* Glowing Aura */}
-            <div className="absolute inset-0 bg-indigo-600/15 rounded-full blur-2xl animate-pulse"></div>
+            <div className="absolute inset-0 bg-indigo-600/15 rounded-3xl blur-2xl animate-pulse"></div>
             
-            {/* Main Circle Logo Container */}
-            <div className="relative w-28 h-28 bg-white rounded-full shadow-[0_15px_45px_rgba(15,23,42,0.08)] border border-slate-200/60 overflow-hidden flex items-center justify-center p-3">
+            {/* Main Rectangular Logo Container */}
+            <div className="relative w-40 h-16 bg-white rounded-2xl shadow-[0_15px_45px_rgba(15,23,42,0.08)] border border-slate-200/60 overflow-hidden flex items-center justify-center p-2">
                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-slate-900/5 to-transparent -translate-x-full animate-shimmer"></div>
                <img 
                  src="/logo.png" 

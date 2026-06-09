@@ -317,7 +317,7 @@ export default function SuperadminPage() {
       {/* ── LEFT SIDEBAR ── */}
       <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-6 flex flex-col fixed h-full z-20 transition-all shadow-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="w-20 h-20 bg-slate-950 rounded-2xl flex items-center justify-center p-2 border border-white/10 relative overflow-hidden group shadow-lg shadow-black/20">
+          <div className="w-full h-18 bg-slate-950 rounded-xl flex items-center justify-center p-2 border border-white/10 relative overflow-hidden group shadow-lg shadow-black/20">
              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer"></div>
              <img src="/logo.png" alt="CrediiFlow Logo" className="w-full h-full object-contain" />
           </div>

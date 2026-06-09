@@ -69,15 +69,15 @@ export default function WelcomePage() {
 
       <div className={`w-full max-w-[800px] relative z-10 text-center space-y-12 transition-all duration-1000 ${isExiting ? 'opacity-0 -translate-y-10 blur-xl' : 'opacity-100 translate-y-0 blur-0'}`}>
         
-        {/* Overlapping Dark Circular Logo Card (Matching Login Page) */}
+        {/* Overlapping Dark Rectangular Logo Card (Matching Login Page) */}
         <div className="flex flex-col items-center gap-12 animate-fade-in-down">
-          <div className="relative w-44 h-44 flex items-center justify-center">
+          <div className="relative w-56 h-28 flex items-center justify-center">
             {/* Pulsating Aura */}
-            <div className="absolute inset-0 bg-indigo-600/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute inset-4 bg-emerald-500/10 rounded-full blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute inset-0 bg-indigo-600/20 rounded-3xl blur-3xl animate-pulse"></div>
+            <div className="absolute inset-4 bg-emerald-500/10 rounded-3xl blur-2xl animate-pulse" style={{ animationDelay: '1s' }}></div>
             
-            {/* Main Circular Card */}
-            <div className="relative w-36 h-36 bg-slate-900 rounded-full shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden flex items-center justify-center p-5">
+            {/* Main Rectangular Card */}
+            <div className="relative w-48 h-20 bg-slate-900 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] border border-white/10 overflow-hidden flex items-center justify-center p-4">
                {/* Shimmer Effect */}
                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer"></div>
                

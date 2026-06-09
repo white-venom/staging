@@ -171,7 +171,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     <div className={`flex min-h-screen ${theme === "dark" ? "dark bg-slate-950 text-slate-100" : "bg-[#f8fafc] text-slate-900"}`}>
       <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-150 dark:border-slate-800 p-6 flex flex-col fixed h-full z-20 transition-all shadow-sm">
         <div className="mb-6">
-          <div className="w-full aspect-square bg-slate-950 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-black/40 p-4 border border-white/5 relative overflow-hidden group">
+          <div className="w-full h-18 bg-slate-950 rounded-xl flex items-center justify-center shadow-2xl shadow-black/40 p-3 border border-white/5 relative overflow-hidden group">
              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer"></div>
              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-transform duration-500 group-hover:scale-110" />
           </div>
