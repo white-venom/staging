@@ -131,21 +131,26 @@ export default function StaffDashboard() {
 
     loadOfflineQueues();
     
-    // Auto-restore attendance status if not already checked in locally
+    // Auto-restore / sync attendance status with backend database if online
     const autoRestore = async () => {
-      if (!attendance.isCheckedIn) {
-        try {
-          const status = await api.getMyAttendanceStatus();
-          if (status && status.status === "active") {
-            // Restore with original backend data to keep time consistent
-            restoreAttendance({
-              isCheckedIn: true,
-              startKm: status.start_km,
-              checkInTime: status.start_time.replace("T", " ").substring(0, 16),
-            });
-          }
-        } catch (err) {
-          // 404 is expected if no active shift exists
+      if (!isOnline) return;
+      try {
+        const status = await api.getMyAttendanceStatus();
+        if (status && status.status === "active") {
+          // Restore with original backend data to keep time consistent
+          restoreAttendance({
+            isCheckedIn: true,
+            startKm: status.start_km,
+            checkInTime: status.start_time.replace("T", " ").substring(0, 16),
+          });
+        }
+      } catch (err: any) {
+        // If the API explicitly says "No active shift found", reset the local Checked In state
+        if (err?.message === "No active shift found." || err?.message?.includes("not found")) {
+          restoreAttendance({
+            isCheckedIn: false,
+            startKm: 0,
+          });
         }
       }
     };

@@ -149,15 +149,18 @@ export default function CashOutLedgerPage() {
     const dateFormatted = entry.created_at ? formatShareDate(getUtcDate(entry.created_at).toLocaleString("sv-SE").substring(0, 19)) : "";
     const collectorName = currentUser?.name || "Mehruddin";
 
-    const text = `${lines.join("\n")}
+    const targetName = entry.deposit_type === "portal" && entry.portal_group_name 
+      ? entry.portal_group_name 
+      : (entry.target_name || "Super Distributor");
+    const targetLabel = targetName ? `${targetName}\n` : "";
+    const text = `${targetLabel}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 Total : *₹ ${totalVal.toLocaleString('en-IN')}*  (Note: ${totalNotesCount})
 
 ${totalWords} 
 
 ${collectorName} 
-${dateFormatted} 
-📲 Install App : goo.gl/uVSDgA`;
+${dateFormatted}`;
 
     if (navigator.share) {
       try {

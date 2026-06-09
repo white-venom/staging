@@ -108,15 +108,15 @@ export default function HistoryPage() {
     const dateFormatted = formatShareDate(entry.date);
     const collectorName = currentUser?.name || "Mehruddin";
 
-    const text = `${lines.join("\n")}
+    const retailerLabel = entry.retailerName ? `${entry.retailerName}\n` : "";
+    const text = `${retailerLabel}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 Total : *₹ ${totalVal.toLocaleString('en-IN')}*  (Note: ${totalNotesCount})
 
 ${totalWords} 
 
 ${collectorName} 
-${dateFormatted} 
-📲 Install App : goo.gl/uVSDgA`;
+${dateFormatted}`;
 
     if (navigator.share) {
       try {

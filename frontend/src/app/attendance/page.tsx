@@ -13,7 +13,7 @@ import {
 
 export default function AttendancePage() {
   const router = useRouter();
-  const { currentUser, attendance, checkIn, checkOut } = useAppStore();
+  const { currentUser, attendance, checkIn, checkOut, restoreAttendance } = useAppStore();
 
   const [startKmInput, setStartKmInput] = useState("");
   const [endKmInput, setEndKmInput] = useState("");
@@ -28,6 +28,31 @@ export default function AttendancePage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Synchronize attendance status with backend on mount
+  useEffect(() => {
+    if (!mounted || !currentUser) return;
+    const syncStatus = async () => {
+      try {
+        const status = await api.getMyAttendanceStatus();
+        if (status && status.status === "active") {
+          restoreAttendance({
+            isCheckedIn: true,
+            startKm: status.start_km,
+            checkInTime: status.start_time.replace("T", " ").substring(0, 16),
+          });
+        }
+      } catch (err: any) {
+        if (err?.message === "No active shift found." || err?.message?.includes("not found")) {
+          restoreAttendance({
+            isCheckedIn: false,
+            startKm: 0,
+          });
+        }
+      }
+    };
+    syncStatus();
+  }, [mounted, currentUser, restoreAttendance]);
 
   useEffect(() => {
     if (!mounted) return;
