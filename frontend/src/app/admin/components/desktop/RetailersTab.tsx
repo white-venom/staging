@@ -246,15 +246,13 @@ export default function RetailersTab({
                     </div>
                     {/* Actions Overlay */}
                     <div className="flex items-center gap-1 transition-opacity">
-                      {retailer.name.toLowerCase().trim() !== "cms" && (
-                        <button 
-                          onClick={() => handleStartEditRetailer(retailer)}
-                          className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
-                          title="Edit Retailer"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </button>
-                      )}
+                      <button 
+                        onClick={() => handleStartEditRetailer(retailer)}
+                        className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                        title="Edit Retailer"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
                       {retailer.name.toLowerCase().trim() !== "cms" && (
                         <button 
                           onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}

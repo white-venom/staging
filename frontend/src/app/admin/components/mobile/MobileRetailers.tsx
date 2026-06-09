@@ -416,14 +416,12 @@ export default function MobileRetailers({
                       <Phone className="w-4 h-4" />
                     </a>
                   )}
-                  {retailer.name.toLowerCase().trim() !== "cms" && (
-                    <button 
-                      onClick={() => handleStartEditRetailer(retailer)}
-                      className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  )}
+                  <button 
+                    onClick={() => handleStartEditRetailer(retailer)}
+                    className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-xl active:scale-95 transition-transform cursor-pointer"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
                   {retailer.name.toLowerCase().trim() !== "cms" && (
                     <button 
                       onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}

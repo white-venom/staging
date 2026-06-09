@@ -154,7 +154,7 @@ def check_in(
 
     db_attendance = Attendance(
         user_id=current_user.id,
-        date=date.today(),
+        date=now_ist.date(),
         start_km=payload.start_km,
         start_time=now_ist.replace(tzinfo=None),
         status="active",

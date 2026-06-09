@@ -102,6 +102,10 @@ def process_virtual_transfer(
     current_user=Depends(require_admin)
 ):
     """Atomically transfers virtual balance from Portal to Retailer or Staff."""
+    import pytz
+    from datetime import datetime
+    ist = pytz.timezone('Asia/Kolkata')
+    today_ist = datetime.now(ist).date()
     # 1. Fetch Source Portal
     portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
     if not portal:
@@ -165,7 +169,7 @@ def process_virtual_transfer(
                 retailer_id=payload.retailer_id,
                 amount=payload.amount,
                 payment_mode="refund" if payload.direction == "refund" else "online",
-                deposit_date=date.today(),
+                deposit_date=today_ist,
                 status="verified",
                 balance_snapshot=new_balance
             )
@@ -217,7 +221,7 @@ def process_virtual_transfer(
                 recipient_staff_id=payload.staff_id,
                 amount=payload.amount,
                 payment_mode="refund" if payload.direction == "refund" else "online",
-                deposit_date=date.today(),
+                deposit_date=today_ist,
                 status="verified",
                 balance_snapshot=staff.virtual_balance
             )
