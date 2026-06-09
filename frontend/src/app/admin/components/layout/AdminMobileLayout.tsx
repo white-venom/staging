@@ -129,23 +129,12 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
       {/* Mobile Header with Logo and Hamburger Button */}
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800 px-6 py-4 flex items-center justify-between no-print">
         <div className="flex items-center gap-3">
-          <div className="relative group">
-            {/* The Glow */}
-            <div className="absolute inset-0 bg-blue-500/20 blur-lg rounded-xl scale-110" />
-            
-            {/* The Coloured Box Container */}
-            <div className="relative w-10 h-10 bg-slate-900 dark:bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
-              <img 
-                src="/favicon.png" 
-                alt="CrediiFlow Logo" 
-                className="w-full h-full object-contain brightness-100 dark:brightness-0"
-              />
-            </div>
-          </div>
-          <div>
-            <h1 className="font-black text-slate-900 dark:text-white tracking-tighter uppercase text-sm leading-none">CrediiFlow</h1>
-            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Admin Panel</p>
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="CrediiFlow Logo" 
+            className="h-8 w-auto object-contain dark:invert"
+          />
+          <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">Admin Panel</span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -178,9 +167,9 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
             <div className="flex flex-col flex-1 min-h-0">
               {/* Drawer Header */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-4 flex-shrink-0">
-                <div className="flex flex-col">
-                  <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">CrediiFlow</span>
-                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">Admin Panel</span>
+                <div className="flex items-center gap-2">
+                  <img src="/logo.png" alt="CrediiFlow Logo" className="h-7 w-auto object-contain dark:invert" />
+                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Admin Panel</span>
                 </div>
                 <button
                   onClick={() => setIsMenuOpen(false)}
