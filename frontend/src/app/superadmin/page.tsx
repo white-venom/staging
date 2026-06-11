@@ -315,132 +315,132 @@ export default function SuperadminPage() {
     <div className={`flex min-h-screen ${theme === "dark" ? "dark bg-slate-950 text-slate-100" : "bg-[#f8fafc] text-slate-900"} font-sans select-none`}>
       
       {/* ── LEFT SIDEBAR ── */}
-      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-6 flex flex-col fixed h-full z-20 transition-all shadow-sm">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="w-full h-18 bg-slate-950 rounded-xl flex items-center justify-center p-2 border border-white/10 relative overflow-hidden group shadow-lg shadow-black/20">
+      <aside className="w-56 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-3 flex flex-col fixed h-full z-20 transition-all shadow-sm">
+        <div className="mb-4 flex flex-col items-center gap-2">
+          <div className="w-full h-14 bg-slate-950 rounded-lg flex items-center justify-center p-1.5 border border-white/10 relative overflow-hidden group shadow-lg shadow-black/20">
              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer"></div>
              <img src="/logo.png" alt="CrediiFlow Logo" className="w-full h-full object-contain" />
           </div>
           <div className="text-center">
-            <span className="text-xs font-black tracking-widest text-indigo-650 dark:text-indigo-400 uppercase">CrediiFlow Core</span>
-            <h2 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Global Superadmin</h2>
+            <span className="text-[10px] font-black tracking-widest text-indigo-650 dark:text-indigo-400 uppercase">CrediiFlow Core</span>
+            <h2 className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-0.5">Global Superadmin</h2>
           </div>
         </div>
 
         <nav className="flex-1 space-y-1">
           <button
             onClick={() => setActiveTab("clients")}
-            className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all text-left cursor-pointer ${
+            className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all text-left cursor-pointer ${
               activeTab === "clients"
                 ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/10" 
                 : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-150 hover:bg-slate-50 dark:hover:bg-slate-950/40"
             }`}
           >
-            <Building className="w-4.5 h-4.5" />
+            <Building className="w-3.5 h-3.5" />
             Client Directories
           </button>
           
           <button
             onClick={() => router.push("/maintenance")}
-            className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-black uppercase tracking-wider text-slate-500 hover:text-slate-850 dark:hover:text-slate-150 hover:bg-slate-50 dark:hover:bg-slate-950/40 text-left cursor-pointer"
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-slate-500 hover:text-slate-850 dark:hover:text-slate-150 hover:bg-slate-50 dark:hover:bg-slate-950/40 text-left cursor-pointer"
           >
-            <Server className="w-4.5 h-4.5" />
+            <Server className="w-3.5 h-3.5" />
             Check Maintenance
           </button>
         </nav>
 
-        <div className="border-t border-slate-150 dark:border-slate-800 pt-5">
+        <div className="border-t border-slate-150 dark:border-slate-800 pt-3">
           <button
             onClick={() => { resetStore(); router.push("/"); }}
-            className="flex items-center gap-2.5 text-red-650 hover:text-red-700 text-xs font-black uppercase tracking-wider transition-all px-2 py-1.5 cursor-pointer hover:bg-red-50/50 rounded-lg w-fit"
+            className="flex items-center gap-2 text-red-650 hover:text-red-700 text-[10px] font-black uppercase tracking-wider transition-all px-1.5 py-1 cursor-pointer hover:bg-red-50/50 rounded-lg w-fit"
           >
-            <LogOut className="w-4.5 h-4.5" />
+            <LogOut className="w-3.5 h-3.5" />
             Exit Dashboard
           </button>
         </div>
       </aside>
 
       {/* ── MAIN CONTAINER ── */}
-      <main className="flex-1 ml-64 p-8 min-h-screen">
+      <main className="flex-1 ml-56 p-4 min-h-screen">
         
         {/* Header */}
-        <header className="flex items-center justify-between mb-8">
+        <header className="flex items-center justify-between mb-4">
           <div>
-             <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">SaaS Command Center</h1>
-             <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-wider">Multi-Tenant Management & Resource Utilization</p>
+             <h1 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">SaaS Command Center</h1>
+             <p className="text-[10px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Multi-Tenant Management & Resource Utilization</p>
           </div>
           
           <button
             onClick={() => { resetForm(); setShowAddDrawer(true); }}
-            className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-indigo-650/20 active:scale-95 transition-all cursor-pointer"
+            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md shadow-indigo-650/20 active:scale-95 transition-all cursor-pointer"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             Add New Client
           </button>
         </header>
 
         {/* ── TOP KPI SUMMARY GRID ── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           
           {/* Active Clients */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Clients</span>
-              <span className="text-2xl font-black block text-slate-900 dark:text-white tracking-tight">{clients.length} Teams</span>
-              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">Fully Isolated Clusters</span>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Active Clients</span>
+              <span className="text-lg font-black block text-slate-900 dark:text-white tracking-tight">{clients.length} Teams</span>
+              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">Fully Isolated Clusters</span>
             </div>
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-xl">
-              <Building className="w-6 h-6" />
+            <div className="p-2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-lg">
+              <Building className="w-5 h-5" />
             </div>
           </div>
 
           {/* Monthly MRR */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Global Monthly MRR</span>
-              <span className="text-2xl font-black block text-slate-900 dark:text-white tracking-tight">₹{totalRevenue.toLocaleString()}</span>
-              <span className="text-[9px] text-emerald-600 font-bold uppercase tracking-wider block">100% Subscription Flow</span>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Global Monthly MRR</span>
+              <span className="text-lg font-black block text-slate-900 dark:text-white tracking-tight">₹{totalRevenue.toLocaleString()}</span>
+              <span className="text-[8px] text-emerald-600 font-bold uppercase tracking-wider block">100% Subscription Flow</span>
             </div>
-            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-xl">
-              <DollarSign className="w-6 h-6" />
+            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 rounded-lg">
+              <DollarSign className="w-5 h-5" />
             </div>
           </div>
 
           {/* Database Size */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Relational Storage</span>
-              <span className="text-2xl font-black block text-slate-900 dark:text-white tracking-tight">{totalDbSize} MB</span>
-              <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block">{totalStaff} Staff | {totalRetailers} Retailers</span>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Relational Storage</span>
+              <span className="text-lg font-black block text-slate-900 dark:text-white tracking-tight">{totalDbSize} MB</span>
+              <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block">{totalStaff} Staff | {totalRetailers} Retailers</span>
             </div>
-            <div className="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-xl">
-              <Database className="w-6 h-6" />
+            <div className="p-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded-lg">
+              <Database className="w-5 h-5" />
             </div>
           </div>
 
           {/* VPS Average Load */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center justify-between">
-            <div className="space-y-1">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Avg Engine Load</span>
-              <span className="text-2xl font-black block text-slate-900 dark:text-white tracking-tight">{avgCpu}% CPU</span>
-              <span className="text-[9px] text-indigo-400 font-bold uppercase tracking-wider block">Container Cluster OK</span>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg shadow-sm flex items-center justify-between">
+            <div className="space-y-0.5">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Avg Engine Load</span>
+              <span className="text-lg font-black block text-slate-900 dark:text-white tracking-tight">{avgCpu}% CPU</span>
+              <span className="text-[8px] text-indigo-400 font-bold uppercase tracking-wider block">Container Cluster OK</span>
             </div>
-            <div className="p-3 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl">
-              <Cpu className="w-6 h-6" />
+            <div className="p-2 bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 rounded-lg">
+              <Cpu className="w-5 h-5" />
             </div>
           </div>
 
         </div>
 
         {/* ── CLIENTS DIRECTORY & MONITORING PANEL ── */}
-        <div className="grid lg:grid-cols-3 gap-8 items-start">
+        <div className="grid lg:grid-cols-3 gap-4 items-start">
           
           {/* Directory Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-              <div className="px-6 py-5 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm overflow-hidden">
+              <div className="px-3.5 py-2 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-955/50 flex items-center justify-between">
                 <h3 className="text-xs font-black uppercase tracking-wide text-slate-800 dark:text-slate-100">Tenant Directory</h3>
-                <span className="text-[9px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-450 px-2.5 py-0.5 rounded-full font-black uppercase tracking-wider border border-indigo-200/50">
+                <span className="text-[8px] bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-450 px-2 py-0.5 rounded-full font-black uppercase tracking-wider border border-indigo-200/50">
                   Manage Clients ({clients.length})
                 </span>
               </div>
@@ -449,11 +449,11 @@ export default function SuperadminPage() {
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-950 text-[9px] font-black uppercase tracking-wider text-slate-400 border-b border-slate-250 dark:border-slate-800">
-                      <th className="px-6 py-4">Client Name</th>
-                      <th className="px-6 py-4">Owner / Contact</th>
-                      <th className="px-6 py-4 text-center">Plan Limits</th>
-                      <th className="px-6 py-4 text-center">Status</th>
-                      <th className="px-6 py-4 text-right">Actions</th>
+                      <th className="px-3 py-2">Client Name</th>
+                      <th className="px-3 py-2">Owner / Contact</th>
+                      <th className="px-3 py-2 text-center">Plan Limits</th>
+                      <th className="px-3 py-2 text-center">Status</th>
+                      <th className="px-3 py-2 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-bold text-slate-700 dark:text-slate-350">
@@ -463,58 +463,58 @@ export default function SuperadminPage() {
                         onClick={() => setSelectedClient(c)}
                         className={`hover:bg-slate-50/70 dark:hover:bg-slate-850/10 transition-colors cursor-pointer ${selectedClient?.id === c.id ? "bg-slate-50 dark:bg-slate-850/20" : ""}`}
                       >
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-1.5">
                           <div className="flex flex-col">
-                            <span className="font-extrabold text-slate-900 dark:text-white uppercase tracking-tight leading-snug">{c.name}</span>
+                            <span className="font-extrabold text-slate-900 dark:text-white uppercase tracking-tight leading-none text-[11px]">{c.name}</span>
                             <span className="text-[8px] text-slate-400 uppercase mt-0.5">{c.id}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 py-1.5">
                           <div className="flex flex-col">
-                            <span className="font-semibold text-slate-800 dark:text-slate-250">{c.owner}</span>
-                            <span className="text-[9px] font-medium text-slate-450 dark:text-slate-500">{c.phone}</span>
+                            <span className="font-semibold text-slate-800 dark:text-slate-250 text-[11px]">{c.owner}</span>
+                            <span className="text-[8px] font-medium text-slate-450 dark:text-slate-500 mt-0.5">{c.phone}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex flex-col items-center">
-                            <span className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider ${
-                              c.plan === 'Enterprise' ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-650' : c.plan === 'Pro' ? 'bg-blue-100 dark:bg-blue-950 text-blue-650' : 'bg-slate-100 dark:bg-slate-800 text-slate-650'
+                        <td className="px-3 py-1.5 text-center">
+                          <div className="flex flex-col items-center justify-center">
+                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                              c.plan === 'Enterprise' ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-650' : c.plan === 'Pro' ? 'bg-blue-100 dark:bg-blue-950 text-blue-650' : 'bg-slate-100 dark:bg-slate-800 text-slate-655'
                             }`}>
                               {c.plan}
                             </span>
-                            <span className="text-[9px] text-slate-400 font-bold mt-1">
+                            <span className="text-[8px] text-slate-400 font-bold mt-0.5">
                               Stf: {c.activeStaff}/{c.staffLimit} | Ret: {c.activeRetailers}/{c.retailerLimit}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-3 py-1.5 text-center">
                           <button
                             onClick={(e) => { e.stopPropagation(); toggleMaintenance(c.id, c.status, c.name); }}
-                            className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1 mx-auto transition-all active:scale-95 ${
+                            className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider border flex items-center gap-0.5 mx-auto transition-all active:scale-95 ${
                               c.status === 'Online'
                               ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border-emerald-250 dark:border-emerald-900/30'
                               : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border-amber-250 dark:border-amber-900/30 animate-pulse'
                             }`}
                           >
-                            {c.status === "Online" ? <Play className="w-2.5 h-2.5 fill-emerald-600 stroke-none" /> : <Pause className="w-2.5 h-2.5 fill-amber-600 stroke-none" />}
+                            {c.status === "Online" ? <Play className="w-2 h-2 fill-emerald-600 stroke-none" /> : <Pause className="w-2 h-2 fill-amber-600 stroke-none" />}
                             {c.status}
                           </button>
                         </td>
-                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-3 py-1.5 text-right" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-1">
                             <button 
                               onClick={() => openEdit(c)}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                              className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-slate-50 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
                               title="Edit Details"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-3.5 h-3.5" />
                             </button>
                             <button 
                               onClick={() => handleDeleteClient(c.id, c.name)}
-                              className="p-1.5 text-slate-450 hover:text-red-650 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                              className="p-1 text-slate-450 hover:text-red-650 hover:bg-slate-50 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer"
                               title="Delete Client"
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </td>
@@ -527,32 +527,32 @@ export default function SuperadminPage() {
           </div>
 
           {/* Details Column */}
-          <div className="space-y-6">
+          <div className="space-y-4">
             
             {/* Resource Usage & Stats Card */}
             {selectedClient ? (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6 animate-fade-in">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm p-3 space-y-3 animate-fade-in">
                 
-                <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
-                  <div className="flex items-center gap-2">
-                    <Server className="w-5 h-5 text-indigo-650 dark:text-indigo-400" />
+                <div className="border-b border-slate-100 dark:border-slate-800 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Server className="w-4 h-4 text-indigo-650 dark:text-indigo-400" />
                     <div>
-                      <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100 tracking-wide">Resource Usage</h3>
-                      <p className="text-[9px] font-bold text-slate-450 uppercase mt-0.5">{selectedClient.name}</p>
+                      <h3 className="text-[11px] font-black uppercase text-slate-800 dark:text-slate-100 tracking-wide">Resource Usage</h3>
+                      <p className="text-[8px] font-bold text-slate-450 uppercase mt-0.5">{selectedClient.name}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Gauges & Meters */}
-                <div className="space-y-5">
+                <div className="space-y-3">
                   
                   {/* Database size */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400">
                       <span>DB Cluster Storage</span>
                       <span className="text-slate-700 dark:text-slate-350">{selectedClient.dbSizeMb} MB / 100 MB</span>
                     </div>
-                    <div className="h-2.5 w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-indigo-500 rounded-full transition-all duration-1000"
                         style={{ width: `${(selectedClient.dbSizeMb / 100) * 100}%` }}
@@ -561,12 +561,12 @@ export default function SuperadminPage() {
                   </div>
 
                   {/* Active staff limit */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400">
                       <span>Active Staff allocation</span>
                       <span className="text-slate-700 dark:text-slate-350">{selectedClient.activeStaff} / {selectedClient.staffLimit} Users</span>
                     </div>
-                    <div className="h-2.5 w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-blue-500 rounded-full transition-all duration-1000"
                         style={{ width: `${(selectedClient.activeStaff / selectedClient.staffLimit) * 100}%` }}
@@ -575,12 +575,12 @@ export default function SuperadminPage() {
                   </div>
 
                   {/* Retailers allocation */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400">
                       <span>Retailer Accounts</span>
                       <span className="text-slate-700 dark:text-slate-350">{selectedClient.activeRetailers} / {selectedClient.retailerLimit} Stores</span>
                     </div>
-                    <div className="h-2.5 w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-emerald-500 rounded-full transition-all duration-1000"
                         style={{ width: `${(selectedClient.activeRetailers / selectedClient.retailerLimit) * 100}%` }}
@@ -589,12 +589,12 @@ export default function SuperadminPage() {
                   </div>
 
                   {/* API Calls */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-wider text-slate-400">
                       <span>API Call frequency</span>
                       <span className="text-slate-700 dark:text-slate-350">{selectedClient.apiRequests} req/hour</span>
                     </div>
-                    <div className="h-2.5 w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-full overflow-hidden">
+                    <div className="h-1.5 w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-full overflow-hidden">
                       <div 
                         className="h-full bg-purple-500 rounded-full transition-all duration-1000"
                         style={{ width: `${Math.min(100, (selectedClient.apiRequests / 5000) * 100)}%` }}
@@ -603,19 +603,19 @@ export default function SuperadminPage() {
                   </div>
 
                   {/* Virtual CPU / Mem details */}
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div className="p-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-850 rounded-xl">
-                      <span className="text-[8px] font-black uppercase text-slate-400 block mb-1">Engine CPU Load</span>
-                      <div className="flex items-center gap-1.5">
-                        <Cpu className="w-3.5 h-3.5 text-indigo-550 dark:text-indigo-400" />
-                        <span className="text-xs font-black">{selectedClient.cpuLoad}%</span>
+                  <div className="grid grid-cols-2 gap-2 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+                    <div className="p-1.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-850 rounded-lg">
+                      <span className="text-[8px] font-black uppercase text-slate-400 block mb-0.5">Engine CPU Load</span>
+                      <div className="flex items-center gap-1">
+                        <Cpu className="w-3 h-3 text-indigo-550 dark:text-indigo-400" />
+                        <span className="text-[10px] font-black">{selectedClient.cpuLoad}%</span>
                       </div>
                     </div>
-                    <div className="p-3 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-850 rounded-xl">
-                      <span className="text-[8px] font-black uppercase text-slate-400 block mb-1">Engine RAM allocation</span>
-                      <div className="flex items-center gap-1.5">
-                        <Sliders className="w-3.5 h-3.5 text-indigo-550 dark:text-indigo-400" />
-                        <span className="text-xs font-black">{selectedClient.memoryUsage} MB</span>
+                    <div className="p-1.5 bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-850 rounded-lg">
+                      <span className="text-[8px] font-black uppercase text-slate-400 block mb-0.5">Engine RAM allocation</span>
+                      <div className="flex items-center gap-1">
+                        <Sliders className="w-3 h-3 text-indigo-550 dark:text-indigo-400" />
+                        <span className="text-[10px] font-black">{selectedClient.memoryUsage} MB</span>
                       </div>
                     </div>
                   </div>
@@ -625,34 +625,34 @@ export default function SuperadminPage() {
                 {/* DB Optimization Trigger */}
                 <button
                   onClick={() => triggerToast(`Optimized index clusters on "${selectedClient.name}".`)}
-                  className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-950 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all active:scale-[0.98] cursor-pointer"
+                  className="w-full py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-955 hover:bg-slate-950 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                 >
                   Optimize DB Clusters
                 </button>
                 
               </div>
             ) : (
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-8 text-center text-slate-400 italic font-bold">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm p-4 text-center text-slate-400 italic text-[11px] font-bold">
                  Select a tenant directory to monitor real-time resource allocations.
               </div>
             )}
 
             {/* Quick backup logs */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <Database className="w-4 h-4 text-blue-600" />
-                <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-100">Global Backups Log</h3>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 shadow-sm space-y-2">
+              <div className="flex items-center gap-1.5 border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                <Database className="w-3.5 h-3.5 text-blue-650" />
+                <h3 className="text-[11px] font-black uppercase text-slate-800 dark:text-slate-100">Global Backups Log</h3>
               </div>
-              <div className="space-y-3 text-[11px] font-semibold">
-                <div className="flex items-center justify-between p-2 rounded bg-slate-50/50 dark:bg-slate-950/50 border border-slate-100/50 dark:border-slate-850">
+              <div className="space-y-1.5 text-[10px] font-semibold">
+                <div className="flex items-center justify-between p-1.5 rounded bg-slate-50/50 dark:bg-slate-950/50 border border-slate-100/50 dark:border-slate-850">
                   <span className="text-slate-655 dark:text-slate-400">Database Daily Snapshot</span>
-                  <span className="font-black text-emerald-600">SUCCESS (R2)</span>
+                  <span className="font-black text-emerald-600">SUCCESS</span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded bg-slate-50/50 dark:bg-slate-950/50 border border-slate-100/50 dark:border-slate-850">
+                <div className="flex items-center justify-between p-1.5 rounded bg-slate-50/50 dark:bg-slate-950/50 border border-slate-100/50 dark:border-slate-850">
                   <span className="text-slate-655 dark:text-slate-400">Odometer Images Sync</span>
-                  <span className="font-black text-emerald-600">SUCCESS (R2)</span>
+                  <span className="font-black text-emerald-600">SUCCESS</span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded bg-slate-50/50 dark:bg-slate-950/50 border border-slate-100/50 dark:border-slate-850 opacity-60">
+                <div className="flex items-center justify-between p-1.5 rounded bg-slate-50/50 dark:bg-slate-950/50 border border-slate-100/50 dark:border-slate-850 opacity-60">
                   <span className="text-slate-655 dark:text-slate-400">Weekly Full Backup</span>
                   <span className="font-black text-slate-400">07-Jun-2026</span>
                 </div>
@@ -667,74 +667,74 @@ export default function SuperadminPage() {
 
       {/* ── CREATE CLIENT DRAWER/MODAL ── */}
       {showAddDrawer && (
-        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.2rem] w-full max-w-md p-8 space-y-6 shadow-2xl animate-scale-in">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="fixed inset-0 bg-slate-955/50 backdrop-blur-xs z-50 flex items-center justify-center p-3">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-sm p-4 space-y-3 shadow-2xl animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
               <div>
-                <h3 className="text-sm font-black uppercase text-slate-800 dark:text-slate-200 tracking-tight">Add New Tenant Profile</h3>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Setup Isolated Database</p>
+                <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-200 tracking-tight">Add New Tenant Profile</h3>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Setup Isolated Database</p>
               </div>
               <button 
                 onClick={() => { setShowAddDrawer(false); resetForm(); }} 
-                className="p-2 bg-slate-50 dark:bg-slate-850 text-slate-550 dark:text-slate-400 rounded-xl hover:bg-slate-100 cursor-pointer"
+                className="p-1.5 bg-slate-50 dark:bg-slate-850 text-slate-550 dark:text-slate-400 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
-                <X className="w-4.5 h-4.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
             
-            <form onSubmit={handleAddClient} className="space-y-4 text-xs font-semibold">
+            <form onSubmit={handleAddClient} className="space-y-2.5 text-[11px] font-semibold">
               <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Company / Business Name</label>
+                <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Company / Business Name</label>
                 <input 
                   type="text" 
                   value={fName} 
                   onChange={e => setFName(e.target.value)} 
                   placeholder="e.g. Noida Cash Exchange" 
-                  className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none focus:border-indigo-500" 
+                  className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none focus:border-indigo-500" 
                   required 
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Owner Name</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Owner Name</label>
                   <input 
                     type="text" 
                     value={fOwner} 
                     onChange={e => setFOwner(e.target.value)} 
                     placeholder="e.g. Ramesh Verma" 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none" 
                     required 
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Owner Phone</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Owner Phone</label>
                   <input 
                     type="tel" 
                     value={fPhone} 
                     onChange={e => setFPhone(e.target.value)} 
                     placeholder="e.g. 9917128864" 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none" 
                     required 
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Billing Email</label>
+                <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Billing Email</label>
                 <input 
                   type="email" 
                   value={fEmail} 
                   onChange={e => setFEmail(e.target.value)} 
                   placeholder="billing@company.com" 
-                  className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none" 
+                  className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none" 
                   required 
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Pricing Plan</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Pricing Plan</label>
                   <select 
                     value={fPlan} 
                     onChange={e => {
@@ -744,7 +744,7 @@ export default function SuperadminPage() {
                       else if(plan === "Pro") { setFFee(2500); setFStaffLimit(20); setFRetLimit(100); }
                       else { setFFee(5000); setFStaffLimit(50); setFRetLimit(250); }
                     }} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none"
+                    className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg outline-none"
                   >
                     <option value="Basic">Basic Plan</option>
                     <option value="Pro">Pro Plan</option>
@@ -752,41 +752,41 @@ export default function SuperadminPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Monthly Fee (₹)</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Monthly Fee (₹)</label>
                   <input 
                     type="number" 
                     value={fFee} 
                     onChange={e => setFFee(Number(e.target.value))} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none font-bold" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none font-bold" 
                     required 
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Staff Limit</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Staff Limit</label>
                   <input 
                     type="number" 
                     value={fStaffLimit} 
                     onChange={e => setFStaffLimit(Number(e.target.value))} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none font-semibold" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none font-semibold" 
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Retailer Limit</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Retailer Limit</label>
                   <input 
                     type="number" 
                     value={fRetLimit} 
                     onChange={e => setFRetLimit(Number(e.target.value))} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none font-semibold" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none font-semibold" 
                   />
                 </div>
               </div>
 
               <button 
                 type="submit" 
-                className="w-full py-4.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg shadow-indigo-950/20 active:scale-95 transition-all mt-4 cursor-pointer"
+                className="w-full py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-lg shadow-indigo-950/20 active:scale-95 transition-all mt-2 cursor-pointer"
               >
                 Provision Isolated Database
               </button>
@@ -797,74 +797,74 @@ export default function SuperadminPage() {
 
       {/* ── EDIT CLIENT DRAWER/MODAL ── */}
       {showEditDrawer && (
-        <div className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.2rem] w-full max-w-md p-8 space-y-6 shadow-2xl animate-scale-in">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div className="fixed inset-0 bg-slate-955/50 backdrop-blur-xs z-50 flex items-center justify-center p-3">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-sm p-4 space-y-3 shadow-2xl animate-scale-in">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
               <div>
-                <h3 className="text-sm font-black uppercase text-slate-800 dark:text-slate-200 tracking-tight">Edit Tenant Profile</h3>
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Modify Allocation Limits</p>
+                <h3 className="text-xs font-black uppercase text-slate-800 dark:text-slate-200 tracking-tight">Edit Tenant Profile</h3>
+                <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Modify Allocation Limits</p>
               </div>
               <button 
                 onClick={() => { setShowEditDrawer(false); resetForm(); }} 
-                className="p-2 bg-slate-50 dark:bg-slate-850 text-slate-550 dark:text-slate-400 rounded-xl hover:bg-slate-100 cursor-pointer"
+                className="p-1.5 bg-slate-50 dark:bg-slate-850 text-slate-550 dark:text-slate-400 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
-                <X className="w-4.5 h-4.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
             
-            <form onSubmit={handleEditClient} className="space-y-4 text-xs font-semibold">
+            <form onSubmit={handleEditClient} className="space-y-2.5 text-[11px] font-semibold">
               <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Company Name</label>
+                <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Company Name</label>
                 <input 
                   type="text" 
                   value={fName} 
                   onChange={e => setFName(e.target.value)} 
-                  className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none" 
+                  className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg outline-none" 
                   required 
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Owner Name</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Owner Name</label>
                   <input 
                     type="text" 
                     value={fOwner} 
                     onChange={e => setFOwner(e.target.value)} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none" 
                     required 
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Owner Phone</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Owner Phone</label>
                   <input 
                     type="tel" 
                     value={fPhone} 
                     onChange={e => setFPhone(e.target.value)} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none" 
                     required 
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Billing Email</label>
+                <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Billing Email</label>
                 <input 
                   type="email" 
                   value={fEmail} 
                   onChange={e => setFEmail(e.target.value)} 
-                  className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none" 
+                  className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg outline-none" 
                   required 
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Pricing Plan</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Pricing Plan</label>
                   <select 
                     value={fPlan} 
                     onChange={e => setFPlan(e.target.value as any)} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none"
+                    className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg outline-none"
                   >
                     <option value="Basic">Basic Plan</option>
                     <option value="Pro">Pro Plan</option>
@@ -872,44 +872,44 @@ export default function SuperadminPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Monthly Fee (₹)</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Monthly Fee (₹)</label>
                   <input 
                     type="number" 
                     value={fFee} 
                     onChange={e => setFFee(Number(e.target.value))} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none font-bold" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none font-bold" 
                     required 
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Staff Limit</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Staff Limit</label>
                   <input 
                     type="number" 
                     value={fStaffLimit} 
                     onChange={e => setFStaffLimit(Number(e.target.value))} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none font-semibold" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none font-semibold" 
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Retailer Limit</label>
+                  <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Retailer Limit</label>
                   <input 
                     type="number" 
                     value={fRetLimit} 
                     onChange={e => setFRetLimit(Number(e.target.value))} 
-                    className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none font-semibold" 
+                    className="w-full px-2.5 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg outline-none font-semibold" 
                   />
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-[10px] text-slate-400 uppercase font-black mb-1">Cluster status</label>
+              <div className="space-y-0.5">
+                <label className="block text-[9px] text-slate-400 uppercase font-black mb-0.5">Cluster status</label>
                 <select 
                   value={fStatus} 
                   onChange={e => setFStatus(e.target.value as any)} 
-                  className="w-full px-3.5 py-3 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-xl outline-none"
+                  className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg outline-none"
                 >
                   <option value="Online">Online Cluster</option>
                   <option value="Maintenance">Maintenance Mode</option>
@@ -918,7 +918,7 @@ export default function SuperadminPage() {
 
               <button 
                 type="submit" 
-                className="w-full py-4.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all mt-4 cursor-pointer"
+                className="w-full py-2 bg-indigo-650 hover:bg-indigo-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider shadow-lg active:scale-95 transition-all mt-2 cursor-pointer"
               >
                 Save Configurations
               </button>
@@ -929,14 +929,14 @@ export default function SuperadminPage() {
 
       {/* Global Toast */}
       {showToast && (
-        <div className="fixed top-6 right-6 z-[60] animate-slide-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xl flex items-center gap-4">
-            <div className="w-10 h-10 bg-green-500/10 text-green-600 rounded-xl flex items-center justify-center">
-              <Check className="w-5 h-5" />
+        <div className="fixed top-4 right-4 z-[60] animate-slide-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg shadow-2xl flex items-center gap-3">
+            <div className="w-8 h-8 bg-green-500/10 text-green-600 rounded-lg flex items-center justify-center">
+              <Check className="w-4.5 h-4.5" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Global Notification</p>
-              <p className="text-xs font-bold text-slate-800 dark:text-white mt-0.5">{toastMsg}</p>
+              <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Global Notification</p>
+              <p className="text-[11px] font-bold text-slate-800 dark:text-white mt-0.5">{toastMsg}</p>
             </div>
           </div>
         </div>

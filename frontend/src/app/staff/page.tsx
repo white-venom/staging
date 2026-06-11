@@ -535,7 +535,8 @@ export default function StaffDashboard() {
             <span className="uppercase tracking-wider">{syncStatusMsg}</span>
           </div>
         )}
-        {/* REPLICATED ADMIN HEADER */}
+
+        {/* REPLICATED ADMIN HEADER */}
         <header className="bg-[#0d1b3e] border border-blue-900/40 rounded-[1.5rem] p-3 shadow-md flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
@@ -703,35 +704,35 @@ export default function StaffDashboard() {
 
         {/* Offline Queues */}
         {(offlineCollections.length > 0 || offlineDeposits.length > 0) && (
-          <div className="p-4 rounded-3xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 space-y-3.5 shadow-sm">
+          <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 space-y-2 shadow-sm">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CloudLightning className="w-4 h-4 text-amber-500 animate-bounce" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+              <div className="flex items-center gap-1.5">
+                <CloudLightning className="w-3.5 h-3.5 text-amber-500 animate-bounce" />
+                <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
                   Waiting List ({offlineCollections.length + offlineDeposits.length})
                 </span>
               </div>
-              <span className="text-[9px] uppercase font-bold text-amber-600 dark:text-amber-500 animate-pulse flex items-center gap-1 bg-amber-100 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-900/40">
-                <RefreshCw className="w-3 h-3 animate-spin" /> Waiting...
+              <span className="text-[8px] uppercase font-bold text-amber-600 dark:text-amber-500 animate-pulse flex items-center gap-1 bg-amber-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900/40">
+                <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Waiting...
               </span>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {offlineCollections.map((col, index) => (
-                <div key={index} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between shadow-sm">
+                <div key={index} className="py-1.5 px-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between shadow-sm">
                   <div>
                     <span className="font-black text-slate-800 dark:text-slate-200">{col.retailerName}</span>
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash In • {col.date}</span>
+                    <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash In • {col.date}</span>
                   </div>
                   <span className="font-black text-slate-800 dark:text-slate-100">₹{col.totalAmount.toLocaleString()}</span>
                 </div>
               ))}
 
               {offlineDeposits.map((dep, index) => (
-                <div key={index} className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between shadow-sm">
+                <div key={index} className="py-1.5 px-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between shadow-sm">
                   <div>
                     <span className="font-black text-slate-800 dark:text-slate-200">{dep.targetName}</span>
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash Out • {dep.date}</span>
+                    <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash Out • {dep.date}</span>
                   </div>
                   <span className="font-black text-slate-800 dark:text-slate-100">₹{dep.amount.toLocaleString()}</span>
                 </div>
@@ -742,63 +743,63 @@ export default function StaffDashboard() {
 
         {/* PREMIUM HISTORY LEDGER */}
         <div className="mt-4">
-          <div className="flex items-center justify-between mb-4 px-2">
-            <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+          <div className="flex items-center justify-between mb-2 px-1">
+            <h3 className="text-[9px] font-black uppercase tracking-wider text-slate-400">
               Recent Cash Ledger
             </h3>
             <button
               onClick={() => router.push("/history")}
-              className="text-[9px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-600 transition-colors flex items-center gap-1 bg-blue-50 dark:bg-blue-950/30 px-3 py-1.5 rounded-full border border-blue-100 dark:border-blue-900/30 shadow-sm"
+              className="text-[8px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-600 transition-colors flex items-center gap-1 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-full border border-blue-100 dark:border-blue-900/30 shadow-sm"
             >
-              View All <ArrowUpRight className="w-3 h-3" />
+              View All <ArrowUpRight className="w-2.5 h-2.5" />
             </button>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-1.5">
              {combinedLedger.slice().reverse().slice(0, 8).map((c: any) => {
                const snapshots = ledgerSnapshots.get(c.id) || { prev: 0, next: 0 };
                return (
                  <div
                    key={c.id}
-                   className="p-4 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-3 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all group cursor-default"
+                   className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1.5 shadow-sm hover:shadow-md transition-all group cursor-default"
                  >
                    <div className="flex items-center justify-between">
-                     <div className="flex items-center gap-3.5">
-                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border border-slate-100 dark:border-slate-700/50 transition-colors shadow-inner flex-shrink-0 ${c.type === 'collection' ? 'group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20' : 'group-hover:bg-red-50 dark:group-hover:bg-red-900/20'}`}>
+                     <div className="flex items-center gap-2">
+                       <div className={`w-7 h-7 rounded bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center transition-colors shadow-inner flex-shrink-0 ${c.type === 'collection' ? 'group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20' : 'group-hover:bg-red-50 dark:group-hover:bg-red-900/20'}`}>
                          {c.type === 'collection' ? (
-                           <CheckCircle className="w-4 h-4 text-emerald-500" />
+                           <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                          ) : (
-                           <ArrowUpRight className="w-4 h-4 text-red-500" />
+                           <ArrowUpRight className="w-3.5 h-3.5 text-red-500" />
                          )}
                        </div>
                        <div>
                          <div className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight">
                            {c.type === 'collection' ? (c.retailerName || c.targetName) : c.targetName}
                          </div>
-                         <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1 flex items-center gap-1.5">
+                         <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                            <span className="text-blue-500">{c.type === 'collection' ? (c.portalName || "Handover") : (c.depositType || 'Deposit')}</span>
-                           <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                           <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                            <span>{c.date}</span>
                          </div>
                        </div>
                      </div>
                      <div className="text-right flex-shrink-0 ml-2">
-                       <span className={`text-sm font-black tracking-tight block ${c.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
+                       <span className={`text-xs font-black tracking-tight block ${c.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
                          {c.type === 'collection' ? '+' : '-'}₹{c.totalAmount.toLocaleString()}
                        </span>
                      </div>
                    </div>
 
-                   <div className="grid grid-cols-3 gap-2 bg-slate-50/50 dark:bg-slate-950/50 p-2.5 rounded-2xl border border-slate-100 dark:border-slate-800/50">
+                   <div className="grid grid-cols-3 gap-1 bg-slate-50/50 dark:bg-slate-950/50 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800/50">
                      <div className="flex flex-col">
-                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
+                       <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
                        <span className="text-[9px] font-bold text-slate-500">₹{snapshots.prev.toLocaleString()}</span>
                      </div>
-                     <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
-                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Collector</span>
+                     <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-2">
+                       <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Collector</span>
                        <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 line-clamp-1">{currentUser.name}</span>
                      </div>
                      <div className="flex flex-col text-right">
-                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
+                       <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
                        <span className="text-[9px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
                      </div>
                    </div>
@@ -806,8 +807,8 @@ export default function StaffDashboard() {
                );
              })}
              {combinedLedger.length === 0 && (
-               <div className="text-center py-10 bg-white/50 dark:bg-slate-900/50 rounded-[2rem] border border-dashed border-slate-300 dark:border-slate-700 shadow-sm">
-                 <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest">No recent entries</p>
+               <div className="text-center py-5 bg-white/50 dark:bg-slate-900/50 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 shadow-sm">
+                 <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">No recent entries</p>
                </div>
              )}
           </div>
@@ -1106,33 +1107,33 @@ function WalletCard({
   coins
 }: any) {
   return (
-    <div className="space-y-4">
-      <div className="p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -mr-10 -mt-10"></div>
+    <div className="space-y-2">
+      <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8"></div>
 
-        <div className="flex items-center justify-between mb-3 relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/50 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
-              <Coins className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+        <div className="flex items-center justify-between mb-2 relative z-10">
+          <div className="flex items-center gap-2">
+            <div className="p-1 bg-emerald-50 dark:bg-emerald-950/50 rounded-md border border-emerald-100 dark:border-emerald-900/30">
+              <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-400">
+            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-400">
               Cash Summary
             </span>
           </div>
         </div>
 
         {/* Notes breakdowns */}
-        <div className="pt-2 relative z-10">
+        <div className="pt-1 relative z-10">
           <button
             onClick={() => setShowNotesBreakdown(!showNotesBreakdown)}
             className="w-full flex items-center justify-between text-xs font-black text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 focus:outline-none transition-colors"
           >
-            <span className="uppercase tracking-[0.15em] text-[9px]">Notes Details</span>
-            {showNotesBreakdown ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span className="uppercase tracking-[0.15em] text-[8px]">Notes Details</span>
+            {showNotesBreakdown ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
 
           {showNotesBreakdown && (
-            <div className="grid grid-cols-2 gap-3 mt-5 text-xs font-medium">
+            <div className="grid grid-cols-2 gap-1.5 mt-2 text-[11px] font-medium">
               {[
                 { value: "500", count: note500 },
                 { value: "200", count: note200 },
@@ -1141,24 +1142,24 @@ function WalletCard({
                 { value: "20", count: note20 },
                 { value: "10", count: note10 },
               ].map((note) => (
-                <div key={note.value} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-100 dark:border-slate-800/60">
-                  <span className="text-slate-400 font-bold tracking-wider">₹{note.value}</span>
-                  <span className="font-black text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-lg shadow-sm border border-slate-200/50 dark:border-slate-800">{note.count}</span>
+                <div key={note.value} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 py-1.5 px-2 rounded-lg border border-slate-100 dark:border-slate-800/60">
+                  <span className="text-slate-400 font-bold">₹{note.value}</span>
+                  <span className="font-black text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/50 dark:border-slate-800">{note.count}</span>
                 </div>
               ))}
-              <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-4 py-3.5 rounded-2xl border border-slate-100 dark:border-slate-800/60 mt-1">
-                <span className="text-slate-400 font-black uppercase tracking-widest text-[9px]">Coins</span>
-                <span className="font-black text-slate-800 dark:text-slate-200 text-sm">₹{coins.toFixed(2)}</span>
+              <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800/60 mt-0.5">
+                <span className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Coins</span>
+                <span className="font-black text-slate-800 dark:text-slate-200 text-xs">₹{coins.toFixed(2)}</span>
               </div>
               
-              <div className="col-span-2 flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/20 px-4 py-3.5 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 mt-1">
-                <span className="text-emerald-600 dark:text-emerald-500 font-black uppercase tracking-widest text-[9px]">Cash (In Hand)</span>
-                <span className="font-black text-emerald-700 dark:text-emerald-400 text-sm">₹{totalCashNotes.toLocaleString()}</span>
+              <div className="col-span-2 flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-900/30 mt-0.5">
+                <span className="text-emerald-600 dark:text-emerald-500 font-black uppercase tracking-widest text-[8px]">Cash (In Hand)</span>
+                <span className="font-black text-emerald-700 dark:text-emerald-400 text-xs">₹{totalCashNotes.toLocaleString()}</span>
               </div>
               
-              <div className="col-span-2 flex items-center justify-between bg-blue-50 dark:bg-blue-950/20 px-4 py-3.5 rounded-2xl border border-blue-100 dark:border-blue-900/30 mt-1">
-                <span className="text-blue-600 dark:text-blue-500 font-black uppercase tracking-widest text-[9px]">Online Balance</span>
-                <span className="font-black text-blue-700 dark:text-blue-400 text-sm">₹{totalOnline.toLocaleString()}</span>
+              <div className="col-span-2 flex items-center justify-between bg-blue-50 dark:bg-blue-950/20 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 mt-0.5">
+                <span className="text-blue-600 dark:text-blue-500 font-black uppercase tracking-widest text-[8px]">Online Balance</span>
+                <span className="font-black text-blue-700 dark:text-blue-400 text-xs">₹{totalOnline.toLocaleString()}</span>
               </div>
             </div>
           )}
@@ -1170,7 +1171,7 @@ function WalletCard({
 
 function NavigationGrid({ isCheckedIn, router, onClickLink }: any) {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 gap-2">
       <button
         onClick={() => {
           if (!isCheckedIn) {
@@ -1180,14 +1181,14 @@ function NavigationGrid({ isCheckedIn, router, onClickLink }: any) {
           if (onClickLink) onClickLink();
           router.push("/collection");
         }}
-        className={`relative overflow-hidden p-5 pt-6 pb-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-500/50 hover:shadow-lg text-left transition-all duration-300 group shadow-sm flex flex-col gap-4 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
+        className={`relative overflow-hidden p-2 rounded-lg bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-500/50 hover:shadow-md text-left transition-all duration-300 group shadow-sm flex items-center gap-2 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
       >
-        <div className="w-12 h-12 rounded-[1.2rem] bg-[#00a86b] dark:bg-emerald-600 flex items-center justify-center flex-shrink-0 text-white shadow-md">
-          <PlusCircle className="w-6 h-6" strokeWidth={2.5} />
+        <div className="w-8 h-8 rounded bg-[#00a86b] dark:bg-emerald-600 flex items-center justify-center flex-shrink-0 text-white shadow-sm">
+          <PlusCircle className="w-4.5 h-4.5" strokeWidth={2.5} />
         </div>
         <div>
-          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-wide mb-1">Cash In Entry</h3>
-          <p className="text-[10px] font-bold text-slate-400">Record retailer payments</p>
+          <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-wide">Cash In</h3>
+          <p className="text-[9px] font-bold text-slate-400">Record collection</p>
         </div>
       </button>
 
@@ -1200,14 +1201,14 @@ function NavigationGrid({ isCheckedIn, router, onClickLink }: any) {
           if (onClickLink) onClickLink();
           router.push("/deposit");
         }}
-        className={`relative overflow-hidden p-5 pt-6 pb-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-red-200 dark:hover:border-red-900/50 hover:shadow-lg text-left transition-all duration-300 group shadow-sm flex flex-col gap-4 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
+        className={`relative overflow-hidden p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-red-200 dark:hover:border-red-900/50 hover:shadow-md text-left transition-all duration-300 group shadow-sm flex items-center gap-2 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
       >
-        <div className="w-12 h-12 rounded-[1.2rem] bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0 text-red-500 dark:text-red-400">
-          <ArrowUpRight className="w-6 h-6" strokeWidth={2.5} />
+        <div className="w-8 h-8 rounded bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0 text-red-500 dark:text-red-400">
+          <ArrowUpRight className="w-4.5 h-4.5" strokeWidth={2.5} />
         </div>
         <div>
-          <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-wide mb-1">Cash Out Entry</h3>
-          <p className="text-[10px] font-bold text-slate-400">Process payouts</p>
+          <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-wide">Cash Out</h3>
+          <p className="text-[9px] font-bold text-slate-400">Process payout</p>
         </div>
       </button>
     </div>

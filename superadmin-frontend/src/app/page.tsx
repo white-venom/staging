@@ -257,30 +257,30 @@ export default function DashboardPage() {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 px-5 py-4 bg-white border border-emerald-500/20 text-emerald-600 rounded-2xl flex items-center gap-3 shadow-[0_10px_35px_rgba(0,0,0,0.08)] animate-bounce text-xs font-black uppercase tracking-wider">
+        <div className="fixed bottom-5 right-5 z-50 px-5 py-4 bg-white border border-emerald-500/20 text-emerald-600 rounded-2xl flex items-center gap-3 shadow-[0_10px_35px_rgba(0,0,0,0.08)] animate-bounce text-[10px] font-black uppercase tracking-wider">
           <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
           {toastMessage}
         </div>
       )}
 
       {/* Header Bar */}
-      <header className="sticky top-0 z-40 bg-[#0d1b3e] border-b border-blue-900/40 px-6 py-4 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 bg-[#0d1b3e] border-b border-blue-900/40 px-3.5 py-2 flex items-center justify-between shadow-md">
+        <div className="flex items-center gap-1">
           <img 
             src="/logo.png" 
             alt="CrediiFlow Logo" 
-            className="h-9 w-auto object-contain"
+            className="h-7 w-auto object-contain"
           />
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <p className="text-xs font-black uppercase text-slate-100 tracking-wider">{adminName}</p>
-            <p className="text-[10px] font-bold text-blue-200/70 uppercase mt-0.5">@{username}</p>
+            <p className="text-[10px] font-black uppercase text-slate-100 tracking-wider">{adminName}</p>
+            <p className="text-[8px] font-bold text-blue-200/70 uppercase mt-0.5">@{username}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 border border-blue-800 hover:border-red-400 hover:bg-red-950/30 text-blue-200 hover:text-red-400 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer"
+            className="px-2.5 py-1 border border-blue-800 hover:border-red-400 hover:bg-red-950/30 text-blue-200 hover:text-red-400 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer"
           >
             Sign Out
           </button>
@@ -288,27 +288,27 @@ export default function DashboardPage() {
       </header>
 
       {/* Content Area */}
-      <main className="max-w-7xl mx-auto px-6 py-8 relative z-10">
+      <main className="max-w-7xl mx-auto px-4 py-4 relative z-10">
         
         {/* Welcome Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight text-slate-900">Super Admin Command Center</h1>
-            <p className="text-slate-500 text-sm mt-1.5 font-medium">Manage global directories, edit plan constraints, and monitor tenant database clusters.</p>
+            <h1 className="text-base font-black uppercase tracking-tight text-slate-900">Super Admin Command Center</h1>
+            <p className="text-slate-500 text-[10px] mt-0.5 font-medium">Manage global directories, edit plan constraints, and monitor tenant database clusters.</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="self-start md:self-auto px-5 py-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md hover:shadow-lg shadow-indigo-600/10 active:scale-[0.98] cursor-pointer"
+            className="self-start md:self-auto px-3.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-200 shadow-md active:scale-[0.98] cursor-pointer"
           >
             + Onboard New Client
           </button>
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center gap-2 border-b border-slate-200 mb-8 pb-px">
+        <div className="flex items-center gap-1 border-b border-slate-200 mb-4 pb-px">
           <button
             onClick={() => setActiveTab("directory")}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all duration-250 cursor-pointer ${
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-all duration-250 cursor-pointer ${
               activeTab === "directory"
                 ? "border-violet-650 text-violet-650 bg-slate-100/50"
                 : "border-transparent text-slate-400 hover:text-slate-600"
@@ -318,17 +318,17 @@ export default function DashboardPage() {
           </button>
           <button
             onClick={() => setActiveTab("resources")}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all duration-250 cursor-pointer ${
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-all duration-250 cursor-pointer ${
               activeTab === "resources"
                 ? "border-violet-650 text-violet-650 bg-slate-100/50"
                 : "border-transparent text-slate-400 hover:text-slate-600"
             }`}
           >
-            Resource usage Visualizer
+            Resource Visualizer
           </button>
           <button
             onClick={() => setActiveTab("infrastructure")}
-            className={`px-5 py-3 text-xs font-black uppercase tracking-wider border-b-2 transition-all duration-250 cursor-pointer ${
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-all duration-250 cursor-pointer ${
               activeTab === "infrastructure"
                 ? "border-violet-650 text-violet-650 bg-slate-100/50"
                 : "border-transparent text-slate-400 hover:text-slate-600"
@@ -340,40 +340,40 @@ export default function DashboardPage() {
 
         {/* ─── TAB 1: DIRECTORY ─── */}
         {activeTab === "directory" && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm">
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Total Active Tenants</p>
-                <p className="text-4xl font-black mt-2 text-violet-650">{tenants.length}</p>
-                <p className="text-[10px] text-slate-400 font-bold mt-2.5 uppercase tracking-wide">Isolated DB-Per-Client Model</p>
+                <p className="text-xl font-black mt-1 text-violet-650">{tenants.length}</p>
+                <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-wide">Isolated DB-Per-Client Model</p>
               </div>
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
+              <div className="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm">
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">PostgreSQL Server Status</p>
-                <p className="text-4xl font-black mt-2 text-emerald-600">ONLINE</p>
-                <p className="text-[10px] text-emerald-500 font-bold mt-2.5 uppercase tracking-wide">Accepting DB schema connections</p>
+                <p className="text-xl font-black mt-1 text-emerald-600">ONLINE</p>
+                <p className="text-[9px] text-emerald-500 font-bold mt-1 uppercase tracking-wide">Accepting DB schema connections</p>
               </div>
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-sm">
+              <div className="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm">
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Master Database Node</p>
-                <p className="text-lg font-mono font-black mt-4 text-slate-700">crediiflow_master</p>
-                <p className="text-[10px] text-slate-400 font-bold mt-2.5 uppercase tracking-wide">Runs global tenant indexing</p>
+                <p className="text-[13px] font-mono font-black mt-2 text-slate-755">crediiflow_master</p>
+                <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-wide">Runs global tenant indexing</p>
               </div>
             </div>
 
             {/* Table */}
             <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
-              <div className="px-6 py-5 border-b border-slate-200/80 bg-slate-50/50 flex items-center justify-between">
-                <h2 className="text-xs font-black uppercase tracking-wider text-slate-800">Registered Tenant Clusters</h2>
+              <div className="px-3.5 py-2 border-b border-slate-200/80 bg-slate-50/50 flex items-center justify-between">
+                <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-800">Registered Tenant Clusters</h2>
                 <button 
                   onClick={fetchTenants}
-                  className="text-xs text-indigo-650 hover:text-indigo-700 font-black uppercase tracking-wider cursor-pointer"
+                  className="text-[10px] text-indigo-650 hover:text-indigo-700 font-black uppercase tracking-wider cursor-pointer"
                 >
                   Refresh Data
                 </button>
               </div>
 
               {loading ? (
-                <div className="p-12 text-center text-slate-400 text-xs font-bold uppercase tracking-wider animate-pulse">Loading database client instances...</div>
+                <div className="p-12 text-center text-slate-400 text-[11px] font-bold uppercase tracking-wider animate-pulse">Loading database client instances...</div>
               ) : tenants.length === 0 ? (
                 <div className="p-16 text-center text-slate-400 text-sm font-semibold">
                   No clients onboarded yet. Click "+ Onboard New Client" to provision the first client!
@@ -382,26 +382,26 @@ export default function DashboardPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50/70 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-200/80">
-                        <th className="px-6 py-4">Client / Company Name</th>
-                        <th className="px-6 py-4">Subdomain / Domain Target</th>
-                        <th className="px-6 py-4">Database Node</th>
-                        <th className="px-6 py-4 text-center">Status</th>
-                        <th className="px-6 py-4 text-center">Maintenance Guard</th>
-                        <th className="px-6 py-4 text-center">Actions</th>
+                      <tr className="bg-slate-50/70 text-slate-400 text-[9px] font-black uppercase tracking-widest border-b border-slate-200/80">
+                        <th className="px-3.5 py-2">Client / Company Name</th>
+                        <th className="px-3.5 py-2">Subdomain / Domain Target</th>
+                        <th className="px-3.5 py-2">Database Node</th>
+                        <th className="px-3.5 py-2 text-center">Status</th>
+                        <th className="px-3.5 py-2 text-center">Maintenance Guard</th>
+                        <th className="px-3.5 py-2 text-center">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                    <tbody className="divide-y divide-slate-100 text-[10px] text-slate-705">
                       {tenants.map((t) => (
                         <tr 
                           key={t.id} 
                           onClick={() => setSelectedTenant(t)}
-                          className={`hover:bg-slate-50/40 transition-colors duration-150 cursor-pointer ${
+                          className={`hover:bg-slate-50/40 transition-colors duration-155 cursor-pointer ${
                             selectedTenant?.id === t.id ? "bg-slate-50/80 border-l-2 border-l-violet-600" : ""
                           }`}
                         >
-                          <td className="px-6 py-4 font-black text-slate-900">{t.name}</td>
-                          <td className="px-6 py-4 text-indigo-600 font-bold">
+                          <td className="px-3.5 py-2 font-black text-slate-900">{t.name}</td>
+                          <td className="px-3.5 py-2 text-indigo-600 font-bold">
                             <a href={`https://${t.subdomain}.crediiflow.in`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                               {t.subdomain}.crediiflow.in
                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
@@ -409,9 +409,9 @@ export default function DashboardPage() {
                               </svg>
                             </a>
                           </td>
-                          <td className="px-6 py-4 font-mono text-slate-500">{t.db_name}</td>
-                          <td className="px-6 py-4 text-center">
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          <td className="px-3.5 py-2 font-mono text-slate-500">{t.db_name}</td>
+                          <td className="px-3.5 py-2 text-center">
+                            <span className={`inline-block px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
                               t.status === "active" 
                                 ? "bg-emerald-50 border border-emerald-200/50 text-emerald-600" 
                                 : "bg-red-50 border border-red-200/50 text-red-650"
@@ -419,10 +419,10 @@ export default function DashboardPage() {
                               {t.status === "active" ? "Active" : "Suspended"}
                             </span>
                           </td>
-                          <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <td className="px-3.5 py-2 text-center" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={() => handleToggleMaintenance(t.id, !t.maintenance_mode)}
-                              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-200 cursor-pointer ${
+                              className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest transition-all duration-200 cursor-pointer ${
                                 t.maintenance_mode
                                   ? "bg-amber-50 border border-amber-200/60 text-amber-600 hover:bg-amber-100"
                                   : "bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/60"
@@ -431,11 +431,11 @@ export default function DashboardPage() {
                               {t.maintenance_mode ? "ON (Maintenance)" : "OFF (Live)"}
                             </button>
                           </td>
-                          <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-center gap-2">
+                          <td className="px-3.5 py-2 text-center" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-center gap-1">
                               <button
                                 onClick={() => handleOpenEdit(t)}
-                                className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200/60 rounded-lg hover:text-slate-800 transition-colors cursor-pointer"
+                                className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200/60 rounded hover:text-slate-800 transition-colors cursor-pointer"
                                 title="Edit Client Config"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
@@ -444,7 +444,7 @@ export default function DashboardPage() {
                               </button>
                               <button
                                 onClick={() => handleOpenDelete(t)}
-                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/40 rounded-lg transition-colors cursor-pointer"
+                                className="p-1 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200/40 rounded transition-colors cursor-pointer"
                                 title="Delete Tenant"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
@@ -465,43 +465,43 @@ export default function DashboardPage() {
 
         {/* ─── TAB 2: RESOURCE VISUALIZER ─── */}
         {activeTab === "resources" && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-4 animate-fade-in">
             {selectedTenant ? (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Selector column */}
-                <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-2xl p-5 h-fit space-y-3 shadow-sm">
-                  <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-4 px-2">Select Instance</h3>
+                <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-lg p-2.5 h-fit space-y-2 shadow-sm">
+                  <h3 className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 px-1">Select Instance</h3>
                   <div className="space-y-1">
                     {tenants.map((t) => (
                       <button
                         key={t.id}
                         onClick={() => setSelectedTenant(t)}
-                        className={`w-full p-4 rounded-xl text-left border flex items-center justify-between transition-all duration-200 cursor-pointer ${
+                        className={`w-full p-2.5 rounded-lg text-left border flex items-center justify-between transition-all duration-205 cursor-pointer ${
                           selectedTenant.id === t.id
                             ? "bg-slate-50 border-violet-500/40 text-slate-900 shadow-sm font-black"
                             : "bg-transparent border-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-800"
                         }`}
                       >
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-wider">{t.name}</p>
-                          <p className="text-[10px] text-slate-400 mt-1">{t.subdomain}.crediiflow.in</p>
+                          <p className="text-[11px] font-bold uppercase tracking-wider">{t.name}</p>
+                          <p className="text-[9px] text-slate-400 mt-0.5">{t.subdomain}.crediiflow.in</p>
                         </div>
-                        <span className={`w-2 h-2 rounded-full ${t.maintenance_mode ? "bg-amber-500" : "bg-emerald-500"}`} />
+                        <span className={`w-1.5 h-1.5 rounded-full ${t.maintenance_mode ? "bg-amber-500" : "bg-emerald-500"}`} />
                       </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Dashboard column */}
-                <div className="lg:col-span-8 bg-white border border-slate-200/80 rounded-3xl p-8 space-y-8 shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 rounded-full blur-2xl pointer-events-none" />
+                <div className="lg:col-span-8 bg-white border border-slate-200/80 rounded-lg p-4 space-y-4 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/5 rounded-full blur-2xl pointer-events-none" />
 
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-5 gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
                     <div>
-                      <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">{selectedTenant.name}</h2>
-                      <p className="text-xs text-indigo-650 mt-1 font-bold">Resource allocation cluster logs</p>
+                      <h2 className="text-base font-black uppercase tracking-tight text-slate-900">{selectedTenant.name}</h2>
+                      <p className="text-[9px] text-indigo-650 mt-0.5 font-bold">Resource allocation cluster logs</p>
                     </div>
-                    <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border self-start sm:self-auto ${
+                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border self-start sm:self-auto ${
                       selectedTenant.maintenance_mode
                         ? "bg-amber-50 text-amber-600 border-amber-200/60"
                         : "bg-emerald-50 text-emerald-600 border-emerald-200/60"
@@ -511,57 +511,57 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Meter Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     {/* CPU gauge */}
-                    <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-200/60 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">CPU Utilization</span>
-                        <span className="text-xs font-black text-violet-650">{selectedTenant.cpu || 12}%</span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">CPU Utilization</span>
+                        <span className="text-[10px] font-black text-violet-650">{selectedTenant.cpu || 12}%</span>
                       </div>
-                      <div className="w-full bg-slate-200/50 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-slate-200/50 rounded-full h-1.5 overflow-hidden">
                         <div 
-                          className="bg-gradient-to-r from-violet-500 to-indigo-500 h-3 rounded-full transition-all duration-750"
+                          className="bg-gradient-to-r from-violet-500 to-indigo-500 h-1.5 rounded-full transition-all duration-750"
                           style={{ width: `${selectedTenant.cpu || 12}%` }}
                         />
                       </div>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase">Core Limit: 2.0 vCPU Shared</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase">Core Limit: 2.0 vCPU Shared</p>
                     </div>
 
                     {/* RAM gauge */}
-                    <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-200/60 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Memory Heap</span>
-                        <span className="text-xs font-black text-indigo-600">{selectedTenant.memory || 256} MB</span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Memory Heap</span>
+                        <span className="text-[10px] font-black text-indigo-605">{selectedTenant.memory || 256} MB</span>
                       </div>
-                      <div className="w-full bg-slate-200/50 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-slate-200/50 rounded-full h-1.5 overflow-hidden">
                         <div 
-                          className="bg-gradient-to-r from-indigo-500 to-blue-500 h-3 rounded-full transition-all duration-750"
+                          className="bg-gradient-to-r from-indigo-500 to-blue-500 h-1.5 rounded-full transition-all duration-750"
                           style={{ width: `${Math.min(100, ((selectedTenant.memory || 256) / 2048) * 100)}%` }}
                         />
                       </div>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase">RAM Ceiling: 2048 MB</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase">RAM Ceiling: 2048 MB</p>
                     </div>
 
                     {/* Storage Gauge */}
-                    <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-200/60 space-y-4">
+                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-200/60 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">DB Disk Storage</span>
-                        <span className="text-xs font-black text-blue-600">{selectedTenant.storage || 15.4} MB</span>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">DB Disk Storage</span>
+                        <span className="text-[10px] font-black text-blue-600">{selectedTenant.storage || 15.4} MB</span>
                       </div>
-                      <div className="w-full bg-slate-200/50 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-slate-200/50 rounded-full h-1.5 overflow-hidden">
                         <div 
-                          className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 rounded-full transition-all duration-750"
+                          className="bg-gradient-to-r from-blue-500 to-cyan-500 h-1.5 rounded-full transition-all duration-750"
                           style={{ width: `${Math.min(100, ((selectedTenant.storage || 15.4) / 100) * 100)}%` }}
                         />
                       </div>
-                      <p className="text-[9px] font-bold text-slate-400 uppercase">Max Database Allocation: 100 MB</p>
+                      <p className="text-[8px] font-bold text-slate-400 uppercase">Max Database Allocation: 100 MB</p>
                     </div>
                   </div>
 
                   {/* System details */}
-                  <div className="p-5 bg-slate-50/50 border border-slate-200/60 rounded-2xl space-y-4 text-slate-700">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Database cluster specifications</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                  <div className="p-3 bg-slate-50/50 border border-slate-200/60 rounded-lg space-y-2 text-slate-755">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Database cluster specifications</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[10px]">
                       <div>
                         <span className="text-slate-400 block mb-0.5">DB Name</span>
                         <span className="font-mono font-bold text-slate-800">{selectedTenant.db_name}</span>
@@ -578,7 +578,7 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <span className="text-slate-400 block mb-0.5">Instance Type</span>
-                        <span className="font-bold text-indigo-600 uppercase tracking-wider">Kubernetes-Pod</span>
+                        <span className="font-bold text-indigo-650 uppercase tracking-wider">Kubernetes-Pod</span>
                       </div>
                     </div>
                   </div>
@@ -594,40 +594,40 @@ export default function DashboardPage() {
 
         {/* ─── TAB 3: INFRASTRUCTURE HEALTH ─── */}
         {activeTab === "infrastructure" && (
-          <div className="space-y-8 animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-sm">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-800">Central PG Database</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <div className="space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-white border border-slate-200/80 rounded-lg p-3 space-y-2 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">Central PG Database</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <div className="space-y-1 text-xs text-slate-650">
+                <div className="space-y-0.5 text-[10px] text-slate-650">
                   <div className="flex justify-between"><span className="text-slate-450">Node Status</span><span className="font-bold text-slate-850">HEALTHY</span></div>
-                  <div className="flex justify-between"><span className="text-slate-450">Connections</span><span className="font-bold text-slate-855">7 Active</span></div>
+                  <div className="flex justify-between"><span className="text-slate-450">Connections</span><span className="font-bold text-slate-850">7 Active</span></div>
                   <div className="flex justify-between"><span className="text-slate-450">Version</span><span className="font-mono text-slate-500">PostgreSQL 16-alpine</span></div>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-sm">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-800">FastAPI Core Backend</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="bg-white border border-slate-200/80 rounded-lg p-3 space-y-2 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">FastAPI Core Backend</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <div className="space-y-1 text-xs text-slate-650">
+                <div className="space-y-0.5 text-[10px] text-slate-650">
                   <div className="flex justify-between"><span className="text-slate-450">Uvicorn Status</span><span className="font-bold text-slate-850">OPERATIONAL</span></div>
                   <div className="flex justify-between"><span className="text-slate-450">CORS Policy</span><span className="font-bold text-indigo-600 uppercase tracking-widest text-[10px]">*.crediiflow.in</span></div>
                   <div className="flex justify-between"><span className="text-slate-450">Port Mapping</span><span className="font-mono text-slate-500">{"8000 -> 8000"}</span></div>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 space-y-4 shadow-sm">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <span className="text-xs font-black uppercase tracking-wider text-slate-800">Nginx Reverse Proxy</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <div className="bg-white border border-slate-200/80 rounded-lg p-3 space-y-2 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">Nginx Reverse Proxy</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 </div>
-                <div className="space-y-1 text-xs text-slate-650">
+                <div className="space-y-0.5 text-[10px] text-slate-650">
                   <div className="flex justify-between"><span className="text-slate-450">SSL Certificates</span><span className="font-bold text-slate-850">SECURE (Let's Encrypt)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-450">HTTP/2 Support</span><span className="font-bold text-slate-855">ENABLED</span></div>
+                  <div className="flex justify-between"><span className="text-slate-450">HTTP/2 Support</span><span className="font-bold text-slate-850">ENABLED</span></div>
                   <div className="flex justify-between"><span className="text-slate-450">Config Path</span><span className="font-mono text-slate-500">/etc/nginx/nginx.conf</span></div>
                 </div>
               </div>
@@ -636,54 +636,54 @@ export default function DashboardPage() {
             {/* Docker Container Table */}
             <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-200/80 bg-slate-50/50">
-                <h3 className="text-sm font-black uppercase tracking-wider text-slate-800">Active Container Host Services</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-800">Active Container Host Services</h3>
               </div>
-              <div className="overflow-x-auto text-xs">
+              <div className="overflow-x-auto text-[10px]">
                 <table className="w-full text-left border-collapse text-slate-600">
                   <thead>
                     <tr className="bg-slate-50/70 text-slate-450 text-[10px] font-black uppercase tracking-widest border-b border-slate-200/80">
-                      <th className="px-6 py-4">Service Name</th>
-                      <th className="px-6 py-4">Docker Image</th>
-                      <th className="px-6 py-4">Container ID</th>
-                      <th className="px-6 py-4">Ports</th>
-                      <th className="px-6 py-4 text-center">Status</th>
+                      <th className="px-3.5 py-2">Service Name</th>
+                      <th className="px-3.5 py-2">Docker Image</th>
+                      <th className="px-3.5 py-2">Container ID</th>
+                      <th className="px-3.5 py-2">Ports</th>
+                      <th className="px-3.5 py-2 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                  <tbody className="divide-y divide-slate-100 text-slate-755">
                     <tr>
-                      <td className="px-6 py-4 font-bold text-slate-900">doit_frontend</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">do-it-services-frontend:latest</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">doit_frontend</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">{"3000 -> 3000"}</td>
-                      <td className="px-6 py-4 text-center"><span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[9px]">Running</span></td>
+                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_frontend</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">do-it-services-frontend:latest</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_frontend</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">{"3000 -> 3000"}</td>
+                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-bold text-slate-900">doit_backend</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">do-it-services-backend:latest</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">doit_backend</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">{"8000 -> 8000"}</td>
-                      <td className="px-6 py-4 text-center"><span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[9px]">Running</span></td>
+                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_backend</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">do-it-services-backend:latest</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_backend</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">{"8000 -> 8000"}</td>
+                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-bold text-slate-900">doit_superadmin_frontend</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">do-it-services-superadmin-frontend:latest</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">doit_superadmin_frontend</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">{"3001 -> 3001"}</td>
-                      <td className="px-6 py-4 text-center"><span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[9px]">Running</span></td>
+                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_superadmin_frontend</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">do-it-services-superadmin-frontend:latest</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_superadmin_frontend</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">{"3001 -> 3001"}</td>
+                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-bold text-slate-900">doit_nginx</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">nginx:alpine</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">doit_nginx</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">80:80, 443:443</td>
-                      <td className="px-6 py-4 text-center"><span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[9px]">Running</span></td>
+                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_nginx</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">nginx:alpine</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_nginx</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">80:80, 443:443</td>
+                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
                     </tr>
                     <tr>
-                      <td className="px-6 py-4 font-bold text-slate-900">doit_db</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">postgres:16-alpine</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">doit_db</td>
-                      <td className="px-6 py-4 font-mono text-slate-500">5432 Internal</td>
-                      <td className="px-6 py-4 text-center"><span className="px-2.5 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[9px]">Running</span></td>
+                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_db</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">postgres:16-alpine</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_db</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">5432 Internal</td>
+                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
                     </tr>
                   </tbody>
                 </table>
@@ -696,101 +696,101 @@ export default function DashboardPage() {
       {/* ─── ADD ONBOARD MODAL ─── */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-700">
-            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Onboard New Client Instance</h3>
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-755">
+            <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">Onboard New Client Instance</h3>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
+                className="text-slate-400 hover:text-slate-650 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             {formError && (
-              <div className="mx-6 mt-6 p-4 text-xs bg-red-50 border border-red-200/50 text-red-650 rounded-xl text-center font-bold">
+              <div className="mx-6 mt-6 p-4 text-[10px] bg-red-50 border border-red-200/50 text-red-650 rounded-xl text-center font-bold">
                 {formError}
               </div>
             )}
 
-            <form onSubmit={handleCreateTenant} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <form onSubmit={handleCreateTenant} className="p-3.5 space-y-2.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Company / Client Name</label>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Company / Client Name</label>
                   <input
                     type="text"
                     required
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                     placeholder="e.g. Acme Corporation"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Subdomain Slug</label>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Subdomain Slug</label>
                   <div className="relative flex items-center">
                     <input
                       type="text"
                       required
                       value={subdomain}
                       onChange={(e) => setSubdomain(e.target.value)}
-                      className="w-full pl-4 pr-24 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                      className="w-full pl-4 pr-24 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                       placeholder="e.g. acme"
                     />
-                    <span className="absolute right-3 text-[10px] font-black text-slate-400 lowercase">.crediiflow.in</span>
+                    <span className="absolute right-2 text-[8px] font-black text-slate-400 lowercase">.crediiflow.in</span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-5 bg-slate-50/50 border border-slate-200/60 rounded-2xl space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Client Admin Account (Credentials)</p>
+              <div className="p-2.5 bg-slate-50/50 border border-slate-200/60 rounded-lg space-y-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Client Admin Account (Credentials)</p>
                 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-450 uppercase tracking-widest mb-2">Admin Full Name</label>
+                  <label className="block text-[8px] font-black text-slate-450 uppercase tracking-widest mb-0.5">Admin Full Name</label>
                   <input
                     type="text"
                     required
                     value={tenantAdminName}
                     onChange={(e) => setTenantAdminName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                     placeholder="e.g. John Doe"
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-455 uppercase tracking-widest mb-2">Admin Phone Number</label>
+                    <label className="block text-[8px] font-black text-slate-455 uppercase tracking-widest mb-0.5">Admin Phone Number</label>
                     <input
                       type="tel"
                       required
                       value={tenantAdminPhone}
                       onChange={(e) => setTenantAdminPhone(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                       placeholder="e.g. 9876543210"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-455 uppercase tracking-widest mb-2">Admin Password</label>
+                    <label className="block text-[8px] font-black text-slate-455 uppercase tracking-widest mb-0.5">Admin Password</label>
                     <div className="relative">
                       <input
                         type={showOnboardPassword ? "text" : "password"}
                         required
                         value={tenantAdminPassword}
                         onChange={(e) => setTenantAdminPassword(e.target.value)}
-                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                         placeholder="••••••••"
                       />
                       <button
                         type="button"
                         onClick={() => setShowOnboardPassword(!showOnboardPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
                       >
                         {showOnboardPassword ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.815 7.815 3 3m-3-3-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
                           </svg>
                         ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                           </svg>
@@ -801,18 +801,18 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-2.5 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2.5 border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  className="px-4 py-2.5 border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
-                  className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md disabled:opacity-50 cursor-pointer"
                 >
                   {creating ? "Provisioning DB..." : "Deploy Instance"}
                 </button>
@@ -823,99 +823,99 @@ export default function DashboardPage() {
       )}
       {showEditModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-700">
-            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <h3 className="text-sm font-black uppercase tracking-wider text-slate-900">Edit Client Configuration</h3>
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-755">
+            <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">Edit Client Configuration</h3>
               <button 
                 onClick={() => setShowEditModal(false)}
                 className="text-slate-400 hover:text-slate-650 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             {editError && (
-              <div className="mx-6 mt-6 p-4 text-xs bg-red-50 border border-red-200/50 text-red-650 rounded-xl text-center font-bold">
+              <div className="mx-6 mt-6 p-4 text-[10px] bg-red-50 border border-red-200/50 text-red-650 rounded-xl text-center font-bold">
                 {editError}
               </div>
             )}
 
-            <form onSubmit={handleEditTenant} className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <form onSubmit={handleEditTenant} className="p-3.5 space-y-2.5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Company / Client Name</label>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Company / Client Name</label>
                   <input
                     type="text"
                     required
                     value={editClientName}
                     onChange={(e) => setEditClientName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Subdomain Slug</label>
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Subdomain Slug</label>
                   <div className="relative flex items-center">
                     <input
                       type="text"
                       required
                       value={editSubdomain}
                       onChange={(e) => setEditSubdomain(e.target.value)}
-                      className="w-full pl-4 pr-24 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                      className="w-full pl-4 pr-24 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                       placeholder="e.g. acme"
                     />
-                    <span className="absolute right-3 text-[10px] font-black text-slate-400 lowercase">.crediiflow.in</span>
+                    <span className="absolute right-2 text-[8px] font-black text-slate-400 lowercase">.crediiflow.in</span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Cluster Status</label>
+                <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Cluster Status</label>
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 focus:outline-none transition-all duration-200 text-xs font-bold"
+                  className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                 >
                   <option value="active">Active (Operational)</option>
                   <option value="suspended">Suspended (Access Revoked)</option>
                 </select>
               </div>
 
-              <div className="p-5 bg-slate-50/50 border border-slate-200/60 rounded-2xl space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Client Admin Credentials</p>
+              <div className="p-2.5 bg-slate-50/50 border border-slate-200/60 rounded-lg space-y-2">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Client Admin Credentials</p>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-455 uppercase tracking-widest mb-2">Admin Phone Number</label>
+                    <label className="block text-[8px] font-black text-slate-455 uppercase tracking-widest mb-0.5">Admin Phone Number</label>
                     <input
                       type="tel"
                       required
                       value={editAdminPhone}
                       onChange={(e) => setEditAdminPhone(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                       placeholder="e.g. 9876543210"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-black text-slate-455 uppercase tracking-widest mb-2">New Admin Password</label>
+                    <label className="block text-[8px] font-black text-slate-455 uppercase tracking-widest mb-0.5">New Admin Password</label>
                     <div className="relative">
                       <input
                         type={showEditPassword ? "text" : "password"}
                         value={editAdminPassword}
                         onChange={(e) => setEditAdminPassword(e.target.value)}
-                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                         placeholder="Leave blank to keep same"
                       />
                       <button
                         type="button"
                         onClick={() => setShowEditPassword(!showEditPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors focus:outline-none cursor-pointer"
                       >
                         {showEditPassword ? (
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.815 7.815 3 3m-3-3-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
                           </svg>
                         ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-3.5 h-3.5">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                           </svg>
@@ -926,18 +926,18 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-2.5 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2.5 border border-slate-205 text-slate-450 hover:text-slate-655 hover:bg-slate-100 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  className="px-4 py-2.5 border border-slate-205 text-slate-450 hover:text-slate-655 hover:bg-slate-100 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md disabled:opacity-50 cursor-pointer"
                 >
                   {updating ? "Saving Changes..." : "Save Config"}
                 </button>
@@ -950,57 +950,57 @@ export default function DashboardPage() {
       {/* ─── DELETE CONFIRMATION MODAL ─── */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-white border border-red-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-700">
-            <div className="px-6 py-5 border-b border-red-100 flex items-center justify-between bg-red-50/50">
-              <h3 className="text-sm font-black uppercase tracking-wider text-red-650 flex items-center gap-2">
-                <svg className="w-4 h-4 text-red-650 animate-pulse flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          <div className="w-full max-w-md bg-white border border-red-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-755">
+            <div className="px-3 py-2 border-b border-red-100 flex items-center justify-between bg-red-50/50">
+              <h3 className="text-sm font-black uppercase tracking-wider text-red-650 flex items-center gap-1">
+                <svg className="w-3.5 h-3.5 text-red-650 animate-pulse flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 <span>Danger: Drop Tenant DB Cluster</span>
               </h3>
               <button 
                 onClick={() => setShowDeleteModal(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
+                className="text-slate-400 hover:text-slate-650 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             {deleteError && (
-              <div className="mx-6 mt-6 p-4 text-xs bg-red-50 border border-red-200 text-red-600 rounded-xl text-center font-bold">
+              <div className="mx-6 mt-6 p-4 text-[10px] bg-red-50 border border-red-200 text-red-600 rounded-xl text-center font-bold">
                 {deleteError}
               </div>
             )}
 
-            <form onSubmit={handleDeleteTenant} className="p-6 space-y-6">
-              <div className="p-4 bg-red-50 border border-red-200 text-xs text-red-650 leading-relaxed font-bold rounded-xl">
-                WARNING: This action is permanent and cannot be undone. This will completely delete the database <span className="font-mono bg-red-100/70 px-1.5 py-0.5 rounded font-black text-red-750">crediiflow_{deleteClientName.toLowerCase().replace(/\s+/g, "_")}</span> and all client transactions, ledger data, and configs will be wiped.
+            <form onSubmit={handleDeleteTenant} className="p-3.5 space-y-2.5">
+              <div className="p-4 bg-red-50 border border-red-200 text-[10px] text-red-650 leading-relaxed font-bold rounded-xl">
+                WARNING: Wipes <span className="font-mono bg-red-105/70 px-1 py-0.5 rounded font-black text-red-750">crediiflow_{deleteClientName.toLowerCase().replace(/\s+/g, "_")}</span>. All client data and configs will be destroyed.
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-450 uppercase tracking-widest mb-2">
-                  Type <span className="text-slate-900 font-black">{deleteClientName}</span> to confirm deletion:
+                <label className="block text-[8px] font-black text-slate-450 uppercase tracking-widest mb-0.5">
+                  Type <span className="text-slate-900 font-black">{deleteClientName}</span> to confirm:
                 </label>
                 <input
                   type="text"
                   required
                   value={deleteConfirmationName}
                   onChange={(e) => setDeleteConfirmationName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-red-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-xs font-bold"
+                  className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-red-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                   placeholder="Enter company name exactly"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-3 pt-2.5 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2.5 border border-slate-205 text-slate-450 hover:text-slate-650 hover:bg-slate-100 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  className="px-4 py-2.5 border border-slate-205 text-slate-450 hover:text-slate-650 hover:bg-slate-100 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={deleting || deleteConfirmationName !== deleteClientName}
-                  className="px-5 py-2.5 bg-red-600 hover:bg-red-550 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-550 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {deleting ? "Destroying Cluster..." : "Permanently Destroy Cluster"}
                 </button>

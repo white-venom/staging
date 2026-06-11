@@ -37,28 +37,30 @@ export default function MobileFilterDrawer({
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center">
       <div 
-        className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-300"
+        className="absolute inset-0 bg-slate-955/40 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[2.5rem] p-8 shadow-2xl animate-in fade-in duration-200 border-t border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between mb-8 shrink-0">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-lg p-3 shadow-2xl animate-in fade-in duration-150 border-t border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3 shrink-0">
           <div>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Advanced Filters</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Desktop-Grade Refinement</p>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-tight">Advanced Filters</h3>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Filter Ledger History</p>
           </div>
           <button 
             onClick={onClose}
-            className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500"
+            className="w-7 h-7 bg-slate-100 dark:bg-slate-805 rounded-full flex items-center justify-center text-slate-500 cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="space-y-8 overflow-y-auto pb-10 px-1 scrollbar-hide">
+        {/* Content */}
+        <div className="space-y-3 overflow-y-auto pb-4 px-0.5 scrollbar-hide">
           {/* 1. Party Filter */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+          <div className="space-y-1">
+            <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
               <Store className="w-3 h-3" /> Retailer / Bank
             </label>
             <InlineSelect
@@ -73,8 +75,8 @@ export default function MobileFilterDrawer({
           </div>
 
           {/* 2. Portal Filter */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+          <div className="space-y-1">
+            <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
               <Globe className="w-3 h-3" /> Portal Group
             </label>
             <InlineSelect
@@ -89,16 +91,16 @@ export default function MobileFilterDrawer({
           </div>
 
           {/* 3. Transaction Type */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+          <div className="space-y-1">
+            <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
               <Tag className="w-3 h-3" /> Transaction Type
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5">
               {['all', 'collection', 'deposit'].map(type => (
                 <button 
                   key={type}
                   onClick={() => setFilters({ ...filters, type })}
-                  className={`py-3 rounded-xl text-[9px] font-black uppercase transition-all ${filters.type === type ? 'bg-blue-600 text-white shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-500'}`}
+                  className={`py-1.5 rounded-md text-[9px] font-bold uppercase transition-all ${filters.type === type ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-50 dark:bg-slate-805 text-slate-500'}`}
                 >
                   {type === 'all' ? 'All' : type === 'collection' ? 'Cash In' : 'Cash Out'}
                 </button>
@@ -107,8 +109,8 @@ export default function MobileFilterDrawer({
           </div>
 
           {/* 4. Staff Filter */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+          <div className="space-y-1">
+            <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
               <User className="w-3 h-3" /> Staff Member
             </label>
             <InlineSelect
@@ -122,12 +124,12 @@ export default function MobileFilterDrawer({
             />
           </div>
 
-          {/* 5. Date Range — Custom inline Year → Month → Day picker */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+          {/* 5. Date Range */}
+          <div className="space-y-1">
+            <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
               <Calendar className="w-3 h-3" /> Date Range
             </label>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
               <InlineDatePicker
                 label="From"
                 value={filters.dateFrom}
@@ -144,8 +146,8 @@ export default function MobileFilterDrawer({
           </div>
 
           {/* 6. Sorting */}
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
+          <div className="space-y-1">
+            <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
               <ArrowUpDown className="w-3 h-3" /> Sort Results
             </label>
             <InlineSelect
@@ -162,7 +164,8 @@ export default function MobileFilterDrawer({
           </div>
         </div>
 
-        <div className="mt-auto pt-6 flex gap-3 shrink-0">
+        {/* Footer Actions */}
+        <div className="mt-auto pt-3 flex gap-2 shrink-0 border-t border-slate-100 dark:border-slate-800">
           <button 
             onClick={() => {
               setFilters({
@@ -176,13 +179,13 @@ export default function MobileFilterDrawer({
               });
               onClose();
             }}
-            className="flex-1 py-4 bg-slate-100 dark:bg-slate-800 rounded-2xl text-[10px] font-black uppercase text-slate-500 tracking-widest"
+            className="flex-1 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-[9px] font-bold uppercase text-slate-500 tracking-wider cursor-pointer"
           >
             Reset
           </button>
           <button 
             onClick={onClose}
-            className="flex-1 py-4 bg-blue-600 rounded-2xl text-[10px] font-black uppercase text-white tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-transform"
+            className="flex-1 py-1.5 bg-blue-600 rounded-lg text-[9px] font-bold uppercase text-white tracking-wider shadow-sm active:scale-95 transition-transform cursor-pointer"
           >
             Apply
           </button>
