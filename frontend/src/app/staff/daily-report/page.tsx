@@ -42,8 +42,9 @@ export default function DailyReportPage() {
         api.getCollections(),
         api.getDeposits()
       ]);
+      const filteredDeps = deps.filter((d: any) => !(d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff"));
       setCollections(cols);
-      setDeposits(deps);
+      setDeposits(filteredDeps);
     } catch (err) {
       console.error("Failed to fetch ledger report data:", err);
     } finally {

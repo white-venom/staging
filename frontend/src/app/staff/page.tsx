@@ -207,8 +207,10 @@ export default function StaffDashboard() {
           date: getUtcDate(c.created_at).toLocaleString("sv-SE").substring(0, 16),
         }));
 
-        // Map deposits
-        const mappedDeposits = apiDeps.map((d: any) => ({
+        // Map deposits (filtering out received handovers to avoid duplication with collections)
+        const mappedDeposits = apiDeps
+          .filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === "staff"))
+          .map((d: any) => ({
           id: d.id,
           portal_id: d.portal_id,
           retailer_id: d.retailer_id,

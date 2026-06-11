@@ -7,7 +7,7 @@ from sqlalchemy import select, and_, desc, update
 from sqlalchemy.orm import Session, joinedload
 
 from app.database.db import get_db
-from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, Portal
+from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, Portal, BankDeposit
 from app.schemas.collection import CollectionCreate, CollectionResponse
 from app.dependencies import require_staff, require_admin, require_any_user
 from app.logic.ledger import recalculate_balances
@@ -131,6 +131,37 @@ def submit_collection(
                 db_collection.balance_snapshot = portal.balance
                 if portal.group:
                     portal.group.balance -= Decimal(str(payload.total_amount))
+        elif payload.from_staff_id:
+            # Auto-create corresponding BankDeposit for the sender staff (from_staff_id)
+            # representing the handover payout to the recipient staff (current_user.id)
+            db_deposit = BankDeposit(
+                staff_id=payload.from_staff_id,
+                deposit_type="staff",
+                recipient_staff_id=current_user.id,
+                to_office=False,
+                payment_mode="cash",
+                amount=payload.total_amount,
+                deposit_date=db_collection.collection_date,
+                status="verified",
+                balance_snapshot=Decimal("0.00")
+            )
+            db.add(db_deposit)
+            db.flush()
+
+            # Save denominations for the deposit matching the collection
+            db_deposit_denom = Denomination(
+                deposit_id=db_deposit.id,
+                note_500=d.note_500,
+                note_200=d.note_200,
+                note_100=d.note_100,
+                note_50=d.note_50,
+                note_20=d.note_20,
+                note_10=d.note_10,
+                coins=d.coins,
+                online_amount=d.online_amount
+            )
+            db.add(db_deposit_denom)
+            db_collection.balance_snapshot = Decimal("0.00")
         else:
             db_collection.balance_snapshot = Decimal("0.00")
 
@@ -368,13 +399,28 @@ def delete_collection(
             portal.balance += Decimal(str(collection.total_amount))
             if portal.group:
                 portal.group.balance += Decimal(str(collection.total_amount))
+
+    # Delete corresponding staff handover deposit if this is a staff-to-staff collection
+    if collection.from_staff_id:
+        db.execute(
+            delete(BankDeposit).where(
+                and_(
+                    BankDeposit.deposit_type == "staff",
+                    BankDeposit.staff_id == collection.from_staff_id,
+                    BankDeposit.recipient_staff_id == collection.staff_id,
+                    BankDeposit.amount == collection.total_amount,
+                    BankDeposit.deposit_date == collection.collection_date
+                )
+            )
+        )
                 
     db.delete(collection)
     db.commit()
     
     # Recalculate balances for this retailer
-    recalculate_balances(retailer_id, db)
-    db.commit()
+    if retailer_id:
+        recalculate_balances(retailer_id, db)
+        db.commit()
     return None
 
 @router.put("/{collection_id}", response_model=CollectionResponse)
@@ -402,6 +448,8 @@ def update_collection(
     new_retailer_id = payload.retailer_id
     old_portal_id = collection.portal_id
     new_portal_id = payload.portal_id
+    old_from_staff_id = collection.from_staff_id
+    new_from_staff_id = payload.from_staff_id
 
     # Handle Portal Balance Adjustments
     if old_portal_id != new_portal_id:
@@ -450,8 +498,75 @@ def update_collection(
         ledger_entry.amount = new_amount
         if old_retailer_id != new_retailer_id:
             ledger_entry.retailer_id = new_retailer_id
-    
-    db.commit()
+
+    # Sync corresponding staff handover deposit if needed
+    if old_from_staff_id != new_from_staff_id:
+        # Delete old matching deposit if it existed
+        if old_from_staff_id:
+            db.execute(
+                delete(BankDeposit).where(
+                    and_(
+                        BankDeposit.deposit_type == "staff",
+                        BankDeposit.staff_id == old_from_staff_id,
+                        BankDeposit.recipient_staff_id == collection.staff_id,
+                        BankDeposit.amount == old_amount
+                    )
+                )
+            )
+        # Create new matching deposit if new is set
+        if new_from_staff_id:
+            db_deposit = BankDeposit(
+                staff_id=new_from_staff_id,
+                deposit_type="staff",
+                recipient_staff_id=collection.staff_id,
+                to_office=False,
+                payment_mode="cash",
+                amount=payload.total_amount,
+                deposit_date=collection.collection_date,
+                status="verified",
+                balance_snapshot=Decimal("0.00")
+            )
+            db.add(db_deposit)
+            db.flush()
+            
+            d = payload.denominations
+            db_deposit_denom = Denomination(
+                deposit_id=db_deposit.id,
+                note_500=d.note_500,
+                note_200=d.note_200,
+                note_100=d.note_100,
+                note_50=d.note_50,
+                note_20=d.note_20,
+                note_10=d.note_10,
+                coins=d.coins,
+                online_amount=d.online_amount
+            )
+            db.add(db_deposit_denom)
+    elif new_from_staff_id:
+        # Just update the existing matching deposit
+        matching_deposit = db.scalar(
+            select(BankDeposit).where(
+                and_(
+                    BankDeposit.deposit_type == "staff",
+                    BankDeposit.staff_id == new_from_staff_id,
+                    BankDeposit.recipient_staff_id == collection.staff_id,
+                    BankDeposit.amount == old_amount
+                )
+            )
+        )
+        if matching_deposit:
+            matching_deposit.amount = payload.total_amount
+            matching_deposit.deposit_date = collection.collection_date
+            if matching_deposit.denominations:
+                d = payload.denominations
+                matching_deposit.denominations.note_500 = d.note_500
+                matching_deposit.denominations.note_200 = d.note_200
+                matching_deposit.denominations.note_100 = d.note_100
+                matching_deposit.denominations.note_50 = d.note_50
+                matching_deposit.denominations.note_20 = d.note_20
+                matching_deposit.denominations.note_10 = d.note_10
+                matching_deposit.denominations.coins = d.coins
+                matching_deposit.denominations.online_amount = d.online_amount
     
     # Recalculate balances
     if old_retailer_id != new_retailer_id:

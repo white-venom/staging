@@ -57,7 +57,8 @@ export default function CashOutLedgerPage() {
     setIsLoading(true);
     try {
       const data = await api.getDeposits();
-      setDeposits(data);
+      const filteredData = data.filter((d: any) => !(d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff"));
+      setDeposits(filteredData);
     } catch (err) {
       console.error(err);
     } finally {

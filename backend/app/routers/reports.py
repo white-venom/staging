@@ -116,11 +116,16 @@ def get_staff_cash_in_hand(
     """Calculates active field staff's real-time cash balance and pocket note breakdown.
     Calculated as: Total collected notes - Total deposited/handed over notes.
     """
-    # 1. Summarize all collections made by this staff member
+    # 1. Summarize all collections made by this staff member (excluding internal staff-to-staff handovers)
     collections_denoms = db.scalars(
         select(Denomination)
         .join(Collection, Denomination.collection_id == Collection.id)
-        .where(Collection.staff_id == current_user.id)
+        .where(
+            and_(
+                Collection.staff_id == current_user.id,
+                Collection.from_staff_id == None
+            )
+        )
     ).all()
 
     # 2. Summarize all deposits/handovers made by this staff member

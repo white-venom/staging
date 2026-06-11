@@ -42,6 +42,11 @@ def submit_deposit(
             if not recipient:
                 raise HTTPException(status_code=404, detail="Recipient staff member not found.")
     elif dt == "virtual":
+        if current_user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only administrators are authorized to process virtual transfers."
+            )
         portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
         if not portal:
             raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
@@ -127,14 +132,8 @@ def submit_deposit(
                 if portal.group:
                     portal.group.balance += Decimal(str(payload.amount))
         elif dt == "virtual":
-            # Validate and decrement staff virtual balance limit
-            if current_user.role != "admin":
-                if current_user.virtual_balance < payload.amount:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Sufficient virtual limit not available. Current limit: ₹{float(current_user.virtual_balance):,.2f}"
-                    )
-                current_user.virtual_balance -= payload.amount
+            # Admin does not have a virtual balance limit to validate/decrement.
+            pass
 
             # Step A: Decrement Portal Balance and To Give
             portal.balance -= payload.amount
@@ -354,6 +353,11 @@ def delete_deposit(
         raise HTTPException(status_code=404, detail="Deposit record not found")
         
     if current_user.role != "admin":
+        if deposit.deposit_type == "virtual":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only administrators are authorized to process virtual transfers."
+            )
         if deposit.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this deposit")
         # Check if within 5 minutes
@@ -433,6 +437,11 @@ def update_deposit(
         raise HTTPException(status_code=404, detail="Deposit record not found")
         
     if current_user.role != "admin":
+        if deposit.deposit_type == "virtual" or payload.deposit_type.lower().strip() == "virtual":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only administrators are authorized to process virtual transfers."
+            )
         if deposit.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this deposit")
         # Check if within 5 minutes
