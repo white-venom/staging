@@ -16,6 +16,25 @@ export default function ErrorPage({ error, reset }: ErrorProps) {
   useEffect(() => {
     setMounted(true);
     console.error("System runtime error:", error);
+
+    // Automatically recover from ChunkLoadErrors by reloading the page
+    if (
+      error &&
+      (error.message?.includes("Failed to load chunk") ||
+        error.message?.includes("ChunkLoadError") ||
+        error.name === "ChunkLoadError")
+    ) {
+      const lastReload = sessionStorage.getItem("last_chunk_error_reload");
+      const now = Date.now();
+      // Only reload if we haven't reloaded in the last 10 seconds to prevent infinite loops
+      if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+        sessionStorage.setItem("last_chunk_error_reload", now.toString());
+        console.warn("Chunk load error detected. Reloading page for recovery...");
+        window.location.reload();
+      } else {
+        console.error("Chunk load error recurred within 10 seconds. Reload aborted to prevent loop.");
+      }
+    }
   }, [error]);
 
   if (!mounted) return null;
