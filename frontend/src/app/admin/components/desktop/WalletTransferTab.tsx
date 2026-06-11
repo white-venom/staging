@@ -121,16 +121,19 @@ export default function WalletTransferTab() {
           <div className={`flex ${vDirection === 'load' ? 'flex-col' : 'flex-col-reverse'} gap-4`}>
             <div>
               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                {vDirection === "load" ? "Source Portal Account" : "Destination Portal Account"}
+                {vDirection === "load" ? "Source Portal" : "Destination Portal"}
               </label>
               <InlineSelect
                 value={vSourcePortalId}
                 onChange={(val) => setVSourcePortalId(val)}
-                options={allPortals.map((p: any) => ({ 
-                  value: p.id, 
-                  label: `${p.portal_name} (${p.groupName}) - Bal: ₹${(p.balance || 0).toLocaleString()}`
-                }))}
-                placeholder="Select Source Portal"
+                options={(portalDirectory || []).map((g: any) => {
+                  const primaryPortalId = g.portals && g.portals.length > 0 ? g.portals[0].id : "";
+                  return {
+                    value: primaryPortalId,
+                    label: `${g.name} - Bal: ₹${(g.balance || 0).toLocaleString()}`
+                  };
+                })}
+                placeholder="Select Portal"
               />
             </div>
 
@@ -208,7 +211,7 @@ export default function WalletTransferTab() {
               const isRefund = tx.isRefund === true;
 
               // Build narration names
-              const portalName = tx.portalName || tx.portalGroupName || "Portal";
+              const portalName = tx.portalGroupName || tx.portalName || "Portal";
               const retailer = (retailerDirectory || []).find((r: any) => r.id === tx.retailer_id);
               const retailerName = retailer?.name || "Retailer";
 

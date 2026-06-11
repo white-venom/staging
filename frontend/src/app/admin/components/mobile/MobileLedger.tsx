@@ -209,7 +209,7 @@ export default function MobileLedger() {
           ...d, 
           type: d.isRefund === true ? 'collection' : 'deposit',
           party,
-          portal: isVirtual ? (d.portalName || d.targetName) : d.targetName, 
+          portal: isVirtual ? (d.portalGroupName || d.portalName || d.targetName) : d.targetName, 
           staff: d.staffName || "Admin"
         };
       })

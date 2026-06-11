@@ -107,7 +107,12 @@ def process_virtual_transfer(
     ist = pytz.timezone('Asia/Kolkata')
     today_ist = datetime.now(ist).date()
     # 1. Fetch Source Portal
-    portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
+    portal = db.scalar(
+        select(Portal)
+        .options(joinedload(Portal.group))
+        .where(Portal.id == payload.portal_id)
+        .with_for_update()
+    )
     if not portal:
         raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
         
@@ -152,13 +157,14 @@ def process_virtual_transfer(
             else:
                 prev_balance = Decimal(str(retailer.opening_to_take or 0))
                 
+            p_name = portal.group.name if portal.group else portal.portal_name
             if payload.direction == "refund":
                 new_balance = prev_balance - payload.amount
-                desc_text = f"Virtual Portal Refund to {portal.portal_name}"
+                desc_text = f"Virtual Portal Refund to {p_name}"
                 transaction_type = "credit"
             else:
                 new_balance = prev_balance + payload.amount
-                desc_text = f"Virtual Portal Transfer from {portal.portal_name}"
+                desc_text = f"Virtual Portal Transfer from {p_name}"
                 transaction_type = "debit"
             
             # Log in bank deposits to keep audit trail

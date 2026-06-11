@@ -233,7 +233,7 @@ export default function LedgerTab({
         partyId,
         party,
         store_name: null,
-        portal: isVirtual ? (d.portalName || d.targetName) : d.targetName, 
+        portal: isVirtual ? (d.portalGroupName || d.portalName || d.targetName) : d.targetName, 
         staff: d.staffName || "Admin",
         debit: isRef ? 0 : d.amount,
         credit: isRef ? d.amount : 0,
