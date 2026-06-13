@@ -593,14 +593,14 @@ export default function StaffDashboard() {
             <div className="relative ml-auto w-64 max-w-[80vw] h-full bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.3)] p-6 flex flex-col justify-between animate-in slide-in-from-right duration-300">
               <div>
                 {/* Drawer Header */}
-                <div className="flex items-center justify-between pb-6 border-b border-slate-100 dark:border-slate-800 mb-6">
+                <div className="flex items-center justify-between p-3.5 bg-[#0d1b3e] border border-blue-900/40 rounded-2xl mb-6 text-white shadow-md">
                   <div className="flex items-center gap-2">
-                    <img src="/logo.png" alt="CrediiFlow Logo" className="h-7 w-auto object-contain dark:invert" />
-                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Staff Panel</span>
+                    <img src="/logo.png" alt="CrediiFlow Logo" className="h-7 w-auto object-contain" />
+                    <span className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">Staff Panel</span>
                   </div>
                   <button
                     onClick={() => setIsSidebarOpen(false)}
-                    className="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                    className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
