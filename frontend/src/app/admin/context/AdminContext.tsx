@@ -158,6 +158,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           bank_name: p.bank_name,
           bank_account_no: p.bank_account_no,
           ifsc_code: p.ifsc_code,
+          show_in_online_payment: !!p.show_in_online_payment,
           opening_to_give: parseFloat(p.opening_to_give || 0),
           opening_to_take: parseFloat(p.opening_to_take || 0),
           balance: parseFloat(p.balance || 0)
