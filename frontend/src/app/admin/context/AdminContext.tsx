@@ -146,13 +146,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       mappedCols.sort((a: any, b: any) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime());
       mappedDeps.sort((a: any, b: any) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime());
       
-      const mappedGroups = pGroups.map((g: any) => ({
-        id: g.id,
-        name: g.name,
-        opening_to_give: parseFloat(g.opening_to_give || 0),
-        opening_to_take: parseFloat(g.opening_to_take || 0),
-        balance: parseFloat(g.balance || 0),
-        portals: (g.portals || []).map((p: any) => ({
+      const mappedGroups = pGroups.map((g: any) => {
+        const portalsMapped = (g.portals || []).map((p: any) => ({
           id: p.id,
           portal_name: p.portal_name,
           bank_name: p.bank_name,
@@ -162,8 +157,17 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           opening_to_give: parseFloat(p.opening_to_give || 0),
           opening_to_take: parseFloat(p.opening_to_take || 0),
           balance: parseFloat(p.balance || 0)
-        }))
-      }));
+        }));
+        return {
+          id: g.id,
+          name: g.name,
+          opening_to_give: parseFloat(g.opening_to_give || 0),
+          opening_to_take: parseFloat(g.opening_to_take || 0),
+          balance: parseFloat(g.balance || 0),
+          portals: portalsMapped,
+          show_in_online_payment: portalsMapped.some((p: any) => p.show_in_online_payment)
+        };
+      });
       
       setCollections(mappedCols);
       setDeposits(mappedDeps);

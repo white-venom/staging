@@ -11,11 +11,13 @@ class PortalGroupBase(BaseModel):
 class PortalGroupCreate(PortalGroupBase):
     opening_to_give: float = 0.0
     opening_to_take: float = 0.0
+    show_in_online_payment: bool = False
 
 
 class PortalGroupUpdate(PortalGroupBase):
     opening_to_give: Optional[float] = None
     opening_to_take: Optional[float] = None
+    show_in_online_payment: Optional[bool] = None
 
 
 class PortalBase(BaseModel):

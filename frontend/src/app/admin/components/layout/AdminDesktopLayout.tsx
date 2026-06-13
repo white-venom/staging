@@ -164,7 +164,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       await api.createPortalGroup({ 
         name: pGroupName,
         opening_to_give: val < 0 ? Math.abs(val) : 0,
-        opening_to_take: val > 0 ? val : 0
+        opening_to_take: val > 0 ? val : 0,
+        show_in_online_payment: pGroupOnline
       });
 
       showToastNotification(`Portal Group "${pGroupName}" registered!`);

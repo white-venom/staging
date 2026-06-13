@@ -51,7 +51,8 @@ def create_portal_group(
         portal_name="Primary Account",
         opening_to_give=db_group.opening_to_give,
         opening_to_take=db_group.opening_to_take,
-        balance=db_group.balance
+        balance=db_group.balance,
+        show_in_online_payment=group_data.show_in_online_payment
     )
     db.add(db_portal)
     db.commit()
@@ -98,6 +99,9 @@ def update_portal_group(
         delta_take = Decimal(str(group_data.opening_to_take))
         db_group.opening_to_take = (db_group.opening_to_take or Decimal("0.00")) + delta_take
         db_group.balance = (db_group.balance or Decimal("0.00")) + delta_take
+    if group_data.show_in_online_payment is not None:
+        for portal in db_group.portals:
+            portal.show_in_online_payment = group_data.show_in_online_payment
     
     db.commit()
     db.refresh(db_group)

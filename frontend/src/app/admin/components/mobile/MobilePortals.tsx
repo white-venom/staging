@@ -54,7 +54,7 @@ export default function MobilePortals({
     setEditingPortalGroup(group);
     setEditPortalName(group.name);
     setEditPortalBalanceAdjustment("");
-    setEditGroupOnline(false);
+    setEditGroupOnline(!!group.show_in_online_payment);
     setIsEditPortalModalOpen(true);
   };
 
@@ -64,7 +64,10 @@ export default function MobilePortals({
     const adjustVal = parseFloat(editPortalBalanceAdjustment || "0");
     setSubmitting(true);
     try {
-      const payload: any = { name: editPortalName };
+      const payload: any = { 
+        name: editPortalName,
+        show_in_online_payment: editGroupOnline
+      };
       if (adjustVal > 0) {
         payload.opening_to_take = adjustVal;
       } else if (adjustVal < 0) {
@@ -91,7 +94,8 @@ export default function MobilePortals({
       await api.createPortalGroup({
         name: pName,
         opening_to_give: val < 0 ? Math.abs(val) : 0,
-        opening_to_take: val > 0 ? val : 0
+        opening_to_take: val > 0 ? val : 0,
+        show_in_online_payment: pGroupOnline
       });
       showToastNotification(`✓ Portal "${pName}" registered`);
       setPName(""); setPGroupBalance("");

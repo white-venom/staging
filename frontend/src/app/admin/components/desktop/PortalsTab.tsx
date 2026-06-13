@@ -135,7 +135,10 @@ export default function PortalsTab({
     const adjustVal = parseFloat(editingGroupBalanceAdjustment || "0");
     
     try {
-      const payload: any = { name: editingGroupName };
+      const payload: any = { 
+        name: editingGroupName,
+        show_in_online_payment: editGroupOnline
+      };
       if (adjustVal > 0) {
         payload.opening_to_take = adjustVal;
       } else if (adjustVal < 0) {
@@ -235,7 +238,7 @@ export default function PortalsTab({
                           setEditingGroupId(group.id);
                           setEditingGroupName(group.name);
                           setEditingGroupBalanceAdjustment("");
-                          setEditGroupOnline(false);
+                          setEditGroupOnline(!!group.show_in_online_payment);
                           setIsAccountModalOpen(true);
                         }}
                         className="p-1.5 text-slate-400 hover:text-blue-650 dark:text-slate-500 dark:hover:text-blue-400 transition-colors cursor-pointer"
