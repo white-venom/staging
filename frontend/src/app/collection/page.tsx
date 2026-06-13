@@ -288,7 +288,7 @@ function NewCollectionContent() {
         portal_id: denominations.online_portal_id || null,
         total_amount: totalCollectionAmount,
         denominations: denominations,
-        remarks: remarks || "Immediate credit logged"
+        remarks: remarks || ""
       };
 
       if (editId) {
@@ -308,7 +308,7 @@ function NewCollectionContent() {
           portalName: onlinePortalName,
           totalAmount: totalCollectionAmount,
           denominations,
-          remarks: remarks || "Immediate credit logged"
+          remarks: remarks || ""
         });
       }
       
