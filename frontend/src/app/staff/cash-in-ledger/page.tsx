@@ -33,6 +33,7 @@ export default function CashInLedgerPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [cmsRemarksExpanded, setCmsRemarksExpanded] = useState<Record<string, boolean>>({});
 
   // Modal edit states
   const [editingItem, setEditingItem] = useState<any | null>(null);
@@ -372,8 +373,32 @@ ${dateFormatted}`;
                         onClick={() => toggleExpand(c.id)}
                         className="p-2 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors"
                       >
-                        <div>
-                          <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-200">{c.retailer_name}</h3>
+                         <div>
+                          <div className="flex items-center gap-1">
+                            <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-200">
+                              {c.retailer_name?.toLowerCase().startsWith("cms")
+                                ? `${c.retailer_name} - ${c.store_name || "Direct"}`
+                                : c.retailer_name}
+                            </h3>
+                            {c.retailer_name?.toLowerCase().startsWith("cms") && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }));
+                                }}
+                                className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer inline-flex items-center justify-center"
+                                title="View Remark"
+                              >
+                                <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[c.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                              </button>
+                            )}
+                          </div>
+                          {c.retailer_name?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[c.id] && (
+                            <div className="mt-1 px-1.5 py-0.5 bg-slate-55/40 dark:bg-slate-955/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400">
+                              <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                              <span className="italic">{c.remarks || "no remark"}</span>
+                            </div>
+                          )}
                           <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
                             <span>{c.portal_name || "N/A"}</span>
                             <span>•</span>

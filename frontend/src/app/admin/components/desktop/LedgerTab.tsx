@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useAdmin } from "../../context/AdminContext";
-import { Edit2, X, Save, Trash2 } from "lucide-react";
+import { Edit2, X, Save, Trash2, ChevronDown } from "lucide-react";
 import { api } from "../../../utils/api";
 
 function getExportFilename() {
@@ -61,6 +61,7 @@ export default function LedgerTab({
     coins: 0,
     online_amount: 0,
   });
+  const [cmsRemarksExpanded, setCmsRemarksExpanded] = React.useState<Record<string, boolean>>({});
 
   const handleStartEditCollection = (tx: any) => {
     const raw = tx.rawRecord;
@@ -585,14 +586,34 @@ export default function LedgerTab({
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-col">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase">{tx.party}</span>
-                            {tx.store_name && (
+                            <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase">
+                              {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms")
+                                ? `${tx.party} - ${tx.store_name || "Direct"}`
+                                : tx.party}
+                            </span>
+                            {tx.store_name && !tx.party?.toLowerCase().startsWith("cms") && (
                               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">({tx.store_name})</span>
                             )}
                             {tx.depositType === 'virtual' && (
                               <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
                             )}
+                            {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms") && (
+                              <button
+                                type="button"
+                                onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [tx.id]: !prev[tx.id] }))}
+                                className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                                title="View Remark"
+                              >
+                                <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[tx.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                              </button>
+                            )}
                           </div>
+                          {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[tx.id] && (
+                            <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words">
+                              <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                              <span className="italic">{tx.rawRecord?.remarks || "no remark"}</span>
+                            </div>
+                          )}
                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">By {tx.staff}</span>
                       </div>
                       <div className="flex items-center gap-1.5 no-print">

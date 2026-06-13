@@ -303,6 +303,7 @@ function NewCollectionContent() {
         addCollection({
           retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
           store_id: selectedStoreId || undefined,
+          store_name: sourceType === "retailer" && selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : undefined,
           retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
           portalName: onlinePortalName,
           totalAmount: totalCollectionAmount,
@@ -324,6 +325,7 @@ function NewCollectionContent() {
       addCollection({
         retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
         store_id: selectedStoreId || undefined,
+        store_name: sourceType === "retailer" && selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : undefined,
         retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
         portalName: onlinePortalName,
         totalAmount: totalCollectionAmount,

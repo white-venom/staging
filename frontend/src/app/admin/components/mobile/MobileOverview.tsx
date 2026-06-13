@@ -104,6 +104,7 @@ export default function MobileOverview({
         date: c.date,
         party: c.retailerName,
         store_name: c.store_name || null,
+        remarks: c.remarks || "",
         staff: c.staffName || "Admin",
         amount: c.totalAmount,
         type: 'collection',
@@ -114,6 +115,7 @@ export default function MobileOverview({
         date: d.date,
         party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
         store_name: null,
+        remarks: d.remarks || "",
         staff: d.staffName || "Admin",
         amount: d.amount,
         type: 'deposit',
@@ -134,6 +136,7 @@ export default function MobileOverview({
 
   // State to track which staff cards are expanded
   const [expandedStaffNames, setExpandedStaffNames] = useState<Record<string, boolean>>({});
+  const [cmsRemarksExpanded, setCmsRemarksExpanded] = useState<Record<string, boolean>>({});
 
   const toggleStaffExpanded = (name: string) => {
     setExpandedStaffNames(prev => ({
@@ -422,10 +425,33 @@ export default function MobileOverview({
                   {item.type === 'collection' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-black text-slate-800 dark:text-white truncate">
-                    {item.party} {item.store_name && <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>}
-                  </p>
-                  <p className="text-[8px] font-bold text-slate-400 uppercase truncate">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-black text-slate-800 dark:text-white truncate block">
+                      {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
+                        ? `${item.party} - ${item.store_name || "Direct"}`
+                        : item.party}
+                    </span>
+                    {item.store_name && !(item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")) && (
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>
+                    )}
+                    {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
+                      <button
+                        type="button"
+                        onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                        className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                        title="View Remark"
+                      >
+                        <ChevronDown className={`w-2.5 h-2.5 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-505' : ''}`} />
+                      </button>
+                    )}
+                  </div>
+                  {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
+                    <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[8px] font-medium text-slate-605 dark:text-slate-400 max-w-[200px] break-words">
+                      <span className="text-[7px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                      <span className="italic">{item.remarks || "no remark"}</span>
+                    </div>
+                  )}
+                  <p className="text-[8px] font-bold text-slate-400 uppercase truncate mt-0.5">
                     {(() => {
                       if (!item.date) return "N/A";
                       try {

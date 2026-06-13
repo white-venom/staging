@@ -32,6 +32,7 @@ export interface CollectionItem {
   id: string;
   retailer_id: string;
   store_id?: string;
+  store_name?: string;
   retailerName: string;
   portalName: string;
   staffName?: string;

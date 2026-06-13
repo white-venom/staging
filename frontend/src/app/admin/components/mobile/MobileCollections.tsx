@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { ClipboardList, User, Calendar, Trash2 } from "lucide-react";
+import { ClipboardList, User, Calendar, Trash2, ChevronDown } from "lucide-react";
+import { useState } from "react";
 import { api } from "@/app/utils/api";
 
 interface MobileCollectionsProps {
@@ -11,6 +12,7 @@ interface MobileCollectionsProps {
 }
 
 export default function MobileCollections({ collections, showToastNotification, fetchData }: MobileCollectionsProps) {
+  const [cmsRemarksExpanded, setCmsRemarksExpanded] = useState<Record<string, boolean>>({});
   
   const handleDelete = async (id: string) => {
     if (confirm("Delete this collection?")) {
@@ -69,10 +71,29 @@ export default function MobileCollections({ collections, showToastNotification, 
               </div>
             </div>
             
-            <div className="mt-1.5">
-               <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider truncate">
-                 {c.retailerName} • {c.area}
-               </p>
+            <div className="mt-1.5 flex flex-col gap-1">
+               <div className="flex items-center gap-1">
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider truncate">
+                   {c.retailerName?.toLowerCase().startsWith("cms") 
+                     ? `${c.retailerName} - ${c.store_name || "Direct"}` 
+                     : c.retailerName}
+                 </p>
+                 {c.retailerName?.toLowerCase().startsWith("cms") && (
+                   <button
+                     onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
+                     className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                     title="View Remark"
+                   >
+                     <ChevronDown className={`w-2.5 h-2.5 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[c.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                   </button>
+                 )}
+               </div>
+               {c.retailerName?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[c.id] && (
+                 <div className="p-1.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[8px] font-medium text-slate-600 dark:text-slate-400">
+                   <span className="text-[7px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                   <span className="italic">{c.remarks || "no remark"}</span>
+                 </div>
+               )}
             </div>
           </div>
         ))}

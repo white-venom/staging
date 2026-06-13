@@ -15,7 +15,8 @@ import {
   X,
   Edit2,
   Save,
-  Trash2
+  Trash2,
+  ChevronDown
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { format } from "date-fns";
@@ -27,6 +28,7 @@ export default function MobileLedger() {
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [cmsRemarksExpanded, setCmsRemarksExpanded] = useState<Record<string, boolean>>({});
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState<any | null>(null);
@@ -334,26 +336,51 @@ export default function MobileLedger() {
                     </div>
                   </td>
                   <td className="py-1 px-2 border-r border-slate-50 dark:border-slate-800">
-                    <div className="flex items-center justify-between gap-1.5">
-                      <span className="font-black text-slate-805 dark:text-slate-100 uppercase truncate block">
-                        {item.party || 'General Entry'} {item.store_name && <span className="text-[8px] text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>}
-                      </span>
-                      <div className="flex items-center gap-1 no-print">
-                        <button
-                          onClick={() => handleStartEditCollection(item)}
-                          className="p-0.5 bg-blue-50 text-blue-600 dark:bg-blue-955/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
-                          title="Edit Entry"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteEntry(item)}
-                          className="p-0.5 bg-red-50 text-red-650 dark:bg-red-955/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer active:scale-95 transition-transform"
-                          title="Delete Entry"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-black text-slate-805 dark:text-slate-100 uppercase">
+                            {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
+                              ? `${item.party} - ${item.store_name || "Direct"}`
+                              : item.party || 'General Entry'}
+                          </span>
+                          {item.store_name && !(item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")) && (
+                            <span className="text-[8px] text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>
+                          )}
+                          {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
+                            <button
+                              type="button"
+                              onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                              className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                              title="View Remark"
+                            >
+                              <ChevronDown className={`w-2.5 h-2.5 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-505' : ''}`} />
+                            </button>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 no-print">
+                          <button
+                            onClick={() => handleStartEditCollection(item)}
+                            className="p-0.5 bg-blue-50 text-blue-600 dark:bg-blue-955/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
+                            title="Edit Entry"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEntry(item)}
+                            className="p-0.5 bg-red-50 text-red-650 dark:bg-red-955/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer active:scale-95 transition-transform"
+                            title="Delete Entry"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
+                      {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
+                        <div className="mt-0.5 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[8px] font-medium text-slate-600 dark:text-slate-400 max-w-[200px] break-words">
+                          <span className="text-[7px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                          <span className="italic">{item.remarks || "no remark"}</span>
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="py-1 px-2 border-r border-slate-50 dark:border-slate-800 text-center">

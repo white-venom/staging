@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Search, Download, X, CheckCircle2, Edit, Trash2 } from "lucide-react";
+import { Search, Download, X, CheckCircle2, Edit, Trash2, ChevronDown } from "lucide-react";
 import { api } from "../../../utils/api";
 
 interface CollectionsTabProps {
@@ -19,6 +19,7 @@ export default function CollectionsTab({
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [editAmount, setEditAmount] = React.useState(0);
   const [editRemarks, setEditRemarks] = React.useState("");
+  const [cmsRemarksExpanded, setCmsRemarksExpanded] = React.useState<Record<string, boolean>>({});
   
   const [dateFrom, setDateFrom] = React.useState("");
   const [dateTo, setDateTo] = React.useState("");
@@ -381,9 +382,33 @@ export default function CollectionsTab({
                       </span>
                     </div>
                   </td>
-                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 font-black text-slate-900 dark:text-white uppercase">{col.retailerName}</td>
+                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 font-black text-slate-900 dark:text-white uppercase">
+                     {col.retailerName?.toLowerCase().startsWith("cms") 
+                       ? `${col.retailerName} - ${col.store_name || "Direct"}` 
+                       : col.retailerName}
+                   </td>
                    <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-slate-500 text-[9px] uppercase font-bold">{col.store_name || "Direct"}</td>
-                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-slate-400 italic text-[9px] line-clamp-1 max-w-[120px]">{col.remarks || "-"}</td>
+                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-slate-400 italic text-[9px]">
+                     {col.retailerName?.toLowerCase().startsWith("cms") ? (
+                       <div className="flex flex-col gap-1 items-start">
+                         <button
+                           type="button"
+                           onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [col.id]: !prev[col.id] }))}
+                           className="flex items-center gap-1 text-[8px] font-black uppercase text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 px-1.5 py-0.5 rounded border border-indigo-150 cursor-pointer"
+                         >
+                           <span>View Remark</span>
+                           <ChevronDown className={`w-2.5 h-2.5 transition-transform duration-200 ${cmsRemarksExpanded[col.id] ? 'rotate-180' : ''}`} />
+                         </button>
+                         {cmsRemarksExpanded[col.id] && (
+                           <span className="text-[9px] text-slate-650 dark:text-slate-300 font-bold bg-slate-50 dark:bg-slate-950/60 p-1.5 rounded border border-slate-200/50 mt-1 max-w-[150px] inline-block whitespace-normal break-words">
+                             {col.remarks || "no remark"}
+                           </span>
+                         )}
+                       </div>
+                     ) : (
+                       col.remarks || "-"
+                     )}
+                   </td>
                    <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-[10px] font-black uppercase text-slate-600">{col.staff}</td>
                    <td className="p-4 text-right font-black text-blue-600">₹{col.totalAmount.toLocaleString()}.00</td>
                    <td className="p-4 text-center no-print">

@@ -50,6 +50,7 @@ export default function StaffDashboard() {
   const [offlineDeposits, setOfflineDeposits] = useState<OfflineDeposit[]>([]);
   const [syncStatusMsg, setSyncStatusMsg] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [cmsRemarksExpanded, setCmsRemarksExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (isSidebarOpen) {
@@ -187,6 +188,7 @@ export default function StaffDashboard() {
           id: c.id,
           retailer_id: c.retailer_id,
           store_id: c.store_id,
+          store_name: c.store_name,
           retailerName: c.retailer_name || "Unknown Retailer",
           portalName: c.portal_name || "Cash",
           staffName: c.staff_name,
@@ -772,9 +774,33 @@ export default function StaffDashboard() {
                          )}
                        </div>
                        <div>
-                         <div className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight">
-                           {c.type === 'collection' ? (c.retailerName || c.targetName) : c.targetName}
+                         <div className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-1">
+                           <span>
+                             {c.type === 'collection'
+                               ? ((c.retailerName || c.targetName)?.toLowerCase().startsWith("cms")
+                                   ? `${c.retailerName || c.targetName} - ${c.store_name || "Direct"}`
+                                   : (c.retailerName || c.targetName))
+                               : c.targetName}
+                           </span>
+                           {c.type === 'collection' && (c.retailerName || c.targetName)?.toLowerCase().startsWith("cms") && (
+                             <button
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }));
+                               }}
+                               className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer inline-flex items-center justify-center"
+                               title="View Remark"
+                             >
+                               <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[c.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                             </button>
+                           )}
                          </div>
+                         {c.type === 'collection' && (c.retailerName || c.targetName)?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[c.id] && (
+                           <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400">
+                             <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                             <span className="italic">{c.remarks || "no remark"}</span>
+                           </div>
+                         )}
                          <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                            <span className="text-blue-500">{c.type === 'collection' ? (c.portalName || "Handover") : (c.depositType || 'Deposit')}</span>
                            <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>

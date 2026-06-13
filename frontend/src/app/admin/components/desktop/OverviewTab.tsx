@@ -99,6 +99,7 @@ export default function OverviewTab({
 
   // State for active modal visited stores
   const [activeModalStaff, setActiveModalStaff] = React.useState<{ name: string; visitedStores: VisitedStore[] } | null>(null);
+  const [cmsRemarksExpanded, setCmsRemarksExpanded] = React.useState<Record<string, boolean>>({});
 
   // Precalculate daily metrics for all active field staff
   const staffListData = React.useMemo<StaffListData[]>(() => {
@@ -536,7 +537,8 @@ export default function OverviewTab({
             staff: c.staffName || "Admin",
             amount: c.totalAmount,
             type: 'collection',
-            balance: c.balance_snapshot
+            balance: c.balance_snapshot,
+            remarks: c.remarks
           })),
           ...safeDeposits.map(d => ({
             id: d.id,
@@ -546,7 +548,8 @@ export default function OverviewTab({
             staff: d.staffName || "Admin",
             amount: d.amount,
             type: d.isRefund === true ? 'collection' : 'deposit',
-            balance: d.balance_snapshot
+            balance: d.balance_snapshot,
+            remarks: d.remarks || ""
           }))
         ].sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime())
          .slice(0, 10);
@@ -598,8 +601,28 @@ export default function OverviewTab({
                           })()}
                         </td>
                         <td className="px-4 py-3 font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
-                          <span className={`inline-block mr-2 w-1.5 h-1.5 rounded-full ${item.type === 'collection' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                          {item.party} {item.store_name && <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold ml-1">({item.store_name})</span>}
+                          {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
+                            ? `${item.party} - ${item.store_name || "Direct"}`
+                            : item.party}
+                          {item.store_name && !item.party?.toLowerCase().startsWith("cms") && (
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold ml-1">({item.store_name})</span>
+                          )}
+                          {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
+                            <button
+                              type="button"
+                              onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                              className="p-0.5 ml-1 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                              title="View Remark"
+                            >
+                              <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                            </button>
+                          )}
+                          {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
+                            <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words block">
+                              <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                              <span className="italic">{item.remarks || "no remark"}</span>
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
                           {item.staff}
@@ -634,8 +657,30 @@ export default function OverviewTab({
                    <div key={idx} className="p-4 flex flex-col gap-3 group border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors">
                      <div className="flex items-center justify-between text-[11px]">
                        <div className="flex flex-col">
-                         <span className="font-extrabold text-slate-850 dark:text-slate-100">{c.retailerName}</span>
-                         <span className="text-[9px] text-slate-400 font-bold uppercase">{c.date}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-slate-850 dark:text-slate-100">
+                              {c.retailerName?.toLowerCase().startsWith("cms")
+                                ? `${c.retailerName} - ${c.store_name || "Direct"}`
+                                : c.retailerName}
+                            </span>
+                            {c.retailerName?.toLowerCase().startsWith("cms") && (
+                              <button
+                                type="button"
+                                onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
+                                className="p-0.5 bg-slate-50 dark:bg-slate-850 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                                title="View Remark"
+                              >
+                                <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[c.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                              </button>
+                            )}
+                          </div>
+                          {c.retailerName?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[c.id] && (
+                            <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words block">
+                              <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                              <span className="italic">{c.remarks || "no remark"}</span>
+                            </div>
+                          )}
+                          <span className="text-[9px] text-slate-400 font-bold uppercase">{c.date}</span>
                        </div>
                        <div className="flex items-center gap-3">
                          <span className="font-black text-emerald-600 text-sm">+₹{(c.totalAmount || 0).toLocaleString()}</span>
