@@ -235,10 +235,18 @@ export default function MobileRetailers({
     }
   };
 
-  const filtered = retailerDirectory.filter(r => 
-    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.phone?.includes(searchTerm)
-  );
+  const filtered = [...retailerDirectory]
+    .filter(r => 
+      r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.phone?.includes(searchTerm)
+    )
+    .sort((a, b) => {
+      const nameA = (a.name || "").toLowerCase().trim();
+      const nameB = (b.name || "").toLowerCase().trim();
+      if (nameA === "cms" && nameB !== "cms") return -1;
+      if (nameB === "cms" && nameA !== "cms") return 1;
+      return 0;
+    });
 
   return (
     <div className="space-y-2">
@@ -415,7 +423,7 @@ export default function MobileRetailers({
                     )}
                     <button
                       onClick={() => handleOpenLedger(retailer)}
-                      className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-955/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-bold rounded cursor-pointer"
+                      className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-bold rounded cursor-pointer"
                       title="View Ledger"
                     >
                       Ledger
@@ -434,7 +442,7 @@ export default function MobileRetailers({
                 </div>
 
                 {/* Net Balance only */}
-                <div className="mt-1 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800 text-[10px]">
+                <div className="mt-1 flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800 text-[10px]">
                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Net Bal:</span>
                   <span className={`font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                     ₹{Math.round(Math.abs(retailer.balance || 0))}
@@ -651,9 +659,9 @@ export default function MobileRetailers({
       )}
 
       {isLedgerModalOpen && ledgerRetailer && (
-        <div className="fixed inset-0 bg-slate-955 z-50 overflow-y-auto select-none">
+        <div className="fixed inset-0 bg-slate-950 z-50 overflow-y-auto select-none">
           {loadingLedger ? (
-            <div className="min-h-screen bg-slate-955 flex items-center justify-center">
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (

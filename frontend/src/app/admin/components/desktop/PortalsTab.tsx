@@ -535,7 +535,7 @@ export default function PortalsTab({
                                    setIsAccountModalOpen(false);
                                    handleOpenLedger(acc);
                                  }}
-                                 className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-955/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
+                                 className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
                                >
                                  Ledger
                                </button>
@@ -601,7 +601,7 @@ export default function PortalsTab({
       )}
 
       {isLedgerModalOpen && ledgerPortal && (
-        <div className="fixed inset-0 bg-slate-955 z-50 overflow-y-auto select-none">
+        <div className="fixed inset-0 bg-slate-950 z-50 overflow-y-auto select-none">
           {loadingLedger ? (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>

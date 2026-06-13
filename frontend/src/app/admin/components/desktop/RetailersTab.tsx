@@ -209,8 +209,15 @@ export default function RetailersTab({
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        {(retailerDirectory || [])
+        {[...(retailerDirectory || [])]
           .filter(r => (r.name || "").toLowerCase().includes((retailerSearch || "").toLowerCase()))
+          .sort((a, b) => {
+            const nameA = (a.name || "").toLowerCase().trim();
+            const nameB = (b.name || "").toLowerCase().trim();
+            if (nameA === "cms" && nameB !== "cms") return -1;
+            if (nameB === "cms" && nameA !== "cms") return 1;
+            return 0;
+          })
           .map((retailer) => (
             <div
               key={retailer.id}
@@ -261,8 +268,8 @@ export default function RetailersTab({
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Net Balance</span>
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Net Balance:</span>
                   <span className={`text-xs font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
                     ₹{Math.abs(retailer.balance || 0).toLocaleString()}
                   </span>
@@ -538,7 +545,7 @@ export default function RetailersTab({
       )}
 
       {isLedgerModalOpen && ledgerRetailer && (
-        <div className="fixed inset-0 bg-slate-955 z-50 overflow-y-auto select-none">
+        <div className="fixed inset-0 bg-slate-950 z-50 overflow-y-auto select-none">
           {loadingLedger ? (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
