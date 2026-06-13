@@ -655,6 +655,18 @@ export default function StaffDashboard() {
                   <button
                     onClick={() => {
                       setIsSidebarOpen(false);
+                      router.push("/staff/ledger");
+                    }}
+                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
+                  >
+                    <div className="flex-shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs tracking-wider uppercase">Combined Ledger</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsSidebarOpen(false);
                       router.push("/staff/daily-report");
                     }}
                     className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
@@ -756,7 +768,7 @@ export default function StaffDashboard() {
               Recent Cash Ledger
             </h3>
             <button
-              onClick={() => router.push("/history")}
+              onClick={() => router.push("/staff/ledger")}
               className="text-[8px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-600 transition-colors flex items-center gap-1 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-full border border-blue-100 dark:border-blue-900/30 shadow-sm"
             >
               View All <ArrowUpRight className="w-2.5 h-2.5" />
