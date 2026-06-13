@@ -47,13 +47,7 @@ export default function MobileRetailers({
   const [editRetPhone, setEditRetPhone] = useState("");
   const [editRetArea, setEditRetArea] = useState("");
   const [editRetEmail, setEditRetEmail] = useState("");
-  const [editRetToGive, setEditRetToGive] = useState<string>("");
-  const [editRetToTake, setEditRetToTake] = useState<string>("");
-
-  // Inline balance editing states
-  const [inlineEditing, setInlineEditing] = useState<{ id: string, field: 'take' | 'give' } | null>(null);
-  const [inlineValue, setInlineValue] = useState("");
-  const [isUpdatingBalance, setIsUpdatingBalance] = useState(false);
+  // (opening_to_take / to_give are set only at create time — not editable from list)
 
   // Retailer Store logic
   const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
@@ -139,32 +133,7 @@ export default function MobileRetailers({
     }
   };
 
-  const handleInlineRetailerUpdate = async (id: string, field: 'take' | 'give', valueToSave?: string) => {
-    const valToUse = valueToSave !== undefined ? valueToSave : inlineValue;
-    const targetValue = parseFloat(valToUse || "0");
-    if (isNaN(targetValue) || targetValue <= 0) {
-      setInlineEditing(null);
-      return;
-    }
-    setIsUpdatingBalance(true);
-    try {
-      const retailer = retailerDirectory.find(r => r.id === id);
-      if (!retailer) return;
 
-      const payload: any = {};
-      if (field === 'take' && targetValue > 0) payload.opening_to_take = targetValue;
-      if (field === 'give' && targetValue > 0) payload.opening_to_give = targetValue;
-
-      await api.updateRetailer(id, payload);
-      showToastNotification(`✓ Balance updated for ${retailer.name}`);
-      setInlineEditing(null);
-      fetchData();
-    } catch (err: any) {
-      showToastNotification("Error: " + err.message);
-    } finally {
-      setIsUpdatingBalance(false);
-    }
-  };
 
   const handleStartEditRetailer = (retailer: any) => {
     setEditingRetailer(retailer);
@@ -172,20 +141,13 @@ export default function MobileRetailers({
     setEditRetPhone(retailer.phone);
     setEditRetArea(retailer.area);
     setEditRetEmail(retailer.email || "");
-    setEditRetToGive("");
-    setEditRetToTake("");
+
     setIsEditRetailerModalOpen(true);
   };
 
   const handleSaveRetailerEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRetailer) return;
-    const addTake = parseFloat(editRetToTake || "0");
-    const addGive = parseFloat(editRetToGive || "0");
-    if (addTake < 0 || addGive < 0) {
-      showToastNotification("Negative values are not allowed.");
-      return;
-    }
     setSubmitting(true);
     try {
       await api.updateRetailer(editingRetailer.id, {
@@ -193,8 +155,6 @@ export default function MobileRetailers({
         phone: editRetPhone,
         address: editRetArea,
         email: editRetEmail,
-        opening_to_give: addGive,
-        opening_to_take: addTake
       });
       showToastNotification(`✓ Retailer "${editRetName}" updated`);
       setIsEditRetailerModalOpen(false);
@@ -444,49 +404,13 @@ export default function MobileRetailers({
                   </div>
                 </div>
 
-                {/* Ledger balances */}
-                <div className="grid grid-cols-3 gap-1 mt-1 text-[10px]">
-                  <div className="bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded flex items-center justify-between border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[8px] font-bold text-red-500 uppercase tracking-tighter">Take:</span>
-                      <span className="font-extrabold text-red-650 dark:text-red-400">₹{Math.round(retailer.opening_to_take || 0)}</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setInlineEditing({ id: retailer.id, field: 'take' });
-                        setInlineValue("");
-                      }}
-                      className="p-0.5 bg-slate-200 dark:bg-slate-800 rounded text-red-500 hover:bg-slate-300 transition-colors"
-                    >
-                      <Plus className="w-2 h-2" />
-                    </button>
-                  </div>
-
-                  <div className="bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded flex items-center justify-between border border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-1">
-                      <span className="text-[8px] font-bold text-emerald-500 uppercase tracking-tighter">Give:</span>
-                      <span className="font-extrabold text-emerald-650 dark:text-emerald-555">₹{Math.round(retailer.opening_to_give || 0)}</span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setInlineEditing({ id: retailer.id, field: 'give' });
-                        setInlineValue("");
-                      }}
-                      className="p-0.5 bg-slate-200 dark:bg-slate-800 rounded text-emerald-500 hover:bg-slate-300 transition-colors"
-                    >
-                      <Plus className="w-2 h-2" />
-                    </button>
-                  </div>
-
-                  <div className="bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded flex items-center justify-between border border-slate-100 dark:border-slate-800">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Net:</span>
-                    <span className={`font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                      ₹{Math.round(Math.abs(retailer.balance || 0))}
-                    </span>
-                  </div>
+                {/* Net Balance only */}
+                <div className="mt-1 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800 text-[10px]">
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Net Bal:</span>
+                  <span className={`font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    ₹{Math.round(Math.abs(retailer.balance || 0))}
+                  </span>
                 </div>
-
-                {isEditingThis && editingField && (
                   <div className="mt-1.5 p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md space-y-1.5 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between">
                       <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider">
@@ -638,39 +562,11 @@ export default function MobileRetailers({
                     className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/20" 
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-2 bg-slate-50 dark:bg-slate-950 p-2 rounded-md border border-slate-100 dark:border-slate-800 text-[9px]">
-                  <div>
-                    <span className="text-slate-400 font-bold uppercase tracking-wider block">Current Take</span>
-                    <span className="font-extrabold text-red-650 dark:text-red-400">₹{(editingRetailer.opening_to_take || 0).toLocaleString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-bold uppercase tracking-wider block">Current Give</span>
-                    <span className="font-extrabold text-emerald-650 dark:text-emerald-555">₹{(editingRetailer.opening_to_give || 0).toLocaleString()}</span>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                   <div>
-                     <label className="text-[8px] font-bold text-red-500 uppercase block mb-0.5">Add to Take</label>
-                     <input 
-                       type="number" 
-                       min="0"
-                       placeholder="Amt"
-                       value={editRetToTake} 
-                       onChange={(e) => setEditRetToTake(e.target.value)}
-                       className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/20" 
-                     />
-                   </div>
-                   <div>
-                     <label className="text-[8px] font-bold text-emerald-500 uppercase block mb-0.5">Add to Give</label>
-                     <input 
-                       type="number" 
-                       min="0"
-                       placeholder="Amt"
-                       value={editRetToGive} 
-                       onChange={(e) => setEditRetToGive(e.target.value)}
-                       className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/20" 
-                     />
-                   </div>
+                <div className="bg-slate-50 dark:bg-slate-950 p-2 rounded-md border border-slate-100 dark:border-slate-800 text-[9px] flex justify-between items-center">
+                  <span className="text-slate-400 font-bold uppercase tracking-wider">Net Balance</span>
+                  <span className={`font-extrabold ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-650 dark:text-emerald-500' : 'text-red-650 dark:text-red-400'}`}>
+                    ₹{Math.abs(editingRetailer.balance || 0).toLocaleString()}
+                  </span>
                 </div>
               </div>
               <button 

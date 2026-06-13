@@ -36,13 +36,7 @@ export default function RetailersTab({
   const [editRetPhone, setEditRetPhone] = useState("");
   const [editRetArea, setEditRetArea] = useState("");
   const [editRetEmail, setEditRetEmail] = useState("");
-  const [editRetToGive, setEditRetToGive] = useState<string>("");
-  const [editRetToTake, setEditRetToTake] = useState<string>("");
-
-  // Inline adjustment state
-  const [inlineEditingRetailer, setInlineEditingRetailer] = useState<{id: string, field: 'take' | 'give'} | null>(null);
-  const [inlineRetailerValue, setInlineRetailerValue] = useState<string>("");
-  const [isUpdatingRetailerBalance, setIsUpdatingRetailerBalance] = useState(false);
+  // (opening_to_take / to_give are set only at create time — not editable from list)
 
   // Store Edit state
   const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
@@ -65,32 +59,7 @@ export default function RetailersTab({
     }
   };
 
-  const handleInlineRetailerUpdate = async (id: string, field: 'take' | 'give', valueToSave?: string) => {
-    const valToUse = valueToSave !== undefined ? valueToSave : inlineRetailerValue;
-    const targetValue = parseFloat(valToUse || "0");
-    if (isNaN(targetValue) || targetValue <= 0) {
-      setInlineEditingRetailer(null);
-      return;
-    }
-    setIsUpdatingRetailerBalance(true);
-    try {
-      const retailer = retailerDirectory.find(r => r.id === id);
-      if (!retailer) return;
 
-      const payload: any = {};
-      if (field === 'take' && targetValue > 0) payload.opening_to_take = targetValue;
-      if (field === 'give' && targetValue > 0) payload.opening_to_give = targetValue;
-
-      await api.updateRetailer(id, payload);
-      showToastNotification("Balance updated.");
-      setInlineEditingRetailer(null);
-      fetchData();
-    } catch (err: any) {
-      alert("Failed to update: " + err.message);
-    } finally {
-      setIsUpdatingRetailerBalance(false);
-    }
-  };
 
   // --- Retailer Actions ---
   const handleStartEditRetailer = (retailer: any) => {
@@ -99,28 +68,19 @@ export default function RetailersTab({
     setEditRetPhone(retailer.phone);
     setEditRetArea(retailer.area);
     setEditRetEmail(retailer.email || "");
-    setEditRetToGive("");
-    setEditRetToTake("");
+
     setIsEditRetailerModalOpen(true);
   };
 
   const handleSaveRetailerEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingRetailer) return;
-    const addTake = parseFloat(editRetToTake || "0");
-    const addGive = parseFloat(editRetToGive || "0");
-    if (addTake < 0 || addGive < 0) {
-      alert("Negative values are not allowed.");
-      return;
-    }
     try {
       await api.updateRetailer(editingRetailer.id, {
         retailer_name: editRetName,
         phone: editRetPhone,
         address: editRetArea,
         email: editRetEmail,
-        opening_to_give: addGive,
-        opening_to_take: addTake
       });
       showToastNotification(`Retailer "${editRetName}" updated.`);
       setIsEditRetailerModalOpen(false);
@@ -277,107 +237,14 @@ export default function RetailersTab({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  {/* To Take Field */}
-                  <div>
-                    <span className="text-[8px] font-black text-red-500 uppercase tracking-wide block mb-0.5">To Take</span>
-                    {inlineEditingRetailer?.id === retailer.id && inlineEditingRetailer?.field === 'take' ? (
-                      <div className="flex items-center gap-1">
-                        <input 
-                          type="number" 
-                          min="0"
-                          placeholder="+ Add"
-                          autoFocus
-                          value={inlineRetailerValue}
-                          onChange={e => setInlineRetailerValue(e.target.value)}
-                          onFocus={e => {
-                            if (Number(e.target.value) === 0) setInlineRetailerValue("");
-                            e.target.select();
-                          }}
-                          onBlur={(e) => {
-                            handleInlineRetailerUpdate(retailer.id, 'take', e.target.value);
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') e.currentTarget.blur();
-                            if (e.key === 'Escape') setInlineEditingRetailer(null);
-                          }}
-                          className="w-20 px-1.5 py-1 text-xs font-bold bg-white dark:bg-slate-850 border border-blue-400 rounded outline-none shadow-sm"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black text-red-655 dark:text-red-400">
-                          ₹{(retailer.opening_to_take || 0).toLocaleString()}
-                        </span>
-                        <button 
-                          onClick={() => {
-                            setInlineEditingRetailer({ id: retailer.id, field: 'take' });
-                            setInlineRetailerValue("");
-                          }}
-                          className="p-0.5 text-slate-400 hover:text-red-600 transition-all cursor-pointer"
-                          title="Add to To Take"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* To Give Field */}
-                  <div>
-                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-wide block mb-0.5">To Give</span>
-                    {inlineEditingRetailer?.id === retailer.id && inlineEditingRetailer?.field === 'give' ? (
-                      <div className="flex items-center gap-1">
-                        <input 
-                          type="number" 
-                          min="0"
-                          placeholder="+ Add"
-                          autoFocus
-                          value={inlineRetailerValue}
-                          onChange={e => setInlineRetailerValue(e.target.value)}
-                          onFocus={e => {
-                            if (Number(e.target.value) === 0) setInlineRetailerValue("");
-                            e.target.select();
-                          }}
-                          onBlur={(e) => {
-                            handleInlineRetailerUpdate(retailer.id, 'give', e.target.value);
-                          }}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') e.currentTarget.blur();
-                            if (e.key === 'Escape') setInlineEditingRetailer(null);
-                          }}
-                          className="w-20 px-1.5 py-1 text-xs font-bold bg-white dark:bg-slate-850 border border-blue-400 rounded outline-none shadow-sm"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-black text-emerald-655 dark:text-emerald-500">
-                          ₹{(retailer.opening_to_give || 0).toLocaleString()}
-                        </span>
-                        <button 
-                          onClick={() => {
-                            setInlineEditingRetailer({ id: retailer.id, field: 'give' });
-                            setInlineRetailerValue("");
-                          }}
-                          className="p-0.5 text-slate-400 hover:text-emerald-650 transition-all cursor-pointer"
-                          title="Add to To Give"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Net Bal Field */}
-                  <div>
-                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide block mb-0.5">Net Bal</span>
-                    <span className={`text-xs font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
-                      ₹{Math.abs(retailer.balance || 0).toLocaleString()}
-                    </span>
-                  </div>
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Net Balance</span>
+                  <span className={`text-xs font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
+                    ₹{Math.abs(retailer.balance || 0).toLocaleString()}
+                  </span>
                 </div>
 
-                {inlineEditingRetailer?.id === retailer.id && (
+                {false && (
                   <div className="mt-4 pt-3 border-t border-slate-150 dark:border-slate-800 space-y-2">
                     <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider block">Retailer Transaction Ledger</span>
                     {(() => {
@@ -486,55 +353,13 @@ export default function RetailersTab({
                 <input type="tel" value={editRetPhone} onChange={(e) => setEditRetPhone(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
                 <input type="text" value={editRetArea} onChange={(e) => setEditRetArea(e.target.value)} placeholder="Area / Route" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
                 <input type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
-                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none space-y-2">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <span className="text-slate-400 block mb-0.5">Current To Take</span>
-                      <span className="font-black text-red-655 dark:text-red-400">₹{(editingRetailer.opening_to_take || 0).toLocaleString()}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block mb-0.5">Current To Give</span>
-                      <span className="font-black text-emerald-655 dark:text-emerald-555">₹{(editingRetailer.opening_to_give || 0).toLocaleString()}</span>
-                    </div>
-                  </div>
-                  <div className="border-t border-slate-200 dark:border-slate-800 pt-2 flex justify-between items-center">
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none">
+                  <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium">Current Net Balance</span>
                     <span className={`font-black ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-655 dark:text-emerald-500' : 'text-red-655 dark:text-red-400'}`}>
                       ₹{Math.abs(editingRetailer.balance || 0).toLocaleString()}
                     </span>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                   <div className="space-y-1">
-                     <label className="text-[8px] font-black text-red-500 uppercase">Add to To Take</label>
-                     <input 
-                       type="number" 
-                       min="0"
-                       placeholder="Amount to Add"
-                       value={editRetToTake} 
-                       onChange={(e) => setEditRetToTake(e.target.value)}
-                       onFocus={e => {
-                         if (Number(e.target.value) === 0) setEditRetToTake("");
-                         e.target.select();
-                       }}
-                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none" 
-                     />
-                   </div>
-                   <div className="space-y-1">
-                     <label className="text-[8px] font-black text-emerald-500 uppercase">Add to To Give</label>
-                     <input 
-                       type="number" 
-                       min="0"
-                       placeholder="Amount to Add"
-                       value={editRetToGive} 
-                       onChange={(e) => setEditRetToGive(e.target.value)}
-                       onFocus={e => {
-                         if (Number(e.target.value) === 0) setEditRetToGive("");
-                         e.target.select();
-                       }}
-                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none" 
-                     />
-                   </div>
                 </div>
               </div>
               <button type="submit" className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl text-xs font-bold">Update Profile</button>
