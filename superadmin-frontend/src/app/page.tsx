@@ -23,6 +23,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("directory"); // "directory", "resources", "infrastructure"
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
@@ -111,6 +112,7 @@ export default function DashboardPage() {
   const fetchTenants = async () => {
     try {
       setLoading(true);
+      setFetchError(null);
       const data = await superAdminApi.getTenants();
       const mapped = data.map((t) => ({
         ...t,
@@ -125,8 +127,18 @@ export default function DashboardPage() {
         const updatedSelected = mapped.find((t) => t.id === selectedTenant.id);
         if (updatedSelected) setSelectedTenant(updatedSelected);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to load tenants:", err);
+      const msg = err?.message || "";
+      // Token expired or unauthorized → force re-login
+      if (msg.includes("401") || msg.toLowerCase().includes("unauthorized") || msg.toLowerCase().includes("credentials")) {
+        localStorage.removeItem("superadmin_token");
+        localStorage.removeItem("superadmin_name");
+        localStorage.removeItem("superadmin_username");
+        router.push("/login");
+        return;
+      }
+      setFetchError(msg || "Failed to connect to backend. Please check server status.");
     } finally {
       setLoading(false);
     }
@@ -374,6 +386,22 @@ export default function DashboardPage() {
 
               {loading ? (
                 <div className="p-12 text-center text-slate-400 text-[11px] font-bold uppercase tracking-wider animate-pulse">Loading database client instances...</div>
+              ) : fetchError ? (
+                <div className="p-10 text-center space-y-3">
+                  <div className="inline-flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200/60 text-red-600 rounded-xl text-[10px] font-bold">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 shrink-0">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                    </svg>
+                    API Error: {fetchError}
+                  </div>
+                  <p className="text-slate-400 text-[10px] font-medium">Backend se data fetch nahi hua. Session expire ho sakta hai.</p>
+                  <button
+                    onClick={fetchTenants}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                  >
+                    Retry Connection
+                  </button>
+                </div>
               ) : tenants.length === 0 ? (
                 <div className="p-16 text-center text-slate-400 text-sm font-semibold">
                   No clients onboarded yet. Click "+ Onboard New Client" to provision the first client!
