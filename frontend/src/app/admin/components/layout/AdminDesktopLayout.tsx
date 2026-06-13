@@ -105,6 +105,31 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!currentUser?.id) return;
+    if (!confirm("Are you sure you want to delete your account? This action is irreversible.")) return;
+    if (!confirm("Please confirm once more: Do you really want to delete your account? You will be logged out immediately.")) return;
+    
+    try {
+      let userId = currentUser.id;
+      if (userId.startsWith("user-")) {
+        const allUsers = await api.getUsers();
+        const matched = allUsers.find((u: any) => u.phone === currentUser.phone);
+        if (matched) {
+          userId = matched.id;
+        } else {
+          throw new Error("Unable to resolve admin profile ID from database.");
+        }
+      }
+      
+      await api.deleteUser(userId);
+      resetStore();
+      router.push("/");
+    } catch (err: any) {
+      alert("Failed to delete account: " + err.message);
+    }
+  };
+
   const activeTab = pathname.split("/").pop() || "overview";
 
   const handleAddRetailer = async (e: React.FormEvent) => {
@@ -360,7 +385,14 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                 <input autoComplete="new-password" type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" />
                 <p className="text-[9px] text-slate-400 font-bold ml-1 mt-0.5">Leave blank to keep current password (min 6 chars)</p>
               </div>
-              <button type="submit" disabled={isUpdatingProfile} className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider text-[10px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>
+              <button type="submit" disabled={isUpdatingProfile} className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-955 rounded-xl font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider text-[10px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                className="w-full py-2 bg-red-50 hover:bg-red-105 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl font-black transition-colors uppercase tracking-wider text-[9px] cursor-pointer"
+              >
+                Delete My Account
+              </button>
             </form>
           </div>
         </div>

@@ -179,7 +179,8 @@ function NewCollectionContent() {
         setStaffMembers(staffList);
         
         const portalsList = await api.getPortals();
-        setPortals(portalsList.map((p: any) => ({ id: p.id, name: p.portal_name })));
+        const onlineOnly = portalsList.filter((p: any) => p.show_in_online_payment);
+        setPortals(onlineOnly.map((p: any) => ({ id: p.id, name: p.portal_name })));
       } catch (err) {
         console.warn("Failed to fetch staff members or portals", err);
       }

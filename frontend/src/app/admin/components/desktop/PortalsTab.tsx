@@ -74,7 +74,8 @@ export default function PortalsTab({
         portal_name: newAccName,
         bank_name: newAccBank,
         bank_account_no: newAccNo,
-        ifsc_code: newAccIfsc
+        ifsc_code: newAccIfsc,
+        show_in_online_payment: false
       });
       showToastNotification(`Account "${newAccName}" registered successfully!`);
       setNewAccName("");
@@ -101,7 +102,8 @@ export default function PortalsTab({
         portal_name: newAccName,
         bank_name: newAccBank,
         bank_account_no: newAccNo,
-        ifsc_code: newAccIfsc
+        ifsc_code: newAccIfsc,
+        show_in_online_payment: newAccOnline
       });
       showToastNotification(`Account "${newAccName}" added to ${selectedGroup.name}`);
       setNewAccName("");
@@ -172,7 +174,8 @@ export default function PortalsTab({
         bank_name: editAccBank,
         bank_account_no: editAccNo,
         ifsc_code: editAccIfsc,
-        group_id: selectedGroup.id
+        group_id: selectedGroup.id,
+        show_in_online_payment: editAccOnline
       });
       showToastNotification(`Account "${editAccName}" updated.`);
       setEditingAccId(null);
@@ -265,9 +268,14 @@ export default function PortalsTab({
                       <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Registered Banks</p>
                       <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                         {group.portals.map((p: any) => (
-                          <div key={p.id} className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/60">
+                          <div key={p.id} className="text-[10px] text-slate-505 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/60">
                             <div className="flex flex-col min-w-0">
-                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{p.portal_name}</span>
+                              <span className="font-bold text-slate-805 dark:text-slate-200 truncate flex items-center gap-1.5">
+                                {p.portal_name}
+                                {p.show_in_online_payment && (
+                                  <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black rounded uppercase">Online</span>
+                                )}
+                              </span>
                               <span className="text-[8px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
                             </div>
                             <span className="font-black text-slate-700 dark:text-slate-300 flex-shrink-0">
@@ -285,7 +293,7 @@ export default function PortalsTab({
                       setEditingGroupId(group.id);
                       setEditingGroupName(group.name);
                       setEditingGroupBalanceAdjustment("");
-                      setEditGroupOnline(false);
+                      setEditGroupOnline(!!group.show_in_online_payment);
                       setIsAccountModalOpen(true);
                     }}
                     className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-955 dark:hover:bg-slate-900 text-slate-655 dark:text-slate-355 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
@@ -312,7 +320,7 @@ export default function PortalsTab({
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-6 animate-slide-up shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
+                <h3 className="text-sm font-black text-slate-800 dark:border-slate-100">
                   Portal Accounts
                 </h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">
@@ -404,7 +412,12 @@ export default function PortalsTab({
                               className="text-xs font-black bg-white dark:bg-slate-800 border rounded px-2 py-0.5 outline-none"
                             />
                           ) : (
-                            <p className="text-xs font-black text-slate-800 dark:text-slate-200">{acc.portal_name}</p>
+                            <p className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                              {acc.portal_name}
+                              {acc.show_in_online_payment && (
+                                <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black rounded uppercase">Online</span>
+                              )}
+                            </p>
                           )}
                           <div className="flex items-center gap-1">
                             {editingAccId === acc.id ? (
@@ -417,9 +430,9 @@ export default function PortalsTab({
                                   setEditAccBank(acc.bank_name || "");
                                   setEditAccNo(acc.bank_account_no || "");
                                   setEditAccIfsc(acc.ifsc_code || "");
-                                  setEditAccOnline(false);
+                                  setEditAccOnline(!!acc.show_in_online_payment);
                                 }}
-                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-blue-600 transition-all"
+                                className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-blue-650 transition-all"
                               >
                                 <Edit className="w-3 h-3" />
                               </button>

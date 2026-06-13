@@ -84,6 +84,31 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!currentUser?.id) return;
+    if (!confirm("Are you sure you want to delete your account? This action is irreversible.")) return;
+    if (!confirm("Please confirm once more: Do you really want to delete your account? You will be logged out immediately.")) return;
+    
+    try {
+      let userId = currentUser.id;
+      if (userId.startsWith("user-")) {
+        const allUsers = await api.getUsers();
+        const matched = allUsers.find((u: any) => u.phone === currentUser.phone);
+        if (matched) {
+          userId = matched.id;
+        } else {
+          throw new Error("Unable to resolve admin profile ID from database.");
+        }
+      }
+      
+      await api.deleteUser(userId);
+      resetStore();
+      router.push("/");
+    } catch (err: any) {
+      alert("Failed to delete account: " + err.message);
+    }
+  };
+
   React.useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = "hidden";
@@ -257,6 +282,13 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
                 <p className="text-[8px] text-slate-400 font-bold ml-1 mt-0.5">Leave blank to keep current</p>
               </div>
               <button type="submit" disabled={isUpdatingProfile} className="w-full py-2 bg-slate-900 text-white dark:bg-white dark:text-slate-955 rounded-lg font-black hover:bg-slate-800 transition-colors uppercase tracking-wider text-[9px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                className="w-full py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20 text-red-650 dark:text-red-500 rounded-lg font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform cursor-pointer"
+              >
+                Delete My Account
+              </button>
             </form>
           </div>
         </div>

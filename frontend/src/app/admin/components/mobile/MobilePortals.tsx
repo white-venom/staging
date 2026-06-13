@@ -128,7 +128,8 @@ export default function MobilePortals({
         portal_name: bAccLabel,
         bank_name: bBankName,
         bank_account_no: bAccNo,
-        ifsc_code: bIfsc
+        ifsc_code: bIfsc,
+        show_in_online_payment: newAccOnline
       });
       showToastNotification(`✓ Account "${bAccLabel}" registered`);
       setBAccLabel(""); setBBankName(""); setBAccNo(""); setBIfsc("");
@@ -294,9 +295,14 @@ export default function MobilePortals({
                   <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
                     <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Registered Banks</p>
                     {group.portals.map((p: any) => (
-                      <div key={p.id} className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-1 px-1.5 rounded border border-slate-100 dark:border-slate-800">
+                      <div key={p.id} className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-955 p-1 px-1.5 rounded border border-slate-100 dark:border-slate-800">
                         <div className="flex flex-col min-w-0">
-                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{p.portal_name}</span>
+                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate flex items-center gap-1">
+                            {p.portal_name}
+                            {p.show_in_online_payment && (
+                              <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-650 dark:text-emerald-500 text-[6px] font-black rounded uppercase">Online</span>
+                            )}
+                          </span>
                           <span className="text-[7px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">

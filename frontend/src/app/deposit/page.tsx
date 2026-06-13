@@ -153,7 +153,8 @@ function NewDepositContent() {
         setPortalGroups(mappedGroups);
         setRetailers(mappedRetailers);
         setStaffUsers(mappedStaff);
-        setPortalsList(portals.map((p: any) => ({ id: p.id, name: p.portal_name })));
+        const onlineOnly = portals.filter((p: any) => p.show_in_online_payment);
+        setPortalsList(onlineOnly.map((p: any) => ({ id: p.id, name: p.portal_name })));
         
         if (mappedGroups.length > 0) setSelectedGroupId(mappedGroups[0].id);
         // Do not auto-select the first retailer on mount, keep it empty for search selection
