@@ -178,9 +178,14 @@ function NewCollectionContent() {
         const staffList = await api.getStaffList();
         setStaffMembers(staffList);
         
-        const portalsList = await api.getPortals();
-        const onlineOnly = portalsList.filter((p: any) => p.show_in_online_payment);
-        setPortals(onlineOnly.map((p: any) => ({ id: p.id, name: p.portal_name })));
+        const groups = await api.getPortalGroups();
+        const onlineGroups = groups.filter((g: any) => 
+          (g.portals || []).some((p: any) => p.show_in_online_payment)
+        );
+        setPortals(onlineGroups.map((g: any) => ({
+          id: g.portals?.[0]?.id || "",
+          name: g.name
+        })));
       } catch (err) {
         console.warn("Failed to fetch staff members or portals", err);
       }

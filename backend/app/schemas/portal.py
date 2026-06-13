@@ -44,6 +44,7 @@ class PortalUpdate(PortalBase):
 class PortalResponse(PortalBase):
     id: uuid.UUID
     group_id: Optional[uuid.UUID]
+    group_name: Optional[str] = None
     created_at: datetime
     opening_to_give: float
     opening_to_take: float

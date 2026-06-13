@@ -227,7 +227,12 @@ export default function PortalsTab({
                         <Globe className="w-4 h-4" />
                       </div>
                       <div>
-                        <h3 className="text-xs font-black text-slate-800 dark:text-slate-100">{group.name}</h3>
+                        <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                          {group.name}
+                          {group.show_in_online_payment && (
+                            <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black rounded uppercase">Online</span>
+                          )}
+                        </h3>
                       </div>
                     </div>
                     
@@ -275,9 +280,6 @@ export default function PortalsTab({
                             <div className="flex flex-col min-w-0">
                               <span className="font-bold text-slate-805 dark:text-slate-200 truncate flex items-center gap-1.5">
                                 {p.portal_name}
-                                {p.show_in_online_payment && (
-                                  <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black rounded uppercase">Online</span>
-                                )}
                               </span>
                               <span className="text-[8px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
                             </div>
@@ -417,9 +419,6 @@ export default function PortalsTab({
                           ) : (
                             <p className="text-xs font-black text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                               {acc.portal_name}
-                              {acc.show_in_online_payment && (
-                                <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black rounded uppercase">Online</span>
-                              )}
                             </p>
                           )}
                           <div className="flex items-center gap-1">
@@ -470,18 +469,6 @@ export default function PortalsTab({
                                 onChange={(e) => setEditAccIfsc(e.target.value)}
                                 className="w-full text-[10px] bg-white dark:bg-slate-800 border rounded px-2 py-1 outline-none"
                               />
-                            </div>
-                            <div className="flex items-center gap-2 py-1">
-                              <input 
-                                type="checkbox" 
-                                id={`editAccOnline-${acc.id}`}
-                                checked={editAccOnline} 
-                                onChange={(e) => setEditAccOnline(e.target.checked)} 
-                                className="w-3.5 h-3.5 rounded text-blue-655 focus:ring-blue-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
-                              />
-                              <label htmlFor={`editAccOnline-${acc.id}`} className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
-                                Online
-                              </label>
                             </div>
                             <button onClick={() => setEditingAccId(null)} className="text-[9px] text-slate-400 font-bold block w-full text-center">Cancel</button>
                           </div>
@@ -543,18 +530,6 @@ export default function PortalsTab({
                     onChange={(e) => setNewAccIfsc(e.target.value)}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
                   />
-                  <div className="flex items-center gap-2 px-1 py-1">
-                    <input 
-                      type="checkbox" 
-                      id="newAccOnline"
-                      checked={newAccOnline} 
-                      onChange={(e) => setNewAccOnline(e.target.checked)} 
-                      className="w-4 h-4 rounded text-blue-650 focus:ring-blue-500 border-slate-200 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
-                    />
-                    <label htmlFor="newAccOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
-                      Online
-                    </label>
-                  </div>
                   <button
                     type="submit"
                     disabled={isCreatingAcc}

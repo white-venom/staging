@@ -175,7 +175,8 @@ def list_portals(
     current_user=Depends(require_any_user)
 ):
     """Get all active stores / portals with bank details."""
-    portals = db.scalars(select(Portal).order_by(Portal.portal_name)).all()
+    from sqlalchemy.orm import joinedload
+    portals = db.scalars(select(Portal).options(joinedload(Portal.group)).order_by(Portal.portal_name)).all()
     return portals
 
 

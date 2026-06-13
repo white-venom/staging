@@ -109,6 +109,10 @@ class Portal(Base):
     group: Mapped[PortalGroup] = relationship("PortalGroup", back_populates="portals")
     deposits: Mapped[List["BankDeposit"]] = relationship("BankDeposit", back_populates="portal")
 
+    @property
+    def group_name(self) -> Optional[str]:
+        return self.group.name if self.group else None
+
 
 class Store(Base):
     __tablename__ = "stores"

@@ -267,7 +267,12 @@ export default function MobilePortals({
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <Globe className="w-3.5 h-3.5 text-indigo-650 shrink-0" />
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-xs text-slate-900 dark:text-white truncate uppercase tracking-tight">{group.name}</h3>
+                      <h3 className="font-bold text-xs text-slate-900 dark:text-white truncate uppercase tracking-tight flex items-center gap-1.5">
+                        {group.name}
+                        {group.show_in_online_payment && (
+                          <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-650 dark:text-emerald-500 text-[6px] font-black rounded uppercase shrink-0">Online</span>
+                        )}
+                      </h3>
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{(group.portals || []).length} Accounts</p>
                     </div>
                   </div>
@@ -303,9 +308,6 @@ export default function MobilePortals({
                         <div className="flex flex-col min-w-0">
                           <span className="font-bold text-slate-800 dark:text-slate-200 truncate flex items-center gap-1">
                             {p.portal_name}
-                            {p.show_in_online_payment && (
-                              <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-650 dark:text-emerald-500 text-[6px] font-black rounded uppercase">Online</span>
-                            )}
                           </span>
                           <span className="text-[7px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
                         </div>
@@ -359,18 +361,6 @@ export default function MobilePortals({
                             onChange={e => setBIfsc(e.target.value)}
                             className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-805 rounded text-xs font-semibold focus:outline-none"
                           />
-                        </div>
-                        <div className="flex items-center gap-1.5 py-0.5">
-                          <input 
-                            type="checkbox" 
-                            id="newAccOnlineMobile"
-                            checked={newAccOnline} 
-                            onChange={(e) => setNewAccOnline(e.target.checked)} 
-                            className="w-3.5 h-3.5 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
-                          />
-                          <label htmlFor="newAccOnlineMobile" className="text-[9px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
-                            Online
-                          </label>
                         </div>
                       </div>
                       <div className="flex gap-1.5">
