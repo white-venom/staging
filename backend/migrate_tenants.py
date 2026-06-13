@@ -40,7 +40,8 @@ def migrate_tenants():
         print(f"Migrating tenant: '{subdomain}' (Database: '{db_name}')...")
         try:
             url = get_tenant_connection_string(db_name)
-            alembic_cfg.set_main_option("sqlalchemy.url", url)
+            escaped_url = url.replace("%", "%%")
+            alembic_cfg.set_main_option("sqlalchemy.url", escaped_url)
             command.upgrade(alembic_cfg, "head")
             print(f"✅ Successfully migrated '{subdomain}'!")
             success_count += 1
