@@ -349,7 +349,7 @@ export default function LedgerTab({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Search</label>
-            <input 
+            <input autoComplete="one-time-code" 
               type="text" 
               placeholder="Search party or staff..."
               value={searchQuery}
@@ -407,7 +407,7 @@ export default function LedgerTab({
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Date From</label>
-            <input 
+            <input autoComplete="one-time-code" 
               type="date" 
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
@@ -416,7 +416,7 @@ export default function LedgerTab({
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Date To</label>
-            <input 
+            <input autoComplete="one-time-code" 
               type="date" 
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
@@ -723,7 +723,7 @@ export default function LedgerTab({
                       ].map(item => (
                         <div key={item.key} className="flex flex-col gap-1">
                           <label className="text-[9px] font-bold text-slate-400">{item.label}</label>
-                          <input
+                          <input autoComplete="one-time-code"
                             type="number"
                             value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0}
                             onChange={(e) => {
@@ -736,7 +736,7 @@ export default function LedgerTab({
                       ))}
                       <div className="flex flex-col gap-1">
                         <label className="text-[9px] font-bold text-slate-400">Coins Sum</label>
-                        <input
+                        <input autoComplete="one-time-code"
                           type="number"
                           step="0.01"
                           value={selectedNewDenoms.coins}
@@ -749,7 +749,7 @@ export default function LedgerTab({
                       </div>
                       <div className="flex flex-col gap-1">
                         <label className="text-[9px] font-bold text-slate-400">UPI / Online Amount</label>
-                        <input
+                        <input autoComplete="one-time-code"
                           type="number"
                           value={selectedNewDenoms.online_amount}
                           onChange={(e) => {
@@ -765,7 +765,7 @@ export default function LedgerTab({
                   {/* Calculated total amount */}
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Total Amount (Calculated)</label>
-                    <input
+                    <input autoComplete="one-time-code"
                       type="text"
                       value={`₹${(
                         selectedNewDenoms.note_500 * 500 +
@@ -925,7 +925,7 @@ export default function LedgerTab({
                   {/* Amount */}
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Amount</label>
-                    <input
+                    <input autoComplete="one-time-code"
                       type="number"
                       value={selectedNewAmount}
                       onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
@@ -937,7 +937,7 @@ export default function LedgerTab({
                   {/* Date */}
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Date</label>
-                    <input
+                    <input autoComplete="one-time-code"
                       type="date"
                       value={selectedNewDate}
                       onChange={(e) => setSelectedNewDate(e.target.value)}
@@ -949,7 +949,7 @@ export default function LedgerTab({
                   {/* Reference No */}
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Reference No</label>
-                    <input
+                    <input autoComplete="one-time-code"
                       type="text"
                       value={selectedNewRefNo}
                       onChange={(e) => setSelectedNewRefNo(e.target.value)}

@@ -233,14 +233,14 @@ export default function AdminDesktopLayout({ children }: { children: React.React
               </button>
             </div>
             <form onSubmit={handleAddRetailer} className="space-y-4 text-xs font-semibold">
-              <input type="text" placeholder="Store Name" value={retailerName} onChange={(e) => setRetailerName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" required />
-              <input type="tel" placeholder="Phone" value={retailerPhone} onChange={(e) => setRetailerPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" required />
-              <input type="text" placeholder="Area" value={retailerArea} onChange={(e) => setRetailerArea(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" />
-              <input type="email" placeholder="Retailer Email" value={retailerEmail} onChange={(e) => setRetailerEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" />
+              <input autoComplete="one-time-code" type="text" placeholder="Store Name" value={retailerName} onChange={(e) => setRetailerName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" required />
+              <input autoComplete="one-time-code" type="tel" placeholder="Phone" value={retailerPhone} onChange={(e) => setRetailerPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" required />
+              <input autoComplete="one-time-code" type="text" placeholder="Area" value={retailerArea} onChange={(e) => setRetailerArea(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" />
+              <input autoComplete="one-time-code" type="email" placeholder="Retailer Email" value={retailerEmail} onChange={(e) => setRetailerEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-red-500 uppercase ml-1">To Take</label>
-                  <input 
+                  <input autoComplete="one-time-code" 
                     type="number" 
                     placeholder="Enter Amount" 
                     value={retailerToTake} 
@@ -254,7 +254,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-emerald-500 uppercase ml-1">To Give</label>
-                  <input 
+                  <input autoComplete="one-time-code" 
                     type="number" 
                     placeholder="Enter Amount" 
                     value={retailerToGive} 
@@ -287,11 +287,11 @@ export default function AdminDesktopLayout({ children }: { children: React.React
               <div className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Portal Name</label>
-                  <input type="text" placeholder="e.g. RevaPay" value={pGroupName} onChange={(e) => setPGroupName(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg font-bold" required />
+                  <input autoComplete="one-time-code" type="text" placeholder="e.g. RevaPay" value={pGroupName} onChange={(e) => setPGroupName(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg font-bold" required />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Opening Balance (₹)</label>
-                  <input 
+                  <input autoComplete="one-time-code" 
                     type="number" 
                     placeholder="Enter Opening Balance (negative if To Give)" 
                     value={pGroupBalance} 
@@ -349,15 +349,15 @@ export default function AdminDesktopLayout({ children }: { children: React.React
             <form onSubmit={handleUpdateProfile} className="space-y-4 text-xs font-semibold">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Full Name</label>
-                <input type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
+                <input autoComplete="one-time-code" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Phone Number</label>
-                <input type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
+                <input autoComplete="one-time-code" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">New Password</label>
-                <input type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" />
+                <input autoComplete="new-password" type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" />
                 <p className="text-[9px] text-slate-400 font-bold ml-1 mt-0.5">Leave blank to keep current password (min 6 chars)</p>
               </div>
               <button type="submit" disabled={isUpdatingProfile} className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider text-[10px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>

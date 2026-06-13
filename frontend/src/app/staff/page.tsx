@@ -889,7 +889,7 @@ function AttendanceCard({
             )}
 
             <div className="flex flex-col gap-3">
-              <input
+              <input autoComplete="one-time-code"
                 type="number"
                 placeholder="Enter Ending KM"
                 value={endKmInput}
@@ -980,7 +980,7 @@ function AttendanceCard({
               Enter starting odometer KM, snap meter photo, and allow GPS access.
             </p>
             <div className="flex flex-col gap-3">
-              <input
+              <input autoComplete="one-time-code"
                 type="number"
                 placeholder="Current Odometer KM"
                 value={startKmInput}

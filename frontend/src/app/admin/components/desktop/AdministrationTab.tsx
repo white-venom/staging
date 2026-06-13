@@ -172,11 +172,11 @@ export default function AdministrationTab({
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Full Name</label>
-                <input type="text" value={uName} onChange={e => setUName(e.target.value)} placeholder="e.g. Rahul Sharma" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input autoComplete="one-time-code" type="text" value={uName} onChange={e => setUName(e.target.value)} placeholder="e.g. Rahul Sharma" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Phone Number</label>
-                <input type="tel" value={uPhone} onChange={e => setUPhone(e.target.value)} placeholder="e.g. 9917128864" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input autoComplete="one-time-code" type="tel" value={uPhone} onChange={e => setUPhone(e.target.value)} placeholder="e.g. 9917128864" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">System Role</label>
@@ -187,7 +187,7 @@ export default function AdministrationTab({
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Initial Password</label>
-                <input type="password" value={uPassword} onChange={e => setUPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input autoComplete="new-password" type="password" value={uPassword} onChange={e => setUPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
               </div>
               <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-[0.98]">
                 Create Account
@@ -205,26 +205,26 @@ export default function AdministrationTab({
             <form onSubmit={handleCreateRetailer} className="space-y-4">
                <div>
                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Retailer Name</label>
-                 <input type="text" value={retName} onChange={e => setRetName(e.target.value)} placeholder="e.g. Gupta General Store" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                 <input autoComplete="one-time-code" type="text" value={retName} onChange={e => setRetName(e.target.value)} placeholder="e.g. Gupta General Store" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
                </div>
                <div className="grid grid-cols-2 gap-4">
                  <div>
                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Phone Number</label>
-                   <input type="tel" value={retPhone} onChange={e => setRetPhone(e.target.value)} placeholder="9876543210" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                   <input autoComplete="one-time-code" type="tel" value={retPhone} onChange={e => setRetPhone(e.target.value)} placeholder="9876543210" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
                  </div>
                  <div>
                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Area</label>
-                   <input type="text" value={retArea} onChange={e => setRetArea(e.target.value)} placeholder="Area" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                   <input autoComplete="one-time-code" type="text" value={retArea} onChange={e => setRetArea(e.target.value)} placeholder="Area" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
                  </div>
                </div>
                <div>
                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Email</label>
-                 <input type="email" value={retEmail} onChange={e => setRetEmail(e.target.value)} placeholder="Email Address" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                 <input autoComplete="one-time-code" type="email" value={retEmail} onChange={e => setRetEmail(e.target.value)} placeholder="Email Address" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
                </div>
                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-red-500 uppercase">To Take</label>
-                    <input 
+                    <input autoComplete="one-time-code" 
                       type="number" 
                       min="0"
                       value={retToTake} 
@@ -238,7 +238,7 @@ export default function AdministrationTab({
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-emerald-500 uppercase">To Give</label>
-                    <input 
+                    <input autoComplete="one-time-code" 
                       type="number" 
                       min="0"
                       value={retToGive} 
@@ -275,12 +275,12 @@ export default function AdministrationTab({
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-l-2 border-indigo-500 pl-2">add portal details</span>
                 <div>
                   <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Portal Name</label>
-                  <input type="text" value={pName} onChange={e => setPName(e.target.value)} placeholder="e.g. RevaPay" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                  <input autoComplete="one-time-code" type="text" value={pName} onChange={e => setPName(e.target.value)} placeholder="e.g. RevaPay" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-red-500 uppercase">To Take</label>
-                    <input 
+                    <input autoComplete="one-time-code" 
                       type="number" 
                       value={pToTake} 
                       onChange={e => setPToTake(e.target.value)} 
@@ -294,7 +294,7 @@ export default function AdministrationTab({
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-emerald-500 uppercase">To Give</label>
-                    <input 
+                    <input autoComplete="one-time-code" 
                       type="number" 
                       value={pToGive} 
                       onChange={e => setPToGive(e.target.value)} 
@@ -326,26 +326,26 @@ export default function AdministrationTab({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Account Label</label>
-                    <input type="text" value={bAccName} onChange={e => setBAccName(e.target.value)} placeholder="e.g. ICICI Primary" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                    <input autoComplete="one-time-code" type="text" value={bAccName} onChange={e => setBAccName(e.target.value)} placeholder="e.g. ICICI Primary" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Bank Name</label>
-                    <input type="text" value={bBankName} onChange={e => setBBankName(e.target.value)} placeholder="ICICI Bank" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                    <input autoComplete="one-time-code" type="text" value={bBankName} onChange={e => setBBankName(e.target.value)} placeholder="ICICI Bank" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Branch Name</label>
-                    <input type="text" value={bBranchName} onChange={e => setBBranchName(e.target.value)} placeholder="e.g. Civil Lines" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                    <input autoComplete="one-time-code" type="text" value={bBranchName} onChange={e => setBBranchName(e.target.value)} placeholder="e.g. Civil Lines" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Account No</label>
-                    <input type="text" value={bAccNo} onChange={e => setBAccNo(e.target.value)} placeholder="Account Number" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                    <input autoComplete="one-time-code" type="text" value={bAccNo} onChange={e => setBAccNo(e.target.value)} placeholder="Account Number" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">IFSC Code</label>
-                  <input type="text" value={bIfsc} onChange={e => setBIfsc(e.target.value)} placeholder="IFSC Code" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                  <input autoComplete="one-time-code" type="text" value={bIfsc} onChange={e => setBIfsc(e.target.value)} placeholder="IFSC Code" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
                 </div>
               </div>
 

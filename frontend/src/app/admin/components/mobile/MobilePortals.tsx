@@ -185,7 +185,7 @@ export default function MobilePortals({
           <form onSubmit={handleCreatePortal} className="space-y-2">
             <div>
               <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Portal Group Name</label>
-              <input
+              <input autoComplete="one-time-code"
                 type="text"
                 value={pName}
                 onChange={e => setPName(e.target.value)}
@@ -196,7 +196,7 @@ export default function MobilePortals({
             </div>
             <div>
                <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Opening Balance (₹)</label>
-               <input
+               <input autoComplete="one-time-code"
                  type="number"
                  step="any"
                  value={pGroupBalance}
@@ -232,7 +232,7 @@ export default function MobilePortals({
       <div className="px-1">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-          <input 
+          <input autoComplete="one-time-code" 
             type="text"
             placeholder="Search portal groups..."
             value={searchTerm}
@@ -320,14 +320,14 @@ export default function MobilePortals({
                     <div className="bg-slate-50 dark:bg-slate-950 p-2 border border-slate-100 dark:border-slate-850 rounded-lg space-y-2 animate-in fade-in duration-200">
                       <p className="text-[8px] font-bold text-indigo-650 uppercase tracking-wider">New Bank Account</p>
                       <div className="space-y-1">
-                        <input
+                        <input autoComplete="one-time-code"
                           type="text"
                           placeholder="Account Label (e.g. Primary, ICICI)"
                           value={bAccLabel}
                           onChange={e => setBAccLabel(e.target.value)}
                           className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
                         />
-                        <input
+                        <input autoComplete="one-time-code"
                           type="text"
                           placeholder="Bank Name (e.g. ICICI Bank)"
                           value={bBankName}
@@ -335,14 +335,14 @@ export default function MobilePortals({
                           className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
                         />
                         <div className="grid grid-cols-2 gap-1.5">
-                          <input
+                          <input autoComplete="one-time-code"
                             type="text"
                             placeholder="Account Number"
                             value={bAccNo}
                             onChange={e => setBAccNo(e.target.value)}
                             className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-805 rounded text-xs font-semibold focus:outline-none"
                           />
-                          <input
+                          <input autoComplete="one-time-code"
                             type="text"
                             placeholder="IFSC Code"
                             value={bIfsc}
@@ -418,7 +418,7 @@ export default function MobilePortals({
               <div className="space-y-2">
                 <div>
                   <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Portal Name</label>
-                  <input 
+                  <input autoComplete="one-time-code" 
                     type="text" 
                     value={editPortalName} 
                     onChange={(e) => setEditPortalName(e.target.value)} 
@@ -435,7 +435,7 @@ export default function MobilePortals({
                  </div>
                  <div className="space-y-1">
                     <label className="text-[8px] font-bold text-slate-500 uppercase block mb-0.5">Adjust Balance (₹)</label>
-                    <input 
+                    <input autoComplete="one-time-code" 
                       type="number" 
                       placeholder="e.g. +1000 to add, -1000 to subtract"
                       value={editPortalBalanceAdjustment} 

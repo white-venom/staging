@@ -111,18 +111,68 @@ def submit_collection(
             
             new_balance = prev_balance - payload.total_amount
             
+            portal_obj = None
+            if payload.portal_id:
+                portal_obj = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
+            
+            if d.online_amount > 0 and portal_obj:
+                portal_name = portal_obj.portal_name
+                cash_amount = payload.total_amount - d.online_amount
+                if cash_amount > 0:
+                    description = f"collection (Cash: ₹{cash_amount:.2f}, Online: ₹{d.online_amount:.2f} via {portal_name})"
+                else:
+                    description = f"online collection (₹{d.online_amount:.2f} via {portal_name})"
+            else:
+                description = "cash collection (auto-verified)"
+            
             ledger_entry = Ledger(
                 retailer_id=payload.retailer_id,
                 transaction_type="credit",
                 amount=payload.total_amount,
                 balance=new_balance,
-                description="cash collection (auto-verified)",
+                description=description,
                 collection_id=db_collection.id
             )
             db.add(ledger_entry)
             
             retailer.balance = new_balance
             db_collection.balance_snapshot = new_balance
+            
+            # Auto-create corresponding BankDeposit for the online amount direct routing
+            if d.online_amount > 0 and payload.portal_id:
+                db_deposit = BankDeposit(
+                    staff_id=current_user.id,
+                    deposit_type="portal",
+                    portal_id=payload.portal_id,
+                    recipient_staff_id=None,
+                    to_office=False,
+                    payment_mode="online",
+                    amount=d.online_amount,
+                    deposit_date=db_collection.collection_date,
+                    status="verified",
+                    balance_snapshot=Decimal("0.00")
+                )
+                db.add(db_deposit)
+                db.flush()
+                
+                db_deposit_denom = Denomination(
+                    deposit_id=db_deposit.id,
+                    note_500=0,
+                    note_200=0,
+                    note_100=0,
+                    note_50=0,
+                    note_20=0,
+                    note_10=0,
+                    coins=Decimal("0.00"),
+                    online_amount=d.online_amount
+                )
+                db.add(db_deposit_denom)
+                
+                if portal_obj:
+                    portal_obj.balance += d.online_amount
+                    db_deposit.balance_snapshot = portal_obj.balance
+                    if portal_obj.group:
+                        portal_obj.group.balance += d.online_amount
             
         elif payload.portal_id:
             portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
@@ -392,13 +442,34 @@ def delete_collection(
     from sqlalchemy import delete
     db.execute(delete(Ledger).where(Ledger.collection_id == collection_id))
     
-    # Restore portal balance if the collection was against a portal
-    if collection.portal_id:
+    # Restore portal balance if the collection was directly against a portal (not a retailer collection)
+    if collection.portal_id and not collection.retailer_id:
         portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
         if portal:
             portal.balance += Decimal(str(collection.total_amount))
             if portal.group:
                 portal.group.balance += Decimal(str(collection.total_amount))
+
+    # Delete corresponding auto-created portal deposit if this collection had an online component
+    if collection.retailer_id and collection.portal_id and collection.denominations and collection.denominations.online_amount > 0:
+        portal_dep = db.scalar(
+            select(BankDeposit).where(
+                and_(
+                    BankDeposit.deposit_type == "portal",
+                    BankDeposit.staff_id == collection.staff_id,
+                    BankDeposit.portal_id == collection.portal_id,
+                    BankDeposit.amount == collection.denominations.online_amount,
+                    BankDeposit.deposit_date == collection.collection_date
+                )
+            )
+        )
+        if portal_dep:
+            portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
+            if portal:
+                portal.balance -= portal_dep.amount
+                if portal.group:
+                    portal.group.balance -= portal_dep.amount
+            db.delete(portal_dep)
 
     # Delete corresponding staff handover deposit if this is a staff-to-staff collection
     if collection.from_staff_id:
@@ -451,30 +522,94 @@ def update_collection(
     old_from_staff_id = collection.from_staff_id
     new_from_staff_id = payload.from_staff_id
 
-    # Handle Portal Balance Adjustments
-    if old_portal_id != new_portal_id:
-        # Revert old portal
-        if old_portal_id:
-            old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
-            if old_portal:
-                old_portal.balance += Decimal(str(old_amount))
-                if old_portal.group:
-                    old_portal.group.balance += Decimal(str(old_amount))
-        # Deduct new portal
-        if new_portal_id:
-            new_portal = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
-            if new_portal:
-                new_portal.balance -= Decimal(str(new_amount))
-                if new_portal.group:
-                    new_portal.group.balance -= Decimal(str(new_amount))
-    elif old_portal_id and new_amount != old_amount:
-        # Same portal, but amount changed
-        diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
-        portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
-        if portal:
-            portal.balance -= diff
-            if portal.group:
-                portal.group.balance -= diff
+    # Handle Portal Balance Adjustments (only for direct portal collections, NOT retailer collections)
+    if not old_retailer_id and not new_retailer_id:
+        if old_portal_id != new_portal_id:
+            # Revert old portal
+            if old_portal_id:
+                old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
+                if old_portal:
+                    old_portal.balance += Decimal(str(old_amount))
+                    if old_portal.group:
+                        old_portal.group.balance += Decimal(str(old_amount))
+            # Deduct new portal
+            if new_portal_id:
+                new_portal = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
+                if new_portal:
+                    new_portal.balance -= Decimal(str(new_amount))
+                    if new_portal.group:
+                        new_portal.group.balance -= Decimal(str(new_amount))
+        elif old_portal_id and new_amount != old_amount:
+            # Same portal, but amount changed
+            diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
+            portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
+            if portal:
+                portal.balance -= diff
+                if portal.group:
+                    portal.group.balance -= diff
+
+    # Sync corresponding auto-created portal deposit if needed
+    if old_retailer_id:
+        old_online_amount = collection.denominations.online_amount if collection.denominations else Decimal("0.00")
+        new_online_amount = payload.denominations.online_amount if payload.denominations else Decimal("0.00")
+        if old_portal_id != new_portal_id or old_online_amount != new_online_amount:
+            # Revert the old deposit if it existed
+            if old_portal_id and old_online_amount > 0:
+                old_dep = db.scalar(
+                    select(BankDeposit).where(
+                        and_(
+                            BankDeposit.deposit_type == "portal",
+                            BankDeposit.staff_id == collection.staff_id,
+                            BankDeposit.portal_id == old_portal_id,
+                            BankDeposit.amount == old_online_amount,
+                            BankDeposit.deposit_date == collection.collection_date
+                        )
+                    )
+                )
+                if old_dep:
+                    old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
+                    if old_portal:
+                        old_portal.balance -= old_online_amount
+                        if old_portal.group:
+                            old_portal.group.balance -= old_online_amount
+                    db.delete(old_dep)
+                    
+            # Create the new deposit if needed
+            if new_portal_id and new_online_amount > 0:
+                new_portal_obj = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
+                db_deposit = BankDeposit(
+                    staff_id=collection.staff_id,
+                    deposit_type="portal",
+                    portal_id=new_portal_id,
+                    recipient_staff_id=None,
+                    to_office=False,
+                    payment_mode="online",
+                    amount=new_online_amount,
+                    deposit_date=collection.collection_date,
+                    status="verified",
+                    balance_snapshot=Decimal("0.00")
+                )
+                db.add(db_deposit)
+                db.flush()
+                
+                db_deposit_denom = Denomination(
+                    deposit_id=db_deposit.id,
+                    note_500=0,
+                    note_200=0,
+                    note_100=0,
+                    note_50=0,
+                    note_20=0,
+                    note_10=0,
+                    coins=Decimal("0.00"),
+                    online_amount=new_online_amount
+                )
+                db.add(db_deposit_denom)
+                
+                if new_portal_obj:
+                    new_portal_obj.balance += new_online_amount
+                    db_deposit.balance_snapshot = new_portal_obj.balance
+                    if new_portal_obj.group:
+                        new_portal_obj.group.balance += new_online_amount
 
     # Update main fields safely
     for field, value in payload.model_dump(exclude_unset=True, exclude={"denominations"}).items():
@@ -498,6 +633,19 @@ def update_collection(
         ledger_entry.amount = new_amount
         if old_retailer_id != new_retailer_id:
             ledger_entry.retailer_id = new_retailer_id
+            
+        # Update description based on breakdown
+        new_online_amount = payload.denominations.online_amount if payload.denominations else Decimal("0.00")
+        if new_online_amount > 0 and new_portal_id:
+            new_portal_obj = db.scalar(select(Portal).where(Portal.id == new_portal_id))
+            portal_name = new_portal_obj.portal_name if new_portal_obj else "Online"
+            cash_amount = new_amount - new_online_amount
+            if cash_amount > 0:
+                ledger_entry.description = f"collection (Cash: ₹{cash_amount:.2f}, Online: ₹{new_online_amount:.2f} via {portal_name})"
+            else:
+                ledger_entry.description = f"online collection (₹{new_online_amount:.2f} via {portal_name})"
+        else:
+            ledger_entry.description = "cash collection (auto-verified)"
 
     # Sync corresponding staff handover deposit if needed
     if old_from_staff_id != new_from_staff_id:

@@ -148,6 +148,7 @@ def create_portal(
         bank_name=portal_data.bank_name,
         bank_account_no=portal_data.bank_account_no,
         ifsc_code=portal_data.ifsc_code,
+        show_in_online_payment=portal_data.show_in_online_payment,
         opening_to_give=portal_data.opening_to_give,
         opening_to_take=portal_data.opening_to_take,
         balance=initial_balance

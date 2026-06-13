@@ -188,7 +188,7 @@ export default function PortalsTab({
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
-          <input
+          <input autoComplete="one-time-code"
             type="text"
             placeholder="Search Portals (e.g. RevaPay)..."
             value={portalSearch}
@@ -340,7 +340,7 @@ export default function PortalsTab({
                 <div className="p-4 bg-indigo-50/30 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl space-y-4">
                   <div>
                     <label className="block text-[9px] text-slate-400 uppercase font-black mb-1">Portal Name</label>
-                    <input 
+                    <input autoComplete="one-time-code" 
                       type="text" 
                       value={editingGroupName} 
                       onChange={e => setEditingGroupName(e.target.value)}
@@ -355,7 +355,7 @@ export default function PortalsTab({
                   </div>
                   <div className="space-y-1">
                     <label className="block text-[9px] text-slate-500 uppercase font-black mb-1">Adjust Balance (₹)</label>
-                    <input 
+                    <input autoComplete="one-time-code" 
                       type="number" 
                       placeholder="e.g. +1000 to add, -1000 to subtract"
                       value={editingGroupBalanceAdjustment} 
@@ -398,7 +398,7 @@ export default function PortalsTab({
                       <div key={acc.id} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl group">
                         <div className="flex items-center justify-between mb-2">
                           {editingAccId === acc.id ? (
-                            <input 
+                            <input autoComplete="one-time-code" 
                               value={editAccName}
                               onChange={(e) => setEditAccName(e.target.value)}
                               className="text-xs font-black bg-white dark:bg-slate-800 border rounded px-2 py-0.5 outline-none"
@@ -435,20 +435,20 @@ export default function PortalsTab({
                         
                         {editingAccId === acc.id ? (
                           <div className="space-y-2 mt-2">
-                            <input 
+                            <input autoComplete="one-time-code" 
                               placeholder="Bank"
                               value={editAccBank}
                               onChange={(e) => setEditAccBank(e.target.value)}
                               className="w-full text-[10px] bg-white dark:bg-slate-800 border rounded px-2 py-1 outline-none"
                             />
                             <div className="grid grid-cols-2 gap-2">
-                              <input 
+                              <input autoComplete="one-time-code" 
                                 placeholder="A/C No"
                                 value={editAccNo}
                                 onChange={(e) => setEditAccNo(e.target.value)}
                                 className="w-full text-[10px] bg-white dark:bg-slate-800 border rounded px-2 py-1 outline-none"
                               />
-                              <input 
+                              <input autoComplete="one-time-code" 
                                 placeholder="IFSC"
                                 value={editAccIfsc}
                                 onChange={(e) => setEditAccIfsc(e.target.value)}
@@ -496,7 +496,7 @@ export default function PortalsTab({
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
                 <span className="text-[10px] uppercase font-black text-slate-400 tracking-wide block mb-3">Add New Bank Account</span>
                 <form onSubmit={handleCreateAccountModal} className="space-y-3">
-                  <input
+                  <input autoComplete="one-time-code"
                     type="text"
                     placeholder="Account Label (e.g. Primary, ICICI Main)"
                     value={newAccName}
@@ -505,14 +505,14 @@ export default function PortalsTab({
                     required
                   />
                   <div className="grid grid-cols-2 gap-3">
-                    <input
+                    <input autoComplete="one-time-code"
                       type="text"
                       placeholder="Bank Name"
                       value={newAccBank}
                       onChange={(e) => setNewAccBank(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
                     />
-                    <input
+                    <input autoComplete="one-time-code"
                       type="text"
                       placeholder="Account No"
                       value={newAccNo}
@@ -520,7 +520,7 @@ export default function PortalsTab({
                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
                     />
                   </div>
-                  <input
+                  <input autoComplete="one-time-code"
                     type="text"
                     placeholder="IFSC Code"
                     value={newAccIfsc}

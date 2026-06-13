@@ -244,7 +244,7 @@ export default function MobileRetailers({
           <form onSubmit={handleCreateRetailer} className="space-y-2">
             <div>
               <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Retailer Name</label>
-              <input
+              <input autoComplete="one-time-code"
                 type="text"
                 value={retName}
                 onChange={e => setRetName(e.target.value)}
@@ -256,7 +256,7 @@ export default function MobileRetailers({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Phone</label>
-                <input
+                <input autoComplete="one-time-code"
                   type="tel"
                   value={retPhone}
                   onChange={e => setRetPhone(e.target.value)}
@@ -267,7 +267,7 @@ export default function MobileRetailers({
               </div>
               <div>
                 <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Email</label>
-                <input
+                <input autoComplete="one-time-code"
                   type="email"
                   value={retEmail}
                   onChange={e => setRetEmail(e.target.value)}
@@ -278,7 +278,7 @@ export default function MobileRetailers({
             </div>
             <div>
               <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Address/Area</label>
-              <input
+              <input autoComplete="one-time-code"
                 type="text"
                 value={retArea}
                 onChange={e => setRetArea(e.target.value)}
@@ -289,7 +289,7 @@ export default function MobileRetailers({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Opening To Take (₹)</label>
-                <input
+                <input autoComplete="one-time-code"
                   type="number"
                   step="any"
                   value={retToTake}
@@ -300,7 +300,7 @@ export default function MobileRetailers({
               </div>
               <div>
                 <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Opening To Give (₹)</label>
-                <input
+                <input autoComplete="one-time-code"
                   type="number"
                   step="any"
                   value={retToGive}
@@ -325,7 +325,7 @@ export default function MobileRetailers({
       <div className="px-1">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-          <input 
+          <input autoComplete="one-time-code" 
             type="text"
             placeholder="Search retailer name or phone..."
             value={searchTerm}
@@ -431,7 +431,7 @@ export default function MobileRetailers({
               <div className="space-y-2">
                 <div>
                   <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Retailer Name</label>
-                  <input 
+                  <input autoComplete="one-time-code" 
                     type="text" 
                     value={editRetName} 
                     onChange={(e) => setEditRetName(e.target.value)} 
@@ -442,7 +442,7 @@ export default function MobileRetailers({
                 </div>
                 <div>
                   <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Phone</label>
-                  <input 
+                  <input autoComplete="one-time-code" 
                     type="tel" 
                     value={editRetPhone} 
                     onChange={(e) => setEditRetPhone(e.target.value)} 
@@ -453,7 +453,7 @@ export default function MobileRetailers({
                 </div>
                 <div>
                   <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Area / Route</label>
-                  <input 
+                  <input autoComplete="one-time-code" 
                     type="text" 
                     value={editRetArea} 
                     onChange={(e) => setEditRetArea(e.target.value)} 
@@ -463,7 +463,7 @@ export default function MobileRetailers({
                 </div>
                 <div>
                   <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Email</label>
-                  <input 
+                  <input autoComplete="one-time-code" 
                     type="email" 
                     value={editRetEmail} 
                     onChange={(e) => setEditRetEmail(e.target.value)} 
@@ -519,14 +519,14 @@ export default function MobileRetailers({
                       <div key={s.id} className="p-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-805 rounded">
                         {editingStoreId === s.id ? (
                           <div className="space-y-1.5">
-                            <input
+                            <input autoComplete="one-time-code"
                               type="text"
                               value={editStoreName}
                               onChange={(e) => setEditStoreName(e.target.value)}
                               className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded text-xs font-semibold focus:outline-none"
                               placeholder="Store Name"
                             />
-                            <input
+                            <input autoComplete="one-time-code"
                               type="text"
                               value={editStoreArea}
                               onChange={(e) => setEditStoreArea(e.target.value)}
@@ -589,7 +589,7 @@ export default function MobileRetailers({
                 <span className="text-[8px] uppercase font-bold text-slate-400 tracking-wider block mb-1">Add New Store</span>
                 <form onSubmit={handleCreateStore} className="space-y-1.5">
                   <div className="grid grid-cols-2 gap-1.5">
-                    <input
+                    <input autoComplete="one-time-code"
                       type="text"
                       placeholder="Store Name"
                       value={newStoreName}
@@ -597,7 +597,7 @@ export default function MobileRetailers({
                       className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
                       required
                     />
-                    <input
+                    <input autoComplete="one-time-code"
                       type="text"
                       placeholder="Area / Address"
                       value={newStoreArea}

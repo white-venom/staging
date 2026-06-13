@@ -101,7 +101,7 @@ export default function InlineSelect({
           <div className="p-2 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-900 z-10 shrink-0">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-              <input
+              <input autoComplete="one-time-code"
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}

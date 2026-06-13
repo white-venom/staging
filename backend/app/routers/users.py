@@ -96,11 +96,8 @@ def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if user.id == current_user.id:
-        raise HTTPException(status_code=400, detail="Cannot delete your own account")
-
-    if user.role == "admin":
-        raise HTTPException(status_code=400, detail="Admins cannot be deleted.")
+    if user.id != current_user.id and user.role == "admin":
+        raise HTTPException(status_code=400, detail="Cannot delete other admins.")
 
     # Soft delete instead of hard delete to preserve past records
     user.is_active = False

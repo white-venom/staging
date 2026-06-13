@@ -121,7 +121,7 @@ export default function CollectionsTab({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Search</label>
-            <input 
+            <input autoComplete="one-time-code" 
               type="text" 
               placeholder="Search..."
               value={searchQuery}
@@ -167,7 +167,7 @@ export default function CollectionsTab({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
            <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Date From</label>
-            <input 
+            <input autoComplete="one-time-code" 
               type="date" 
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
@@ -176,7 +176,7 @@ export default function CollectionsTab({
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Date To</label>
-            <input 
+            <input autoComplete="one-time-code" 
               type="date" 
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
@@ -272,7 +272,7 @@ export default function CollectionsTab({
                 <form onSubmit={handleEdit} className="space-y-4">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Correction Amount (₹)</label>
-                    <input 
+                    <input autoComplete="one-time-code" 
                       type="number" 
                       value={editAmount}
                       onChange={(e) => setEditAmount(Number(e.target.value))}

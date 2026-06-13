@@ -116,11 +116,11 @@ export default function StaffTab({
             <form onSubmit={handleAddSubmit} className="space-y-4">
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Full Name</label>
-                <input type="text" value={addName} onChange={e => setAddName(e.target.value)} placeholder="e.g. Rahul Sharma" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input autoComplete="one-time-code" type="text" value={addName} onChange={e => setAddName(e.target.value)} placeholder="e.g. Rahul Sharma" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Phone Number</label>
-                <input type="tel" value={addPhone} onChange={e => setAddPhone(e.target.value)} placeholder="e.g. 9917128864" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input autoComplete="one-time-code" type="tel" value={addPhone} onChange={e => setAddPhone(e.target.value)} placeholder="e.g. 9917128864" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">System Role</label>
@@ -131,7 +131,7 @@ export default function StaffTab({
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Initial Password</label>
-                <input type="password" value={addPassword} onChange={e => setAddPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input autoComplete="new-password" type="password" value={addPassword} onChange={e => setAddPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
               </div>
               <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-[0.98]">
                 Create Account
@@ -308,7 +308,7 @@ export default function StaffTab({
             <form onSubmit={handleEditSubmit} className="space-y-4">
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Full Name</label>
-                <input 
+                <input autoComplete="one-time-code" 
                   type="text" 
                   value={editName} 
                   onChange={e => setEditName(e.target.value)} 
@@ -319,7 +319,7 @@ export default function StaffTab({
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Phone Number</label>
-                <input 
+                <input autoComplete="one-time-code" 
                   type="tel" 
                   value={editPhone} 
                   onChange={e => setEditPhone(e.target.value)} 
@@ -343,7 +343,7 @@ export default function StaffTab({
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
                   New Password (leave blank to keep current)
                 </label>
-                <input 
+                <input autoComplete="new-password" 
                   type="password" 
                   value={editPassword} 
                   onChange={e => setEditPassword(e.target.value)} 

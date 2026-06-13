@@ -161,7 +161,7 @@ export default function WalletTransferTab() {
 
           <div>
             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Amount to Load (₹)</label>
-            <input
+            <input autoComplete="one-time-code"
               type="number"
               value={vAmount}
               onChange={e => setVAmount(e.target.value)}

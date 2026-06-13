@@ -23,6 +23,7 @@ class PortalBase(BaseModel):
     bank_name: Optional[str] = Field(None, max_length=100, examples=["HDFC Bank"])
     bank_account_no: Optional[str] = Field(None, max_length=100, examples=["50100412345678"])
     ifsc_code: Optional[str] = Field(None, max_length=20, examples=["HDFC0000123"])
+    show_in_online_payment: bool = False
 
 
 class PortalCreate(PortalBase):
@@ -35,6 +36,7 @@ class PortalUpdate(PortalBase):
     group_id: Optional[uuid.UUID] = None
     opening_to_give: Optional[float] = None
     opening_to_take: Optional[float] = None
+    show_in_online_payment: Optional[bool] = None
 
 
 class PortalResponse(PortalBase):

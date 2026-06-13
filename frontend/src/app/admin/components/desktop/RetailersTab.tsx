@@ -167,7 +167,7 @@ export default function RetailersTab({
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
-          <input
+          <input autoComplete="one-time-code"
             type="text"
             placeholder="Search store directory profiles..."
             value={retailerSearch}
@@ -349,10 +349,10 @@ export default function RetailersTab({
             </div>
             <form onSubmit={handleSaveRetailerEdit} className="space-y-4">
               <div className="space-y-3">
-                <input type="text" value={editRetName} onChange={(e) => setEditRetName(e.target.value)} placeholder="Retailer Name" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
-                <input type="tel" value={editRetPhone} onChange={(e) => setEditRetPhone(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
-                <input type="text" value={editRetArea} onChange={(e) => setEditRetArea(e.target.value)} placeholder="Area / Route" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
-                <input type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
+                <input autoComplete="one-time-code" type="text" value={editRetName} onChange={(e) => setEditRetName(e.target.value)} placeholder="Retailer Name" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
+                <input autoComplete="one-time-code" type="tel" value={editRetPhone} onChange={(e) => setEditRetPhone(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
+                <input autoComplete="one-time-code" type="text" value={editRetArea} onChange={(e) => setEditRetArea(e.target.value)} placeholder="Area / Route" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
+                <input autoComplete="one-time-code" type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
                 <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium">Current Net Balance</span>
@@ -404,14 +404,14 @@ export default function RetailersTab({
                         {editingStoreId === s.id ? (
                           /* EDIT MODE */
                           <div className="space-y-2">
-                            <input
+                            <input autoComplete="one-time-code"
                               type="text"
                               value={editStoreName}
                               onChange={(e) => setEditStoreName(e.target.value)}
                               className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded-lg text-xs font-semibold focus:outline-none"
                               placeholder="Store Name"
                             />
-                            <input
+                            <input autoComplete="one-time-code"
                               type="text"
                               value={editStoreArea}
                               onChange={(e) => setEditStoreArea(e.target.value)}
@@ -477,7 +477,7 @@ export default function RetailersTab({
                 <span className="text-[10px] uppercase font-black text-slate-400 tracking-wide block mb-3">Add New Store Location</span>
                 <form onSubmit={handleCreateStore} className="space-y-3">
                   <div className="grid grid-cols-2 gap-3">
-                    <input
+                    <input autoComplete="one-time-code"
                       type="text"
                       placeholder="Store Name"
                       value={newStoreName}
@@ -485,7 +485,7 @@ export default function RetailersTab({
                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
                       required
                     />
-                    <input
+                    <input autoComplete="one-time-code"
                       type="text"
                       placeholder="Area / Address"
                       value={newStoreArea}

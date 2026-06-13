@@ -218,7 +218,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
              </div>
              <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Late Threshold (Time)</label>
-                <input 
+                <input autoComplete="one-time-code" 
                   type="time" 
                   value={lateThreshold} 
                   onChange={e => setLateThreshold(e.target.value)} 
@@ -233,7 +233,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
              </div>
              <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Penalty Amount (₹)</label>
-                <input 
+                <input autoComplete="one-time-code" 
                   type="number" 
                   value={latePenalty} 
                   onChange={e => setLatePenalty(e.target.value === "" ? "" : Number(e.target.value))} 
@@ -248,7 +248,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
              </div>
              <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Auto Checkout Time</label>
-                <input 
+                <input autoComplete="one-time-code" 
                   type="time" 
                   value={autoCheckoutTime} 
                   onChange={e => setAutoCheckoutTime(e.target.value)} 

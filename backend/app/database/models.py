@@ -97,6 +97,7 @@ class Portal(Base):
     bank_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     bank_account_no: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     ifsc_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    show_in_online_payment: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
     
     # Financial state for individual portal account
