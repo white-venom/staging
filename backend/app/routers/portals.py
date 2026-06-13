@@ -68,6 +68,27 @@ def list_portal_groups(
     """Get all Portal Groups."""
     from sqlalchemy.orm import joinedload
     groups = db.scalars(select(PortalGroup).options(joinedload(PortalGroup.portals)).order_by(PortalGroup.name)).unique().all()
+    
+    # Auto-heal: Ensure every group has at least one portal account (e.g. Primary Account)
+    healed = False
+    for group in groups:
+        if len(group.portals) == 0:
+            primary_portal = Portal(
+                group_id=group.id,
+                portal_name="Primary Account",
+                opening_to_give=Decimal("0.00"),
+                opening_to_take=Decimal("0.00"),
+                balance=group.balance,
+                show_in_online_payment=True
+            )
+            db.add(primary_portal)
+            healed = True
+            
+    if healed:
+        db.commit()
+        # Re-fetch healed groups
+        groups = db.scalars(select(PortalGroup).options(joinedload(PortalGroup.portals)).order_by(PortalGroup.name)).unique().all()
+        
     return groups
 
 
@@ -243,9 +264,26 @@ def delete_portal(
     if not portal:
         raise HTTPException(status_code=404, detail="Portal not found")
         
-    if portal.group:
-        portal.group.balance -= portal.balance
+    group = portal.group
+    if group:
+        group.balance -= portal.balance
         
     db.delete(portal)
     db.commit()
+    
+    # If the group has no portal accounts left, recreate a Primary Account
+    if group:
+        db.refresh(group)
+        if len(group.portals) == 0:
+            primary_portal = Portal(
+                group_id=group.id,
+                portal_name="Primary Account",
+                opening_to_give=Decimal("0.00"),
+                opening_to_take=Decimal("0.00"),
+                balance=group.balance,
+                show_in_online_payment=True
+            )
+            db.add(primary_portal)
+            db.commit()
+            
     return None
