@@ -209,10 +209,11 @@ function NewCollectionContent() {
       setDenominations(prev => ({ ...prev, [key]: value }));
       return;
     }
+    // coins and online_amount must stay >= 0; note counts can be negative (exchange)
+    const isNoteKey = ["note_500", "note_200", "note_100", "note_50", "note_20", "note_10"].includes(key);
     let val = value === "" ? 0 : parseFloat(value);
-    if (isNaN(val) || val < 0) {
-      val = 0;
-    }
+    if (isNaN(val)) val = 0;
+    if (!isNoteKey && val < 0) val = 0; // coins/online can't be negative
     setDenominations(prev => ({
       ...prev,
       [key]: val
@@ -238,8 +239,11 @@ function NewCollectionContent() {
       alert("Please select the source staff member.");
       return;
     }
-    if (totalCollectionAmount <= 0) {
-      alert("Collection total must be greater than zero.");
+    // Allow zero (pure note exchange) and negative (note exchange with net outflow)
+    // Only block if all fields are truly empty (no interaction at all)
+    const allZero = Object.values(denominations).every(v => v === 0 || v === "");
+    if (allZero) {
+      alert("Please enter at least one denomination.");
       return;
     }
 
@@ -509,11 +513,10 @@ function NewCollectionContent() {
                   <input
                     type="number"
                     placeholder="0"
-                    value={denominations[n.key as keyof DenominationCounts] || ""}
+                    value={denominations[n.key as keyof DenominationCounts] === 0 ? "" : denominations[n.key as keyof DenominationCounts]}
                     onChange={(e) => handleDenomChange(n.key as keyof DenominationCounts, e.target.value)}
-                    onKeyDown={(e) => handleNoNegativeKeyDown(e, n.key === "coins")}
                     className="w-14 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 focus:outline-none rounded text-center text-xs text-slate-800 dark:text-slate-200 font-extrabold"
-                    min="0"
+                    placeholder="0"
                   />
 
                   <span className="text-slate-300 dark:text-slate-650 text-[9px] font-bold">＝</span>
@@ -571,10 +574,15 @@ function NewCollectionContent() {
               </div>
             </div>
             <div className="text-right">
-              <span className="text-lg font-black text-slate-850 dark:text-white">
-                ₹{totalCollectionAmount.toLocaleString()}
-              </span>
-            </div>
+                <span className={`text-lg font-black ${totalCollectionAmount < 0 ? 'text-red-500' : totalCollectionAmount === 0 ? 'text-amber-500' : 'text-slate-850 dark:text-white'}`}>
+                  ₹{totalCollectionAmount.toLocaleString()}
+                </span>
+                {totalCollectionAmount <= 0 && (
+                  <p className="text-[8px] font-bold text-amber-500 mt-0.5">
+                    {totalCollectionAmount === 0 ? "⇄ Note exchange (zero net)" : "↓ Net outflow"}
+                  </p>
+                )}
+              </div>
           </div>
 
           {/* REMARKS COMPONENT */}

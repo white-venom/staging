@@ -27,7 +27,7 @@ class CollectionCreate(BaseModel):
     from_office: bool = False
     store_id: Optional[uuid.UUID] = None
     portal_id: Optional[uuid.UUID] = None
-    total_amount: Decimal = Field(..., ne=0)  # Can't be exactly zero, but can be negative (note exchange)
+    total_amount: Decimal  # Can be zero (pure note exchange), negative (net outflow), or positive
     remarks: Optional[str] = Field(None, max_length=255)
     denominations: DenominationSchema
 
