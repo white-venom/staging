@@ -237,8 +237,8 @@ ${dateFormatted}`;
     );
     const totalAmount = totalCash + editDenoms.online_amount;
 
-    if (totalAmount <= 0) {
-      alert("Collection total must be greater than zero.");
+    if (totalAmount === 0) {
+      alert("Collection total cannot be zero.");
       setIsSaving(false);
       return;
     }
@@ -485,15 +485,15 @@ ${dateFormatted}`;
                     <div className="flex items-center gap-2.5">
                       <input
                         type="number"
-                        value={editDenoms[note.key] || ""}
+                        value={editDenoms[note.key] === 0 ? "" : editDenoms[note.key]}
                         onChange={(e) => {
                           const v = e.target.value === "" ? 0 : parseInt(e.target.value);
                           setEditDenoms((prev: any) => ({ ...prev, [note.key]: isNaN(v) ? 0 : v }));
                         }}
                         className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
-                        min="0"
+                        placeholder="0"
                       />
-                      <span className="w-14 text-right text-slate-500 font-bold">₹{((editDenoms[note.key] || 0) * note.val).toLocaleString()}</span>
+                      <span className={`w-14 text-right font-bold ${ (editDenoms[note.key] || 0) < 0 ? 'text-red-500' : 'text-slate-500'}`}>₹{((editDenoms[note.key] || 0) * note.val).toLocaleString()}</span>
                     </div>
                   </div>
                 ))}
@@ -548,8 +548,13 @@ ${dateFormatted}`;
               <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
                 <div>
                   <span className="text-[7.5px] font-black uppercase text-slate-400 tracking-wider">Total Amount</span>
+                  {(() => {
+                    const tot = editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount;
+                    if (tot < 0) return <p className="text-[8px] text-amber-500 font-bold mt-0.5">⚠ Negative total — note exchange mode</p>;
+                    return null;
+                  })()}
                 </div>
-                <span className="text-sm font-black">
+                <span className={`text-sm font-black ${ (editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount) < 0 ? 'text-red-500' : '' }`}>
                   ₹{(
                     editDenoms.note_500 * 500 +
                     editDenoms.note_200 * 200 +
