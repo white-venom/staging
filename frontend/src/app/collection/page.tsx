@@ -512,7 +512,6 @@ function NewCollectionContent() {
                   {/* Input box */}
                   <input
                     type="number"
-                    placeholder="0"
                     value={denominations[n.key as keyof DenominationCounts] === 0 ? "" : denominations[n.key as keyof DenominationCounts]}
                     onChange={(e) => handleDenomChange(n.key as keyof DenominationCounts, e.target.value)}
                     className="w-14 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 focus:outline-none rounded text-center text-xs text-slate-800 dark:text-slate-200 font-extrabold"
