@@ -19,9 +19,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add column with a server default of false to handle existing rows
-    op.add_column('portals', sa.Column('show_in_online_payment', sa.Boolean(), nullable=False, server_default=sa.text('false')))
+    # Inspect columns first to prevent duplicate column errors
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    columns = [c['name'] for c in inspector.get_columns('portals')]
+    if 'show_in_online_payment' not in columns:
+        op.add_column('portals', sa.Column('show_in_online_payment', sa.Boolean(), nullable=False, server_default=sa.text('false')))
 
 
 def downgrade() -> None:
-    op.drop_column('portals', 'show_in_online_payment')
+    # Check if exists before drop
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    columns = [c['name'] for c in inspector.get_columns('portals')]
+    if 'show_in_online_payment' in columns:
+        op.drop_column('portals', 'show_in_online_payment')
