@@ -363,14 +363,30 @@ function NewCollectionContent() {
             </button>
             <button
               type="button"
-              onClick={() => setSourceType("staff")}
+              onClick={() => {
+                setSourceType("staff");
+                setDenominations(prev => ({
+                  ...prev,
+                  online_amount: 0,
+                  online_portal_id: undefined
+                }));
+                setShowOnlinePortal(false);
+              }}
               className={`flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all ${sourceType === "staff" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-655"}`}
             >
               Staff
             </button>
             <button
               type="button"
-              onClick={() => setSourceType("office")}
+              onClick={() => {
+                setSourceType("office");
+                setDenominations(prev => ({
+                  ...prev,
+                  online_amount: 0,
+                  online_portal_id: undefined
+                }));
+                setShowOnlinePortal(false);
+              }}
               className={`flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all ${sourceType === "office" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-655"}`}
             >
               Super Distributor
@@ -528,38 +544,40 @@ function NewCollectionContent() {
                 </div>
               ))}
 
-              <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-2 justify-between">
-                  <span 
-                    className="text-[11px] font-black text-slate-600 dark:text-slate-300 w-24 cursor-pointer"
-                    onClick={() => setShowOnlinePortal(true)}
-                  >
-                    Online (UPI)
-                  </span>
-                  <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">+</span>
-                  <input autoComplete="one-time-code"
-                    type="number"
-                    placeholder="₹0.00"
-                    value={denominations.online_amount || ""}
-                    onChange={(e) => handleDenomChange("online_amount", e.target.value)}
-                    onKeyDown={(e) => handleNoNegativeKeyDown(e, true)}
-                    className="w-28 px-2 py-1 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded text-center text-xs text-slate-800 dark:text-slate-200 font-extrabold"
-                    min="0"
-                  />
-                </div>
-                {(showOnlinePortal || denominations.online_amount > 0) && (
-                  <div className="mt-0.5 animate-in fade-in slide-in-from-top-2 duration-300">
-                    <select
-                      value={denominations.online_portal_id || ""}
-                      onChange={(e) => handleDenomChange("online_portal_id", e.target.value)}
-                      className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400"
+              {sourceType === "retailer" && (
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-2 justify-between">
+                    <span 
+                      className="text-[11px] font-black text-slate-600 dark:text-slate-300 w-24 cursor-pointer"
+                      onClick={() => setShowOnlinePortal(true)}
                     >
-                      <option value="">Select Portal Account...</option>
-                      {portals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                      Online (UPI)
+                    </span>
+                    <span className="text-slate-355 dark:text-slate-600 text-xs font-bold">+</span>
+                    <input autoComplete="one-time-code"
+                      type="number"
+                      placeholder="₹0.00"
+                      value={denominations.online_amount || ""}
+                      onChange={(e) => handleDenomChange("online_amount", e.target.value)}
+                      onKeyDown={(e) => handleNoNegativeKeyDown(e, true)}
+                      className="w-28 px-2 py-1 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded text-center text-xs text-slate-800 dark:text-slate-200 font-extrabold"
+                      min="0"
+                    />
                   </div>
-                )}
-              </div>
+                  {(showOnlinePortal || denominations.online_amount > 0) && (
+                    <div className="mt-0.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <select
+                        value={denominations.online_portal_id || ""}
+                        onChange={(e) => handleDenomChange("online_portal_id", e.target.value)}
+                        className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400"
+                      >
+                        <option value="">Select Portal Account...</option>
+                        {portals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

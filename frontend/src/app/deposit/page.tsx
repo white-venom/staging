@@ -286,8 +286,7 @@ function NewDepositContent() {
             <label className="block text-[8px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500 mb-1 px-1">
               Where is money going? (Channel)
             </label>
-            <div className="grid grid-cols-3 gap-1.5">
-              {[
+            <div className="grid grid-cols-3 gap-1.5">              {[
                 { type: "portal", label: "Portals", desc: "Bank Acc" },
                 { type: "retailer", label: "Shops", desc: "Refund" },
                 { type: "staff", label: "Super Dist", desc: "Distributor" },
@@ -295,10 +294,20 @@ function NewDepositContent() {
                 <button
                   key={opt.type}
                   type="button"
-                  onClick={() => setDepositType(opt.type as any)}
+                  onClick={() => {
+                    setDepositType(opt.type as any);
+                    if (opt.type === "staff") {
+                      setDenominations(prev => ({
+                        ...prev,
+                        online_amount: 0,
+                        online_portal_id: undefined
+                      }));
+                      setShowOnlinePortal(false);
+                    }
+                  }}
                   className={`py-1.5 px-1 rounded-md border text-center transition-all cursor-pointer ${
                     depositType === opt.type
-                      ? "bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100 text-white dark:text-slate-950 shadow-sm"
+                      ? "bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100 text-white dark:text-slate-955 shadow-sm"
                       : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-slate-300"
                   }`}
                 >
@@ -486,7 +495,6 @@ function NewDepositContent() {
                     className="w-12 px-1 py-0.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 focus:outline-none rounded text-center text-[10px] text-slate-800 dark:text-slate-200 font-black"
                     min="0"
                   />
-
                   <span className="text-slate-300 dark:text-slate-655 text-[9px] font-bold">＝</span>
 
                   {/* Line total */}
@@ -496,38 +504,40 @@ function NewDepositContent() {
                 </div>
               ))}
 
-              <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-200 dark:border-slate-800">
-                <div className="flex items-center gap-1.5 justify-between">
-                  <span 
-                    className="text-[10px] font-black text-slate-600 dark:text-slate-300 w-20 cursor-pointer"
-                    onClick={() => setShowOnlinePortal(true)}
-                  >
-                    Online (GPay)
-                  </span>
-                  <span className="text-slate-350 dark:text-slate-600 text-[10px] font-bold">+</span>
-                  <input autoComplete="one-time-code"
-                    type="number"
-                    placeholder="₹0.00"
-                    value={denominations.online_amount || ""}
-                    onChange={(e) => handleDenomChange("online_amount", e.target.value)}
-                    onKeyDown={(e) => handleNoNegativeKeyDown(e, true)}
-                    className="w-24 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded text-center text-[10px] text-slate-800 dark:text-slate-200 font-bold"
-                    min="0"
-                  />
-                </div>
-                {(showOnlinePortal || denominations.online_amount > 0) && (
-                  <div className="mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
-                    <select
-                      value={denominations.online_portal_id || ""}
-                      onChange={(e) => handleDenomChange("online_portal_id", e.target.value)}
-                      className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-medium text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400"
+              {depositType !== "staff" && (
+                <div className="flex flex-col gap-1 pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                  <div className="flex items-center gap-1.5 justify-between">
+                    <span 
+                      className="text-[10px] font-black text-slate-600 dark:text-slate-300 w-20 cursor-pointer"
+                      onClick={() => setShowOnlinePortal(true)}
                     >
-                      <option value="">Select Portal Account...</option>
-                      {portalsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
+                      Online (GPay)
+                    </span>
+                    <span className="text-slate-355 dark:text-slate-600 text-[10px] font-bold">+</span>
+                    <input autoComplete="one-time-code"
+                      type="number"
+                      placeholder="₹0.00"
+                      value={denominations.online_amount || ""}
+                      onChange={(e) => handleDenomChange("online_amount", e.target.value)}
+                      onKeyDown={(e) => handleNoNegativeKeyDown(e, true)}
+                      className="w-24 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-805 focus:border-slate-400 rounded text-center text-[10px] text-slate-800 dark:text-slate-200 font-bold"
+                      min="0"
+                    />
                   </div>
-                )}
-              </div>
+                  {(showOnlinePortal || denominations.online_amount > 0) && (
+                    <div className="mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                      <select
+                        value={denominations.online_portal_id || ""}
+                        onChange={(e) => handleDenomChange("online_portal_id", e.target.value)}
+                        className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-medium text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400"
+                      >
+                        <option value="">Select Portal Account...</option>
+                        {portalsList.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
