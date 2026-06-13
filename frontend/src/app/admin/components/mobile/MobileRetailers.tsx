@@ -346,8 +346,6 @@ export default function MobileRetailers({
           </div>
         ) : (
           filtered.map((retailer) => {
-            const isEditingThis = inlineEditing?.id === retailer.id;
-            const editingField = inlineEditing && inlineEditing.id === retailer.id ? inlineEditing.field : null;
             return (
               <div 
                 key={retailer.id}
@@ -411,95 +409,6 @@ export default function MobileRetailers({
                     ₹{Math.round(Math.abs(retailer.balance || 0))}
                   </span>
                 </div>
-                  <div className="mt-1.5 p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md space-y-1.5 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[8px] font-black text-slate-450 uppercase tracking-wider">
-                        Add to {editingField === 'take' ? 'To Take (Red)' : 'To Give (Green)'}
-                      </span>
-                      <button onClick={() => setInlineEditing(null)} className="text-slate-400 hover:text-slate-650">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min="0"
-                        placeholder="Amount to Add"
-                        value={inlineValue}
-                        onChange={e => setInlineValue(e.target.value)}
-                        onBlur={(e) => {
-                          handleInlineRetailerUpdate(retailer.id, editingField, e.target.value);
-                        }}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') e.currentTarget.blur();
-                          if (e.key === 'Escape') setInlineEditing(null);
-                        }}
-                        className="flex-1 px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold focus:outline-none"
-                        autoFocus
-                      />
-                    </div>
-
-                    <div className="pt-1.5 border-t border-slate-200 dark:border-slate-800 space-y-1">
-                      <span className="text-[8px] uppercase font-black text-slate-400 tracking-wider block">Retailer Transaction Ledger</span>
-                      {(() => {
-                        const retailerTx = [
-                          ...(collections || [])
-                            .filter(c => c.retailerId === retailer.id)
-                            .map(c => ({
-                              id: c.id,
-                              date: c.date,
-                              type: "Cash In",
-                              staff: c.staffName || "Admin",
-                              amount: c.totalAmount,
-                              isCredit: true,
-                              balance: c.balance_snapshot
-                            })),
-                          ...(deposits || [])
-                            .filter(d => d.retailerId === retailer.id)
-                            .map(d => ({
-                              id: d.id,
-                              date: d.date,
-                              type: "Cash Out",
-                              staff: d.staffName || "Admin",
-                              amount: d.amount,
-                              isCredit: false,
-                              balance: d.balance_snapshot
-                            }))
-                        ].sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime());
-
-                        if (retailerTx.length === 0) {
-                          return (
-                            <p className="text-[9px] font-bold text-slate-400 italic py-1">No transaction history.</p>
-                          );
-                        }
-
-                        return (
-                          <div className="max-h-32 overflow-y-auto border border-slate-100 dark:border-slate-800/80 rounded divide-y divide-slate-150/40 dark:divide-slate-800/40">
-                            {retailerTx.map(tx => (
-                              <div key={tx.id} className="p-1 flex items-center justify-between text-[9px] bg-slate-50/40 dark:bg-slate-950/20 hover:bg-slate-100 dark:hover:bg-slate-900/40 transition-colors">
-                                <div>
-                                  <div className="flex items-center gap-1">
-                                    <span className="font-extrabold text-slate-705 dark:text-slate-205 uppercase">{tx.type}</span>
-                                    <span className="text-[7px] font-bold text-slate-400">by {tx.staff}</span>
-                                  </div>
-                                  <span className="text-[7px] text-slate-400 block">{tx.date}</span>
-                                </div>
-                                <div className="text-right">
-                                  <span className={`font-black ${tx.isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
-                                    {tx.isCredit ? '+' : '-'}₹{tx.amount}
-                                  </span>
-                                  {tx.balance !== undefined && (
-                                    <span className="text-[7px] text-slate-400 block">Bal: ₹{Math.round(Number(tx.balance))}</span>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                )}
               </div>
             );})
         )}
