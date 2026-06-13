@@ -204,7 +204,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-950 text-slate-100 font-sans pb-24">
+    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800 font-sans pb-24">
       {/* 1. Header with back arrow */}
       <div className="bg-blue-600 dark:bg-blue-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md">
         <div className="flex items-center gap-3">
@@ -236,27 +236,27 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
       <div className="flex-1 w-full max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* 2. Start Date & End Date controls */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
-              <span className="text-[8px] text-slate-500 font-black uppercase">Start Date</span>
+              <span className="text-[8px] text-slate-400 font-black uppercase">Start Date</span>
               <input autoComplete="one-time-code"
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="bg-transparent border-none text-[11px] font-bold text-slate-200 focus:outline-none w-full cursor-pointer"
+                className="bg-transparent border-none text-[11px] font-bold text-slate-800 focus:outline-none w-full cursor-pointer"
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2">
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
-              <span className="text-[8px] text-slate-500 font-black uppercase">End Date</span>
+              <span className="text-[8px] text-slate-400 font-black uppercase">End Date</span>
               <input autoComplete="one-time-code"
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="bg-transparent border-none text-[11px] font-bold text-slate-200 focus:outline-none w-full cursor-pointer"
+                className="bg-transparent border-none text-[11px] font-bold text-slate-800 focus:outline-none w-full cursor-pointer"
               />
             </div>
           </div>
@@ -271,7 +271,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               placeholder="Search Entries..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs font-semibold placeholder-slate-500 focus:outline-none"
+              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none shadow-sm"
             />
           </div>
           
@@ -279,7 +279,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as any)}
-              className="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-black text-slate-200 focus:outline-none cursor-pointer appearance-none pr-8"
+              className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none pr-8 shadow-sm"
             >
               <option value="all">ALL</option>
               <option value="debit">GAVE</option>
@@ -290,7 +290,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         </div>
 
         {/* Printable/Export Content container */}
-        <div id="pdf-ledger-report" className="space-y-4 bg-transparent text-slate-100 p-0.5">
+        <div id="pdf-ledger-report" className="space-y-4 bg-transparent text-slate-800 p-0.5">
           {/* Printable Header - hidden on screen, shown in PDF */}
           <div className="hidden pdf-only flex-col gap-2 border-b border-slate-200 pb-4 text-slate-900 mb-4">
             <div className="flex justify-between items-start">
@@ -309,54 +309,54 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           </div>
 
           {/* 4. Net Balance Card */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-350">Net Balance</span>
-              <span className={`text-base font-extrabold ${stats.netBalance < 0 ? "text-emerald-500" : stats.netBalance > 0 ? "text-red-500" : "text-slate-300"}`}>
+              <span className="text-xs font-bold text-slate-500">Net Balance</span>
+              <span className={`text-base font-extrabold ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
                 ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
               </span>
             </div>
             
-            <div className="border-t border-slate-800 pt-3 grid grid-cols-3 gap-2 text-center">
+            <div className="border-t border-slate-100 pt-3 grid grid-cols-3 gap-2 text-center">
               <div>
-                <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider block">Total</span>
-                <span className="text-xs font-bold text-slate-200 mt-0.5 block">{stats.entriesCount} Entries</span>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
+                <span className="text-xs font-bold text-slate-700 mt-0.5 block">{stats.entriesCount} Entries</span>
               </div>
               <div>
-                <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider block text-red-500">You Gave</span>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-red-500">You Gave</span>
                 <span className="text-xs font-bold text-red-500 mt-0.5 block">₹ {stats.youGave.toLocaleString("en-IN")}</span>
               </div>
               <div>
-                <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider block text-emerald-500">You Got</span>
-                <span className="text-xs font-bold text-emerald-500 mt-0.5 block">₹ {stats.youGot.toLocaleString("en-IN")}</span>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-emerald-600">You Got</span>
+                <span className="text-xs font-bold text-emerald-600 mt-0.5 block">₹ {stats.youGot.toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>
 
           {/* 5. Transactions Table */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
             {filteredTransactions.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-500 font-bold">
+              <div className="p-8 text-center text-xs text-slate-400 font-bold">
                 No ledger transactions found in the selected date range.
               </div>
             ) : (
-              <div className="divide-y divide-slate-850">
+              <div className="divide-y divide-slate-100">
                 {filteredTransactions.map((tx) => {
                   const dateLabel = formatDateLabel(tx.date);
                   const isDebit = tx.transaction_type === "debit"; // You Gave
                   
                   return (
-                    <div key={tx.id} className="p-3.5 flex items-center justify-between hover:bg-slate-900/50 transition-colors">
+                    <div key={tx.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
                       {/* Left: Date & Running Balance */}
                       <div className="flex flex-col gap-1.5 min-w-0 max-w-[120px]">
-                        <span className="text-xs font-bold text-slate-300 shrink-0">{dateLabel}</span>
-                        <span className="text-[8px] font-black text-slate-400 bg-slate-950 border border-slate-850 px-2 py-0.5 rounded-full uppercase tracking-wider self-start">
+                        <span className="text-xs font-bold text-slate-700 shrink-0">{dateLabel}</span>
+                        <span className="text-[8px] font-black text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full uppercase tracking-wider self-start">
                           Bal. ₹{Math.round(tx.running_balance).toLocaleString("en-IN")}
                         </span>
                       </div>
                       
                       {/* Middle: Description */}
-                      <div className="flex-1 px-4 text-xs font-semibold text-slate-350 break-words whitespace-pre-wrap">
+                      <div className="flex-1 px-4 text-xs font-semibold text-slate-600 break-words whitespace-pre-wrap">
                         {tx.description}
                       </div>
                       
@@ -367,7 +367,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                           {isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
                         {/* Got Column */}
-                        <div className="w-20 font-black text-emerald-500">
+                        <div className="w-20 font-black text-emerald-600">
                           {!isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
                       </div>
@@ -381,11 +381,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
       </div>
 
       {/* 6. Footer Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 py-3.5 px-4 flex gap-3 shadow-2xl z-40 max-w-lg mx-auto rounded-t-2xl">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3.5 px-4 flex gap-3 shadow-2xl z-40 max-w-lg mx-auto rounded-t-2xl">
         <button
           onClick={handleDownloadPDF}
           disabled={isDownloading || filteredTransactions.length === 0}
-          className="flex-1 py-3 px-4 rounded-xl border border-blue-500 text-blue-500 hover:bg-blue-500/10 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+          className="flex-1 py-3 px-4 rounded-xl border border-blue-500 text-blue-500 hover:bg-blue-50 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
         >
           <FileDown className="w-4 h-4" />
           {isDownloading ? "Downloading..." : "DOWNLOAD"}
