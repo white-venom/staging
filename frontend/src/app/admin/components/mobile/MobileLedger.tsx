@@ -16,12 +16,14 @@ import {
   Edit2,
   Save,
   Trash2,
-  ChevronDown
+  ChevronDown,
+  Share2
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { format } from "date-fns";
 import MobileFilterDrawer from "./MobileFilterDrawer";
 import { api } from "../../../utils/api";
+import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
 
 export default function MobileLedger() {
   const { collections, deposits, retailerDirectory, portalDirectory, fetchData, showToastNotification, userDirectory } = useAdmin();
@@ -29,6 +31,7 @@ export default function MobileLedger() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [cmsRemarksExpanded, setCmsRemarksExpanded] = useState<Record<string, boolean>>({});
+  const [expandedLedgerId, setExpandedLedgerId] = useState<string | null>(null);
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState<any | null>(null);
@@ -325,8 +328,13 @@ export default function MobileLedger() {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredLedger.length === 0 ? (
                 <tr><td colSpan={5} className="py-6 text-center text-slate-400 italic font-bold">No matching records</td></tr>
-              ) : filteredLedger.map((item: any, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors">
+              ) : filteredLedger.map((item: any, idx) => {
+                const isExpanded = expandedLedgerId === (item.id || idx);
+                const den = item.denominations || {};
+                const txAmount = item.type === 'collection' ? (item.total_amount || item.amount || 0) : (item.amount || 0);
+                return (
+                <React.Fragment key={item.id || idx}>
+                <tr className={`hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedLedgerId(prev => prev === (item.id || idx) ? null : (item.id || idx))}>
                   <td className="py-1 px-2 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400">
                     <div className="flex flex-col">
                       <span className="whitespace-nowrap">{format(new Date(item.created_at || item.date), "dd-MM-yyyy")}</span>
@@ -350,7 +358,7 @@ export default function MobileLedger() {
                           {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
                             <button
                               type="button"
-                              onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                              onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] })); }}
                               className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
                               title="View Remark"
                             >
@@ -358,7 +366,20 @@ export default function MobileLedger() {
                             </button>
                           )}
                         </div>
-                        <div className="flex items-center gap-1 no-print">
+                        <div className="flex items-center gap-1 no-print" onClick={e => e.stopPropagation()}>
+                          <button
+                            onClick={() => {
+                              if (item.type === 'collection') {
+                                shareCollectionEntry(item, item.staff || 'Staff');
+                              } else {
+                                shareDepositEntry(item, item.staff || 'Staff');
+                              }
+                            }}
+                            className="p-0.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-955/20 dark:text-emerald-400 rounded hover:bg-emerald-100 transition-colors cursor-pointer active:scale-95"
+                            title="Share Entry"
+                          >
+                            <Share2 className="w-3 h-3" />
+                          </button>
                           <button
                             onClick={() => handleStartEditCollection(item)}
                             className="p-0.5 bg-blue-50 text-blue-600 dark:bg-blue-955/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
@@ -373,6 +394,7 @@ export default function MobileLedger() {
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
+                          <ChevronDown className={`w-2.5 h-2.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                         </div>
                       </div>
                       {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
@@ -395,7 +417,28 @@ export default function MobileLedger() {
                     {item.staff || 'Admin'}
                   </td>
                 </tr>
-              ))}
+                {isExpanded && (
+                  <tr key={`${item.id || idx}-exp`} className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                    <td colSpan={5} className="px-3 pb-2 pt-1">
+                      <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[8px] font-bold text-slate-600 dark:text-slate-300">
+                        {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
+                        {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
+                        {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
+                        {Number(den.note_50) > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
+                        {Number(den.note_20) > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
+                        {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
+                        {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
+                        {Number(den.online_amount) > 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
+                      </div>
+                      <div className="mt-1 text-[8px] font-bold text-slate-500 italic">{numberToWordsIndian(txAmount)} Rupees</div>
+                      {item.remarks && <div className="mt-1 text-[8px] font-bold text-slate-400"><span className="font-black uppercase">Remark: </span>{item.remarks}</div>}
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

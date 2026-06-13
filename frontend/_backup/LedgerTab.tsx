@@ -2,9 +2,8 @@
 
 import React, { useEffect } from "react";
 import { useAdmin } from "../../context/AdminContext";
-import { Edit2, X, Save, Trash2, ChevronDown, Share2 } from "lucide-react";
+import { Edit2, X, Save, Trash2, ChevronDown } from "lucide-react";
 import { api } from "../../../utils/api";
-import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
 
 function getExportFilename() {
   return `Ledger_${Date.now()}.csv`;
@@ -63,7 +62,6 @@ export default function LedgerTab({
     online_amount: 0,
   });
   const [cmsRemarksExpanded, setCmsRemarksExpanded] = React.useState<Record<string, boolean>>({});
-  const [expandedTxId, setExpandedTxId] = React.useState<string | null>(null);;
 
   const handleStartEditCollection = (tx: any) => {
     const raw = tx.rawRecord;
@@ -565,12 +563,8 @@ export default function LedgerTab({
                     ? (tx.type === 'collection' ? Number(txNew) + Number(tx.credit) : Number(txNew) - Number(tx.debit)) 
                     : (snapshots.get(tx.id)?.old || 0);
 
-                const isExpanded = expandedTxId === tx.id;
-                const den = tx.rawRecord?.denominations || {};
-                const txAmount = tx.credit || tx.debit || 0;
                 return (
-                <React.Fragment key={tx.id}>
-                <tr className={`hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedTxId(prev => prev === tx.id ? null : tx.id)}>
+                <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors">
                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400">
                     <div className="flex flex-col">
                       <span className="whitespace-nowrap">{tx.date.split(" ")[0].split("-").reverse().join("-")}</span>
@@ -606,7 +600,7 @@ export default function LedgerTab({
                             {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms") && (
                               <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [tx.id]: !prev[tx.id] })); }}
+                                onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [tx.id]: !prev[tx.id] }))}
                                 className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
                                 title="View Remark"
                               >
@@ -622,20 +616,7 @@ export default function LedgerTab({
                           )}
                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">By {tx.staff}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 no-print" onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={() => {
-                            if (tx.type === 'collection') {
-                              shareCollectionEntry(tx.rawRecord, tx.staff || 'Staff');
-                            } else {
-                              shareDepositEntry(tx.rawRecord, tx.staff || 'Staff');
-                            }
-                          }}
-                          className="p-1 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 rounded hover:bg-emerald-100 transition-colors cursor-pointer active:scale-95"
-                          title="Share Entry"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="flex items-center gap-1.5 no-print">
                         <button
                           onClick={() => handleStartEditCollection(tx)}
                           className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
@@ -650,7 +631,6 @@ export default function LedgerTab({
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
-                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
                   </td>
@@ -664,39 +644,6 @@ export default function LedgerTab({
                     ₹{txNew.toLocaleString()}
                   </td>
                 </tr>
-                {isExpanded && (
-                  <tr key={`${tx.id}-expand`} className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
-                    <td colSpan={5} className="px-6 pb-4 pt-2">
-                      <div className="flex flex-wrap gap-4 items-start">
-                        <div>
-                          <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
-                          <div className="grid grid-cols-3 gap-x-6 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                            {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
-                            {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
-                            {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
-                            {Number(den.note_50) > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
-                            {Number(den.note_20) > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
-                            {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
-                            {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
-                            {Number(den.online_amount) > 0 && <span>UPI/Online = ₹{Number(den.online_amount).toLocaleString()}</span>}
-                            {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && <span className="text-slate-400 italic">No breakdown available</span>}
-                          </div>
-                        </div>
-                        <div className="ml-auto text-right">
-                          <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1">Amount in Words</span>
-                          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 italic">{numberToWordsIndian(txAmount)} Rupees</span>
-                        </div>
-                      </div>
-                      {tx.rawRecord?.remarks && (
-                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500">
-                          <span className="text-[8px] uppercase font-black text-slate-400 mr-2">Remarks:</span>
-                          <span className="italic">{tx.rawRecord.remarks}</span>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                )}
-                </React.Fragment>
                 );
               })}
             </tbody>

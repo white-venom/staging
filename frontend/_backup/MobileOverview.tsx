@@ -104,6 +104,7 @@ export default function MobileOverview({
         date: c.date,
         party: c.retailerName,
         store_name: c.store_name || null,
+        remarks: c.remarks || "",
         staff: c.staffName || "Admin",
         amount: c.totalAmount,
         type: 'collection',
@@ -114,6 +115,7 @@ export default function MobileOverview({
         date: d.date,
         party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
         store_name: null,
+        remarks: d.remarks || "",
         staff: d.staffName || "Admin",
         amount: d.amount,
         type: 'deposit',
@@ -134,6 +136,7 @@ export default function MobileOverview({
 
   // State to track which staff cards are expanded
   const [expandedStaffNames, setExpandedStaffNames] = useState<Record<string, boolean>>({});
+  const [cmsRemarksExpanded, setCmsRemarksExpanded] = useState<Record<string, boolean>>({});
 
   const toggleStaffExpanded = (name: string) => {
     setExpandedStaffNames(prev => ({
@@ -195,86 +198,88 @@ export default function MobileOverview({
   }, [staffUsers, collections, deposits, staffComplianceLogs]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3.5">
       {/* Premium Summary Card */}
-      <div className="relative overflow-hidden bg-slate-900 dark:bg-white rounded-3xl p-5 text-white dark:text-slate-950 shadow-xl shadow-blue-500/10">
-        <div className="absolute top-0 right-0 p-4 opacity-10">
-          <Wallet className="w-24 h-24 rotate-12" />
+      <div className="relative overflow-hidden bg-slate-900 dark:bg-white rounded-lg p-3 text-white dark:text-slate-955 shadow-md">
+        <div className="absolute top-0 right-0 p-2 opacity-10">
+          <Wallet className="w-16 h-16 rotate-12" />
         </div>
-        <div className="relative z-10">
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Net Cash in Hand</p>
-          <h2 className="text-3xl font-black mt-0.5">₹{netCashBalance.toLocaleString()}</h2>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <p className="text-[8px] font-black uppercase tracking-widest opacity-60">Net Cash in Hand</p>
+            <h2 className="text-xl font-black mt-0.5">₹{netCashBalance.toLocaleString()}</h2>
+          </div>
           
-          <div className="flex items-center gap-3 mt-4">
-            <div className="flex-1 bg-white/10 dark:bg-slate-100 p-2.5 rounded-xl backdrop-blur-md">
-              <p className="text-[9px] font-black uppercase opacity-60">Cash In</p>
-              <p className="text-xs font-black mt-0.5">₹{totalCollectedAmount.toLocaleString()}</p>
+          <div className="flex items-center gap-2">
+            <div className="bg-white/10 dark:bg-slate-100 px-2 py-1 rounded-md backdrop-blur-md">
+              <p className="text-[7px] font-black uppercase opacity-60">Cash In</p>
+              <p className="text-[10px] font-black mt-0.5">₹{totalCollectedAmount.toLocaleString()}</p>
             </div>
-            <div className="flex-1 bg-white/10 dark:bg-slate-100 p-2.5 rounded-xl backdrop-blur-md">
-              <p className="text-[9px] font-black uppercase opacity-60">Cash Out</p>
-              <p className="text-xs font-black mt-0.5">₹{totalDepositedAmount.toLocaleString()}</p>
+            <div className="bg-white/10 dark:bg-slate-100 px-2 py-1 rounded-md backdrop-blur-md">
+              <p className="text-[7px] font-black uppercase opacity-60">Cash Out</p>
+              <p className="text-[10px] font-black mt-0.5">₹{totalDepositedAmount.toLocaleString()}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Staff live Status & Cash Tracker Card */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-6 shadow-sm flex flex-col gap-5 animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 shadow-sm flex flex-col gap-2 animate-fade-in">
         {/* Header */}
-        <div className="flex items-center gap-2">
-          <div className="p-2 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-2xl">
-            <Users className="w-4 h-4" />
+        <div className="flex items-center gap-1.5">
+          <div className="p-1 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-md">
+            <Users className="w-3.5 h-3.5" />
           </div>
           <div>
-            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">Staff Tracking</span>
-            <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-0.5">Live field reports</p>
+            <span className="text-[9px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest">Staff Tracking</span>
+            <p className="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase">Live field reports</p>
           </div>
         </div>
 
         {/* List of active field staff */}
         {staffListData.length === 0 ? (
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold italic text-center py-4">No staff members found.</p>
+          <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold italic text-center py-2">No staff members found.</p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-1.5">
             {staffListData.map((staff) => {
               const isExpanded = !!expandedStaffNames[staff.name];
               const isActive = staff.compliance?.status === "Active Duty";
               return (
-                <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-[1.75rem] p-4 bg-slate-50/30 dark:bg-slate-900/20 space-y-3">
+                <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-md p-1.5 bg-slate-50/30 dark:bg-slate-900/20 space-y-1.5">
                   {/* Card Header (Clickable to Expand) */}
                   <div 
                     onClick={() => toggleStaffExpanded(staff.name)}
                     className="flex items-center justify-between cursor-pointer group"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-350 dark:bg-slate-700'}`} />
-                      <span className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-455 transition-colors">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-350 dark:bg-slate-700'}`} />
+                      <span className="text-[10px] font-black text-slate-850 dark:text-white uppercase tracking-tight group-hover:text-blue-655 dark:group-hover:text-blue-455 transition-colors">
                         {staff.name}
                       </span>
-                      <span className="text-[8px] font-extrabold text-slate-400 dark:text-slate-500 uppercase">
+                      <span className="text-[7px] font-extrabold text-slate-400 dark:text-slate-500 uppercase">
                         {isActive ? "Active" : "Offline"}
                       </span>
                     </div>
-                    <ChevronDown className={`w-4 h-4 text-slate-450 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 text-slate-450 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                   </div>
 
                   {/* Summary Stats Row */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="p-2 bg-emerald-50/20 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/5 rounded-xl flex flex-col">
-                      <span className="text-[7px] font-black uppercase text-emerald-600 tracking-wide">Collected</span>
-                      <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5">
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div className="p-1 bg-emerald-50/20 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/5 rounded-md flex flex-col">
+                      <span className="text-[6.5px] font-black uppercase text-emerald-600 tracking-wide">Collected</span>
+                      <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400">
                         ₹{staff.collectedToday.toLocaleString()}
                       </span>
                     </div>
-                    <div className="p-2 bg-red-50/20 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/5 rounded-xl flex flex-col">
-                      <span className="text-[7px] font-black uppercase text-red-600 tracking-wide">Deposited</span>
-                      <span className="text-[10px] font-black text-red-700 dark:text-red-400 mt-0.5">
+                    <div className="p-1 bg-red-50/20 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/5 rounded-md flex flex-col">
+                      <span className="text-[6.5px] font-black uppercase text-red-600 tracking-wide">Deposited</span>
+                      <span className="text-[9px] font-black text-red-700 dark:text-red-400">
                         ₹{staff.depositedToday.toLocaleString()}
                       </span>
                     </div>
-                    <div className="p-2 bg-blue-50/20 dark:bg-blue-950/5 border border-blue-100/30 dark:border-blue-900/5 rounded-xl flex flex-col">
-                      <span className="text-[7px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
-                      <span className={`text-[10px] font-black mt-0.5 ${staff.remainingToday < 0 ? 'text-red-600 dark:text-red-450' : 'text-blue-700 dark:text-blue-400'}`}>
+                    <div className="p-1 bg-blue-50/20 dark:bg-blue-950/5 border border-blue-100/30 dark:border-blue-900/5 rounded-md flex flex-col">
+                      <span className="text-[6.5px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
+                      <span className={`text-[9px] font-black ${staff.remainingToday < 0 ? 'text-red-650 dark:text-red-450' : 'text-blue-700 dark:text-blue-400'}`}>
                         ₹{staff.remainingToday.toLocaleString()}
                       </span>
                     </div>
@@ -282,38 +287,38 @@ export default function MobileOverview({
 
                   {/* Collapsible details section */}
                   {isExpanded && (
-                    <div className="border-t border-slate-100 dark:border-slate-800/80 pt-3 space-y-3 animate-slide-up">
+                    <div className="border-t border-slate-100 dark:border-slate-800/80 pt-1.5 space-y-1.5 animate-slide-up">
                       {/* Check-in info */}
-                      <div className="flex items-center justify-between text-[9px]">
+                      <div className="flex items-center justify-between text-[8px]">
                         <span className="font-bold text-slate-400 uppercase tracking-wide">Shift Status</span>
-                        <span className="font-black text-slate-700 dark:text-slate-350">
+                        <span className="font-black text-slate-705 dark:text-slate-350">
                           {staff.compliance ? staff.compliance.status : "Not Checked In"}
                           {staff.compliance?.startTime ? ` (IN: ${staff.compliance.startTime})` : ""}
                         </span>
                       </div>
 
                       {staff.compliance ? (
-                        <div className="flex flex-col gap-2">
+                        <div className="flex flex-col gap-1">
                           {/* Odometer mileage */}
-                          <div className="flex items-center justify-between text-[9px]">
+                          <div className="flex items-center justify-between text-[8px]">
                             <span className="font-bold text-slate-400 uppercase tracking-wide">Odometer</span>
-                            <span className="font-black text-slate-700 dark:text-slate-300">
+                            <span className="font-black text-slate-705 dark:text-slate-300">
                               {staff.compliance.startKm ? `${staff.compliance.startKm} KM` : "0 KM"}
                               {staff.compliance.endKm ? ` → ${staff.compliance.endKm} KM` : " Started"}
                             </span>
                           </div>
 
                           {/* Action Buttons for GPS Coordinates & photos */}
-                          <div className="flex flex-wrap gap-1.5 pt-1">
+                          <div className="flex flex-wrap gap-1 pt-0.5">
                             {/* Start Coordinates Link */}
                             {staff.compliance.startLatitude && staff.compliance.startLongitude && (
                               <a
                                 href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.startLatitude},${staff.compliance.startLongitude}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/65 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950 transition-colors"
+                                className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-955/65 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950 transition-colors"
                               >
-                                <MapPin className="w-2.5 h-2.5 text-blue-500" />
+                                <MapPin className="w-2 h-2 text-blue-500" />
                                 <span>Start Route</span>
                               </a>
                             )}
@@ -324,9 +329,9 @@ export default function MobileOverview({
                                 href={staff.compliance.startKmImageUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-850 text-slate-650 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                                className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-850 text-slate-655 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
                               >
-                                <Camera className="w-2.5 h-2.5 text-slate-500" />
+                                <Camera className="w-2 h-2 text-slate-500" />
                                 <span>Start Photo</span>
                               </a>
                             )}
@@ -337,9 +342,9 @@ export default function MobileOverview({
                                 href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.endLatitude},${staff.compliance.endLongitude}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/65 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950 transition-colors"
+                                className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-955/65 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950 transition-colors"
                               >
-                                <MapPin className="w-2.5 h-2.5 text-indigo-500" />
+                                <MapPin className="w-2 h-2 text-indigo-500" />
                                 <span>End Route</span>
                               </a>
                             )}
@@ -350,32 +355,32 @@ export default function MobileOverview({
                                 href={staff.compliance.endKmImageUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded-lg bg-slate-100 dark:bg-slate-850 text-slate-650 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                                className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-850 text-slate-655 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
                               >
-                                <Camera className="w-2.5 h-2.5 text-slate-500" />
+                                <Camera className="w-2 h-2 text-slate-500" />
                                 <span>End Photo</span>
                               </a>
                             )}
                           </div>
                         </div>
                       ) : (
-                        <p className="text-[8px] font-bold text-slate-400 italic text-center py-1">No shift log exists for today.</p>
+                        <p className="text-[7px] font-bold text-slate-400 italic text-center py-0.5">No shift log exists for today.</p>
                       )}
 
                       {/* Visited stores button inside collapsed card details */}
-                      <div className="border-t border-slate-100 dark:border-slate-850 pt-2.5 flex items-center justify-between">
-                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Outings</span>
+                      <div className="border-t border-slate-100 dark:border-slate-850 pt-1.5 flex items-center justify-between">
+                        <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Outings</span>
                         <button
                           onClick={() => staff.visitedStores.length > 0 && setActiveModalStaff({ name: staff.name, visitedStores: staff.visitedStores })}
-                          className={`flex items-center gap-1 font-black uppercase tracking-wider text-[8px] px-2.5 py-1.5 rounded-lg transition-all ${
+                          className={`flex items-center gap-1 font-black uppercase tracking-wider text-[7px] px-1.5 py-0.5 rounded transition-all ${
                             staff.visitedStores.length > 0 
-                            ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-950/80 cursor-pointer shadow-sm" 
-                            : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-950/20 cursor-not-allowed"
+                            ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-955/40 hover:bg-blue-100 dark:hover:bg-blue-955/80 cursor-pointer shadow-xs" 
+                            : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-955/20 cursor-not-allowed"
                           }`}
                           disabled={staff.visitedStores.length === 0}
                         >
-                          <Store className="w-3 h-3" />
-                          <span>Stores Visited: {staff.visitedStores.length}</span>
+                          <Store className="w-2.5 h-2.5" />
+                          <span>Stores: {staff.visitedStores.length}</span>
                         </button>
                       </div>
                     </div>
@@ -388,42 +393,65 @@ export default function MobileOverview({
       </div>
 
       {/* Quick Actions Grid */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-28">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">To Take</p>
-          <p className="text-lg font-black text-red-500">₹{totalToTake.toLocaleString()}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-16">
+          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">To Take</p>
+          <p className="text-sm font-black text-red-500">₹{totalToTake.toLocaleString()}</p>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-28">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">To Give</p>
-          <p className="text-lg font-black text-emerald-500">₹{totalToGive.toLocaleString()}</p>
+        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-16">
+          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">To Give</p>
+          <p className="text-sm font-black text-emerald-500">₹{totalToGive.toLocaleString()}</p>
         </div>
       </div>
 
-      {/* Recent Activity */}
-      <section className="space-y-4 pb-8">
-        <div className="flex items-center justify-between px-2">
-          <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-2">
-            <History className="w-3 h-3" /> Recent Ledger
+      {/* Recent Ledger Activity */}
+      <section className="space-y-2 pb-4">
+        <div className="flex items-center justify-between px-1.5">
+          <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+            <History className="w-3.5 h-3.5" /> Recent Ledger
           </h3>
-          <Link href="/admin/ledger" className="text-[10px] font-black text-blue-600 uppercase">View All</Link>
+          <Link href="/admin/ledger" className="text-[8px] font-black text-blue-650 uppercase">View All</Link>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm mb-12">
+        <div className="bg-white dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 shadow-xs mb-4">
           {recentActivity.length === 0 ? (
-            <div className="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">
+            <div className="p-4 text-center text-slate-400 text-[9px] font-black uppercase tracking-widest">
               No recent activity
             </div>
           ) : (
             recentActivity.map((item, idx) => (
-              <div key={idx} className="flex items-center gap-4 p-4 border-b border-slate-50 dark:border-slate-800/50 active:bg-slate-50 dark:active:bg-slate-800/30 transition-colors">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.type === 'collection' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
-                  {item.type === 'collection' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+              <div key={idx} className="flex items-center gap-2 py-1.5 px-2.5 border-b border-slate-50 dark:border-slate-800/50 active:bg-slate-50 dark:active:bg-slate-800/30 transition-colors">
+                <div className={`w-7 h-7 rounded-md flex items-center justify-center ${item.type === 'collection' ? 'bg-blue-50 text-blue-650' : 'bg-red-50 text-red-650'}`}>
+                  {item.type === 'collection' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-black text-slate-800 dark:text-white truncate">
-                    {item.party} {item.store_name && <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>}
-                  </p>
-                  <p className="text-[9px] font-bold text-slate-400 uppercase truncate">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-black text-slate-800 dark:text-white truncate block">
+                      {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
+                        ? `${item.party} - ${item.store_name || "Direct"}`
+                        : item.party}
+                    </span>
+                    {item.store_name && !(item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")) && (
+                      <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>
+                    )}
+                    {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
+                      <button
+                        type="button"
+                        onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                        className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                        title="View Remark"
+                      >
+                        <ChevronDown className={`w-2.5 h-2.5 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-505' : ''}`} />
+                      </button>
+                    )}
+                  </div>
+                  {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
+                    <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[8px] font-medium text-slate-605 dark:text-slate-400 max-w-[200px] break-words">
+                      <span className="text-[7px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                      <span className="italic">{item.remarks || "no remark"}</span>
+                    </div>
+                  )}
+                  <p className="text-[8px] font-bold text-slate-400 uppercase truncate mt-0.5">
                     {(() => {
                       if (!item.date) return "N/A";
                       try {
@@ -439,11 +467,11 @@ export default function MobileOverview({
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className={`text-sm font-black ${item.type === 'collection' ? 'text-blue-600' : 'text-red-600'}`}>
+                  <p className={`text-[11px] font-black ${item.type === 'collection' ? 'text-blue-650' : 'text-red-650'}`}>
                     {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
                   </p>
                   {item.balance !== undefined && item.balance !== null && (
-                    <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">Due: ₹{Number(item.balance).toLocaleString()}</p>
+                    <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">Due: ₹{Number(item.balance).toLocaleString()}</p>
                   )}
                 </div>
               </div>
@@ -452,48 +480,43 @@ export default function MobileOverview({
         </div>
       </section>
 
-      <div className="h-4" />
-
       {/* Stores Visited Mobile Sliding Overlay Modal */}
       {activeModalStaff && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-300">
-          <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-[2.5rem] sm:rounded-[2.5rem] w-full max-w-md p-6 pb-8 sm:pb-6 space-y-5 shadow-2xl animate-slide-up relative">
-            {/* Grab handle for mobile feeling */}
-            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto sm:hidden -mt-2 mb-2" />
-
+        <div className="fixed inset-0 bg-slate-955/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-3 transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-205 dark:border-slate-800 rounded-t-lg sm:rounded-lg w-full max-w-md p-3 pb-4 space-y-2.5 shadow-2xl animate-slide-up relative">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-2xl">
-                  <Store className="w-5 h-5" />
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+              <div className="flex items-center gap-1.5">
+                <div className="p-1 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-md">
+                  <Store className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">
+                  <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">
                     Visited Stores
                   </h3>
-                  <p className="text-[9px] font-extrabold text-blue-600 dark:text-blue-400 uppercase tracking-wider mt-0.5">
+                  <p className="text-[8px] font-black text-blue-600 dark:text-blue-400 uppercase mt-0.5">
                     {activeModalStaff.name}&apos;s Outings Today
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setActiveModalStaff(null)}
-                className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+                className="p-1 rounded-md bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Modal Body: Stores list */}
-            <div className="max-h-[50vh] overflow-y-auto pr-1 divide-y divide-slate-105 dark:divide-slate-850">
+            <div className="max-h-[40vh] overflow-y-auto pr-1 divide-y divide-slate-100 dark:divide-slate-850">
               {activeModalStaff.visitedStores.map((item: VisitedStore, idx: number) => (
-                <div key={idx} className="py-4 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-850/10 px-2 rounded-2xl transition-all">
-                  <div className="flex flex-col gap-1 min-w-0 flex-1 pr-2">
-                    <span className="font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight truncate text-xs">
+                <div key={idx} className="py-1.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-850/10 px-1 rounded-md transition-all">
+                  <div className="flex flex-col min-w-0 flex-1 pr-1.5">
+                    <span className="font-black text-slate-800 dark:text-slate-205 uppercase tracking-tight truncate text-[11px]">
                       {item.retailerName}
                     </span>
-                    <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold">
+                      <Clock className="w-3 h-3 text-slate-400" />
                       <span>{(() => {
                         try {
                           const [rawHour, min] = item.time.split(":").map(Number);
@@ -507,11 +530,11 @@ export default function MobileOverview({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="font-black text-emerald-600 dark:text-emerald-450 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-emerald-650 dark:text-emerald-450 text-[11px]">
                       +₹{item.amount.toLocaleString()}
                     </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
+                    <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-black uppercase tracking-wider ${
                       item.status === 'verified'
                       ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30'
                       : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-100 dark:border-amber-900/30'
@@ -524,18 +547,18 @@ export default function MobileOverview({
             </div>
 
             {/* Modal Footer */}
-            <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex flex-col">
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Total Visited Today</span>
-                <span className="text-xs font-black text-slate-700 dark:text-slate-350">
+                <span className="text-[7px] font-black text-slate-400 uppercase tracking-wide">Total Visited Today</span>
+                <span className="text-[10px] font-black text-slate-705 dark:text-slate-350">
                   {activeModalStaff.visitedStores.length} Stores
                 </span>
               </div>
               <button
                 onClick={() => setActiveModalStaff(null)}
-                className="px-5 py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-[10px] font-black rounded-xl hover:bg-slate-850 dark:hover:bg-slate-100 transition-all cursor-pointer shadow-md"
+                className="px-3 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-[9px] font-black rounded-lg hover:bg-slate-850 dark:hover:bg-slate-100 transition-all cursor-pointer shadow-md"
               >
-                Close Window
+                Close
               </button>
             </div>
           </div>

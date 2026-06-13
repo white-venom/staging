@@ -16,12 +16,10 @@ import {
   X,
   MapPin,
   Camera,
-  ChevronDown,
-  Share2
+  ChevronDown
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../utils/api";
-import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
 
 interface VisitedStore {
   id: string;
@@ -102,9 +100,6 @@ export default function OverviewTab({
   // State for active modal visited stores
   const [activeModalStaff, setActiveModalStaff] = React.useState<{ name: string; visitedStores: VisitedStore[] } | null>(null);
   const [cmsRemarksExpanded, setCmsRemarksExpanded] = React.useState<Record<string, boolean>>({});
-  const [expandedCollectionId, setExpandedCollectionId] = React.useState<string | null>(null);
-  const [expandedDepositId, setExpandedDepositId] = React.useState<string | null>(null);
-  const [expandedLedgerRowId, setExpandedLedgerRowId] = React.useState<string | null>(null);
 
   // Precalculate daily metrics for all active field staff
   const staffListData = React.useMemo<StaffListData[]>(() => {
@@ -531,7 +526,8 @@ export default function OverviewTab({
         </div>
       </div>
 
-      {/* Recen      {(() => {
+      {/* Recent Ledger Panel */}
+      {(() => {
         const recentActivity = [
           ...safeCollections.map(c => ({
             id: c.id,
@@ -542,12 +538,7 @@ export default function OverviewTab({
             amount: c.totalAmount,
             type: 'collection',
             balance: c.balance_snapshot,
-            remarks: c.remarks,
-            denominations: c.denominations,
-            retailer_id: c.retailer_id,
-            store_id: c.store_id,
-            portal_id: c.portal_id,
-            rawRecord: c.rawRecord
+            remarks: c.remarks
           })),
           ...safeDeposits.map(d => ({
             id: d.id,
@@ -558,13 +549,7 @@ export default function OverviewTab({
             amount: d.amount,
             type: d.isRefund === true ? 'collection' : 'deposit',
             balance: d.balance_snapshot,
-            remarks: d.remarks || "",
-            denominations: d.denominations,
-            deposit_type: d.depositType,
-            portal_id: d.portal_id,
-            retailer_id: d.retailer_id,
-            recipient_staff_id: d.recipient_staff_id,
-            paymentMode: d.paymentMode
+            remarks: d.remarks || ""
           }))
         ].sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime())
          .slice(0, 10);
@@ -599,174 +584,57 @@ export default function OverviewTab({
                       </td>
                     </tr>
                   ) : (
-                    recentActivity.map((item) => {
-                      const isExpanded = expandedLedgerRowId === item.id;
-                      const den = item.denominations || {};
-                      return (
-                        <React.Fragment key={item.id}>
-                          <tr 
-                            className={`hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/70 dark:bg-slate-950/50' : ''}`}
-                            onClick={() => setExpandedLedgerRowId(prev => prev === item.id ? null : item.id)}
-                          >
-                            <td className="px-4 py-3 font-semibold text-slate-450 dark:text-slate-500 whitespace-nowrap">
-                              {(() => {
-                                if (!item.date) return "N/A";
-                                try {
-                                  const [datePart, timePart] = item.date.split(" ");
-                                  const [year, month, day] = datePart.split("-");
-                                  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                                  const formattedMonth = months[parseInt(month, 10) - 1] || month;
-                                  return `${formattedMonth} ${parseInt(day, 10)}, ${timePart}`;
-                                } catch (e) {
-                                  return item.date;
-                                }
-                              })()}
-                            </td>
-                            <td className="px-4 py-3 font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
-                              <div className="flex items-center gap-1.5">
-                                <span>
-                                  {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
-                                    ? `${item.party} - ${item.store_name || "Direct"}`
-                                    : item.party}
-                                  {item.store_name && !item.party?.toLowerCase().startsWith("cms") && (
-                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold ml-1">({item.store_name})</span>
-                                  )}
-                                </span>
-                                {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] })); }}
-                                    className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
-                                    title="View Remark"
-                                  >
-                                    <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-505' : ''}`} />
-                                  </button>
-                                )}
-                              </div>
-                              {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
-                                <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words block">
-                                  <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
-                                  <span className="italic">{item.remarks || "no remark"}</span>
-                                </div>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
-                              {item.staff}
-                            </td>
-                            <td className={`px-4 py-3 text-right font-black ${item.type === 'collection' ? 'text-emerald-600 bg-emerald-50/5 dark:bg-emerald-950/2' : 'text-red-600 bg-red-50/5 dark:bg-red-950/2'}`}>
-                              <div className="flex items-center justify-end gap-1.5">
-                                <span>{item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}</span>
-                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                              </div>
-                              {item.balance !== undefined && item.balance !== null && (
-                                <div className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">Due: ₹{Number(item.balance).toLocaleString()}</div>
-                              )}
-                            </td>
-                          </tr>
-                          {isExpanded && (
-                            <tr className="bg-slate-50/50 dark:bg-slate-950/20">
-                              <td colSpan={4} className="px-6 py-3 border-t border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                                  <div>
-                                    <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                                      {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
-                                      {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
-                                      {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
-                                      {Number(den.note_50) > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
-                                      {Number(den.note_20) > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
-                                      {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
-                                      {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
-                                      {Number(den.online_amount) > 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
-                                      {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && <span className="text-slate-400 italic">No breakdown</span>}
-                                    </div>
-                                    <div className="mt-1.5 text-[10px] font-bold text-slate-500 italic">{numberToWordsIndian(item.amount)} Rupees</div>
-                                    {item.remarks && <div className="mt-1 text-[9px] text-slate-550 dark:text-slate-400"><span className="font-extrabold uppercase">Remark:</span> {item.remarks}</div>}
-                                  </div>
-                                  <div className="flex items-center gap-1.5 mt-2 md:mt-0">
-                                    <button
-                                      onClick={() => {
-                                        if (item.type === 'collection') {
-                                          shareCollectionEntry({ retailer_name: item.party, store_name: item.store_name, total_amount: item.amount, denominations: item.denominations, created_at: item.rawRecord?.created_at || item.date, remarks: item.remarks }, item.staff);
-                                        } else {
-                                          shareDepositEntry({ target_name: item.party, amount: item.amount, denominations: item.denominations, created_at: item.date, remarks: item.remarks }, item.staff);
-                                        }
-                                      }}
-                                      className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-wider rounded-lg border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 transition-all cursor-pointer flex items-center gap-1"
-                                      title="Share"
-                                    >
-                                      <Share2 className="w-3.5 h-3.5" /> Share
-                                    </button>
-                                    <button 
-                                      onClick={async () => {
-                                        if (item.type === 'collection') {
-                                          const newAmount = prompt("Enter correct collection amount:", item.amount.toString());
-                                          if (newAmount !== null && !isNaN(parseFloat(newAmount))) {
-                                            try {
-                                              await api.updateCollection(item.id, {
-                                                retailer_id: item.retailer_id,
-                                                store_id: item.store_id,
-                                                total_amount: parseFloat(newAmount),
-                                                remarks: item.remarks,
-                                                denominations: {
-                                                  ...item.denominations,
-                                                  online_amount: parseFloat(newAmount)
-                                                }
-                                              });
-                                              fetchData();
-                                            } catch (err: any) {
-                                              alert("Failed to update: " + err.message);
-                                            }
-                                          }
-                                        } else {
-                                          const newAmount = prompt("Enter correct deposit amount:", item.amount.toString());
-                                          if (newAmount !== null && !isNaN(parseFloat(newAmount))) {
-                                            try {
-                                              await api.updateDeposit(item.id, {
-                                                amount: parseFloat(newAmount),
-                                                payment_mode: item.paymentMode,
-                                                deposit_date: item.date.split(' ')[0],
-                                                denominations: item.denominations
-                                              });
-                                              fetchData();
-                                            } catch (err: any) {
-                                              alert("Failed to update: " + err.message);
-                                            }
-                                          }
-                                        }
-                                      }}
-                                      className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase tracking-wider rounded-lg border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all cursor-pointer flex items-center gap-1"
-                                    >
-                                      <Edit className="w-3.5 h-3.5" /> Edit
-                                    </button>
-                                    <button 
-                                      onClick={async () => {
-                                        const confirmText = item.type === 'collection' ? "Delete this collection?" : "Delete this deposit?";
-                                        if (confirm(confirmText)) {
-                                          try {
-                                            if (item.type === 'collection') {
-                                              await api.deleteCollection(item.id);
-                                            } else {
-                                              await api.deleteDeposit(item.id);
-                                            }
-                                            fetchData();
-                                          } catch (err: any) {
-                                            alert("Failed to delete: " + err.message);
-                                          }
-                                        }
-                                      }}
-                                      className="px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[9px] font-black uppercase tracking-wider rounded-lg border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all cursor-pointer flex items-center gap-1"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" /> Delete
-                                    </button>
-                                  </div>
-                                </div>
-                              </td>
-                            </tr>
+                    recentActivity.map((item) => (
+                      <tr key={item.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors">
+                        <td className="px-4 py-3 font-semibold text-slate-450 dark:text-slate-500 whitespace-nowrap">
+                          {(() => {
+                            if (!item.date) return "N/A";
+                            try {
+                              const [datePart, timePart] = item.date.split(" ");
+                              const [year, month, day] = datePart.split("-");
+                              const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                              const formattedMonth = months[parseInt(month, 10) - 1] || month;
+                              return `${formattedMonth} ${parseInt(day, 10)}, ${timePart}`;
+                            } catch (e) {
+                              return item.date;
+                            }
+                          })()}
+                        </td>
+                        <td className="px-4 py-3 font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
+                          {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
+                            ? `${item.party} - ${item.store_name || "Direct"}`
+                            : item.party}
+                          {item.store_name && !item.party?.toLowerCase().startsWith("cms") && (
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold ml-1">({item.store_name})</span>
                           )}
-                        </React.Fragment>
-                      );
-                    })
+                          {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
+                            <button
+                              type="button"
+                              onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                              className="p-0.5 ml-1 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                              title="View Remark"
+                            >
+                              <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                            </button>
+                          )}
+                          {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
+                            <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words block">
+                              <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                              <span className="italic">{item.remarks || "no remark"}</span>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
+                          {item.staff}
+                        </td>
+                        <td className={`px-4 py-3 text-right font-black ${item.type === 'collection' ? 'text-emerald-600 bg-emerald-50/5 dark:bg-emerald-950/2' : 'text-red-600 bg-red-50/5 dark:bg-red-950/2'}`}>
+                          {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
+                          {item.balance !== undefined && item.balance !== null && (
+                            <div className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">Due: ₹{Number(item.balance).toLocaleString()}</div>
+                          )}
+                        </td>
+                      </tr>
+                    ))
                   )}
                 </tbody>
               </table>
@@ -785,125 +653,96 @@ export default function OverviewTab({
             <div className="divide-y divide-slate-50 dark:divide-slate-800">
                {safeCollections.slice(0, 5).map((c, idx) => {
                  const snapshots = balanceSnapshots.get(c.id) || { prev: 0, next: 0 };
-                 const isExpanded = expandedCollectionId === c.id;
-                 const den = c.denominations || {};
                  return (
-                   <div key={idx} className={`flex flex-col gap-2 group border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/70 dark:bg-slate-950/50' : 'hover:bg-slate-50/50 dark:hover:bg-slate-850/10'}`} onClick={() => setExpandedCollectionId(prev => prev === c.id ? null : c.id)}>
-                     <div className="p-4 flex flex-col gap-3">
-                       <div className="flex items-center justify-between text-[11px]">
-                         <div className="flex flex-col">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-extrabold text-slate-850 dark:text-slate-100">
-                                {c.retailerName?.toLowerCase().startsWith("cms")
-                                  ? `${c.retailerName} - ${c.store_name || "Direct"}`
-                                  : c.retailerName}
-                              </span>
-                              {c.retailerName?.toLowerCase().startsWith("cms") && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] })); }}
-                                  className="p-0.5 bg-slate-50 dark:bg-slate-850 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
-                                  title="View Remark"
-                                >
-                                  <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[c.id] ? 'rotate-180 text-indigo-500' : ''}`} />
-                                </button>
-                              )}
-                            </div>
-                            {c.retailerName?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[c.id] && (
-                              <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words block">
-                                <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
-                                <span className="italic">{c.remarks || "no remark"}</span>
-                              </div>
+                   <div key={idx} className="p-4 flex flex-col gap-3 group border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors">
+                     <div className="flex items-center justify-between text-[11px]">
+                       <div className="flex flex-col">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-extrabold text-slate-850 dark:text-slate-100">
+                              {c.retailerName?.toLowerCase().startsWith("cms")
+                                ? `${c.retailerName} - ${c.store_name || "Direct"}`
+                                : c.retailerName}
+                            </span>
+                            {c.retailerName?.toLowerCase().startsWith("cms") && (
+                              <button
+                                type="button"
+                                onClick={() => setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }))}
+                                className="p-0.5 bg-slate-50 dark:bg-slate-850 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                                title="View Remark"
+                              >
+                                <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[c.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                              </button>
                             )}
-                            <span className="text-[9px] text-slate-400 font-bold uppercase">{c.date}</span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                           <span className="font-black text-emerald-600 text-sm">+₹{(c.totalAmount || 0).toLocaleString()}</span>
-                           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                             <button
-                               onClick={() => shareCollectionEntry({ retailer_name: c.retailerName, portal_name: c.portalName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.rawRecord?.created_at || c.date, remarks: c.remarks }, c.staffName || 'Staff')}
-                               className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
-                               title="Share"
-                             >
-                               <Share2 className="w-3 h-3" />
-                             </button>
-                             <button 
-                               onClick={async () => {
-                                 const newAmount = prompt("Enter correct collection amount:", c.totalAmount.toString());
-                                 if(newAmount !== null && !isNaN(parseFloat(newAmount))) {
-                                   try {
-                                     await api.updateCollection(c.id, {
-                                       retailer_id: c.retailer_id,
-                                       store_id: c.store_id,
-                                       total_amount: parseFloat(newAmount),
-                                       remarks: c.remarks,
-                                       denominations: {
-                                         ...c.denominations,
-                                         online_amount: parseFloat(newAmount)
-                                       }
-                                     });
-                                     fetchData();
-                                   } catch (err: any) {
-                                     alert("Failed to update: " + err.message);
-                                   }
-                                 }
-                               }}
-                               className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
-                             >
-                               <Edit className="w-3 h-3" />
-                             </button>
-                             <button 
-                               onClick={async () => {
-                                 if(confirm("Delete this collection?")) {
-                                   try {
-                                     await api.deleteCollection(c.id);
-                                     fetchData();
-                                   } catch (err: any) {
-                                     alert("Failed to delete: " + err.message);
-                                   }
-                                 }
-                               }}
-                               className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
-                             >
-                               <Trash2 className="w-3 h-3" />
-                             </button>
-                             <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                           </div>
-                         </div>
+                          </div>
+                          {c.retailerName?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[c.id] && (
+                            <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words block">
+                              <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                              <span className="italic">{c.remarks || "no remark"}</span>
+                            </div>
+                          )}
+                          <span className="text-[9px] text-slate-400 font-bold uppercase">{c.date}</span>
                        </div>
-                       
-                       <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                         <div className="flex flex-col">
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Opening</span>
-                           <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">₹{snapshots.prev.toLocaleString()}</span>
-                         </div>
-                         <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Collector</span>
-                           <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 line-clamp-1">{c.staffName || 'System'}</span>
-                         </div>
-                         <div className="flex flex-col text-right">
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Closing</span>
-                           <span className="text-[10px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                       <div className="flex items-center gap-3">
+                         <span className="font-black text-emerald-600 text-sm">+₹{(c.totalAmount || 0).toLocaleString()}</span>
+                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                           <button 
+                             onClick={async () => {
+                               const newAmount = prompt("Enter correct collection amount:", c.totalAmount.toString());
+                               if(newAmount !== null && !isNaN(parseFloat(newAmount))) {
+                                 try {
+                                   await api.updateCollection(c.id, {
+                                     retailer_id: c.retailer_id,
+                                     store_id: c.store_id,
+                                     total_amount: parseFloat(newAmount),
+                                     remarks: c.remarks,
+                                     denominations: {
+                                       ...c.denominations,
+                                       online_amount: parseFloat(newAmount)
+                                     }
+                                   });
+                                   fetchData();
+                                 } catch (err: any) {
+                                   alert("Failed to update: " + err.message);
+                                 }
+                               }
+                             }}
+                             className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                           >
+                             <Edit className="w-3 h-3" />
+                           </button>
+                           <button 
+                             onClick={async () => {
+                               if(confirm("Delete this collection?")) {
+                                 try {
+                                   await api.deleteCollection(c.id);
+                                   fetchData();
+                                 } catch (err: any) {
+                                   alert("Failed to delete: " + err.message);
+                                 }
+                               }
+                             }}
+                             className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                           >
+                             <Trash2 className="w-3 h-3" />
+                           </button>
                          </div>
                        </div>
                      </div>
-                     {isExpanded && (
-                       <div className="px-4 pb-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                         <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1 mt-2">Cash Breakdown</span>
-                         <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                           {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
-                           {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
-                           {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
-                           {Number(den.note_50) > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
-                           {Number(den.note_20) > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
-                           {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
-                           {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
-                           {Number(den.online_amount) > 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
-                           {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && <span className="text-slate-400 italic col-span-3">No breakdown</span>}
-                         </div>
-                         <div className="mt-1 text-[10px] font-bold text-slate-500 italic">{numberToWordsIndian(c.totalAmount || 0)} Rupees</div>
+                     
+                     <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                       <div className="flex flex-col">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Opening</span>
+                         <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">₹{snapshots.prev.toLocaleString()}</span>
                        </div>
-                     )}
+                       <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Collector</span>
+                         <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 line-clamp-1">{c.staffName || 'System'}</span>
+                       </div>
+                       <div className="flex flex-col text-right">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Closing</span>
+                         <span className="text-[10px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                       </div>
+                     </div>
                    </div>
                  );
                })}
@@ -917,105 +756,76 @@ export default function OverviewTab({
               <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Recent Deposits</h2>
             </div>
             <div className="divide-y divide-slate-50 dark:divide-slate-800">
-                {safeDeposits.slice(0, 5).map((d, idx) => {
+               {safeDeposits.slice(0, 5).map((d, idx) => {
                  const snapshots = balanceSnapshots.get(d.id) || { prev: 0, next: 0 };
-                 const isExpanded = expandedDepositId === d.id;
-                 const den = d.denominations || {};
                  return (
-                   <div key={idx} className={`flex flex-col group border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/70 dark:bg-slate-950/50' : 'hover:bg-slate-50/50 dark:hover:bg-slate-850/10'}`} onClick={() => setExpandedDepositId(prev => prev === d.id ? null : d.id)}>
-                     <div className="p-4 flex flex-col gap-3">
-                       <div className="flex items-center justify-between text-[11px]">
-                         <div className="flex flex-col">
-                           <span className="font-extrabold text-slate-850 dark:text-slate-100">{d.targetName}</span>
-                           <span className="text-[9px] text-slate-400 font-bold uppercase">{d.date}</span>
-                         </div>
-                         <div className="flex items-center gap-2">
-                           <span className="font-black text-red-600 text-sm">-₹{(d.amount || 0).toLocaleString()}</span>
-                           <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                             <button
-                               onClick={() => shareDepositEntry({ deposit_type: d.depositType, target_name: d.targetName, portal_group_name: d.portalName, amount: d.amount, denominations: d.denominations, created_at: d.date, remarks: d.remarks }, d.staffName || 'Staff')}
-                               className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
-                               title="Share"
-                             >
-                               <Share2 className="w-3 h-3" />
-                             </button>
-                             <button 
-                               onClick={async () => {
-                                 const newAmount = prompt("Enter correct deposit amount:", d.amount.toString());
-                                 if(newAmount !== null && !isNaN(parseFloat(newAmount))) {
-                                   try {
-                                     await api.updateDeposit(d.id, {
-                                       deposit_type: d.depositType,
-                                       portal_id: d.portal_id,
-                                       retailer_id: d.retailer_id,
-                                       recipient_staff_id: d.recipient_staff_id,
-                                       amount: parseFloat(newAmount),
-                                       payment_mode: d.paymentMode,
-                                       deposit_date: d.date.split(' ')[0],
-                                       denominations: d.denominations
-                                     });
-                                     fetchData();
-                                   } catch (err: any) {
-                                     alert("Failed to update: " + err.message);
-                                   }
-                                 }
-                               }}
-                               className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
-                             >
-                               <Edit className="w-3 h-3" />
-                             </button>
-                             <button 
-                               onClick={async () => {
-                                 if(confirm("Delete this deposit?")) {
-                                   try {
-                                     await api.deleteDeposit(d.id);
-                                     fetchData();
-                                   } catch (err: any) {
-                                     alert("Failed to delete: " + err.message);
-                                   }
-                                 }
-                               }}
-                               className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
-                             >
-                               <Trash2 className="w-3 h-3" />
-                             </button>
-                             <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                           </div>
-                         </div>
+                   <div key={idx} className="p-4 flex flex-col gap-3 group border-b border-slate-50 dark:border-slate-800 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors">
+                     <div className="flex items-center justify-between text-[11px]">
+                       <div className="flex flex-col">
+                         <span className="font-extrabold text-slate-850 dark:text-slate-100">{d.targetName}</span>
+                         <span className="text-[9px] text-slate-400 font-bold uppercase">{d.date}</span>
                        </div>
-      
-                       <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
-                         <div className="flex flex-col">
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Opening</span>
-                           <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">₹{snapshots.prev.toLocaleString()}</span>
-                         </div>
-                         <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Deposited By</span>
-                           <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 line-clamp-1">{d.staffName || 'System'}</span>
-                         </div>
-                         <div className="flex flex-col text-right">
-                           <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Closing</span>
-                           <span className="text-[10px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                       <div className="flex items-center gap-3">
+                         <span className="font-black text-red-600 text-sm">-₹{(d.amount || 0).toLocaleString()}</span>
+                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                           <button 
+                             onClick={async () => {
+                               const newAmount = prompt("Enter correct deposit amount:", d.amount.toString());
+                               if(newAmount !== null && !isNaN(parseFloat(newAmount))) {
+                                 try {
+                                   await api.updateDeposit(d.id, {
+                                     deposit_type: d.depositType,
+                                     portal_id: d.portal_id,
+                                     retailer_id: d.retailer_id,
+                                     recipient_staff_id: d.recipient_staff_id,
+                                     amount: parseFloat(newAmount),
+                                     payment_mode: d.paymentMode,
+                                     deposit_date: d.date.split(' ')[0], // Extract YYYY-MM-DD
+                                     denominations: d.denominations
+                                   });
+                                   fetchData();
+                                 } catch (err: any) {
+                                   alert("Failed to update: " + err.message);
+                                 }
+                               }
+                             }}
+                             className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                           >
+                             <Edit className="w-3 h-3" />
+                           </button>
+                           <button 
+                             onClick={async () => {
+                               if(confirm("Delete this deposit?")) {
+                                 try {
+                                   await api.deleteDeposit(d.id);
+                                   fetchData();
+                                 } catch (err: any) {
+                                   alert("Failed to delete: " + err.message);
+                                 }
+                               }
+                             }}
+                             className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                           >
+                             <Trash2 className="w-3 h-3" />
+                           </button>
                          </div>
                        </div>
                      </div>
-                     {isExpanded && (
-                       <div className="px-4 pb-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
-                         <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1 mt-2">Cash Breakdown</span>
-                         <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
-                           {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
-                           {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
-                           {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
-                           {Number(den.note_50) > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
-                           {Number(den.note_20) > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
-                           {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
-                           {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
-                           {Number(den.online_amount) > 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
-                           {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && <span className="text-slate-400 italic col-span-3">No breakdown</span>}
-                         </div>
-                         <div className="mt-1 text-[10px] font-bold text-slate-500 italic">{numberToWordsIndian(d.amount || 0)} Rupees</div>
+ 
+                     <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                       <div className="flex flex-col">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Opening</span>
+                         <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">₹{snapshots.prev.toLocaleString()}</span>
                        </div>
-                     )}
+                       <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Deposited By</span>
+                         <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 line-clamp-1">{d.staffName || 'System'}</span>
+                       </div>
+                       <div className="flex flex-col text-right">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Closing</span>
+                         <span className="text-[10px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                       </div>
+                     </div>
                    </div>
                  );
                })}

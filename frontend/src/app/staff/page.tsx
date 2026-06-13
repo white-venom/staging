@@ -28,8 +28,12 @@ import {
   MapPin,
   Menu,
   X,
-  FileText
+  FileText,
+  Share2,
+  Edit2,
+  Trash2
 } from "lucide-react";
+import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../utils/shareHelper";
 
 const getUtcDate = (dateStr: any) => {
   if (!dateStr) return new Date();
@@ -51,6 +55,8 @@ export default function StaffDashboard() {
   const [syncStatusMsg, setSyncStatusMsg] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [cmsRemarksExpanded, setCmsRemarksExpanded] = useState<Record<string, boolean>>({});
+  const [expandedHomeId, setExpandedHomeId] = useState<string | null>(null);
+  const [homeEditingEntry, setHomeEditingEntry] = useState<any | null>(null);
 
   useEffect(() => {
     if (isSidebarOpen) {
@@ -759,12 +765,21 @@ export default function StaffDashboard() {
           <div className="space-y-1.5">
              {combinedLedger.slice().reverse().slice(0, 8).map((c: any) => {
                const snapshots = ledgerSnapshots.get(c.id) || { prev: 0, next: 0 };
+               const isExpanded = expandedHomeId === c.id;
+               const den = c.denominations || {};
+               const txAmount = c.totalAmount || 0;
+               // 5-minute edit/delete window check
+               const createdMs = c.date ? new Date(c.date.replace(' ', 'T') + 'Z').getTime() : 0;
+               const elapsedMin = (Date.now() - createdMs) / 60000;
+               const canEditDelete = elapsedMin <= 5;
                return (
                  <div
                    key={c.id}
-                   className="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1.5 shadow-sm hover:shadow-md transition-all group cursor-default"
+                   className={`rounded-lg border flex flex-col shadow-sm transition-all ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/80 border-blue-200/60 dark:border-blue-900/30' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:shadow-md cursor-pointer'}`}
+                   onClick={() => setExpandedHomeId(prev => prev === c.id ? null : c.id)}
                  >
-                   <div className="flex items-center justify-between">
+                   {/* Main row */}
+                   <div className="p-2 flex items-center justify-between">
                      <div className="flex items-center gap-2">
                        <div className={`w-7 h-7 rounded bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center transition-colors shadow-inner flex-shrink-0 ${c.type === 'collection' ? 'group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20' : 'group-hover:bg-red-50 dark:group-hover:bg-red-900/20'}`}>
                          {c.type === 'collection' ? (
@@ -808,14 +823,16 @@ export default function StaffDashboard() {
                          </div>
                        </div>
                      </div>
-                     <div className="text-right flex-shrink-0 ml-2">
+                     <div className="text-right flex-shrink-0 ml-2 flex items-center gap-1.5">
                        <span className={`text-xs font-black tracking-tight block ${c.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
                          {c.type === 'collection' ? '+' : '-'}₹{c.totalAmount.toLocaleString()}
                        </span>
+                       <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                      </div>
                    </div>
 
-                   <div className="grid grid-cols-3 gap-1 bg-slate-50/50 dark:bg-slate-950/50 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800/50">
+                   {/* Balance row */}
+                   <div className="grid grid-cols-3 gap-1 bg-slate-50/50 dark:bg-slate-950/50 mx-2 mb-2 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800/50">
                      <div className="flex flex-col">
                        <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
                        <span className="text-[9px] font-bold text-slate-500">₹{snapshots.prev.toLocaleString()}</span>
@@ -829,6 +846,84 @@ export default function StaffDashboard() {
                        <span className="text-[9px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
                      </div>
                    </div>
+
+                   {/* Expanded panel */}
+                   {isExpanded && (
+                     <div className="border-t border-slate-100 dark:border-slate-800 mx-2 mb-2 pt-2" onClick={e => e.stopPropagation()}>
+                       {/* Denomination breakdown */}
+                       <div className="mb-1.5">
+                         <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
+                         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-300">
+                           {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
+                           {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
+                           {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
+                           {Number(den.note_50) > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
+                           {Number(den.note_20) > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
+                           {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
+                           {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
+                           {Number(den.online_amount) > 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
+                           {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && <span className="text-slate-400 italic text-[8px]">No breakdown</span>}
+                         </div>
+                         <div className="mt-1 text-[9px] font-bold text-slate-500 italic">{numberToWordsIndian(txAmount)} Rupees</div>
+                       </div>
+                       {/* Action buttons */}
+                       <div className="flex gap-1.5 mt-1.5">
+                         <button
+                           onClick={() => {
+                             if (c.type === 'collection') {
+                               shareCollectionEntry({ retailer_name: c.retailerName, portal_name: c.portalName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.date + 'Z', remarks: c.remarks }, currentUser.name);
+                             } else {
+                               shareDepositEntry({ deposit_type: c.depositType, target_name: c.targetName, amount: c.totalAmount, denominations: c.denominations, created_at: c.date + 'Z', remarks: c.remarks }, currentUser.name, currentUser.id);
+                             }
+                           }}
+                           className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 active:scale-95 transition-transform"
+                         >
+                           <Share2 className="w-2.5 h-2.5" /> Share
+                         </button>
+                         {canEditDelete && (
+                           <>
+                             <button
+                               onClick={() => {
+                                 setHomeEditingEntry(c);
+                                 router.push(c.type === 'collection' ? '/staff/cash-in-ledger' : '/staff/cash-out-ledger');
+                               }}
+                               className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
+                             >
+                               <Edit2 className="w-2.5 h-2.5" /> Edit
+                             </button>
+                             <button
+                               onClick={async () => {
+                                 if (!confirm('Delete this entry?')) return;
+                                 try {
+                                   if (c.type === 'collection') {
+                                     await api.deleteCollection(c.id);
+                                   } else {
+                                     await api.deleteDeposit(c.id);
+                                   }
+                                   // Refresh data
+                                   const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
+                                   const { setCollections, setDeposits } = useAppStore.getState();
+                                   setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE').substring(0, 16) })));
+                                   setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, date: getUtcDate(d.created_at).toLocaleString('sv-SE').substring(0, 16) })));
+                                   setExpandedHomeId(null);
+                                 } catch (err: any) {
+                                   alert('Delete failed: ' + err.message);
+                                 }
+                               }}
+                               className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 active:scale-95 transition-transform"
+                             >
+                               <Trash2 className="w-2.5 h-2.5" /> Delete
+                             </button>
+                           </>
+                         )}
+                         {!canEditDelete && (
+                           <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50 dark:bg-slate-800/50 rounded-md border border-slate-100 dark:border-slate-800">
+                             Edit/Delete window (5 min) expired
+                           </div>
+                         )}
+                       </div>
+                     </div>
+                   )}
                  </div>
                );
              })}
