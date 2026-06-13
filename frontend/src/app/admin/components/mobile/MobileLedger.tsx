@@ -331,7 +331,7 @@ export default function MobileLedger() {
               ) : filteredLedger.map((item: any, idx) => {
                 const isExpanded = expandedLedgerId === (item.id || idx);
                 const den = item.denominations || {};
-                const txAmount = item.type === 'collection' ? (item.total_amount || item.amount || 0) : (item.amount || 0);
+                const txAmount = getTxAmount(item);
                 return (
                 <React.Fragment key={item.id || idx}>
                 <tr className={`hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedLedgerId(prev => prev === (item.id || idx) ? null : (item.id || idx))}>
