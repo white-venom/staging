@@ -32,6 +32,7 @@ class RetailerResponse(RetailerBase):
     opening_to_give: float
     opening_to_take: float
     balance: float = 0.00
+    is_active: bool = True
 
     class Config:
         from_attributes = True

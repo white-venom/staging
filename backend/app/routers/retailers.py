@@ -55,7 +55,7 @@ def list_retailers(
     current_user=Depends(require_any_user)
 ):
     """Get active retailers. All users can see all retailers for now."""
-    return db.scalars(select(Retailer).order_by(Retailer.retailer_name)).all()
+    return db.scalars(select(Retailer).where(Retailer.is_active == True).order_by(Retailer.retailer_name)).all()
 
 
 @router.put("/{retailer_id}", response_model=RetailerResponse)
@@ -121,7 +121,8 @@ def delete_retailer(
         if cms_count <= 1:
             raise HTTPException(status_code=400, detail="CMS retailer cannot be deleted")
 
-    db.delete(retailer)
+    # Soft delete instead of hard delete to preserve past transaction records
+    retailer.is_active = False
     db.commit()
     return None
 

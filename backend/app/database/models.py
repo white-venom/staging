@@ -59,6 +59,7 @@ class Retailer(Base):
     address: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     assigned_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     ledger_token: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False, default=lambda: uuid.uuid4().hex)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     
     # Financial state
     opening_to_give: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
