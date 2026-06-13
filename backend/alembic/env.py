@@ -18,8 +18,9 @@ from app.database.models import Base
 # access to the values within the .ini file in use.
 config = context.config
 
-# Overwrite database URL in alembic config with the environment variable
-config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))
+# Overwrite database URL in alembic config with the environment variable if not running tenant migrations
+if settings.DATABASE_URL and not os.environ.get("RUNNING_TENANT_MIGRATIONS"):
+    config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

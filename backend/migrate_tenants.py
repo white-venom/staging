@@ -12,6 +12,7 @@ from app.database.db import MasterSessionLocal, get_tenant_connection_string
 from app.database.master_models import Tenant
 
 def migrate_tenants():
+    os.environ["RUNNING_TENANT_MIGRATIONS"] = "true"
     print("🚀 Starting Tenant Database Migrations...")
     
     # 1. Fetch all active tenants from the master DB
