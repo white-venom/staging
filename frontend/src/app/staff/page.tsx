@@ -898,8 +898,7 @@ export default function StaffDashboard() {
                            <>
                              <button
                                onClick={() => {
-                                 setHomeEditingEntry(c);
-                                 router.push(c.type === 'collection' ? '/staff/cash-in-ledger' : '/staff/cash-out-ledger');
+                                 router.push(c.type === 'collection' ? `/collection?editId=${c.id}` : `/deposit?editId=${c.id}`);
                                }}
                                className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
                              >

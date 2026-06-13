@@ -311,6 +311,7 @@ def get_portal_ledger(
     # Fetch verified bank deposits for this portal
     deposits = db.scalars(
         select(BankDeposit)
+        .options(joinedload(BankDeposit.retailer))
         .where(
             and_(
                 BankDeposit.portal_id == portal_id,
@@ -336,10 +337,13 @@ def get_portal_ledger(
     
     for d in deposits:
         # Bank deposit into portal (cash deposit or online auto-route)
+        retailer_name = d.retailer.retailer_name if d.retailer else None
         if d.deposit_type == "portal":
             tx_type = "credit" # You Got
             amount = float(d.amount)
             desc_text = "Cash Deposit" if d.payment_mode == "cash" else "Online Collection Auto-Route"
+            if retailer_name:
+                desc_text += f" from {retailer_name}"
             if d.remarks:
                 desc_text += f" ({d.remarks})"
         elif d.deposit_type == "virtual":
@@ -347,10 +351,14 @@ def get_portal_ledger(
                 tx_type = "credit" # You Got
                 amount = float(d.amount)
                 desc_text = "Virtual Refund"
+                if retailer_name:
+                    desc_text += f" from {retailer_name}"
             else:
                 tx_type = "debit" # You Gave
                 amount = float(d.amount)
                 desc_text = "Virtual Transfer"
+                if retailer_name:
+                    desc_text += f" to {retailer_name}"
             if d.remarks:
                 desc_text += f" ({d.remarks})"
         else:

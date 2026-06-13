@@ -18,6 +18,9 @@ export default function PublicRetailerLedgerPage() {
         .then((res) => {
           setData(res);
           setLoading(false);
+          if (res && res.retailer_name) {
+            document.title = `Report of ${res.retailer_name}`;
+          }
         })
         .catch((err) => {
           setError(err.message || "Failed to load ledger statement.");
