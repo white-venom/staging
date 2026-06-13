@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Plus, Globe, Building, X, CreditCard, ChevronRight, Edit, Trash2 } from "lucide-react";
+import { Search, Plus, Globe, Building, X, CreditCard, ChevronRight, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { api } from "../../../utils/api";
 
 interface PortalsTabProps {
@@ -42,6 +42,11 @@ export default function PortalsTab({
   const [editGroupOnline, setEditGroupOnline] = useState(false);
   const [newAccOnline, setNewAccOnline] = useState(false);
   const [editAccOnline, setEditAccOnline] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroupExpand = (groupId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
 
 
 
@@ -269,26 +274,34 @@ export default function PortalsTab({
                       </span>
                     </div>
                   </div>
-
                   {/* Registered bank accounts with balances */}
                   {group.portals && group.portals.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider mb-1">Registered Banks</p>
-                      <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                        {group.portals.map((p: any) => (
-                          <div key={p.id} className="text-[10px] text-slate-505 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-bold text-slate-805 dark:text-slate-200 truncate flex items-center gap-1.5">
-                                {p.portal_name}
+                      <button
+                        onClick={() => toggleGroupExpand(group.id)}
+                        className="w-full flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-wider hover:text-indigo-650 transition-colors"
+                      >
+                        <span>Registered Banks ({group.portals.length})</span>
+                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedGroups[group.id] ? "rotate-180 text-indigo-600" : ""}`} />
+                      </button>
+                      
+                      {expandedGroups[group.id] && (
+                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1 mt-2 animate-slide-down">
+                          {group.portals.map((p: any) => (
+                            <div key={p.id} className="text-[10px] text-slate-505 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-955 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/60">
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-slate-805 dark:text-slate-200 truncate flex items-center gap-1.5">
+                                  {p.portal_name}
+                                </span>
+                                <span className="text-[8px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
+                              </div>
+                              <span className="font-black text-slate-700 dark:text-slate-300 flex-shrink-0">
+                                ₹{Number(p.balance || 0).toLocaleString()}
                               </span>
-                              <span className="text-[8px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
                             </div>
-                            <span className="font-black text-slate-700 dark:text-slate-300 flex-shrink-0">
-                              ₹{Number(p.balance || 0).toLocaleString()}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
 

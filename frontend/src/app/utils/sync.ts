@@ -55,6 +55,7 @@ export async function syncOfflineData(): Promise<number> {
       await api.createCollection({
         retailer_id: col.retailer_id,
         store_id: col.store_id,
+        portal_id: col.portal_id,
         total_amount: col.totalAmount,
         denominations: col.denominations,
         remarks: col.remarks

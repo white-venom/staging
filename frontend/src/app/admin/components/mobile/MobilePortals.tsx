@@ -9,7 +9,8 @@ import {
   X,
   ArrowLeft,
   CreditCard,
-  Edit
+  Edit,
+  ChevronDown
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
@@ -49,6 +50,12 @@ export default function MobilePortals({
   const [pGroupOnline, setPGroupOnline] = useState(false);
   const [editGroupOnline, setEditGroupOnline] = useState(false);
   const [newAccOnline, setNewAccOnline] = useState(false);
+
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroupExpand = (groupId: string) => {
+    setExpandedGroups(prev => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
 
   const handleStartEditPortal = (group: any) => {
     setEditingPortalGroup(group);
@@ -302,27 +309,39 @@ export default function MobilePortals({
                 {/* Sub-portals List */}
                 {group.portals && group.portals.length > 0 && (
                   <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
-                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Registered Banks</p>
-                    {group.portals.map((p: any) => (
-                      <div key={p.id} className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-955 p-1 px-1.5 rounded border border-slate-100 dark:border-slate-800">
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-bold text-slate-800 dark:text-slate-200 truncate flex items-center gap-1">
-                            {p.portal_name}
-                          </span>
-                          <span className="text-[7px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="font-black text-slate-700 dark:text-slate-300">₹{Number(p.balance || 0).toLocaleString()}</span>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteBankAccount(p.id, p.portal_name)}
-                            className="p-0.5 hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 className="w-2.5 h-2.5 text-slate-400 hover:text-red-500 cursor-pointer" />
-                          </button>
-                        </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleGroupExpand(group.id)}
+                      className="w-full flex items-center justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 hover:text-indigo-650 transition-colors"
+                    >
+                      <span>Registered Banks ({group.portals.length})</span>
+                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.id] ? "rotate-180 text-indigo-600" : ""}`} />
+                    </button>
+                    
+                    {expandedGroups[group.id] && (
+                      <div className="space-y-1 mt-1">
+                        {group.portals.map((p: any) => (
+                          <div key={p.id} className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-955 p-1 px-1.5 rounded border border-slate-100 dark:border-slate-800">
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate flex items-center gap-1">
+                                {p.portal_name}
+                              </span>
+                              <span className="text-[7px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <span className="font-black text-slate-700 dark:text-slate-300">₹{Number(p.balance || 0).toLocaleString()}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBankAccount(p.id, p.portal_name)}
+                                className="p-0.5 hover:text-red-500 transition-colors"
+                              >
+                                <Trash2 className="w-2.5 h-2.5 text-slate-400 hover:text-red-500 cursor-pointer" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
 

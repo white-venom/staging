@@ -255,11 +255,16 @@ function NewCollectionContent() {
 
     // INTERCEPT OFFLINE SUBMISSIONS:
     if (!isOnline) {
+      const onlinePortalName = denominations.online_amount > 0 && denominations.online_portal_id
+        ? portals.find(p => p.id === denominations.online_portal_id)?.name || "Online"
+        : (selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash");
+
       await db.collections.add({
         retailer_id: selectedRetailer!.id,
         store_id: selectedStoreId || undefined,
+        portal_id: denominations.online_portal_id || undefined,
         retailerName: selectedRetailer?.name || "Unknown",
-        portalName: selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash",
+        portalName: onlinePortalName,
         totalAmount: totalCollectionAmount,
         denominations,
         remarks: remarks || "Offline transaction logs",
@@ -280,6 +285,7 @@ function NewCollectionContent() {
         from_staff_id: sourceType === "staff" ? selectedStaffId : null,
         from_office: sourceType === "office",
         store_id: selectedStoreId || null,
+        portal_id: denominations.online_portal_id || null,
         total_amount: totalCollectionAmount,
         denominations: denominations,
         remarks: remarks || "Immediate credit logged"
@@ -290,11 +296,15 @@ function NewCollectionContent() {
       } else {
         await api.createCollection(payload);
         // If successful create, update Zustand
+        const onlinePortalName = denominations.online_amount > 0 && denominations.online_portal_id
+          ? portals.find(p => p.id === denominations.online_portal_id)?.name || "Online"
+          : (selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash");
+          
         addCollection({
           retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
           store_id: selectedStoreId || undefined,
           retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
-          portalName: selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash",
+          portalName: onlinePortalName,
           totalAmount: totalCollectionAmount,
           denominations,
           remarks: remarks || "Immediate credit logged"
@@ -307,11 +317,15 @@ function NewCollectionContent() {
       
       // FALLBACK for local testing: if backend is not linked or IDs are invalid
       // We still update the local store so it shows up in the Admin Panel
+      const onlinePortalName = denominations.online_amount > 0 && denominations.online_portal_id
+        ? portals.find(p => p.id === denominations.online_portal_id)?.name || "Online"
+        : (selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash");
+
       addCollection({
         retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
         store_id: selectedStoreId || undefined,
         retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
-        portalName: selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash",
+        portalName: onlinePortalName,
         totalAmount: totalCollectionAmount,
         denominations,
         remarks: remarks || "Logged locally (Backend failed/unlinked)"

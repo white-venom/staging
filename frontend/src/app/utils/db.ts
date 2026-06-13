@@ -5,6 +5,7 @@ export interface OfflineCollection {
   id?: number;
   retailer_id: string;
   store_id?: string;
+  portal_id?: string;
   retailerName: string;
   portalName: string;
   totalAmount: number;
