@@ -5,6 +5,7 @@ import { Search, Plus, X, Store as StoreIcon, Trash2, Edit2, Check, Phone, MapPi
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
 import { useRouter } from "next/navigation";
+import LedgerReportView from "../../../components/LedgerReportView";
 
 interface RetailersTabProps {
   retailerDirectory: any[];
@@ -28,6 +29,29 @@ export default function RetailersTab({
   const [newStoreName, setNewStoreName] = useState("");
   const [newStoreArea, setNewStoreArea] = useState("");
   const [isCreatingStore, setIsCreatingStore] = useState(false);
+
+  // Ledger Report View State
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
+  const [ledgerRetailer, setLedgerRetailer] = useState<any | null>(null);
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  const handleOpenLedger = async (retailer: any) => {
+    setLedgerRetailer(retailer);
+    setIsLedgerModalOpen(true);
+    setLoadingLedger(true);
+    try {
+      const res = await api.getPublicLedger(retailer.ledger_token);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      alert("Failed to load ledger: " + err.message);
+      setIsLedgerModalOpen(false);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
 
   // Retailer Edit state
   const [isEditRetailerModalOpen, setIsEditRetailerModalOpen] = useState(false);
@@ -307,7 +331,13 @@ export default function RetailersTab({
                 )}
               </div>
 
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => handleOpenLedger(retailer)}
+                  className="py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-105 dark:border-emerald-800/40 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center"
+                >
+                  View Ledger
+                </button>
                 <button
                   onClick={() => {
                     setLedgerSearchTerm(retailer.name);
@@ -315,16 +345,16 @@ export default function RetailersTab({
                   }}
                   className="py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-650 dark:text-slate-350 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer"
                 >
-                  Audit Ledger
+                  Audit
                 </button>
                 <button
                   onClick={() => {
                     setSelectedRetailer(retailer);
                     setIsStoreModalOpen(true);
                   }}
-                  className="py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1.5"
+                  className="py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1"
                 >
-                  <StoreIcon className="w-3.5 h-3.5" /> Manage Stores
+                  Stores
                 </button>
               </div>
             </div>
@@ -504,6 +534,30 @@ export default function RetailersTab({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {isLedgerModalOpen && ledgerRetailer && (
+        <div className="fixed inset-0 bg-slate-955 z-50 overflow-y-auto select-none">
+          {loadingLedger ? (
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <LedgerReportView 
+              title={ledgerRetailer.name}
+              subtitle={`Route: ${ledgerRetailer.area} • Phone: ${ledgerRetailer.phone}`}
+              data={ledgerData}
+              outstandingBalance={ledgerOutstanding}
+              isPublic={false}
+              onBack={() => {
+                setIsLedgerModalOpen(false);
+                setLedgerRetailer(null);
+                setLedgerData([]);
+              }}
+              publicLink={typeof window !== "undefined" ? `${window.location.origin}/public/ledger/${ledgerRetailer.ledger_token}` : ""}
+            />
+          )}
         </div>
       )}
     </div>

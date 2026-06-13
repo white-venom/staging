@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
+import LedgerReportView from "../../../components/LedgerReportView";
 
 interface MobilePortalsProps {
   portalDirectory: any[];
@@ -29,6 +30,29 @@ export default function MobilePortals({
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Ledger Report View State
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
+  const [ledgerPortal, setLedgerPortal] = useState<any | null>(null);
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  const handleOpenLedger = async (portal: any) => {
+    setLedgerPortal(portal);
+    setIsLedgerModalOpen(true);
+    setLoadingLedger(true);
+    try {
+      const res = await api.getPortalLedger(portal.id);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      showToastNotification("Failed to load ledger: " + err.message);
+      setIsLedgerModalOpen(false);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
 
   // Portal form states
   const [pName, setPName] = useState("");
@@ -332,6 +356,13 @@ export default function MobilePortals({
                               <span className="font-black text-slate-700 dark:text-slate-300">₹{Number(p.balance || 0).toLocaleString()}</span>
                               <button
                                 type="button"
+                                onClick={() => handleOpenLedger(p)}
+                                className="px-1 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-955/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
+                              >
+                                Ledger
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => handleDeleteBankAccount(p.id, p.portal_name)}
                                 className="p-0.5 hover:text-red-500 transition-colors"
                               >
@@ -484,6 +515,29 @@ export default function MobilePortals({
               </button>
             </form>
           </div>
+        </div>
+      )}
+
+      {isLedgerModalOpen && ledgerPortal && (
+        <div className="fixed inset-0 bg-slate-955 z-50 overflow-y-auto select-none">
+          {loadingLedger ? (
+            <div className="min-h-screen bg-slate-955 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <LedgerReportView 
+              title={ledgerPortal.portal_name || ledgerPortal.name}
+              subtitle={`Bank: ${ledgerPortal.bank_name || 'N/A'} • A/C: ${ledgerPortal.bank_account_no || 'N/A'}`}
+              data={ledgerData}
+              outstandingBalance={ledgerOutstanding}
+              isPublic={false}
+              onBack={() => {
+                setIsLedgerModalOpen(false);
+                setLedgerPortal(null);
+                setLedgerData([]);
+              }}
+            />
+          )}
         </div>
       )}
     </div>

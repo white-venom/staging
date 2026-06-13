@@ -48,6 +48,7 @@ class CollectionResponse(BaseModel):
     
     # Virtual fields populated by router
     retailer_name: Optional[str] = None
+    retailer_ledger_token: Optional[str] = None
     store_name: Optional[str] = None
     staff_name: Optional[str] = None
     from_staff_name: Optional[str] = None

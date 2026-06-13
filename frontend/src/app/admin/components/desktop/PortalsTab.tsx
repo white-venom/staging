@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Search, Plus, Globe, Building, X, CreditCard, ChevronRight, ChevronDown, Edit, Trash2 } from "lucide-react";
 import { api } from "../../../utils/api";
+import LedgerReportView from "../../../components/LedgerReportView";
 
 interface PortalsTabProps {
   portalDirectory: any[]; // These will be Portal Groups now
@@ -28,6 +29,29 @@ export default function PortalsTab({
   const [newAccIfsc, setNewAccIfsc] = useState("");
   const [newAccGroupId, setNewAccGroupId] = useState("");
   const [isCreatingAcc, setIsCreatingAcc] = useState(false);
+
+  // Ledger Report View State
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
+  const [ledgerPortal, setLedgerPortal] = useState<any | null>(null);
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  const handleOpenLedger = async (portal: any) => {
+    setLedgerPortal(portal);
+    setIsLedgerModalOpen(true);
+    setLoadingLedger(true);
+    try {
+      const res = await api.getPortalLedger(portal.id);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      alert("Failed to load ledger: " + err.message);
+      setIsLedgerModalOpen(false);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
 
   // Edit states
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -295,9 +319,18 @@ export default function PortalsTab({
                                 </span>
                                 <span className="text-[8px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
                               </div>
-                              <span className="font-black text-slate-700 dark:text-slate-300 flex-shrink-0">
-                                ₹{Number(p.balance || 0).toLocaleString()}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-slate-700 dark:text-slate-300 flex-shrink-0">
+                                  ₹{Number(p.balance || 0).toLocaleString()}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenLedger(p)}
+                                  className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-955/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
+                                >
+                                  Ledger
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -493,10 +526,20 @@ export default function PortalsTab({
                             <div className="text-slate-707 dark:text-slate-300 font-bold">{acc.bank_account_no || "N/A"}</div>
                             <div className="text-slate-400">IFSC</div>
                             <div className="text-slate-707 dark:text-slate-300 font-bold">{acc.ifsc_code || "N/A"}</div>
-                            <div className="text-slate-400 font-bold text-indigo-600 dark:text-indigo-400">Balance</div>
-                            <div className="text-indigo-650 dark:text-indigo-400 font-black">
-                              ₹{Number(acc.balance || 0).toLocaleString()}
-                            </div>
+                            <div className="text-slate-400 font-bold text-indigo-650 dark:text-indigo-400">Balance</div>
+                            <div className="flex items-center justify-between text-indigo-650 dark:text-indigo-400 font-black">
+                               <span>₹{Number(acc.balance || 0).toLocaleString()}</span>
+                               <button
+                                 type="button"
+                                 onClick={() => {
+                                   setIsAccountModalOpen(false);
+                                   handleOpenLedger(acc);
+                                 }}
+                                 className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-955/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
+                               >
+                                 Ledger
+                               </button>
+                             </div>
                           </div>
                         )}
                       </div>
@@ -554,6 +597,29 @@ export default function PortalsTab({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {isLedgerModalOpen && ledgerPortal && (
+        <div className="fixed inset-0 bg-slate-955 z-50 overflow-y-auto select-none">
+          {loadingLedger ? (
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <LedgerReportView 
+              title={ledgerPortal.portal_name || ledgerPortal.name}
+              subtitle={`Bank: ${ledgerPortal.bank_name || 'N/A'} • A/C: ${ledgerPortal.bank_account_no || 'N/A'}`}
+              data={ledgerData}
+              outstandingBalance={ledgerOutstanding}
+              isPublic={false}
+              onBack={() => {
+                setIsLedgerModalOpen(false);
+                setLedgerPortal(null);
+                setLedgerData([]);
+              }}
+            />
+          )}
         </div>
       )}
     </div>

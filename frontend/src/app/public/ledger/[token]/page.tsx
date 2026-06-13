@@ -2,71 +2,69 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { api } from "../../../utils/api";
+import LedgerReportView from "../../../components/LedgerReportView";
 
-export default function LedgerReceiptPage() {
+export default function PublicRetailerLedgerPage() {
   const params = useParams();
   const token = params.token as string;
-
+  const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    // In a real application, you would fetch the ledger details using this token
-    // from your backend API: `/api/public/ledger/${token}`
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-
-    return () => clearTimeout(timer);
+    if (token) {
+      api.getPublicLedger(token)
+        .then((res) => {
+          setData(res);
+          setLoading(false);
+        })
+        .catch((err) => {
+          setError(err.message || "Failed to load ledger statement.");
+          setLoading(false);
+        });
+    }
   }, [token]);
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center border border-gray-100">
-        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-        </div>
-        
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Transaction Successful</h1>
-        
-        {loading ? (
-          <div className="animate-pulse space-y-4 mt-8">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto"></div>
-            <div className="h-8 bg-gray-200 rounded w-full mt-6"></div>
-          </div>
-        ) : (
-          <div className="mt-8 text-left">
-            <p className="text-gray-600 mb-6 text-center">
-              Your ledger has been successfully updated. This is a secure digital receipt.
-            </p>
-            
-            <div className="bg-gray-50 rounded-lg p-4 mb-6">
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-500">Secure Token:</span>
-                <span className="font-mono text-xs text-gray-800 bg-gray-200 px-2 py-1 rounded">{token.substring(0, 8)}...</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-500">Date:</span>
-                <span className="font-medium text-gray-800">{new Date().toLocaleDateString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Status:</span>
-                <span className="font-medium text-green-600">Verified</span>
-              </div>
-            </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition duration-200 ease-in-out">
-              Download Full Statement
-            </button>
-          </div>
-        )}
-        
-        <div className="mt-8 text-sm text-gray-400">
-          Powered by CrediiFlow
+  if (error || !data) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+        <div className="text-center text-red-500 font-bold bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full">
+          <p className="text-sm">{error || "Invalid or expired secure statement link."}</p>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  const formattedHistory = (data.statement_history || []).map((tx: any) => ({
+    id: String(tx.id),
+    date: tx.date,
+    transaction_type: tx.transaction_type, // 'credit' or 'debit'
+    amount: Number(tx.amount),
+    running_balance: Number(tx.running_balance),
+    description: tx.description
+  }));
+
+  const publicLink = typeof window !== "undefined" 
+    ? `${window.location.origin}/public/ledger/${token}`
+    : "";
+
+  return (
+    <LedgerReportView 
+      title={data.retailer_name}
+      subtitle={data.phone ? `Phone: ${data.phone}` : `Route: ${data.address}`}
+      data={formattedHistory}
+      outstandingBalance={data.outstanding_balance}
+      isPublic={true}
+      publicLink={publicLink}
+    />
   );
 }

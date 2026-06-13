@@ -41,6 +41,7 @@ export interface CollectionItem {
   status: "pending" | "verified";
   remarks?: string;
   date: string;
+  retailer_ledger_token?: string;
 }
 
 export interface DepositItem {
@@ -55,6 +56,7 @@ export interface DepositItem {
   denominations?: DenominationCounts;
   status: "pending" | "verified";
   date: string;
+  retailer_ledger_token?: string;
 }
 
 interface AppStore {

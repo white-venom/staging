@@ -50,6 +50,7 @@ export const shareCollectionEntry = async (entry: {
   denominations?: Record<string, number>;
   created_at?: string;
   remarks?: string;
+  retailer_ledger_token?: string;
 }, staffName: string) => {
   const den = entry.denominations || {};
 
@@ -100,11 +101,16 @@ export const shareCollectionEntry = async (entry: {
     headerLines.push(`Store: ${entry.portal_name}`);
   }
   const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
+
+  const ledgerUrl = entry.retailer_ledger_token
+    ? `\n\nLedger: ${typeof window !== "undefined" ? window.location.origin : ""}/public/ledger/${entry.retailer_ledger_token}`
+    : "";
+
   const text = `${headerText}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 Total : *₹ ${totalVal.toLocaleString("en-IN")}*  (Note: ${totalNotesCount})
 
-${totalWords}
+${totalWords}${ledgerUrl}
 
 ${staffName}
 ${dateFormatted}`;
@@ -112,7 +118,6 @@ ${dateFormatted}`;
   await _doShare("Collection Receipt", text);
 };
 
-// Share a Cash Out (deposit) entry
 export const shareDepositEntry = async (entry: {
   deposit_type?: string;
   target_name?: string;
@@ -123,6 +128,7 @@ export const shareDepositEntry = async (entry: {
   created_at?: string;
   remarks?: string;
   recipient_staff_id?: string;
+  retailer_ledger_token?: string;
 }, staffName: string, currentUserId?: string) => {
   const den = entry.denominations || {};
   const isRecipient = entry.recipient_staff_id === currentUserId && entry.deposit_type === "staff";
@@ -175,11 +181,16 @@ export const shareDepositEntry = async (entry: {
   }
 
   const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
+
+  const ledgerUrl = entry.retailer_ledger_token
+    ? `\n\nLedger: ${typeof window !== "undefined" ? window.location.origin : ""}/public/ledger/${entry.retailer_ledger_token}`
+    : "";
+
   const text = `${headerText}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 Total : *₹ ${Math.abs(totalVal).toLocaleString("en-IN")}*  (Note: ${totalNotesCount})
 
-${totalWords}
+${totalWords}${ledgerUrl}
 
 ${staffName}
 ${dateFormatted}`;

@@ -192,6 +192,8 @@ def submit_deposit(
         elif dt == "retailer":
             retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
             db_deposit.target_name = retailer.retailer_name if retailer else "Retailer Store"
+            if retailer:
+                db_deposit.retailer_ledger_token = retailer.ledger_token
         elif dt == "staff":
             if payload.to_office:
                 db_deposit.target_name = "Main Office Cashier"
@@ -207,6 +209,8 @@ def submit_deposit(
             p_name = portal.portal_name if portal else "Portal"
             r_name = retailer.retailer_name if retailer else "Retailer"
             db_deposit.target_name = f"Virtual: {p_name} ➔ {r_name}"
+            if retailer:
+                db_deposit.retailer_ledger_token = retailer.ledger_token
             if portal and portal.group:
                 db_deposit.portal_group_name = portal.group.name
                 db_deposit.portal_group_id = portal.group.id
@@ -283,6 +287,8 @@ def list_deposits(
                 dep.portal_group_id = dep.portal.group.id
         elif dep.deposit_type == "retailer":
             dep.target_name = dep.retailer.retailer_name if dep.retailer else "Retailer Store"
+            if dep.retailer:
+                dep.retailer_ledger_token = dep.retailer.ledger_token
         elif dep.deposit_type == "staff":
             if dep.to_office:
                 dep.target_name = "Main Office Cashier"
@@ -295,6 +301,7 @@ def list_deposits(
             portal_obj = dep.portal
             if dep.retailer:
                 dep.target_name = f"Retailer Limit: {dep.retailer.retailer_name}"
+                dep.retailer_ledger_token = dep.retailer.ledger_token
             elif dep.recipient_staff:
                 dep.target_name = f"Staff Limit: {dep.recipient_staff.name}"
             else:
@@ -563,6 +570,7 @@ def update_deposit(
     
     if deposit.retailer_id and deposit.retailer:
         deposit.target_name = f"Retailer Limit: {deposit.retailer.retailer_name}" if deposit.deposit_type == "virtual" else deposit.retailer.retailer_name
+        deposit.retailer_ledger_token = deposit.retailer.ledger_token
     elif deposit.recipient_staff_id and deposit.recipient_staff:
         deposit.target_name = f"Staff Limit: {deposit.recipient_staff.name}" if deposit.deposit_type == "virtual" else deposit.recipient_staff.name
     else:

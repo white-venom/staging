@@ -318,4 +318,6 @@ export const api = {
   logout: () => request<any>("/auth/logout", {
     method: "POST",
   }),
+  getPublicLedger: (token: string) => request<any>(`/public/ledger/${token}`),
+  getPortalLedger: (portalId: string) => request<any>(`/portals/${portalId}/ledger`),
 };

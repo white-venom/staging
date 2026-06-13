@@ -15,6 +15,7 @@ import {
 import { api } from "@/app/utils/api";
 import Link from "next/link";
 import { useAdmin } from "../../context/AdminContext";
+import LedgerReportView from "../../../components/LedgerReportView";
 
 interface MobileRetailersProps {
   retailerDirectory: any[];
@@ -31,6 +32,29 @@ export default function MobileRetailers({
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Ledger Report View State
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
+  const [ledgerRetailer, setLedgerRetailer] = useState<any | null>(null);
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  const handleOpenLedger = async (retailer: any) => {
+    setLedgerRetailer(retailer);
+    setIsLedgerModalOpen(true);
+    setLoadingLedger(true);
+    try {
+      const res = await api.getPublicLedger(retailer.ledger_token);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      showToastNotification("Failed to load ledger: " + err.message);
+      setIsLedgerModalOpen(false);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
 
   // Form states
   const [retName, setRetName] = useState("");
@@ -390,6 +414,13 @@ export default function MobileRetailers({
                       </button>
                     )}
                     <button
+                      onClick={() => handleOpenLedger(retailer)}
+                      className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-955/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-bold rounded cursor-pointer"
+                      title="View Ledger"
+                    >
+                      Ledger
+                    </button>
+                    <button
                       onClick={() => {
                         setSelectedRetailerStore(retailer);
                         setIsStoreModalOpen(true);
@@ -616,6 +647,30 @@ export default function MobileRetailers({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {isLedgerModalOpen && ledgerRetailer && (
+        <div className="fixed inset-0 bg-slate-955 z-50 overflow-y-auto select-none">
+          {loadingLedger ? (
+            <div className="min-h-screen bg-slate-955 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <LedgerReportView 
+              title={ledgerRetailer.name}
+              subtitle={`Route: ${ledgerRetailer.area} • Phone: ${ledgerRetailer.phone}`}
+              data={ledgerData}
+              outstandingBalance={ledgerOutstanding}
+              isPublic={false}
+              onBack={() => {
+                setIsLedgerModalOpen(false);
+                setLedgerRetailer(null);
+                setLedgerData([]);
+              }}
+              publicLink={typeof window !== "undefined" ? `${window.location.origin}/public/ledger/${ledgerRetailer.ledger_token}` : ""}
+            />
+          )}
         </div>
       )}
     </div>

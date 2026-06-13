@@ -66,6 +66,7 @@ class DepositResponse(BaseModel):
     portal_group_id: Optional[uuid.UUID] = None
     staff_name: Optional[str] = None
     is_refund: Optional[bool] = None  # True when this is a "Move to Distributor" reverse transfer
+    retailer_ledger_token: Optional[str] = None
 
     class Config:
         from_attributes = True

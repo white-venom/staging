@@ -287,3 +287,121 @@ def delete_portal(
             db.commit()
             
     return None
+
+
+@router.get("/{portal_id}/ledger")
+def get_portal_ledger(
+    portal_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_any_user)
+):
+    """Fetch chronological transaction ledger for a portal/bank/wallet account."""
+    from sqlalchemy import and_
+    from sqlalchemy.orm import joinedload
+    from app.database.models import BankDeposit, Collection
+    
+    portal = db.scalar(
+        select(Portal)
+        .options(joinedload(Portal.group))
+        .where(Portal.id == portal_id)
+    )
+    if not portal:
+        raise HTTPException(status_code=404, detail="Portal not found")
+
+    # Fetch verified bank deposits for this portal
+    deposits = db.scalars(
+        select(BankDeposit)
+        .where(
+            and_(
+                BankDeposit.portal_id == portal_id,
+                BankDeposit.status == "verified"
+            )
+        )
+    ).all()
+
+    # Fetch verified collections for this portal
+    collections = db.scalars(
+        select(Collection)
+        .options(joinedload(Collection.retailer))
+        .where(
+            and_(
+                Collection.portal_id == portal_id,
+                Collection.status == "verified"
+            )
+        )
+    ).all()
+
+    # Merge and sort chronologically
+    tx_list = []
+    
+    for d in deposits:
+        # Bank deposit into portal (cash deposit or online auto-route)
+        if d.deposit_type == "portal":
+            tx_type = "credit" # You Got
+            amount = float(d.amount)
+            desc_text = "Cash Deposit" if d.payment_mode == "cash" else "Online Collection Auto-Route"
+            if d.remarks:
+                desc_text += f" ({d.remarks})"
+        elif d.deposit_type == "virtual":
+            if d.payment_mode == "refund":
+                tx_type = "credit" # You Got
+                amount = float(d.amount)
+                desc_text = "Virtual Refund"
+            else:
+                tx_type = "debit" # You Gave
+                amount = float(d.amount)
+                desc_text = "Virtual Transfer"
+            if d.remarks:
+                desc_text += f" ({d.remarks})"
+        else:
+            continue
+            
+        tx_list.append({
+            "id": str(d.id),
+            "created_at": d.created_at,
+            "transaction_type": tx_type,
+            "amount": amount,
+            "description": desc_text
+        })
+
+    for c in collections:
+        # Collection associated with portal (normally cash collection associated with portal)
+        tx_list.append({
+            "id": str(c.id),
+            "created_at": c.created_at,
+            "transaction_type": "debit", # You Gave (decreases portal balance)
+            "amount": float(c.total_amount),
+            "description": f"Collection from {c.retailer.retailer_name if c.retailer else 'Retailer'}" + (f" ({c.remarks})" if c.remarks else "")
+        })
+
+    # Sort transactions by created_at ascending to calculate running balance
+    tx_list.sort(key=lambda x: x["created_at"])
+
+    # Calculate running balance
+    running_balance = float(portal.opening_to_take - portal.opening_to_give)
+    formatted_txs = []
+    
+    for tx in tx_list:
+        if tx["transaction_type"] == "credit":
+            running_balance += tx["amount"]
+        else:
+            running_balance -= tx["amount"]
+            
+        formatted_txs.append({
+            "id": tx["id"],
+            "date": tx["created_at"].strftime("%Y-%m-%d %H:%M:%S"),
+            "transaction_type": tx["transaction_type"],
+            "amount": tx["amount"],
+            "running_balance": running_balance,
+            "description": tx["description"]
+        })
+
+    return {
+        "portal_name": portal.portal_name,
+        "group_name": portal.group.name if portal.group else None,
+        "bank_name": portal.bank_name,
+        "bank_account_no": portal.bank_account_no,
+        "ifsc_code": portal.ifsc_code,
+        "outstanding_balance": float(portal.balance),
+        "statement_history": formatted_txs
+    }
