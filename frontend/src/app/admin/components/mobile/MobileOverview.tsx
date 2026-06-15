@@ -179,22 +179,56 @@ export default function MobileOverview({
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
     return (staffUsers || []).map((user: { name: string }) => {
       const name = user.name;
-      
-      // Filter collections today by staff name
+
+      // Today's collections & deposits
       const staffColsToday = (collections || []).filter(
         (c) => c.staffName === name && c.date?.startsWith(todayStr)
       );
-
-      // Filter deposits today by staff name
       const staffDepsToday = (deposits || []).filter(
         (d) => d.staffName === name && d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
       );
 
+      // Previous days' collections & deposits
+      const staffColsPrev = (collections || []).filter(
+        (c) => c.staffName === name && !c.date?.startsWith(todayStr)
+      );
+      const staffDepsPrev = (deposits || []).filter(
+        (d) => d.staffName === name && !d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
+      );
+
       const collectedToday = staffColsToday.reduce((s, c) => s + (c.totalAmount || 0), 0);
       const depositedToday = staffDepsToday.reduce((s, d) => s + (d.amount || 0), 0);
+      const oldBalance = staffColsPrev.reduce((s, c) => s + (c.totalAmount || 0), 0)
+                       - staffDepsPrev.reduce((s, d) => s + (d.amount || 0), 0);
+      const netBalance = oldBalance + collectedToday - depositedToday;
       const remainingToday = collectedToday - depositedToday;
 
-      // Get visited stores today (unique store/retailer name with visit details)
+      // Net denomination breakdown (all collections minus all deposits)
+      const allCols = [...staffColsToday, ...staffColsPrev];
+      const allDeps = [...staffDepsToday, ...staffDepsPrev];
+      const netDen = { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online: 0 };
+      allCols.forEach(c => {
+        netDen.note_500 += Number(c.denominations?.note_500 || 0);
+        netDen.note_200 += Number(c.denominations?.note_200 || 0);
+        netDen.note_100 += Number(c.denominations?.note_100 || 0);
+        netDen.note_50  += Number(c.denominations?.note_50  || 0);
+        netDen.note_20  += Number(c.denominations?.note_20  || 0);
+        netDen.note_10  += Number(c.denominations?.note_10  || 0);
+        netDen.coins    += Number(c.denominations?.coins     || 0);
+        netDen.online   += Number(c.denominations?.online_amount || 0);
+      });
+      allDeps.forEach(d => {
+        netDen.note_500 -= Number(d.denominations?.note_500 || 0);
+        netDen.note_200 -= Number(d.denominations?.note_200 || 0);
+        netDen.note_100 -= Number(d.denominations?.note_100 || 0);
+        netDen.note_50  -= Number(d.denominations?.note_50  || 0);
+        netDen.note_20  -= Number(d.denominations?.note_20  || 0);
+        netDen.note_10  -= Number(d.denominations?.note_10  || 0);
+        netDen.coins    -= Number(d.denominations?.coins     || 0);
+        netDen.online   -= Number(d.denominations?.online_amount || 0);
+      });
+
+      // Visited stores today
       const visitedStores = staffColsToday.map((c) => ({
         id: c.id,
         retailerName: c.retailerName,
@@ -203,7 +237,7 @@ export default function MobileOverview({
         status: c.status || "verified",
       }));
 
-      // Get compliance/attendance log for this staff member (prioritize active/latest shift, trim and ignore case)
+      // Compliance/attendance log
       const compliance = (staffComplianceLogs || [])
         .filter((log) => log.name?.trim().toLowerCase() === name.trim().toLowerCase())
         .sort((a, b) => {
@@ -217,6 +251,9 @@ export default function MobileOverview({
         collectedToday,
         depositedToday,
         remainingToday,
+        oldBalance,
+        netBalance,
+        netDen,
         visitedStores,
         compliance,
       };
@@ -306,24 +343,38 @@ export default function MobileOverview({
                         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                       </div>
 
-                      {/* Summary Stats Row (Always visible directly inside card) */}
-                      <div className="grid grid-cols-3 gap-1.5">
+                      {/* Summary Stats Row — Old Bal | +Today In | -Today Out | =Net */}
+                      <div className="grid grid-cols-4 gap-1">
+                        <div className="p-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-md flex flex-col">
+                          <span className="text-[5.5px] font-black uppercase text-slate-400 tracking-wide">Old Bal</span>
+                          <span className={`text-[8px] font-black mt-0.5 ${(staff as any).oldBalance < 0 ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                            ₹{((staff as any).oldBalance || 0).toLocaleString()}
+                          </span>
+                        </div>
                         <div className="p-1 bg-emerald-50/25 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/10 rounded-md flex flex-col">
-                          <span className="text-[6.5px] font-black uppercase text-emerald-600 tracking-wide">Collected</span>
-                          <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5">
+                          <span className="text-[5.5px] font-black uppercase text-emerald-600 tracking-wide">+Today In</span>
+                          <span className="text-[8px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5">
                             ₹{staff.collectedToday.toLocaleString()}
                           </span>
                         </div>
                         <div className="p-1 bg-red-50/25 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/10 rounded-md flex flex-col">
-                          <span className="text-[6.5px] font-black uppercase text-red-600 tracking-wide">Deposited</span>
-                          <span className="text-[9px] font-black text-red-700 dark:text-red-400 mt-0.5">
+                          <span className="text-[5.5px] font-black uppercase text-red-600 tracking-wide">-Today Out</span>
+                          <span className="text-[8px] font-black text-red-700 dark:text-red-400 mt-0.5">
                             ₹{staff.depositedToday.toLocaleString()}
                           </span>
                         </div>
-                        <div className="p-1 bg-blue-50/25 dark:bg-blue-950/5 border border-blue-100/30 dark:border-blue-900/10 rounded-md flex flex-col">
-                          <span className="text-[6.5px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
-                          <span className={`text-[9px] font-black mt-0.5 ${staff.remainingToday < 0 ? 'text-red-600 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>
-                            ₹{staff.remainingToday.toLocaleString()}
+                        <div className={`p-1 rounded-md flex flex-col border ${
+                          (staff as any).netBalance < 0
+                            ? 'bg-red-50 dark:bg-red-950/10 border-red-200 dark:border-red-900/20'
+                            : 'bg-blue-50/25 dark:bg-blue-950/5 border-blue-100/30 dark:border-blue-900/10'
+                        }`}>
+                          <span className={`text-[5.5px] font-black uppercase tracking-wide ${
+                            (staff as any).netBalance < 0 ? 'text-red-600' : 'text-blue-600'
+                          }`}>=Net</span>
+                          <span className={`text-[8px] font-black mt-0.5 ${
+                            (staff as any).netBalance < 0 ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'
+                          }`}>
+                            ₹{((staff as any).netBalance || 0).toLocaleString()}
                           </span>
                         </div>
                       </div>
@@ -410,6 +461,45 @@ export default function MobileOverview({
                               </div>
                             </div>
                           )}
+
+                          {/* Denomination Breakdown */}
+                          {(() => {
+                            const nd = (staff as any).netDen || {};
+                            const denItems = [
+                              { label: '₹500', count: nd.note_500, val: 500 },
+                              { label: '₹200', count: nd.note_200, val: 200 },
+                              { label: '₹100', count: nd.note_100, val: 100 },
+                              { label: '₹50',  count: nd.note_50,  val: 50  },
+                              { label: '₹20',  count: nd.note_20,  val: 20  },
+                              { label: '₹10',  count: nd.note_10,  val: 10  },
+                            ].filter(d => d.count !== 0);
+                            const hasAny = denItems.length > 0 || nd.coins !== 0 || nd.online !== 0;
+                            return hasAny ? (
+                              <div className="border-t border-slate-100 dark:border-slate-800/40 pt-1.5">
+                                <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash in Hand Breakdown</span>
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+                                  {denItems.map(d => (
+                                    <div key={d.label} className="flex items-center justify-between text-[8px]">
+                                      <span className="font-bold text-slate-500 dark:text-slate-400">{d.label} × {d.count}</span>
+                                      <span className="font-black text-slate-700 dark:text-slate-300">₹{(d.count * d.val).toLocaleString()}</span>
+                                    </div>
+                                  ))}
+                                  {nd.coins !== 0 && (
+                                    <div className="flex items-center justify-between text-[8px]">
+                                      <span className="font-bold text-slate-500 dark:text-slate-400">Coins</span>
+                                      <span className="font-black text-slate-700 dark:text-slate-300">₹{Number(nd.coins).toFixed(2)}</span>
+                                    </div>
+                                  )}
+                                  {nd.online !== 0 && (
+                                    <div className="flex items-center justify-between text-[8px] col-span-2 mt-0.5 pt-1 border-t border-slate-100 dark:border-slate-800/40">
+                                      <span className="font-bold text-blue-500">Online / UPI</span>
+                                      <span className="font-black text-blue-600 dark:text-blue-400">₹{Number(nd.online).toLocaleString()}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : null;
+                          })()}
 
                           {/* Visited stores button inside collapsed card details */}
                           <div className="border-t border-slate-100 dark:border-slate-800/40 pt-1.5 flex items-center justify-between">

@@ -758,13 +758,7 @@ export default function StaffDashboard() {
         {showIOSModal && <PWAInstallModal onClose={() => setShowIOSModal(false)} />}
 
         {/* MAIN DASHBOARD CONTENT */}
-        <SummaryBlocks totalCollected={totalCollected} totalDeposited={totalDeposited} netPortfolio={netPortfolio} />
-
-        <div className="mt-4 mb-2">
-          <NavigationGrid isCheckedIn={attendance.isCheckedIn} router={router} onClickLink={() => {}} />
-        </div>
-
-        <WalletCard
+        <SummaryBlocks
           oldBalance={oldBalance}
           todayIn={todayIn}
           todayOut={todayOut}
@@ -781,6 +775,10 @@ export default function StaffDashboard() {
           note10={note10}
           coins={coins}
         />
+
+        <div className="mt-4 mb-2">
+          <NavigationGrid isCheckedIn={attendance.isCheckedIn} router={router} onClickLink={() => {}} />
+        </div>
 
         {/* Offline Queues */}
         {(offlineCollections.length > 0 || offlineDeposits.length > 0) && (
@@ -1282,26 +1280,7 @@ function AttendanceCard({
   );
 }
 
-function SummaryBlocks({ totalCollected, totalDeposited, netPortfolio }: any) {
-  return (
-    <div className="grid grid-cols-3 gap-3">
-      <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash In</span>
-        <span className="text-xs font-black text-emerald-600 tracking-tight">₹{totalCollected.toLocaleString()}</span>
-      </div>
-      <div className="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash Out</span>
-        <span className="text-xs font-black text-red-600 tracking-tight">₹{totalDeposited.toLocaleString()}</span>
-      </div>
-      <div className="bg-slate-900 dark:bg-slate-100 p-3 rounded-2xl border border-slate-800 dark:border-white shadow-lg">
-        <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Total Cash</span>
-        <span className="text-xs font-black text-white dark:text-slate-950 tracking-tight">₹{netPortfolio.toLocaleString()}</span>
-      </div>
-    </div>
-  );
-}
-
-function WalletCard({
+function SummaryBlocks({
   oldBalance,
   todayIn,
   todayOut,
@@ -1319,110 +1298,97 @@ function WalletCard({
   coins
 }: any) {
   return (
-    <div className="space-y-2">
-      {/* Formula Card: Old + Today In - Today Out = Net */}
-      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8" />
+    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md relative overflow-hidden">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8" />
 
-        <div className="flex items-center gap-2 mb-3 relative z-10">
-          <div className="p-1 bg-emerald-50 dark:bg-emerald-950/50 rounded-md border border-emerald-100 dark:border-emerald-900/30">
-            <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
-          </div>
-          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Cash Summary</span>
+      <div className="flex items-center gap-2 mb-3 relative z-10">
+        <div className="p-1 bg-emerald-50 dark:bg-emerald-950/50 rounded-md border border-emerald-100 dark:border-emerald-900/30">
+          <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
         </div>
+        <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Cash Summary</span>
+      </div>
 
-        {/* Formula rows */}
-        <div className="relative z-10 space-y-1.5">
-          {/* Old balance row */}
-          <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest w-3 text-center"></span>
-              <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Old Balance</span>
-            </div>
-            <span className="text-[11px] font-black text-slate-700 dark:text-slate-300">₹{oldBalance.toLocaleString()}</span>
-          </div>
-
-          {/* Today In row */}
-          <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-black text-emerald-600 w-3 text-center">+</span>
-              <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Today In</span>
-            </div>
-            <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400">₹{todayIn.toLocaleString()}</span>
-          </div>
-
-          {/* Today Out row */}
-          <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-red-50/60 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-black text-red-600 w-3 text-center">-</span>
-              <span className="text-[9px] font-black text-red-700 dark:text-red-400 uppercase tracking-wider">Today Out</span>
-            </div>
-            <span className="text-[11px] font-black text-red-700 dark:text-red-400">₹{todayOut.toLocaleString()}</span>
-          </div>
-
-          {/* Divider */}
-          <div className="border-t border-slate-200 dark:border-slate-700 my-1" />
-
-          {/* Net In Hand */}
-          <div className={`flex items-center justify-between px-2 py-2 rounded-lg border font-black ${
-            netBalance < 0
-              ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/40'
-              : 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/40'
+      {/* 4-column formula grid */}
+      <div className="grid grid-cols-4 gap-1.5 relative z-10">
+        {/* Old Balance */}
+        <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-lg flex flex-col">
+          <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Old Bal</span>
+          <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5">₹{oldBalance.toLocaleString()}</span>
+        </div>
+        {/* Today In */}
+        <div className="p-2 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-lg flex flex-col">
+          <span className="text-[6.5px] font-black text-emerald-600 uppercase tracking-widest">+ Today In</span>
+          <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5">₹{todayIn.toLocaleString()}</span>
+        </div>
+        {/* Today Out */}
+        <div className="p-2 bg-red-50/60 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-lg flex flex-col">
+          <span className="text-[6.5px] font-black text-red-600 uppercase tracking-widest">- Today Out</span>
+          <span className="text-[10px] font-black text-red-700 dark:text-red-400 mt-0.5">₹{todayOut.toLocaleString()}</span>
+        </div>
+        {/* Net */}
+        <div className={`p-2 rounded-lg flex flex-col border ${
+          netBalance < 0
+            ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30'
+            : 'bg-blue-50/60 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/30'
+        }`}>
+          <span className={`text-[6.5px] font-black uppercase tracking-widest ${
+            netBalance < 0 ? 'text-red-600' : 'text-blue-600'
           }`}>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-black text-slate-400 w-3 text-center">=</span>
-              <span className={`text-[9px] font-black uppercase tracking-wider ${netBalance < 0 ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>Net in Hand</span>
-            </div>
-            <span className={`text-sm font-black tracking-tight ${netBalance < 0 ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>₹{netBalance.toLocaleString()}</span>
-          </div>
-
-          {/* Cash / Online split */}
-          <div className="grid grid-cols-2 gap-1.5 mt-1">
-            <div className="flex flex-col px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-              <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Cash Notes</span>
-              <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5">₹{totalCashNotes.toLocaleString()}</span>
-            </div>
-            <div className="flex flex-col px-2 py-1.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/20">
-              <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest">Online</span>
-              <span className="text-[10px] font-black text-blue-700 dark:text-blue-400 mt-0.5">₹{totalOnline.toLocaleString()}</span>
-            </div>
-          </div>
+            = Net
+          </span>
+          <span className={`text-[10px] font-black mt-0.5 ${
+            netBalance < 0 ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'
+          }`}>
+            ₹{netBalance.toLocaleString()}
+          </span>
         </div>
+      </div>
 
-        {/* Notes breakdown */}
-        <div className="pt-2 relative z-10">
-          <button
-            onClick={() => setShowNotesBreakdown(!showNotesBreakdown)}
-            className="w-full flex items-center justify-between text-xs font-black text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 focus:outline-none transition-colors"
-          >
-            <span className="uppercase tracking-[0.15em] text-[8px]">Denomination Breakdown</span>
-            {showNotesBreakdown ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-          </button>
-
-          {showNotesBreakdown && (
-            <div className="grid grid-cols-2 gap-1.5 mt-2 text-[11px] font-medium">
-              {[
-                { value: "500", count: note500 },
-                { value: "200", count: note200 },
-                { value: "100", count: note100 },
-                { value: "50",  count: note50 },
-                { value: "20",  count: note20 },
-                { value: "10",  count: note10 },
-              ].filter(n => n.count !== 0).map((note) => (
-                <div key={note.value} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 py-1.5 px-2 rounded-lg border border-slate-100 dark:border-slate-800/60">
-                  <span className="text-slate-400 font-bold">₹{note.value}</span>
-                  <span className="font-black text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/50 dark:border-slate-800">{note.count}</span>
-                </div>
-              ))}
-              {coins !== 0 && (
-                <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800/60 mt-0.5">
-                  <span className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Coins</span>
-                  <span className="font-black text-slate-800 dark:text-slate-200 text-xs">₹{coins.toFixed(2)}</span>
-                </div>
-              )}
-            </div>
-          )}
+      {/* Cash / Online split */}
+      <div className="grid grid-cols-2 gap-1.5 mt-2 relative z-10">
+        <div className="flex flex-col px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Cash Notes</span>
+          <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5">₹{totalCashNotes.toLocaleString()}</span>
         </div>
+        <div className="flex flex-col px-2 py-1.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/20">
+          <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest">Online / UPI</span>
+          <span className="text-[10px] font-black text-blue-700 dark:text-blue-400 mt-0.5">₹{totalOnline.toLocaleString()}</span>
+        </div>
+      </div>
+
+      {/* Denomination Breakdown toggle */}
+      <div className="pt-2 relative z-10">
+        <button
+          onClick={() => setShowNotesBreakdown(!showNotesBreakdown)}
+          className="w-full flex items-center justify-between text-xs font-black text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 focus:outline-none transition-colors"
+        >
+          <span className="uppercase tracking-[0.15em] text-[8px]">Denomination Breakdown</span>
+          {showNotesBreakdown ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+
+        {showNotesBreakdown && (
+          <div className="grid grid-cols-2 gap-1.5 mt-2 text-[11px] font-medium">
+            {[
+              { value: "500", count: note500 },
+              { value: "200", count: note200 },
+              { value: "100", count: note100 },
+              { value: "50",  count: note50 },
+              { value: "20",  count: note20 },
+              { value: "10",  count: note10 },
+            ].filter(n => n.count !== 0).map((note) => (
+              <div key={note.value} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 py-1.5 px-2 rounded-lg border border-slate-100 dark:border-slate-800/60">
+                <span className="text-slate-400 font-bold">₹{note.value}</span>
+                <span className="font-black text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/50 dark:border-slate-800">{note.count}</span>
+              </div>
+            ))}
+            {coins !== 0 && (
+              <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800/60 mt-0.5">
+                <span className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Coins</span>
+                <span className="font-black text-slate-800 dark:text-slate-200 text-xs">₹{coins.toFixed(2)}</span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1460,7 +1426,7 @@ function NavigationGrid({ isCheckedIn, router, onClickLink }: any) {
           if (onClickLink) onClickLink();
           router.push("/deposit");
         }}
-        className={`relative overflow-hidden p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-red-200 dark:hover:border-red-900/50 hover:shadow-md text-left transition-all duration-300 group shadow-sm flex items-center gap-2 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
+        className={`relative overflow-hidden p-2 rounded-lg bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/50 hover:shadow-md text-left transition-all duration-300 group shadow-sm flex items-center gap-2 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
       >
         <div className="w-8 h-8 rounded bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0 text-red-500 dark:text-red-400">
           <ArrowUpRight className="w-4.5 h-4.5" strokeWidth={2.5} />

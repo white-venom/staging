@@ -26,9 +26,13 @@ import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "..
 interface VisitedStore {
   id: string;
   retailerName: string;
+  store_name?: string;
+  portalName?: string;
+  remarks?: string;
   time: string;
   amount: number;
   status: string;
+  denominations?: any;
 }
 
 interface StaffCompliance {
@@ -89,8 +93,8 @@ export default function OverviewTab({
     return (userDirectory || []).filter((u: { role: string }) => u.role === "field_staff" || u.role === "staff");
   }, [userDirectory]);
 
-  // State to track expanded staff accordions
   const [expandedStaffNames, setExpandedStaffNames] = React.useState<Record<string, boolean>>({});
+  const [expandedVisitedStoreId, setExpandedVisitedStoreId] = React.useState<string | null>(null);
 
   const toggleStaffExpanded = (name: string) => {
     setExpandedStaffNames(prev => ({
@@ -164,9 +168,13 @@ export default function OverviewTab({
       const visitedStores = staffColsToday.map((c) => ({
         id: c.id,
         retailerName: c.retailerName,
+        store_name: c.store_name || null,
+        portalName: c.portalName || null,
+        remarks: c.remarks || null,
         time: c.date ? c.date.split(" ")[1] : "N/A",
         amount: c.totalAmount,
         status: c.status || "verified",
+        denominations: c.denominations || null,
       }));
 
       // Get compliance/attendance log
@@ -504,50 +512,96 @@ export default function OverviewTab({
                 </div>
               </div>
               <button
-                onClick={() => setActiveModalStaff(null)}
+                onClick={() => { setActiveModalStaff(null); setExpandedVisitedStoreId(null); }}
                 className="p-1.5 rounded-lg bg-slate-105 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 <X className="w-4.5 h-4.5" />
               </button>
             </div>
 
-            {/* Modal Body: Stores list */}
-            <div className="max-h-60 overflow-y-auto pr-1 divide-y divide-slate-100 dark:divide-slate-850">
-              {activeModalStaff.visitedStores.map((item: VisitedStore, idx: number) => (
-                <div key={idx} className="py-3 flex items-center justify-between text-xs hover:bg-slate-50/50 dark:hover:bg-slate-850/10 px-2 rounded-xl transition-all">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
-                      {item.retailerName}
-                    </span>
-                    <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-bold">
-                      <Clock className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{(() => {
-                        try {
-                          const [rawHour, min] = item.time.split(":").map(Number);
-                          const ampm = rawHour >= 12 ? 'PM' : 'AM';
-                          const hour = rawHour % 12 || 12;
-                          return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
-                        } catch (e) {
-                          return item.time;
-                        }
-                      })()}</span>
+            {/* Modal Body: Stores list — click each to expand */}
+            <div className="max-h-[60vh] overflow-y-auto pr-1 divide-y divide-slate-100 dark:divide-slate-800">
+              {activeModalStaff.visitedStores.map((item: VisitedStore, idx: number) => {
+                const isExpanded = expandedVisitedStoreId === item.id;
+                const den = item.denominations || {};
+                const displayName = item.retailerName?.toLowerCase().startsWith("cms")
+                  ? `${item.retailerName}${item.store_name ? ` – ${item.store_name}` : ""}`
+                  : item.retailerName;
+                return (
+                  <div
+                    key={idx}
+                    className={`cursor-pointer transition-colors ${isExpanded ? 'bg-blue-50/40 dark:bg-blue-950/10' : 'hover:bg-slate-50/60 dark:hover:bg-slate-800/20'}`}
+                    onClick={() => setExpandedVisitedStoreId(prev => prev === item.id ? null : item.id)}
+                  >
+                    {/* Row header */}
+                    <div className="py-2.5 px-2 flex items-center justify-between">
+                      <div className="flex flex-col gap-0.5 flex-1 min-w-0">
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight text-xs truncate">
+                          {displayName}
+                        </span>
+                        {item.store_name && !item.retailerName?.toLowerCase().startsWith("cms") && (
+                          <span className="text-[8px] font-bold text-slate-500 dark:text-slate-400">{item.store_name}</span>
+                        )}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            <span>{(() => {
+                              try {
+                                const [rawHour, min] = item.time.split(":").map(Number);
+                                const ampm = rawHour >= 12 ? 'PM' : 'AM';
+                                const hour = rawHour % 12 || 12;
+                                return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+                              } catch (e) { return item.time; }
+                            })()}</span>
+                          </div>
+                          {item.portalName && (
+                            <span className="text-[7px] font-black text-blue-500 uppercase bg-blue-50 dark:bg-blue-950/20 px-1 py-0.5 rounded border border-blue-100 dark:border-blue-900/20">{item.portalName}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                        <div className="text-right">
+                          <span className="font-black text-emerald-600 dark:text-emerald-450 text-xs block">+₹{item.amount.toLocaleString()}</span>
+                          <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-black uppercase tracking-wider ${
+                            item.status === 'verified'
+                            ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30'
+                            : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-100 dark:border-amber-900/30'
+                          }`}>{item.status}</span>
+                        </div>
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`} />
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="font-black text-emerald-600 dark:text-emerald-450">
-                      +₹{item.amount.toLocaleString()}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
-                      item.status === 'verified'
-                      ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30'
-                      : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-100 dark:border-amber-900/30'
-                    }`}>
-                      {item.status}
-                    </span>
+                    {/* Expanded breakdown */}
+                    {isExpanded && (
+                      <div className="px-3 pb-3 pt-1 border-t border-slate-100 dark:border-slate-800/60" onClick={e => e.stopPropagation()}>
+                        {/* Remarks */}
+                        {item.remarks && (
+                          <div className="mb-2 px-2 py-1 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-100 dark:border-slate-800">
+                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Remark</span>
+                            <span className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 italic">{item.remarks}</span>
+                          </div>
+                        )}
+                        {/* Denominations */}
+                        <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider block mb-1.5">Cash Breakdown</span>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-300">
+                          {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
+                          {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
+                          {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
+                          {Number(den.note_50)  > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
+                          {Number(den.note_20)  > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
+                          {Number(den.note_10)  > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
+                          {Number(den.coins)    > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
+                          {Number(den.online_amount) > 0 && <span className="col-span-2 text-blue-600 dark:text-blue-400">UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
+                          {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && (
+                            <span className="text-slate-400 italic text-[8px]">No breakdown recorded</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Modal Footer */}
@@ -559,7 +613,7 @@ export default function OverviewTab({
                 </span>
               </div>
               <button
-                onClick={() => setActiveModalStaff(null)}
+                onClick={() => { setActiveModalStaff(null); setExpandedVisitedStoreId(null); }}
                 className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-[10px] font-black rounded-xl hover:bg-slate-850 dark:hover:bg-slate-100 transition-all cursor-pointer"
               >
                 Close Window
