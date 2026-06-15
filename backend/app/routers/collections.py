@@ -123,7 +123,7 @@ def submit_collection(
                 else:
                     description = f"online collection (₹{d.online_amount:.2f} via {portal_name})"
             else:
-                description = "cash collection"
+                description = "cash in"
             
             ledger_entry = Ledger(
                 retailer_id=payload.retailer_id,
@@ -375,7 +375,7 @@ def verify_collection(
         transaction_type="credit",
         amount=collection.total_amount,
         balance=new_balance,
-        description="cash collection",
+        description="cash in",
         collection_id=collection.id
     )
     db.add(ledger_entry)
@@ -647,7 +647,7 @@ def update_collection(
             else:
                 ledger_entry.description = f"online collection (₹{new_online_amount:.2f} via {portal_name})"
         else:
-            ledger_entry.description = "cash collection"
+            ledger_entry.description = "cash in"
 
     # Sync corresponding staff handover deposit if needed
     if old_from_staff_id != new_from_staff_id:

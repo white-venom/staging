@@ -14,6 +14,14 @@ import {
 } from "lucide-react";
 import Script from "next/script";
 
+const cleanDescription = (desc: string): string => {
+  if (!desc) return "";
+  return desc
+    .replace(/\s*\(auto-verified\)/gi, "")
+    .replace(/cash payout/gi, "cash out")
+    .replace(/cash collection/gi, "cash in");
+};
+
 interface LedgerTransaction {
   id: string;
   date: string; // YYYY-MM-DD HH:MM:SS
@@ -86,7 +94,7 @@ export default function LedgerReportView({
         if (endDate && txDateStr > endDate) return false;
         
         // Search filter
-        const cleanDesc = tx.description ? tx.description.replace(/\s*\(auto-verified\)/gi, "") : "";
+        const cleanDesc = cleanDescription(tx.description);
         if (
           searchQuery && 
           !cleanDesc.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -382,7 +390,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                       
                       {/* Middle: Description */}
                       <div className="flex-1 px-4 text-xs font-semibold text-slate-600 break-words whitespace-pre-wrap">
-                        {tx.description ? tx.description.replace(/\s*\(auto-verified\)/gi, "") : ""}
+                        {cleanDescription(tx.description)}
                       </div>
                       
                       {/* Right: Gave (Debit) vs Got (Credit) numeric columns */}
