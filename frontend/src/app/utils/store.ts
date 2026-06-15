@@ -97,7 +97,7 @@ export const useAppStore = create<AppStore>()(
         attendance: {
           isCheckedIn: true,
           startKm,
-          checkInTime: new Date().toLocaleString("sv-SE").substring(0, 16),
+          checkInTime: new Date().toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
         }
       }),
       checkOut: (endKm) => set((state) => ({

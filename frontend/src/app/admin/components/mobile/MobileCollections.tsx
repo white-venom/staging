@@ -66,7 +66,7 @@ export default function MobileCollections({ collections, showToastNotification, 
               <div className="flex items-center gap-1.5 justify-end">
                 <Calendar className="w-3 h-3 text-slate-300" />
                 <p className="text-[9px] font-black text-slate-605 dark:text-slate-300">
-                  {new Date(c.date).toLocaleDateString()}
+                  {c.date ? c.date.split(" ")[0].split("-").reverse().join("-") : ""}
                 </p>
               </div>
             </div>
@@ -75,7 +75,7 @@ export default function MobileCollections({ collections, showToastNotification, 
                <div className="flex items-center gap-1">
                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider truncate">
                    {c.retailerName?.toLowerCase().startsWith("cms") 
-                     ? `${c.retailerName} - ${c.store_name || "Direct"}` 
+                     ? `${c.retailerName} - ${c.store_name || "Cash"}` 
                      : c.retailerName}
                  </p>
                  {c.retailerName?.toLowerCase().startsWith("cms") && (

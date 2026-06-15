@@ -101,9 +101,9 @@ export default function StaffLedgerPage() {
       ...c,
       type: "collection" as const,
       totalAmount: Number(c.total_amount),
-      date: getUtcDate(c.created_at).toLocaleString("sv-SE").substring(0, 16),
+      date: getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
       displayName: c.retailer_name?.toLowerCase().startsWith("cms")
-        ? `${c.retailer_name} - ${c.store_name || "Direct"}`
+        ? `${c.retailer_name} - ${c.store_name || "Cash"}`
         : (c.retailer_name || "Unknown Retailer"),
       displayPortal: c.portal_name || "Cash"
     })),
@@ -115,7 +115,7 @@ export default function StaffLedgerPage() {
         type: isRecipient ? ("collection" as const) : ("deposit" as const),
         isStaffHandoverReceived: isRecipient,
         totalAmount: Number(d.amount),
-        date: getUtcDate(d.created_at).toLocaleString("sv-SE").substring(0, 16),
+        date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
         displayName: isRecipient ? `Received from: ${d.staff_name}` : targetName,
         displayPortal: d.deposit_type === "staff" ? "Staff Handover" : (d.deposit_type || "Deposit")
       };
@@ -180,7 +180,7 @@ export default function StaffLedgerPage() {
   // Group by date
   const groupedTimeline: Record<string, any[]> = {};
   displayTimeline.forEach(item => {
-    const dateStr = item.created_at ? getUtcDate(item.created_at).toLocaleDateString() : "Unknown Date";
+    const dateStr = item.created_at ? getUtcDate(item.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Unknown Date";
     if (!groupedTimeline[dateStr]) {
       groupedTimeline[dateStr] = [];
     }
@@ -337,7 +337,7 @@ export default function StaffLedgerPage() {
                             <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
                               <span className="text-blue-500">{item.displayPortal}</span>
                               <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-650"></span>
-                              <span>{getUtcDate(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                              <span>{getUtcDate(item.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</span>
                             </div>
                           </div>
                         </div>
@@ -352,14 +352,10 @@ export default function StaffLedgerPage() {
                       </div>
 
                       {/* Running Balance Segment */}
-                      <div className="grid grid-cols-3 gap-1 bg-slate-100/50 dark:bg-slate-950/40 mx-2 mb-2 p-1 rounded-lg border border-slate-200/30 dark:border-slate-800/40">
+                      <div className="grid grid-cols-2 gap-1 bg-slate-100/50 dark:bg-slate-950/40 mx-2 mb-2 p-1 rounded-lg border border-slate-200/30 dark:border-slate-800/40">
                         <div className="flex flex-col pl-1">
                           <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
                           <span className="text-[9px] font-bold text-slate-500">₹{snapshots.prev.toLocaleString("en-IN")}</span>
-                        </div>
-                        <div className="flex flex-col border-x border-slate-200/50 dark:border-slate-800/50 px-2">
-                          <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Collector</span>
-                          <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 truncate">{currentUser?.name}</span>
                         </div>
                         <div className="flex flex-col text-right pr-1">
                           <span className="text-[6px] font-black text-slate-400 uppercase tracking-widest">Closing</span>

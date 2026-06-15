@@ -219,7 +219,7 @@ ${dateFormatted}`;
                         <div className="flex items-center gap-1">
                           <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200">
                             {c.retailerName?.toLowerCase().startsWith("cms")
-                              ? `${c.retailerName} - ${c.store_name || "Direct"}`
+                              ? `${c.retailerName} - ${c.store_name || "Cash"}`
                               : c.retailerName}
                           </h3>
                           {c.retailerName?.toLowerCase().startsWith("cms") && (

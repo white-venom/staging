@@ -173,7 +173,7 @@ export default function CashInLedgerPage() {
 
     const totalVal = Number(entry.total_amount) * mult;
     const totalWords = numberToWordsIndian(totalVal);
-    const dateFormatted = entry.created_at ? formatShareDate(getUtcDate(entry.created_at).toLocaleString("sv-SE").substring(0, 19)) : "";
+    const dateFormatted = entry.created_at ? formatShareDate(getUtcDate(entry.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 19)) : "";
     const collectorName = currentUser?.name || "Mehruddin";
 
     let headerLines: string[] = [];
@@ -311,7 +311,7 @@ ${dateFormatted}`;
         },
         status: updated.status,
         remarks: updated.remarks,
-        date: getUtcDate(updated.created_at).toLocaleString("sv-SE").substring(0, 16),
+        date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
       };
       store.setCollections(store.collections.map(c => c.id === editingItem.id ? mappedUpdated : c));
 
@@ -332,7 +332,7 @@ ${dateFormatted}`;
   // Group by date
   const groupedCollections: Record<string, any[]> = {};
   filteredCollections.forEach(c => {
-    const dateStr = c.created_at ? getUtcDate(c.created_at).toLocaleDateString() : "Unknown Date";
+    const dateStr = c.created_at ? getUtcDate(c.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Unknown Date";
     if (!groupedCollections[dateStr]) {
       groupedCollections[dateStr] = [];
     }
@@ -404,7 +404,7 @@ ${dateFormatted}`;
                           <div className="flex items-center gap-1">
                             <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-200">
                               {c.retailer_name?.toLowerCase().startsWith("cms")
-                                ? `${c.retailer_name} - ${c.store_name || "Direct"}`
+                                ? `${c.retailer_name} - ${c.store_name || "Cash"}`
                                 : c.retailer_name}
                             </h3>
                             {c.retailer_name?.toLowerCase().startsWith("cms") && (
@@ -429,7 +429,7 @@ ${dateFormatted}`;
                           <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
                             <span>{c.portal_name || "N/A"}</span>
                             <span>•</span>
-                            <span>{getUtcDate(c.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            <span>{getUtcDate(c.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</span>
                           </p>
                         </div>
 

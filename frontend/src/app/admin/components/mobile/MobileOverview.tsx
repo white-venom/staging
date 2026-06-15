@@ -490,7 +490,7 @@ export default function MobileOverview({
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[11px] font-black text-slate-800 dark:text-white truncate block">
                         {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
-                          ? `${item.party} - ${item.store_name || "Direct"}`
+                          ? `${item.party} - ${item.store_name || "Cash"}`
                           : item.party}
                       </span>
                       {item.store_name && !(item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")) && (

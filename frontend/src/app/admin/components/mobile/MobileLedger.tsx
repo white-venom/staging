@@ -353,7 +353,7 @@ export default function MobileLedger() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-black text-slate-805 dark:text-slate-100 uppercase">
                             {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
-                              ? `${item.party} - ${item.store_name || "Direct"}`
+                              ? `${item.party} - ${item.store_name || "Cash"}`
                               : item.party || 'General Entry'}
                           </span>
                           {item.store_name && !(item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")) && (

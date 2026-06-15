@@ -597,7 +597,7 @@ export default function LedgerTab({
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase">
                               {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms")
-                                ? `${tx.party} - ${tx.store_name || "Direct"}`
+                                ? `${tx.party} - ${tx.store_name || "Cash"}`
                                 : tx.party}
                             </span>
                             {tx.store_name && !tx.party?.toLowerCase().startsWith("cms") && (

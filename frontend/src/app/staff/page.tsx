@@ -217,7 +217,7 @@ export default function StaffDashboard() {
           },
           status: c.status,
           remarks: c.remarks,
-          date: getUtcDate(c.created_at).toLocaleString("sv-SE").substring(0, 16),
+          date: getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
           retailer_ledger_token: c.retailer_ledger_token,
         }));
 
@@ -245,7 +245,7 @@ export default function StaffDashboard() {
             online_portal_id: d.denominations.online_portal_id,
           } : undefined,
           status: d.status,
-          date: getUtcDate(d.created_at).toLocaleString("sv-SE").substring(0, 16),
+          date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
           retailer_ledger_token: d.retailer_ledger_token,
         }));
 
@@ -327,7 +327,38 @@ export default function StaffDashboard() {
   
   const totalCashNotes = netPortfolio - totalOnline;
  
-  // Calculate running balances for the ledger
+  // ─── Today vs Previous Day split (IST) ───────────────────────────────────
+  const todayIST = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+
+  // Today's collections (exclude handovers received from staff for split — included in old/today logic consistently)
+  const todayCollections = collections.filter(c => c.date?.startsWith(todayIST));
+  const prevCollections  = collections.filter(c => !c.date?.startsWith(todayIST));
+
+  const todayOutDeposits = deposits.filter(d =>
+    d.date?.startsWith(todayIST) &&
+    d.depositType !== 'virtual' &&
+    !(d.recipient_staff_id === currentUser.id && d.depositType === 'staff')
+  );
+  const prevOutDeposits = deposits.filter(d =>
+    !d.date?.startsWith(todayIST) &&
+    d.depositType !== 'virtual' &&
+    !(d.recipient_staff_id === currentUser.id && d.depositType === 'staff')
+  );
+
+  // Handovers received split
+  const todayHandoversRcvd = deposits
+    .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && d.date?.startsWith(todayIST))
+    .reduce((s, d) => s + (d.amount || 0), 0);
+  const prevHandoversRcvd = deposits
+    .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && !d.date?.startsWith(todayIST))
+    .reduce((s, d) => s + (d.amount || 0), 0);
+
+  const todayIn  = todayCollections.reduce((s, c) => s + (c.totalAmount || 0), 0) + todayHandoversRcvd;
+  const todayOut = todayOutDeposits.reduce((s, d) => s + (d.amount || 0), 0);
+  const oldBalance = prevCollections.reduce((s, c) => s + (c.totalAmount || 0), 0) + prevHandoversRcvd - prevOutDeposits.reduce((s, d) => s + (d.amount || 0), 0);
+  const netBalance = oldBalance + todayIn - todayOut;
+
+  // Net denomination breakdown (all in - all out across all time)
   const combinedLedger = [
     ...collections.map(c => ({ ...c, type: 'collection' })),
     ...deposits.map(d => {
@@ -734,11 +765,12 @@ export default function StaffDashboard() {
         </div>
 
         <WalletCard
-          totalCollected={totalCollected}
-          totalDeposited={totalDeposited}
+          oldBalance={oldBalance}
+          todayIn={todayIn}
+          todayOut={todayOut}
+          netBalance={netBalance}
           totalCashNotes={totalCashNotes}
           totalOnline={totalOnline}
-          netPortfolio={netPortfolio}
           showNotesBreakdown={showNotesBreakdown}
           setShowNotesBreakdown={setShowNotesBreakdown}
           note500={note500}
@@ -856,7 +888,7 @@ export default function StaffDashboard() {
                            <span>
                              {c.type === 'collection'
                                ? ((c.retailerName || c.targetName)?.toLowerCase().startsWith("cms")
-                                   ? `${c.retailerName || c.targetName} - ${c.store_name || "Direct"}`
+                                   ? `${c.retailerName || c.targetName} - ${c.store_name || "Cash"}`
                                    : (c.retailerName || c.targetName))
                                : c.targetName}
                            </span>
@@ -895,14 +927,10 @@ export default function StaffDashboard() {
                    </div>
 
                    {/* Balance row */}
-                   <div className="grid grid-cols-3 gap-1 bg-slate-50/50 dark:bg-slate-950/50 mx-2 mb-2 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800/50">
+                   <div className="grid grid-cols-2 gap-1 bg-slate-50/50 dark:bg-slate-950/50 mx-2 mb-2 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800/50">
                      <div className="flex flex-col">
                        <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
                        <span className="text-[9px] font-bold text-slate-500">₹{snapshots.prev.toLocaleString()}</span>
-                     </div>
-                     <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-2">
-                       <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Collector</span>
-                       <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 line-clamp-1">{currentUser.name}</span>
                      </div>
                      <div className="flex flex-col text-right">
                        <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
@@ -965,8 +993,8 @@ export default function StaffDashboard() {
                                    // Refresh data
                                    const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
                                    const { setCollections, setDeposits } = useAppStore.getState();
-                                   setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE').substring(0, 16), retailer_ledger_token: col.retailer_ledger_token })));
-                                   setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, date: getUtcDate(d.created_at).toLocaleString('sv-SE').substring(0, 16), retailer_ledger_token: d.retailer_ledger_token })));
+                                   setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token })));
+                                   setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token })));
                                    setExpandedHomeId(null);
                                  } catch (err: any) {
                                    alert('Delete failed: ' + err.message);
@@ -1274,11 +1302,12 @@ function SummaryBlocks({ totalCollected, totalDeposited, netPortfolio }: any) {
 }
 
 function WalletCard({
-  totalCollected,
-  totalDeposited,
+  oldBalance,
+  todayIn,
+  todayOut,
+  netBalance,
   totalCashNotes,
   totalOnline,
-  netPortfolio,
   showNotesBreakdown,
   setShowNotesBreakdown,
   note500,
@@ -1291,27 +1320,82 @@ function WalletCard({
 }: any) {
   return (
     <div className="space-y-2">
-      <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8"></div>
+      {/* Formula Card: Old + Today In - Today Out = Net */}
+      <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8" />
 
-        <div className="flex items-center justify-between mb-2 relative z-10">
-          <div className="flex items-center gap-2">
-            <div className="p-1 bg-emerald-50 dark:bg-emerald-950/50 rounded-md border border-emerald-100 dark:border-emerald-900/30">
-              <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
+        <div className="flex items-center gap-2 mb-3 relative z-10">
+          <div className="p-1 bg-emerald-50 dark:bg-emerald-950/50 rounded-md border border-emerald-100 dark:border-emerald-900/30">
+            <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
+          </div>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Cash Summary</span>
+        </div>
+
+        {/* Formula rows */}
+        <div className="relative z-10 space-y-1.5">
+          {/* Old balance row */}
+          <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest w-3 text-center"></span>
+              <span className="text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Old Balance</span>
             </div>
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-400">
-              Cash Summary
-            </span>
+            <span className="text-[11px] font-black text-slate-700 dark:text-slate-300">₹{oldBalance.toLocaleString()}</span>
+          </div>
+
+          {/* Today In row */}
+          <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-black text-emerald-600 w-3 text-center">+</span>
+              <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Today In</span>
+            </div>
+            <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400">₹{todayIn.toLocaleString()}</span>
+          </div>
+
+          {/* Today Out row */}
+          <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-red-50/60 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-black text-red-600 w-3 text-center">-</span>
+              <span className="text-[9px] font-black text-red-700 dark:text-red-400 uppercase tracking-wider">Today Out</span>
+            </div>
+            <span className="text-[11px] font-black text-red-700 dark:text-red-400">₹{todayOut.toLocaleString()}</span>
+          </div>
+
+          {/* Divider */}
+          <div className="border-t border-slate-200 dark:border-slate-700 my-1" />
+
+          {/* Net In Hand */}
+          <div className={`flex items-center justify-between px-2 py-2 rounded-lg border font-black ${
+            netBalance < 0
+              ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/40'
+              : 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/40'
+          }`}>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-black text-slate-400 w-3 text-center">=</span>
+              <span className={`text-[9px] font-black uppercase tracking-wider ${netBalance < 0 ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>Net in Hand</span>
+            </div>
+            <span className={`text-sm font-black tracking-tight ${netBalance < 0 ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>₹{netBalance.toLocaleString()}</span>
+          </div>
+
+          {/* Cash / Online split */}
+          <div className="grid grid-cols-2 gap-1.5 mt-1">
+            <div className="flex flex-col px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+              <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Cash Notes</span>
+              <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5">₹{totalCashNotes.toLocaleString()}</span>
+            </div>
+            <div className="flex flex-col px-2 py-1.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/20">
+              <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest">Online</span>
+              <span className="text-[10px] font-black text-blue-700 dark:text-blue-400 mt-0.5">₹{totalOnline.toLocaleString()}</span>
+            </div>
           </div>
         </div>
 
-        {/* Notes breakdowns */}
-        <div className="pt-1 relative z-10">
+        {/* Notes breakdown */}
+        <div className="pt-2 relative z-10">
           <button
             onClick={() => setShowNotesBreakdown(!showNotesBreakdown)}
             className="w-full flex items-center justify-between text-xs font-black text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 focus:outline-none transition-colors"
           >
-            <span className="uppercase tracking-[0.15em] text-[8px]">Notes Details</span>
+            <span className="uppercase tracking-[0.15em] text-[8px]">Denomination Breakdown</span>
             {showNotesBreakdown ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
 
@@ -1321,29 +1405,21 @@ function WalletCard({
                 { value: "500", count: note500 },
                 { value: "200", count: note200 },
                 { value: "100", count: note100 },
-                { value: "50", count: note50 },
-                { value: "20", count: note20 },
-                { value: "10", count: note10 },
-              ].map((note) => (
+                { value: "50",  count: note50 },
+                { value: "20",  count: note20 },
+                { value: "10",  count: note10 },
+              ].filter(n => n.count !== 0).map((note) => (
                 <div key={note.value} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 py-1.5 px-2 rounded-lg border border-slate-100 dark:border-slate-800/60">
                   <span className="text-slate-400 font-bold">₹{note.value}</span>
                   <span className="font-black text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/50 dark:border-slate-800">{note.count}</span>
                 </div>
               ))}
-              <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800/60 mt-0.5">
-                <span className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Coins</span>
-                <span className="font-black text-slate-800 dark:text-slate-200 text-xs">₹{coins.toFixed(2)}</span>
-              </div>
-              
-              <div className="col-span-2 flex items-center justify-between bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-900/30 mt-0.5">
-                <span className="text-emerald-600 dark:text-emerald-500 font-black uppercase tracking-widest text-[8px]">Cash (In Hand)</span>
-                <span className="font-black text-emerald-700 dark:text-emerald-400 text-xs">₹{totalCashNotes.toLocaleString()}</span>
-              </div>
-              
-              <div className="col-span-2 flex items-center justify-between bg-blue-50 dark:bg-blue-950/20 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 mt-0.5">
-                <span className="text-blue-600 dark:text-blue-500 font-black uppercase tracking-widest text-[8px]">Online Balance</span>
-                <span className="font-black text-blue-700 dark:text-blue-400 text-xs">₹{totalOnline.toLocaleString()}</span>
-              </div>
+              {coins !== 0 && (
+                <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800/60 mt-0.5">
+                  <span className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Coins</span>
+                  <span className="font-black text-slate-800 dark:text-slate-200 text-xs">₹{coins.toFixed(2)}</span>
+                </div>
+              )}
             </div>
           )}
         </div>

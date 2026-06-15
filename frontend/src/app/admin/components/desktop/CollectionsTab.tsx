@@ -217,7 +217,7 @@ export default function CollectionsTab({
               onClick={() => {
                 const headers = ["Date", "Retailer", "Store", "Remarks", "Staff", "Amount"];
                 const rows = filtered.map(c => [
-                  c.date, `"${c.retailerName}"`, `"${c.store_name || 'Direct'}"`, `"${c.remarks || ''}"`, `"${c.staff}"`, c.totalAmount
+                  c.date, `"${c.retailerName}"`, `"${c.store_name || 'Cash'}"`, `"${c.remarks || ''}"`, `"${c.staff}"`, c.totalAmount
                 ]);
                 rows.push(["TOTAL", "", "", "", "", grandTotal]);
                 const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -384,10 +384,10 @@ export default function CollectionsTab({
                   </td>
                    <td className="p-4 border-r border-slate-50 dark:border-slate-800 font-black text-slate-900 dark:text-white uppercase">
                      {col.retailerName?.toLowerCase().startsWith("cms") 
-                       ? `${col.retailerName} - ${col.store_name || "Direct"}` 
+                       ? `${col.retailerName} - ${col.store_name || "Cash"}` 
                        : col.retailerName}
                    </td>
-                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-slate-500 text-[9px] uppercase font-bold">{col.store_name || "Direct"}</td>
+                   <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-slate-500 text-[9px] uppercase font-bold">{col.store_name || "Cash"}</td>
                    <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-slate-400 italic text-[9px]">
                      {col.retailerName?.toLowerCase().startsWith("cms") ? (
                        <div className="flex flex-col gap-1 items-start">

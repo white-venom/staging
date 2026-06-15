@@ -226,7 +226,7 @@ def submit_collection(
         if retailer:
             db_collection.retailer_name = retailer.retailer_name
             db_collection.retailer_ledger_token = retailer.ledger_token
-            db_collection.store_name = db_collection.store.store_name if db_collection.store else "Direct Retailer Handover"
+            db_collection.store_name = db_collection.store.store_name if db_collection.store else "Cash"
         elif from_staff:
             db_collection.retailer_name = f"Staff: {from_staff.name}"
             db_collection.from_staff_name = from_staff.name
@@ -325,7 +325,7 @@ def list_collections(
         else:
             col.retailer_name = "Unknown Source"
             
-        col.store_name = col.store.store_name if col.store else "Direct Handover"
+        col.store_name = col.store.store_name if col.store else "Cash"
         col.staff_name = col.staff.name if col.staff else "Unknown Staff"
         col.portal_name = col.portal.portal_name if col.portal else None
         
@@ -740,7 +740,7 @@ def update_collection(
     # Populate virtual fields
     collection.retailer_name = collection.retailer.retailer_name if collection.retailer else "Unknown"
     collection.retailer_ledger_token = collection.retailer.ledger_token if collection.retailer else None
-    collection.store_name = collection.store.store_name if collection.store else "Direct Retailer Handover"
+    collection.store_name = collection.store.store_name if collection.store else "Cash"
     collection.staff_name = collection.staff.name if collection.staff else "Unknown"
     collection.portal_name = collection.portal.portal_name if collection.portal else None
     

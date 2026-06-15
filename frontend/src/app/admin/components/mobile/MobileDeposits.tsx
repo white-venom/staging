@@ -64,7 +64,7 @@ export default function MobileDeposits({ deposits, showToastNotification, fetchD
               <div className="flex items-center gap-1.5 justify-end">
                 <Calendar className="w-3 h-3 text-slate-300" />
                 <p className="text-[9px] font-black text-slate-605 dark:text-slate-300">
-                  {new Date(d.date).toLocaleDateString()}
+                  {d.date ? d.date.split(" ")[0].split("-").reverse().join("-") : ""}
                 </p>
               </div>
             </div>

@@ -174,7 +174,7 @@ export default function CashOutLedgerPage() {
 
     const totalVal = Number(entry.amount) * mult;
     const totalWords = numberToWordsIndian(totalVal);
-    const dateFormatted = entry.created_at ? formatShareDate(getUtcDate(entry.created_at).toLocaleString("sv-SE").substring(0, 19)) : "";
+    const dateFormatted = entry.created_at ? formatShareDate(getUtcDate(entry.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 19)) : "";
     const collectorName = currentUser?.name || "Mehruddin";
 
     let headerLines: string[] = [];
@@ -314,7 +314,7 @@ ${dateFormatted}`;
           online_portal_id: updated.denominations.online_portal_id,
         } : undefined,
         status: updated.status,
-        date: getUtcDate(updated.created_at).toLocaleString("sv-SE").substring(0, 16),
+        date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
       };
       store.setDeposits(store.deposits.map(d => d.id === editingItem.id ? mappedUpdated : d));
 
@@ -335,7 +335,7 @@ ${dateFormatted}`;
   // Group by date
   const groupedDeposits: Record<string, any[]> = {};
   filteredDeposits.forEach(d => {
-    const dateStr = d.created_at ? getUtcDate(d.created_at).toLocaleDateString() : "Unknown Date";
+    const dateStr = d.created_at ? getUtcDate(d.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Unknown Date";
     if (!groupedDeposits[dateStr]) {
       groupedDeposits[dateStr] = [];
     }
@@ -410,7 +410,7 @@ ${dateFormatted}`;
                           <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
                             <span className="capitalize">{d.deposit_type}</span>
                             <span>•</span>
-                            <span>{getUtcDate(d.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            <span>{getUtcDate(d.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</span>
                           </p>
                         </div>
 
