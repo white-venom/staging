@@ -223,7 +223,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800 font-sans pb-24">
       {/* 1. Header with back arrow */}
-      <div className="bg-indigo-650 dark:bg-indigo-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md">
+      <div className="bg-indigo-600 dark:bg-indigo-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md">
         <div className="flex items-center gap-3">
           {onBack && (
             <button 
