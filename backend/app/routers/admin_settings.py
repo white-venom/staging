@@ -106,15 +106,23 @@ def process_virtual_transfer(
     from datetime import datetime
     ist = pytz.timezone('Asia/Kolkata')
     today_ist = datetime.now(ist).date()
-    # 1. Fetch Source Portal
+    # 1. Fetch Source Portal (locked)
     portal = db.scalar(
         select(Portal)
-        .options(joinedload(Portal.group))
         .where(Portal.id == payload.portal_id)
         .with_for_update()
     )
     if not portal:
         raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
+        
+    # Lock the associated PortalGroup to prevent race conditions on group balance
+    if portal.group_id:
+        from app.database.models import PortalGroup
+        db.scalar(
+            select(PortalGroup)
+            .where(PortalGroup.id == portal.group_id)
+            .with_for_update()
+        )
         
     if not payload.retailer_id and not payload.staff_id:
         raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
