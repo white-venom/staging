@@ -345,44 +345,19 @@ export default function PortalsTab({
                     </div>
                   )}
 
-                  <div className="mt-4 grid grid-cols-3 gap-2">
-                    <button
-                      onClick={() => {
-                        console.log("View Ledger clicked for group:", group);
-                        if (group.portals && group.portals.length > 0) {
-                          handleOpenLedger(group.portals[0]);
-                        } else {
-                          console.warn("No bank accounts found in group.portals:", group.portals);
-                          showToastNotification("No bank account registered for this portal!");
-                        }
-                      }}
-                      className="py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-105 dark:border-emerald-800/40 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center"
-                    >
-                      View Ledger
-                    </button>
-                    <button
-                      onClick={() => {
-                        setLedgerSearchTerm(group.name);
-                        router.push("/admin/ledger");
-                      }}
-                      className="py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-955 dark:hover:bg-slate-900 text-slate-655 dark:text-slate-355 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer text-center"
-                    >
-                      Audit
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedGroup(group);
-                        setEditingGroupId(group.id);
-                        setEditingGroupName(group.name);
-                        setEditingGroupBalanceAdjustment("");
-                        setEditGroupOnline(!!group.show_in_online_payment);
-                        setIsAccountModalOpen(true);
-                      }}
-                      className="py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-955 dark:hover:bg-slate-900 text-slate-655 dark:text-slate-355 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1"
-                    >
-                      <Edit className="w-3 h-3" /> Manage Portal
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => {
+                      setSelectedGroup(group);
+                      setEditingGroupId(group.id);
+                      setEditingGroupName(group.name);
+                      setEditingGroupBalanceAdjustment("");
+                      setEditGroupOnline(!!group.show_in_online_payment);
+                      setIsAccountModalOpen(true);
+                    }}
+                    className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-955 dark:hover:bg-slate-900 text-slate-655 dark:text-slate-355 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Edit className="w-3.5 h-3.5" /> Manage Portal & Banks
+                  </button>
               </div>
             </div>
           </div>
