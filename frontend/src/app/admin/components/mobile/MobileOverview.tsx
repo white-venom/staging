@@ -80,6 +80,7 @@ export default function MobileOverview({
   staffComplianceLogs
 }: MobileOverviewProps) {
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
+  const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = useState(true);
   
   // Calculate 7-day trend data
   const trendData = useMemo(() => {
@@ -246,50 +247,50 @@ export default function MobileOverview({
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Staff live Status & Cash Tracker Card */}
+        {/* Staff live Status & Cash Tracker Card */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 shadow-sm flex flex-col gap-2 animate-fade-in">
-        {/* Header */}
-        <div className="flex items-center gap-1.5">
-          <div className="p-1 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-md">
-            <Users className="w-3.5 h-3.5" />
+        {/* Header (Clickable to collapse/expand entire list) */}
+        <div 
+          onClick={() => setIsStaffTrackingExpanded(!isStaffTrackingExpanded)}
+          className="flex items-center justify-between cursor-pointer group"
+        >
+          <div className="flex items-center gap-1.5">
+            <div className="p-1 bg-blue-50 dark:bg-blue-955/50 text-blue-600 dark:text-blue-400 rounded-md">
+              <Users className="w-3.5 h-3.5" />
+            </div>
+            <div>
+              <span className="text-[9px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest">Staff Tracking</span>
+              <p className="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase">Live field reports</p>
+            </div>
           </div>
-          <div>
-            <span className="text-[9px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest">Staff Tracking</span>
-            <p className="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase">Live field reports</p>
-          </div>
+          <ChevronDown className={`w-3.5 h-3.5 text-slate-450 transform transition-transform duration-200 ${isStaffTrackingExpanded ? 'rotate-180' : ''}`} />
         </div>
 
         {/* List of active field staff */}
-        {staffListData.length === 0 ? (
-          <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold italic text-center py-2">No staff members found.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {staffListData.map((staff) => {
-              const isExpanded = !!expandedStaffNames[staff.name];
-              const isActive = staff.compliance?.status === "Active Duty";
-              return (
-                <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-md p-1.5 bg-slate-50/30 dark:bg-slate-900/20 space-y-1.5">
-                  {/* Card Header (Clickable to Expand) */}
-                  <div 
-                    onClick={() => toggleStaffExpanded(staff.name)}
-                    className="flex items-center justify-between cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-350 dark:bg-slate-700'}`} />
-                      <span className="text-[10px] font-black text-slate-850 dark:text-white uppercase tracking-tight group-hover:text-blue-655 dark:group-hover:text-blue-455 transition-colors">
-                        {staff.name}
-                      </span>
-                      <span className="text-[7px] font-extrabold text-slate-400 dark:text-slate-500 uppercase">
-                        {isActive ? "Active" : "Offline"}
-                      </span>
-                    </div>
-                    <ChevronDown className={`w-3.5 h-3.5 text-slate-450 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                  </div>
-                  {isExpanded && (
-                    <div className="border-t border-slate-100 dark:border-slate-800/80 pt-1.5 space-y-1.5 animate-slide-up">
-                      {/* Summary Stats Row */}
+        {isStaffTrackingExpanded && (
+          <div>
+            {staffListData.length === 0 ? (
+              <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold italic text-center py-2">No staff members found.</p>
+            ) : (
+              <div className="space-y-1.5 max-h-[350px] overflow-y-auto pr-1">
+                {staffListData.map((staff) => {
+                  const isActive = staff.compliance?.status === "Active Duty";
+                  return (
+                    <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-md p-1.5 bg-slate-50/30 dark:bg-slate-900/20 space-y-1.5">
+                      {/* Card Header (Statically displayed) */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-350 dark:bg-slate-700'}`} />
+                          <span className="text-[10px] font-black text-slate-850 dark:text-white uppercase tracking-tight">
+                            {staff.name}
+                          </span>
+                          <span className="text-[7px] font-extrabold text-slate-400 dark:text-slate-500 uppercase">
+                            {isActive ? "Active" : "Offline"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Summary Stats Row (Always visible directly inside card) */}
                       <div className="grid grid-cols-3 gap-1.5">
                         <div className="p-1 bg-emerald-50/20 dark:bg-emerald-955/5 border border-emerald-100/30 dark:border-emerald-900/5 rounded-md flex flex-col">
                           <span className="text-[6.5px] font-black uppercase text-emerald-600 tracking-wide">Collected</span>
@@ -305,113 +306,118 @@ export default function MobileOverview({
                         </div>
                         <div className="p-1 bg-blue-50/20 dark:bg-blue-955/5 border border-blue-100/30 dark:border-blue-900/5 rounded-md flex flex-col">
                           <span className="text-[6.5px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
-                          <span className={`text-[9px] font-black ${staff.remainingToday < 0 ? 'text-red-650 dark:text-red-455' : 'text-blue-700 dark:text-blue-400'}`}>
+                          <span className={`text-[9px] font-black ${staff.remainingToday < 0 ? 'text-red-655 dark:text-red-455' : 'text-blue-700 dark:text-blue-400'}`}>
                             ₹{staff.remainingToday.toLocaleString()}
                           </span>
                         </div>
                       </div>
-                      {/* Check-in info */}
-                      <div className="flex items-center justify-between text-[8px]">
-                        <span className="font-bold text-slate-400 uppercase tracking-wide">Shift Status</span>
-                        <span className="font-black text-slate-705 dark:text-slate-350">
-                          {staff.compliance ? staff.compliance.status : "Not Checked In"}
-                          {staff.compliance?.startTime ? ` (IN: ${staff.compliance.startTime})` : ""}
-                        </span>
-                      </div>
 
-                      {staff.compliance ? (
-                        <div className="flex flex-col gap-1">
-                          {/* Odometer mileage */}
+                      {/* Outings and Odometer Info (Shown directly only if compliance or outings exist) */}
+                      {(staff.compliance || staff.visitedStores.length > 0) && (
+                        <div className="border-t border-slate-100 dark:border-slate-800/80 pt-1.5 space-y-1.5">
+                          {/* Check-in info */}
                           <div className="flex items-center justify-between text-[8px]">
-                            <span className="font-bold text-slate-400 uppercase tracking-wide">Odometer</span>
-                            <span className="font-black text-slate-705 dark:text-slate-300">
-                              {staff.compliance.startKm ? `${staff.compliance.startKm} KM` : "0 KM"}
-                              {staff.compliance.endKm ? ` → ${staff.compliance.endKm} KM` : " Started"}
+                            <span className="font-bold text-slate-400 uppercase tracking-wide">Shift Status</span>
+                            <span className="font-black text-slate-705 dark:text-slate-350">
+                              {staff.compliance ? staff.compliance.status : "Not Checked In"}
+                              {staff.compliance?.startTime ? ` (IN: ${staff.compliance.startTime})` : ""}
                             </span>
                           </div>
 
-                          {/* Action Buttons for GPS Coordinates & photos */}
-                          <div className="flex flex-wrap gap-1 pt-0.5">
-                            {/* Start Coordinates Link */}
-                            {staff.compliance.startLatitude && staff.compliance.startLongitude && (
-                              <a
-                                href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.startLatitude},${staff.compliance.startLongitude}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-955/65 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-950 transition-colors"
-                              >
-                                <MapPin className="w-2 h-2 text-blue-500" />
-                                <span>Start Route</span>
-                              </a>
-                            )}
+                          {staff.compliance ? (
+                            <div className="flex flex-col gap-1">
+                              {/* Odometer mileage */}
+                              <div className="flex items-center justify-between text-[8px]">
+                                <span className="font-bold text-slate-400 uppercase tracking-wide">Odometer</span>
+                                <span className="font-black text-slate-705 dark:text-slate-300">
+                                  {staff.compliance.startKm ? `${staff.compliance.startKm} KM` : "0 KM"}
+                                  {staff.compliance.endKm ? ` → ${staff.compliance.endKm} KM` : " Started"}
+                                </span>
+                              </div>
 
-                            {/* Start Odometer Photo */}
-                            {staff.compliance.startKmImageUrl && (
-                              <a
-                                href={staff.compliance.startKmImageUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-850 text-slate-655 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-                              >
-                                <Camera className="w-2 h-2 text-slate-500" />
-                                <span>Start Photo</span>
-                              </a>
-                            )}
+                              {/* Action Buttons for GPS Coordinates & photos */}
+                              <div className="flex flex-wrap gap-1 pt-0.5">
+                                {/* Start Coordinates Link */}
+                                {staff.compliance.startLatitude && staff.compliance.startLongitude && (
+                                  <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.startLatitude},${staff.compliance.startLongitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-955/65 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-955 transition-colors"
+                                  >
+                                    <MapPin className="w-2.5 h-2.5 text-blue-500" />
+                                    <span>Start Route</span>
+                                  </a>
+                                )}
 
-                            {/* End Coordinates Link */}
-                            {staff.compliance.endLatitude && staff.compliance.endLongitude && (
-                              <a
-                                href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.endLatitude},${staff.compliance.endLongitude}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-955/65 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-950 transition-colors"
-                              >
-                                <MapPin className="w-2 h-2 text-indigo-500" />
-                                <span>End Route</span>
-                              </a>
-                            )}
+                                {/* Start Odometer Photo */}
+                                {staff.compliance.startKmImageUrl && (
+                                  <a
+                                    href={staff.compliance.startKmImageUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-850 text-slate-655 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                                  >
+                                    <Camera className="w-2.5 h-2.5 text-slate-500" />
+                                    <span>Start Photo</span>
+                                  </a>
+                                )}
 
-                            {/* End Odometer Photo */}
-                            {staff.compliance.endKmImageUrl && (
-                              <a
-                                href={staff.compliance.endKmImageUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-850 text-slate-655 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
-                              >
-                                <Camera className="w-2 h-2 text-slate-500" />
-                                <span>End Photo</span>
-                              </a>
-                            )}
+                                {/* End Coordinates Link */}
+                                {staff.compliance.endLatitude && staff.compliance.endLongitude && (
+                                  <a
+                                    href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.endLatitude},${staff.compliance.endLongitude}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-955/65 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-955 transition-colors"
+                                  >
+                                    <MapPin className="w-2.5 h-2.5 text-indigo-500" />
+                                    <span>End Route</span>
+                                  </a>
+                                )}
+
+                                {/* End Odometer Photo */}
+                                {staff.compliance.endKmImageUrl && (
+                                  <a
+                                    href={staff.compliance.endKmImageUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-[7px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-850 text-slate-655 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                                  >
+                                    <Camera className="w-2.5 h-2.5 text-slate-500" />
+                                    <span>End Photo</span>
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          ) : null}
+
+                          {/* Visited stores button inside collapsed card details */}
+                          <div className="border-t border-slate-100 dark:border-slate-850 pt-1.5 flex items-center justify-between">
+                            <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Outings</span>
+                            <button
+                              onClick={() => staff.visitedStores.length > 0 && setActiveModalStaff({ name: staff.name, visitedStores: staff.visitedStores })}
+                              className={`flex items-center gap-1 font-black uppercase tracking-wider text-[7px] px-1.5 py-0.5 rounded transition-all ${
+                                staff.visitedStores.length > 0 
+                                ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-955/40 hover:bg-blue-100 dark:hover:bg-blue-955/80 cursor-pointer shadow-xs" 
+                                : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-955/20 cursor-not-allowed"
+                              }`}
+                              disabled={staff.visitedStores.length === 0}
+                            >
+                              <Store className="w-2.5 h-2.5" />
+                              <span>Stores: {staff.visitedStores.length}</span>
+                            </button>
                           </div>
                         </div>
-                      ) : (
-                        <p className="text-[7px] font-bold text-slate-400 italic text-center py-0.5">No shift log exists for today.</p>
                       )}
-
-                      {/* Visited stores button inside collapsed card details */}
-                      <div className="border-t border-slate-100 dark:border-slate-850 pt-1.5 flex items-center justify-between">
-                        <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Outings</span>
-                        <button
-                          onClick={() => staff.visitedStores.length > 0 && setActiveModalStaff({ name: staff.name, visitedStores: staff.visitedStores })}
-                          className={`flex items-center gap-1 font-black uppercase tracking-wider text-[7px] px-1.5 py-0.5 rounded transition-all ${
-                            staff.visitedStores.length > 0 
-                            ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-955/40 hover:bg-blue-100 dark:hover:bg-blue-955/80 cursor-pointer shadow-xs" 
-                            : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-955/20 cursor-not-allowed"
-                          }`}
-                          disabled={staff.visitedStores.length === 0}
-                        >
-                          <Store className="w-2.5 h-2.5" />
-                          <span>Stores: {staff.visitedStores.length}</span>
-                        </button>
-                      </div>
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
+      </div>
       </div>
 
       {/* Quick Actions Grid */}
