@@ -13,7 +13,6 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "CrediiFlow | Operational Platform",
   description: "Next-generation cashless ledger sheets, physical denomination tracking, and real-time pocket-cash balance calculations.",
-  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
