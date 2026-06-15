@@ -112,7 +112,7 @@ export default function WalletTransferTab() {
             onChange={(e) => setVDirection(e.target.value as "load" | "refund")}
             className="text-xs font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg px-2 py-1 outline-none cursor-pointer"
           >
-            <option value="load">Load Retailer</option>
+            <option value="load">Virtual Transfer</option>
             <option value="refund">Move to Distributor</option>
           </select>
         </div>
@@ -234,7 +234,7 @@ export default function WalletTransferTab() {
                         ? 'bg-red-200 dark:bg-red-900 text-red-700 dark:text-red-300'
                         : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400'
                     }`}>
-                      {isRefund ? 'Move to Distributor' : 'Load Retailer'}
+                      {isRefund ? 'Move to Distributor' : 'Virtual Transfer'}
                     </span>
                     {/* Narration */}
                     <div className={`text-xs font-black flex items-center gap-1 ${isRefund ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>
