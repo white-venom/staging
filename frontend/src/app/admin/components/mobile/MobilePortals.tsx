@@ -307,18 +307,33 @@ export default function MobilePortals({
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{(group.portals || []).length} Accounts</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0">
                     <button 
                       onClick={() => handleStartEditPortal(group)}
                       className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+                      title="Edit"
                     >
                       <Edit className="w-3 h-3" />
                     </button>
                     <button 
                       onClick={() => handleDeletePortalGroup(group.id, group.name)}
                       className="p-1 bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer"
+                      title="Delete"
                     >
                       <Trash2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (group.portals && group.portals.length > 0) {
+                          handleOpenLedger(group.portals[0]);
+                        } else {
+                          showToastNotification("No bank account registered for this portal!");
+                        }
+                      }}
+                      className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-bold rounded cursor-pointer"
+                      title="View Ledger"
+                    >
+                      Ledger
                     </button>
                   </div>
                 </div>
