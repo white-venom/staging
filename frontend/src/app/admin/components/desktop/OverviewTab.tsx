@@ -157,6 +157,15 @@ export default function OverviewTab({
     });
   }, [staffUsers, safeCollections, safeDeposits, staffComplianceLogs]);
 
+  const sortedStaffListData = React.useMemo(() => {
+    return [...staffListData].sort((a, b) => {
+      const aActive = a.compliance?.status === "Active Duty" ? 1 : 0;
+      const bActive = b.compliance?.status === "Active Duty" ? 1 : 0;
+      if (aActive !== bActive) return bActive - aActive;
+      return a.name.localeCompare(b.name);
+    });
+  }, [staffListData]);
+
   // Pre-calculate running balances for all transactions (excluding virtual deposits)
   const combinedTimeline = [
     ...safeCollections.map(c => ({ ...c, type: 'collection', amt: c.totalAmount })),
@@ -226,29 +235,32 @@ export default function OverviewTab({
               </div>
             </div>
             <ChevronDown className={`w-4 h-4 text-slate-400 transform transition-transform duration-200 ${isStaffTrackingExpanded ? 'rotate-180' : ''}`} />
-          </div>
-
-          {/* List of active field staff */}
+          </div>          {/* List of active field staff */}
           {isStaffTrackingExpanded && (
             <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
-              {staffListData.length === 0 ? (
-                <p className="text-[10px] text-slate-450 dark:text-slate-550 font-bold italic text-center py-4">No staff members found.</p>
+              {sortedStaffListData.length === 0 ? (
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold italic text-center py-4">No staff members found.</p>
               ) : (
-                staffListData.map((staff) => {
+                sortedStaffListData.map((staff) => {
                   const isActive = staff.compliance?.status === "Active Duty";
+                  const isExpanded = !!expandedStaffNames[staff.name];
                   return (
-                    <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/20 dark:bg-slate-955/10 space-y-2.5">
-                      {/* Header Row (Statically displayed) */}
-                      <div className="flex items-center justify-between">
+                    <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/20 dark:bg-slate-900/10 space-y-2.5">
+                      {/* Header Row (Clickable to toggle individual collapse) */}
+                      <div 
+                        onClick={() => toggleStaffExpanded(staff.name)}
+                        className="flex items-center justify-between cursor-pointer group"
+                      >
                         <div className="flex items-center gap-2">
-                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-505 animate-pulse' : 'bg-slate-350 dark:bg-slate-700'}`} />
-                          <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-350 dark:bg-slate-700'}`} />
+                          <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {staff.name}
                           </span>
                           <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">
                             {isActive ? "Active" : "Offline"}
                           </span>
                         </div>
+                        <ChevronDown className={`w-4 h-4 text-slate-400 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                       </div>
 
                       {/* Stats Summary columns (Always visible directly inside card) */}
@@ -265,19 +277,19 @@ export default function OverviewTab({
                             ₹{staff.depositedToday.toLocaleString()}
                           </span>
                         </div>
-                        <div className="p-1.5 bg-blue-50/25 dark:bg-blue-955/5 border border-blue-100/30 dark:border-blue-900/10 rounded-lg flex flex-col">
+                        <div className="p-1.5 bg-blue-50/25 dark:bg-blue-900/5 border border-blue-100/30 dark:border-blue-900/10 rounded-lg flex flex-col">
                           <span className="text-[7px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
-                          <span className={`text-[10px] font-black mt-0.5 ${staff.remainingToday < 0 ? 'text-red-655 dark:text-red-400' : 'text-blue-700 dark:text-blue-455'}`}>
+                          <span className={`text-[10px] font-black mt-0.5 ${staff.remainingToday < 0 ? 'text-red-600 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'}`}>
                             ₹{staff.remainingToday.toLocaleString()}
                           </span>
                         </div>
                       </div>
 
-                      {/* Outings and Odometer Info (Shown directly only if compliance or outings exist) */}
-                      {(staff.compliance || staff.visitedStores.length > 0) && (
-                        <div className="border-t border-slate-100 dark:border-slate-800/80 pt-2.5 space-y-2.5">
+                      {/* Collapsible Details */}
+                      {isExpanded && (
+                        <div className="border-t border-slate-100 dark:border-slate-800/80 pt-2.5 space-y-2.5 animate-fade-in">
                           <div className="flex items-center justify-between text-[9px]">
-                            <span className="font-bold text-slate-450 uppercase tracking-wide">Shift Status</span>
+                            <span className="font-bold text-slate-400 uppercase tracking-wide">Shift Status</span>
                             <span className="font-extrabold text-slate-700 dark:text-slate-300">
                               {staff.compliance ? (
                                 `${staff.compliance.status} ${staff.compliance.startTime ? `(IN: ${staff.compliance.startTime})` : ""}`
@@ -290,8 +302,8 @@ export default function OverviewTab({
                           {staff.compliance && (
                             <div className="flex flex-col gap-2">
                               <div className="flex items-center justify-between text-[9px]">
-                                <span className="font-bold text-slate-455 uppercase tracking-wide">Odometer Reading</span>
-                                <span className="font-extrabold text-slate-700 dark:text-slate-355">
+                                <span className="font-bold text-slate-400 uppercase tracking-wide">Odometer Reading</span>
+                                <span className="font-extrabold text-slate-700 dark:text-slate-300">
                                   {staff.compliance.startKm ? `${staff.compliance.startKm} KM` : "0 KM"}
                                   {staff.compliance.endKm ? ` → ${staff.compliance.endKm} KM` : " Started"}
                                 </span>
@@ -305,7 +317,7 @@ export default function OverviewTab({
                                     href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.startLatitude},${staff.compliance.startLongitude}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                    className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                                     title="View starting location on Google Maps"
                                   >
                                     <MapPin className="w-2.5 h-2.5 text-blue-500" />
@@ -319,7 +331,7 @@ export default function OverviewTab({
                                     href={staff.compliance.startKmImageUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-650 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                                     title="View starting odometer photo"
                                   >
                                     <Camera className="w-2.5 h-2.5 text-slate-500" />
@@ -333,7 +345,7 @@ export default function OverviewTab({
                                     href={`https://www.google.com/maps/search/?api=1&query=${staff.compliance.endLatitude},${staff.compliance.endLongitude}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
+                                    className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors"
                                     title="View ending location on Google Maps"
                                   >
                                     <MapPin className="w-2.5 h-2.5 text-indigo-500" />
@@ -347,7 +359,7 @@ export default function OverviewTab({
                                     href={staff.compliance.endKmImageUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-650 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                                    className="flex items-center gap-0.5 text-[8px] font-black uppercase tracking-wider px-2 py-1 rounded bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                                     title="View ending odometer photo"
                                   >
                                     <Camera className="w-2.5 h-2.5 text-slate-500" />
@@ -365,8 +377,8 @@ export default function OverviewTab({
                               onClick={() => staff.visitedStores.length > 0 && setActiveModalStaff({ name: staff.name, visitedStores: staff.visitedStores })}
                               className={`flex items-center gap-1 font-black uppercase tracking-wide text-[9px] px-2 py-1.5 rounded-lg transition-all ${
                                 staff.visitedStores.length > 0 
-                                ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-955/80 cursor-pointer" 
-                                : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-950/20 cursor-not-allowed"
+                                ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/80 cursor-pointer" 
+                                : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-900/20 cursor-not-allowed"
                               }`}
                               disabled={staff.visitedStores.length === 0}
                             >
