@@ -39,14 +39,17 @@ export default function MobilePortals({
   const [loadingLedger, setLoadingLedger] = useState(false);
 
   const handleOpenLedger = async (portal: any) => {
+    console.log("handleOpenLedger called for portal in MobilePortals:", portal);
     setLedgerPortal(portal);
     setIsLedgerModalOpen(true);
     setLoadingLedger(true);
     try {
       const res = await api.getPortalLedger(portal.id);
+      console.log("getPortalLedger response in MobilePortals:", res);
       setLedgerData(res.statement_history || []);
       setLedgerOutstanding(res.outstanding_balance || 0);
     } catch (err: any) {
+      console.error("getPortalLedger failed in MobilePortals:", err);
       showToastNotification("Failed to load ledger: " + err.message);
       setIsLedgerModalOpen(false);
     } finally {
@@ -324,9 +327,11 @@ export default function MobilePortals({
                     </button>
                     <button
                       onClick={() => {
+                        console.log("Mobile Ledger clicked for group:", group);
                         if (group.portals && group.portals.length > 0) {
                           handleOpenLedger(group.portals[0]);
                         } else {
+                          console.warn("No bank accounts found in group.portals:", group.portals);
                           showToastNotification("No bank account registered for this portal!");
                         }
                       }}

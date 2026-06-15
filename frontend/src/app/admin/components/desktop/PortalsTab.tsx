@@ -42,14 +42,17 @@ export default function PortalsTab({
   const [loadingLedger, setLoadingLedger] = useState(false);
 
   const handleOpenLedger = async (portal: any) => {
+    console.log("handleOpenLedger called for portal:", portal);
     setLedgerPortal(portal);
     setIsLedgerModalOpen(true);
     setLoadingLedger(true);
     try {
       const res = await api.getPortalLedger(portal.id);
+      console.log("getPortalLedger response:", res);
       setLedgerData(res.statement_history || []);
       setLedgerOutstanding(res.outstanding_balance || 0);
     } catch (err: any) {
+      console.error("getPortalLedger failed:", err);
       alert("Failed to load ledger: " + err.message);
       setIsLedgerModalOpen(false);
     } finally {
@@ -345,9 +348,11 @@ export default function PortalsTab({
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     <button
                       onClick={() => {
+                        console.log("View Ledger clicked for group:", group);
                         if (group.portals && group.portals.length > 0) {
                           handleOpenLedger(group.portals[0]);
                         } else {
+                          console.warn("No bank accounts found in group.portals:", group.portals);
                           showToastNotification("No bank account registered for this portal!");
                         }
                       }}
