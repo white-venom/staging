@@ -59,7 +59,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
   const [profilePassword, setProfilePassword] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
-  const { isStandalone, installable, triggerInstall } = usePWAInstall();
+  const { isStandalone, isIOS, installable, triggerInstall } = usePWAInstall();
 
   React.useEffect(() => {
     if (currentUser) {

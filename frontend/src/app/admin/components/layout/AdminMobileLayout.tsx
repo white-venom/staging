@@ -38,7 +38,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
   const [profilePassword, setProfilePassword] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
-  const { isStandalone, installable, triggerInstall } = usePWAInstall();
+  const { isStandalone, isIOS, installable, triggerInstall } = usePWAInstall();
 
   React.useEffect(() => {
     if (currentUser) {

@@ -61,7 +61,7 @@ export default function StaffDashboard() {
   const [homeEditingEntry, setHomeEditingEntry] = useState<any | null>(null);
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [showIOSModal, setShowIOSModal] = useState(false);
-  const { isStandalone, installable, triggerInstall } = usePWAInstall();
+  const { isStandalone, isIOS, installable, triggerInstall } = usePWAInstall();
 
   useEffect(() => {
     if (isSidebarOpen) {
