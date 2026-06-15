@@ -694,12 +694,14 @@ export default function StaffDashboard() {
                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Staff</p>
                 </div>
                 {/* PWA Download Button */}
-                {installable && !isStandalone && (
+                {!isStandalone && (
                   <button
                     onClick={async () => {
                       setIsSidebarOpen(false);
+                      if (isIOS) { setShowIOSModal(true); return; }
                       const result = await triggerInstall();
                       if (result === "show-ios-modal") setShowIOSModal(true);
+                      else if (result === "dismissed") alert("To install: tap the browser 3-dot menu → Add to Home Screen.");
                     }}
                     className="w-full py-3.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform cursor-pointer border border-blue-100 dark:border-blue-900/30"
                   >

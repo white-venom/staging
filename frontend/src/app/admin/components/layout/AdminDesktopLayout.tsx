@@ -225,12 +225,19 @@ export default function AdminDesktopLayout({ children }: { children: React.React
         </nav>
 
         <div className="border-t border-slate-150 dark:border-slate-800 pt-5 flex flex-col gap-2">
-          {/* PWA Install Button - only shown if not already installed and app is installable */}
-          {installable && !isStandalone && (
+          {/* PWA Install Button - shown when app is not already installed as standalone */}
+          {!isStandalone && (
             <button
               onClick={async () => {
+                if (isIOS) {
+                  setShowIOSModal(true);
+                  return;
+                }
                 const result = await triggerInstall();
                 if (result === "show-ios-modal") setShowIOSModal(true);
+                else if (result === "dismissed") {
+                  alert("To install: click the browser address bar install icon (⊕) or the 3-dot menu → Install App.");
+                }
               }}
               className="flex items-center gap-2.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg w-full"
             >

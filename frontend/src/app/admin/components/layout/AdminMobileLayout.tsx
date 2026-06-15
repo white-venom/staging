@@ -249,13 +249,15 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
                 <User className="w-3 h-3" />
                 Edit Profile
               </button>
-              {/* PWA Download Button - only if not installed */}
-              {installable && !isStandalone && (
+              {/* PWA Download Button - always shown if not already installed */}
+              {!isStandalone && (
                 <button
                   onClick={async () => {
                     setIsMenuOpen(false);
+                    if (isIOS) { setShowIOSModal(true); return; }
                     const result = await triggerInstall();
                     if (result === "show-ios-modal") setShowIOSModal(true);
+                    else if (result === "dismissed") alert("To install: tap the browser 3-dot menu → Install App.");
                   }}
                   className="w-full py-1.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-lg font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform cursor-pointer border border-blue-100 dark:border-blue-900/30"
                 >
