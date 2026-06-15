@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { api } from "@/app/utils/api";
+import { usePWAInstall } from "@/app/hooks/usePWAInstall";
+import PWAInstallModal from "@/app/components/PWAInstallModal";
 
 export default function AdminDesktopLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -56,6 +58,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
   const [profilePhone, setProfilePhone] = useState("");
   const [profilePassword, setProfilePassword] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [showIOSModal, setShowIOSModal] = useState(false);
+  const { isStandalone, installable, triggerInstall } = usePWAInstall();
 
   React.useEffect(() => {
     if (currentUser) {
@@ -221,6 +225,21 @@ export default function AdminDesktopLayout({ children }: { children: React.React
         </nav>
 
         <div className="border-t border-slate-150 dark:border-slate-800 pt-5 flex flex-col gap-2">
+          {/* PWA Install Button - only shown if not already installed and app is installable */}
+          {installable && !isStandalone && (
+            <button
+              onClick={async () => {
+                const result = await triggerInstall();
+                if (result === "show-ios-modal") setShowIOSModal(true);
+              }}
+              className="flex items-center gap-2.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg w-full"
+            >
+              <svg className="w-4.5 h-4.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download App
+            </button>
+          )}
           <button
             onClick={() => setShowProfileModal(true)}
             className="flex items-center gap-2.5 text-slate-500 hover:text-slate-850 dark:hover:text-slate-100 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 rounded-lg w-fit"
@@ -398,6 +417,9 @@ export default function AdminDesktopLayout({ children }: { children: React.React
           </div>
         </div>
       )}
+
+      {/* iOS PWA Install Instructions Modal */}
+      {showIOSModal && <PWAInstallModal onClose={() => setShowIOSModal(false)} />}
 
       <style jsx global>{`
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }

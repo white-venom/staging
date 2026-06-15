@@ -283,7 +283,7 @@ export default function MobileOverview({
             {sortedStaffListData.length === 0 ? (
               <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold italic text-center py-2">No staff members found.</p>
             ) : (
-              <div className="space-y-1.5 max-h-[350px] overflow-y-auto pr-1">
+              <div className="space-y-1.5">
                 {sortedStaffListData.map((staff) => {
                   const isActive = staff.compliance?.status === "Active Duty";
                   const isExpanded = !!expandedStaffNames[staff.name];

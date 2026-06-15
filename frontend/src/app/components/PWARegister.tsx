@@ -24,5 +24,18 @@ export default function PWARegister() {
     }
   }, []);
 
+  // Capture the beforeinstallprompt event so sidebars can use it to trigger install
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handler = (e: Event) => {
+      e.preventDefault();
+      window.deferredPrompt = e;
+      window.dispatchEvent(new Event("pwa-prompt-available"));
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
   return null;
 }
+

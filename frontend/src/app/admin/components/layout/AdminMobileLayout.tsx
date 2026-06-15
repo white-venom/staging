@@ -22,6 +22,8 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppStore } from "@/app/utils/store";
 import { api } from "@/app/utils/api";
+import { usePWAInstall } from "@/app/hooks/usePWAInstall";
+import PWAInstallModal from "@/app/components/PWAInstallModal";
 
 export default function AdminMobileLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -35,6 +37,8 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
   const [profilePhone, setProfilePhone] = useState("");
   const [profilePassword, setProfilePassword] = useState("");
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
+  const [showIOSModal, setShowIOSModal] = useState(false);
+  const { isStandalone, installable, triggerInstall } = usePWAInstall();
 
   React.useEffect(() => {
     if (currentUser) {
@@ -245,6 +249,22 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
                 <User className="w-3 h-3" />
                 Edit Profile
               </button>
+              {/* PWA Download Button - only if not installed */}
+              {installable && !isStandalone && (
+                <button
+                  onClick={async () => {
+                    setIsMenuOpen(false);
+                    const result = await triggerInstall();
+                    if (result === "show-ios-modal") setShowIOSModal(true);
+                  }}
+                  className="w-full py-1.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-lg font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform cursor-pointer border border-blue-100 dark:border-blue-900/30"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download App
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="w-full py-1.5 bg-red-50 text-red-650 dark:bg-red-900/10 dark:text-red-500 rounded-lg font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform cursor-pointer"
@@ -293,6 +313,9 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
           </div>
         </div>
       )}
+
+      {/* iOS PWA Install Instructions Modal */}
+      {showIOSModal && <PWAInstallModal onClose={() => setShowIOSModal(false)} />}
     </div>
   );
 }

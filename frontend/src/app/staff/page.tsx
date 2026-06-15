@@ -34,6 +34,8 @@ import {
   Trash2
 } from "lucide-react";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../utils/shareHelper";
+import { usePWAInstall } from "../hooks/usePWAInstall";
+import PWAInstallModal from "../components/PWAInstallModal";
 
 const getUtcDate = (dateStr: any) => {
   if (!dateStr) return new Date();
@@ -58,6 +60,8 @@ export default function StaffDashboard() {
   const [expandedHomeId, setExpandedHomeId] = useState<string | null>(null);
   const [homeEditingEntry, setHomeEditingEntry] = useState<any | null>(null);
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
+  const [showIOSModal, setShowIOSModal] = useState(false);
+  const { isStandalone, installable, triggerInstall } = usePWAInstall();
 
   useEffect(() => {
     if (isSidebarOpen) {
@@ -689,6 +693,22 @@ export default function StaffDashboard() {
                   <p className="text-xs font-black text-slate-700 dark:text-slate-200 mt-1 truncate">{currentUser?.name || "Staff Member"}</p>
                   <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Staff</p>
                 </div>
+                {/* PWA Download Button */}
+                {installable && !isStandalone && (
+                  <button
+                    onClick={async () => {
+                      setIsSidebarOpen(false);
+                      const result = await triggerInstall();
+                      if (result === "show-ios-modal") setShowIOSModal(true);
+                    }}
+                    className="w-full py-3.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform cursor-pointer border border-blue-100 dark:border-blue-900/30"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download App
+                  </button>
+                )}
                 <button
                   onClick={handleLogout}
                   className="w-full py-4 bg-red-50 text-red-650 dark:bg-red-900/10 dark:text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform cursor-pointer"
@@ -700,6 +720,9 @@ export default function StaffDashboard() {
             </div>
           </div>
         )}
+
+        {/* iOS PWA Install Instructions Modal */}
+        {showIOSModal && <PWAInstallModal onClose={() => setShowIOSModal(false)} />}
 
         {/* MAIN DASHBOARD CONTENT */}
         <SummaryBlocks totalCollected={totalCollected} totalDeposited={totalDeposited} netPortfolio={netPortfolio} />
