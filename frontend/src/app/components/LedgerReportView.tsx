@@ -86,9 +86,10 @@ export default function LedgerReportView({
         if (endDate && txDateStr > endDate) return false;
         
         // Search filter
+        const cleanDesc = tx.description ? tx.description.replace(/\s*\(auto-verified\)/gi, "") : "";
         if (
           searchQuery && 
-          !tx.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !cleanDesc.toLowerCase().includes(searchQuery.toLowerCase()) &&
           !tx.amount.toString().includes(searchQuery)
         ) {
           return false;
@@ -233,10 +234,10 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         {publicLink && !isPublic && (
           <button
             onClick={handleCopyLink}
-            className="flex items-center gap-1 px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-[10px] font-bold border border-white/20 transition-all cursor-pointer"
+            className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all cursor-pointer flex items-center justify-center"
+            title={isCopied ? "Copied Link" : "Copy Portal Link"}
           >
-            {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-            {isCopied ? "Copied Link" : "Copy Portal Link"}
+            {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
           </button>
         )}
       </div>
@@ -381,7 +382,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                       
                       {/* Middle: Description */}
                       <div className="flex-1 px-4 text-xs font-semibold text-slate-600 break-words whitespace-pre-wrap">
-                        {tx.description}
+                        {tx.description ? tx.description.replace(/\s*\(auto-verified\)/gi, "") : ""}
                       </div>
                       
                       {/* Right: Gave (Debit) vs Got (Credit) numeric columns */}

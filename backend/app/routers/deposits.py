@@ -109,7 +109,7 @@ def submit_deposit(
                 transaction_type="debit",
                 amount=payload.amount,
                 balance=new_balance,
-                description="cash payout (auto-verified)",
+                description="cash payout",
                 deposit_id=db_deposit.id
             )
             db.add(ledger_entry)
