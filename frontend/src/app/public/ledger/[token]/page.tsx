@@ -53,7 +53,9 @@ export default function PublicRetailerLedgerPage() {
     transaction_type: tx.transaction_type, // 'credit' or 'debit'
     amount: Number(tx.amount),
     running_balance: Number(tx.running_balance),
-    description: tx.description
+    description: tx.description,
+    remarks: tx.remarks,
+    reference_no: tx.reference_no
   }));
 
   const publicLink = typeof window !== "undefined" 

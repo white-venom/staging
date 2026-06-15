@@ -29,6 +29,8 @@ interface LedgerTransaction {
   amount: number;
   running_balance: number;
   description: string;
+  remarks?: string;
+  reference_no?: string;
 }
 
 interface LedgerReportViewProps {
@@ -95,9 +97,13 @@ export default function LedgerReportView({
         
         // Search filter
         const cleanDesc = cleanDescription(tx.description);
+        const remarkText = tx.remarks || "";
+        const refNoText = tx.reference_no || "";
         if (
           searchQuery && 
           !cleanDesc.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !remarkText.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !refNoText.toLowerCase().includes(searchQuery.toLowerCase()) &&
           !tx.amount.toString().includes(searchQuery)
         ) {
           return false;
@@ -240,13 +246,22 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         </div>
         
         {publicLink && !isPublic && (
-          <button
-            onClick={handleCopyLink}
-            className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all cursor-pointer flex items-center justify-center"
-            title={isCopied ? "Copied Link" : "Copy Portal Link"}
-          >
-            {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center gap-1.5 animate-fade-in">
+            <button
+              onClick={handleCopyLink}
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              title={isCopied ? "Copied Link" : "Copy Portal Link"}
+            >
+              {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            </button>
+            <button
+              onClick={handleShare}
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              title="Share Portal Link"
+            >
+              <Share2 className="w-4 h-4" />
+            </button>
+          </div>
         )}
       </div>
 
@@ -390,7 +405,17 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                       
                       {/* Middle: Description */}
                       <div className="flex-1 px-4 text-xs font-semibold text-slate-600 break-words whitespace-pre-wrap">
-                        {cleanDescription(tx.description)}
+                        <div>{cleanDescription(tx.description)}</div>
+                        {tx.remarks && (
+                          <div className="text-[10px] text-slate-400 font-medium mt-0.5">
+                            Remark: <span className="italic">{tx.remarks}</span>
+                          </div>
+                        )}
+                        {tx.reference_no && (
+                          <div className="text-[10px] text-slate-400 font-medium mt-0.5">
+                            Ref: {tx.reference_no}
+                          </div>
+                        )}
                       </div>
                       
                       {/* Right: Gave (Debit) vs Got (Credit) numeric columns */}

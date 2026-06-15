@@ -105,6 +105,7 @@ export default function OverviewTab({
   const [expandedCollectionId, setExpandedCollectionId] = React.useState<string | null>(null);
   const [expandedDepositId, setExpandedDepositId] = React.useState<string | null>(null);
   const [expandedLedgerRowId, setExpandedLedgerRowId] = React.useState<string | null>(null);
+  const [sortBy, setSortBy] = React.useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
 
   // Precalculate daily metrics for all active field staff
   const staffListData = React.useMemo<StaffListData[]>(() => {
@@ -240,33 +241,30 @@ export default function OverviewTab({
                         </span>
                       </div>
                       <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                    </div>
-
-                    {/* Stats Summary columns */}
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="p-1.5 bg-emerald-50/25 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/10 rounded-lg flex flex-col">
-                        <span className="text-[7px] font-black uppercase text-emerald-600 tracking-wide">Collected</span>
-                        <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-450 mt-0.5">
-                          ₹{staff.collectedToday.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="p-1.5 bg-red-50/25 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/10 rounded-lg flex flex-col">
-                        <span className="text-[7px] font-black uppercase text-red-600 tracking-wide">Deposited</span>
-                        <span className="text-[10px] font-black text-red-700 dark:text-red-450 mt-0.5">
-                          ₹{staff.depositedToday.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="p-1.5 bg-blue-50/25 dark:bg-blue-950/5 border border-blue-100/30 dark:border-blue-900/10 rounded-lg flex flex-col">
-                        <span className="text-[7px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
-                        <span className={`text-[10px] font-black mt-0.5 ${staff.remainingToday < 0 ? 'text-red-655 dark:text-red-400' : 'text-blue-700 dark:text-blue-450'}`}>
-                          ₹{staff.remainingToday.toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Collapsible Details */}
+                    </div>                    {/* Collapsible Details */}
                     {isExpanded && (
                       <div className="border-t border-slate-100 dark:border-slate-800/80 pt-2.5 space-y-2.5 animate-fade-in">
+                        {/* Stats Summary columns */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="p-1.5 bg-emerald-50/25 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/10 rounded-lg flex flex-col">
+                            <span className="text-[7px] font-black uppercase text-emerald-600 tracking-wide">Collected</span>
+                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-450 mt-0.5">
+                              ₹{staff.collectedToday.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="p-1.5 bg-red-50/25 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/10 rounded-lg flex flex-col">
+                            <span className="text-[7px] font-black uppercase text-red-600 tracking-wide">Deposited</span>
+                            <span className="text-[10px] font-black text-red-700 dark:text-red-450 mt-0.5">
+                              ₹{staff.depositedToday.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="p-1.5 bg-blue-50/25 dark:bg-blue-950/5 border border-blue-100/30 dark:border-blue-900/10 rounded-lg flex flex-col">
+                            <span className="text-[7px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
+                            <span className={`text-[10px] font-black mt-0.5 ${staff.remainingToday < 0 ? 'text-red-655 dark:text-red-400' : 'text-blue-700 dark:text-blue-450'}`}>
+                              ₹{staff.remainingToday.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
                         <div className="flex items-center justify-between text-[9px]">
                           <span className="font-bold text-slate-450 uppercase tracking-wide">Shift Status</span>
                           <span className="font-extrabold text-slate-700 dark:text-slate-300">
@@ -531,7 +529,8 @@ export default function OverviewTab({
         </div>
       </div>
 
-      {/* Recen      {(() => {
+      {/* Recent Ledger Activity Calculation */}
+      {(() => {
         const recentActivity = [
           ...safeCollections.map(c => ({
             id: c.id,
@@ -547,7 +546,10 @@ export default function OverviewTab({
             retailer_id: c.retailer_id,
             store_id: c.store_id,
             portal_id: c.portal_id,
-            rawRecord: c.rawRecord
+            rawRecord: c.rawRecord,
+            deposit_type: undefined,
+            recipient_staff_id: undefined,
+            paymentMode: undefined
           })),
           ...safeDeposits.map(d => ({
             id: d.id,
@@ -564,10 +566,19 @@ export default function OverviewTab({
             portal_id: d.portal_id,
             retailer_id: d.retailer_id,
             recipient_staff_id: d.recipient_staff_id,
-            paymentMode: d.paymentMode
+            paymentMode: d.paymentMode,
+            store_id: undefined,
+            rawRecord: undefined
           }))
-        ].sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime())
-         .slice(0, 10);
+        ].sort((a, b) => {
+          const timeA = new Date(a.date.replace(" ", "T")).getTime();
+          const timeB = new Date(b.date.replace(" ", "T")).getTime();
+          if (sortBy === "date-desc") return timeB - timeA;
+          if (sortBy === "date-asc") return timeA - timeB;
+          if (sortBy === "amount-desc") return b.amount - a.amount;
+          if (sortBy === "amount-asc") return a.amount - b.amount;
+          return 0;
+        }).slice(0, 10);
 
         return (
           <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
@@ -576,9 +587,21 @@ export default function OverviewTab({
                 <BarChart2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <h2 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Recent Ledger Activity</h2>
               </div>
-              <span className="text-[9px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-2.5 py-0.5 rounded-full font-bold border border-blue-200/60 dark:border-blue-900/40">
-                Latest 10 Entries
-              </span>
+              <div className="flex items-center gap-2">
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="px-2.5 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase outline-none cursor-pointer"
+                >
+                  <option value="date-desc">LATEST FIRST</option>
+                  <option value="date-asc">OLDEST FIRST</option>
+                  <option value="amount-desc">AMOUNT: HIGH-LOW</option>
+                  <option value="amount-asc">AMOUNT: LOW-HIGH</option>
+                </select>
+                <span className="text-[9px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded-full font-bold border border-blue-200/60 dark:border-blue-900/40">
+                  Latest 10 Entries
+                </span>
+              </div>
             </div>
 
             <div className="overflow-x-auto">

@@ -79,6 +79,7 @@ export default function MobileOverview({
   userDirectory,
   staffComplianceLogs
 }: MobileOverviewProps) {
+  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   
   // Calculate 7-day trend data
   const trendData = useMemo(() => {
@@ -138,9 +139,17 @@ export default function MobileOverview({
       }))
     ];
     return combined
-      .sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime())
+      .sort((a, b) => {
+        const timeA = new Date(a.date.replace(" ", "T")).getTime();
+        const timeB = new Date(b.date.replace(" ", "T")).getTime();
+        if (sortBy === "date-desc") return timeB - timeA;
+        if (sortBy === "date-asc") return timeA - timeB;
+        if (sortBy === "amount-desc") return b.amount - a.amount;
+        if (sortBy === "amount-asc") return a.amount - b.amount;
+        return 0;
+      })
       .slice(0, 10);
-  }, [collections, deposits]);
+  }, [collections, deposits, sortBy]);
 
   const maxNet = Math.max(...trendData.map(d => Math.abs(d.net)), 1000);
 
@@ -278,32 +287,29 @@ export default function MobileOverview({
                     </div>
                     <ChevronDown className={`w-3.5 h-3.5 text-slate-450 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                   </div>
-
-                  {/* Summary Stats Row */}
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <div className="p-1 bg-emerald-50/20 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/5 rounded-md flex flex-col">
-                      <span className="text-[6.5px] font-black uppercase text-emerald-600 tracking-wide">Collected</span>
-                      <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400">
-                        ₹{staff.collectedToday.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="p-1 bg-red-50/20 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/5 rounded-md flex flex-col">
-                      <span className="text-[6.5px] font-black uppercase text-red-600 tracking-wide">Deposited</span>
-                      <span className="text-[9px] font-black text-red-700 dark:text-red-400">
-                        ₹{staff.depositedToday.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="p-1 bg-blue-50/20 dark:bg-blue-950/5 border border-blue-100/30 dark:border-blue-900/5 rounded-md flex flex-col">
-                      <span className="text-[6.5px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
-                      <span className={`text-[9px] font-black ${staff.remainingToday < 0 ? 'text-red-650 dark:text-red-450' : 'text-blue-700 dark:text-blue-400'}`}>
-                        ₹{staff.remainingToday.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Collapsible details section */}
                   {isExpanded && (
                     <div className="border-t border-slate-100 dark:border-slate-800/80 pt-1.5 space-y-1.5 animate-slide-up">
+                      {/* Summary Stats Row */}
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <div className="p-1 bg-emerald-50/20 dark:bg-emerald-955/5 border border-emerald-100/30 dark:border-emerald-900/5 rounded-md flex flex-col">
+                          <span className="text-[6.5px] font-black uppercase text-emerald-600 tracking-wide">Collected</span>
+                          <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400">
+                            ₹{staff.collectedToday.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="p-1 bg-red-50/20 dark:bg-red-955/5 border border-red-100/30 dark:border-red-900/5 rounded-md flex flex-col">
+                          <span className="text-[6.5px] font-black uppercase text-red-600 tracking-wide">Deposited</span>
+                          <span className="text-[9px] font-black text-red-700 dark:text-red-400">
+                            ₹{staff.depositedToday.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="p-1 bg-blue-50/20 dark:bg-blue-955/5 border border-blue-100/30 dark:border-blue-900/5 rounded-md flex flex-col">
+                          <span className="text-[6.5px] font-black uppercase text-blue-600 tracking-wide">In Hand</span>
+                          <span className={`text-[9px] font-black ${staff.remainingToday < 0 ? 'text-red-650 dark:text-red-455' : 'text-blue-700 dark:text-blue-400'}`}>
+                            ₹{staff.remainingToday.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
                       {/* Check-in info */}
                       <div className="flex items-center justify-between text-[8px]">
                         <span className="font-bold text-slate-400 uppercase tracking-wide">Shift Status</span>
@@ -423,9 +429,21 @@ export default function MobileOverview({
       {/* Recent Ledger Activity */}
       <section className="space-y-2 pb-4">
         <div className="flex items-center justify-between px-1.5">
-          <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-            <History className="w-3.5 h-3.5" /> Recent Ledger
-          </h3>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+              <History className="w-3.5 h-3.5" /> Recent Ledger
+            </h3>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="bg-transparent border-none text-[8px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider focus:outline-none cursor-pointer"
+            >
+              <option value="date-desc">LATEST FIRST</option>
+              <option value="date-asc">OLDEST FIRST</option>
+              <option value="amount-desc">AMOUNT: HIGH-LOW</option>
+              <option value="amount-asc">AMOUNT: LOW-HIGH</option>
+            </select>
+          </div>
           <Link href="/admin/ledger" className="text-[8px] font-black text-blue-650 uppercase">View All</Link>
         </div>
 

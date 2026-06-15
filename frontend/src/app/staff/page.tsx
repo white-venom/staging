@@ -57,6 +57,7 @@ export default function StaffDashboard() {
   const [cmsRemarksExpanded, setCmsRemarksExpanded] = useState<Record<string, boolean>>({});
   const [expandedHomeId, setExpandedHomeId] = useState<string | null>(null);
   const [homeEditingEntry, setHomeEditingEntry] = useState<any | null>(null);
+  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
 
   useEffect(() => {
     if (isSidebarOpen) {
@@ -766,9 +767,21 @@ export default function StaffDashboard() {
         {/* PREMIUM HISTORY LEDGER */}
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2 px-1">
-            <h3 className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-              Recent Cash Ledger
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-[9px] font-black uppercase tracking-wider text-slate-400">
+                Recent Cash Ledger
+              </h3>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="bg-transparent border-none text-[8px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider focus:outline-none cursor-pointer"
+              >
+                <option value="date-desc">LATEST FIRST</option>
+                <option value="date-asc">OLDEST FIRST</option>
+                <option value="amount-desc">AMOUNT: HIGH-LOW</option>
+                <option value="amount-asc">AMOUNT: LOW-HIGH</option>
+              </select>
+            </div>
             <button
               onClick={() => router.push("/staff/ledger")}
               className="text-[8px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-600 transition-colors flex items-center gap-1 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-full border border-blue-100 dark:border-blue-900/30 shadow-sm"
@@ -777,7 +790,18 @@ export default function StaffDashboard() {
             </button>
           </div>
           <div className="space-y-1.5">
-             {combinedLedger.slice().reverse().slice(0, 8).map((c: any) => {
+             {(() => {
+               const sorted = [...combinedLedger].sort((a, b) => {
+                 const timeA = new Date(a.date.replace(' ', 'T')).getTime();
+                 const timeB = new Date(b.date.replace(' ', 'T')).getTime();
+                 if (sortBy === "date-desc") return timeB - timeA;
+                 if (sortBy === "date-asc") return timeA - timeB;
+                 if (sortBy === "amount-desc") return b.totalAmount - a.totalAmount;
+                 if (sortBy === "amount-asc") return a.totalAmount - b.totalAmount;
+                 return 0;
+               });
+               return sorted.slice(0, 8);
+             })().map((c: any) => {
                const snapshots = ledgerSnapshots.get(c.id) || { prev: 0, next: 0 };
                const isExpanded = expandedHomeId === c.id;
                const den = c.denominations || {};

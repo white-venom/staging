@@ -37,16 +37,19 @@ def get_public_ledger(
     )
     current_balance = latest_entry.balance if latest_entry else Decimal("0.00")
 
-    # Format output
     tx_list = []
     for tx in transactions:
+        remarks = tx.collection.remarks if (tx.collection and tx.collection.remarks) else ""
+        reference_no = tx.deposit.reference_no if (tx.deposit and tx.deposit.reference_no) else ""
         tx_list.append({
             "id": tx.id,
             "date": tx.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             "transaction_type": tx.transaction_type,  # 'credit', 'debit'
             "amount": float(tx.amount),
             "running_balance": float(tx.balance),
-            "description": tx.description or ""
+            "description": tx.description or "",
+            "remarks": remarks,
+            "reference_no": reference_no
         })
 
     return {

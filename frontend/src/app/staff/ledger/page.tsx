@@ -41,6 +41,7 @@ export default function StaffLedgerPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "in" | "out">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
 
   useEffect(() => {
     loadLedgerData();
@@ -162,8 +163,19 @@ export default function StaffLedgerPage() {
     return nameMatch || portalMatch || amountMatch;
   });
 
-  // Display items in reverse chronological order (latest first)
-  const displayTimeline = filteredCombined.slice().reverse();
+  // Apply sorting
+  const sortedCombined = [...filteredCombined].sort((a, b) => {
+    const timeA = new Date(getUtcDate(a.created_at)).getTime();
+    const timeB = new Date(getUtcDate(b.created_at)).getTime();
+    
+    if (sortBy === "date-desc") return timeB - timeA;
+    if (sortBy === "date-asc") return timeA - timeB;
+    if (sortBy === "amount-desc") return b.totalAmount - a.totalAmount;
+    if (sortBy === "amount-asc") return a.totalAmount - b.totalAmount;
+    return 0;
+  });
+
+  const displayTimeline = sortedCombined;
 
   // Group by date
   const groupedTimeline: Record<string, any[]> = {};
@@ -224,16 +236,28 @@ export default function StaffLedgerPage() {
           </div>
         </div>
 
-        {/* Filter Input */}
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-          <input autoComplete="one-time-code"
-            type="text"
-            placeholder="Search by retailer, portal or amount..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-[11px] text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold shadow-sm"
-          />
+        {/* Filter Input & Sorting */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+            <input autoComplete="one-time-code"
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-[11px] text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold shadow-sm"
+            />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-bold outline-none text-slate-800 dark:text-slate-200 shadow-sm cursor-pointer"
+          >
+            <option value="date-desc">LATEST FIRST</option>
+            <option value="date-asc">OLDEST FIRST</option>
+            <option value="amount-desc">AMOUNT: HIGH-LOW</option>
+            <option value="amount-asc">AMOUNT: LOW-HIGH</option>
+          </select>
         </div>
 
         {/* Filter Tabs */}
