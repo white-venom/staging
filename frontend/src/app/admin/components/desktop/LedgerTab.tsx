@@ -267,7 +267,10 @@ export default function LedgerTab({
     const q = searchQuery.toLowerCase();
     allTransactions = allTransactions.filter(tx => 
       tx.party.toLowerCase().includes(q) || 
-      tx.staff.toLowerCase().includes(q)
+      tx.staff.toLowerCase().includes(q) ||
+      (tx.rawRecord?.remarks && tx.rawRecord.remarks.toLowerCase().includes(q)) ||
+      (tx.rawRecord?.reference_no && tx.rawRecord.reference_no.toLowerCase().includes(q)) ||
+      (tx.rawRecord?.referenceNo && tx.rawRecord.referenceNo.toLowerCase().includes(q))
     );
   }
 

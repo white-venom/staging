@@ -9,7 +9,8 @@ import {
   FileDown, 
   Copy, 
   Check, 
-  Filter 
+  Filter,
+  ArrowUpDown
 } from "lucide-react";
 import Script from "next/script";
 
@@ -45,6 +46,7 @@ export default function LedgerReportView({
   const [endDate, setEndDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "debit" | "credit">("all");
+  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isCopied, setIsCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -98,8 +100,14 @@ export default function LedgerReportView({
         
         return true;
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // Newest first
-  }, [data, startDate, endDate, searchQuery, filterType]);
+      .sort((a, b) => {
+        if (sortBy === "date-desc") return new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (sortBy === "date-asc") return new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (sortBy === "amount-desc") return b.amount - a.amount;
+        if (sortBy === "amount-asc") return a.amount - b.amount;
+        return 0;
+      });
+  }, [data, startDate, endDate, searchQuery, filterType, sortBy]);
 
   // KPI Calculations
   const stats = useMemo(() => {
@@ -206,19 +214,19 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800 font-sans pb-24">
       {/* 1. Header with back arrow */}
-      <div className="bg-blue-600 dark:bg-blue-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md">
+      <div className="bg-indigo-650 dark:bg-indigo-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md">
         <div className="flex items-center gap-3">
           {onBack && (
             <button 
               onClick={onBack} 
-              className="p-1 rounded-full hover:bg-blue-500 text-white transition-colors cursor-pointer"
+              className="p-1 rounded-full hover:bg-indigo-500 text-white transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
           )}
           <div>
             <h1 className="text-sm font-bold text-white uppercase tracking-wider">Report of {title}</h1>
-            {subtitle && <p className="text-[10px] text-blue-100 font-semibold">{subtitle}</p>}
+            {subtitle && <p className="text-[10px] text-indigo-100 font-semibold">{subtitle}</p>}
           </div>
         </div>
         
@@ -262,9 +270,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           </div>
         </div>
 
-        {/* 3. Search and Type Filter */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+        {/* 3. Search, Type, and Sorting Filters */}
+        <div className="flex flex-col gap-2">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
             <input autoComplete="one-time-code"
               type="text"
@@ -275,17 +283,33 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             />
           </div>
           
-          <div className="relative shrink-0">
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as any)}
-              className="bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none pr-8 shadow-sm"
-            >
-              <option value="all">ALL</option>
-              <option value="debit">GAVE</option>
-              <option value="credit">GOT</option>
-            </select>
-            <Filter className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3 pointer-events-none" />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="relative w-full">
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as any)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none pr-8 shadow-sm"
+              >
+                <option value="all">ALL ENTRIES</option>
+                <option value="debit">GAVE</option>
+                <option value="credit">GOT</option>
+              </select>
+              <Filter className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
+            </div>
+
+            <div className="relative w-full">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none pr-8 shadow-sm"
+              >
+                <option value="date-desc">LATEST FIRST</option>
+                <option value="date-asc">OLDEST FIRST</option>
+                <option value="amount-desc">AMOUNT: HIGH-LOW</option>
+                <option value="amount-asc">AMOUNT: LOW-HIGH</option>
+              </select>
+              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
+            </div>
           </div>
         </div>
 
@@ -385,7 +409,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         <button
           onClick={handleDownloadPDF}
           disabled={isDownloading || filteredTransactions.length === 0}
-          className="flex-1 py-3 px-4 rounded-xl border border-blue-500 text-blue-500 hover:bg-blue-50 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+          className="flex-1 py-3 px-4 rounded-xl border border-indigo-500 text-indigo-600 hover:bg-indigo-50 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
         >
           <FileDown className="w-4 h-4" />
           {isDownloading ? "Downloading..." : "DOWNLOAD"}
@@ -394,7 +418,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         <button
           onClick={handleShare}
           disabled={filteredTransactions.length === 0}
-          className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-500/25 transition-all disabled:opacity-50"
+          className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-500/25 transition-all disabled:opacity-50"
         >
           <Share2 className="w-4 h-4" />
           SHARE

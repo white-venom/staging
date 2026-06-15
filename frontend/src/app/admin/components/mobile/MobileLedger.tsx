@@ -224,7 +224,11 @@ export default function MobileLedger() {
     if (search) {
       const q = search.toLowerCase();
       combined = combined.filter(tx => 
-        (tx.party || tx.portal || tx.staff || "").toLowerCase().includes(q)
+        (tx.party || "").toLowerCase().includes(q) ||
+        (tx.portal || "").toLowerCase().includes(q) ||
+        (tx.staff || "").toLowerCase().includes(q) ||
+        (tx.remarks || "").toLowerCase().includes(q) ||
+        (tx.reference_no || tx.referenceNo || "").toLowerCase().includes(q)
       );
     }
 
