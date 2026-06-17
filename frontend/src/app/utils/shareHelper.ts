@@ -85,7 +85,7 @@ export const shareCollectionEntry = async (entry: {
   if (rawDate && !rawDate.endsWith("Z") && !rawDate.includes("+") && !rawDate.includes("GMT")) {
     rawDate = rawDate + "Z";
   }
-  const dateFormatted = rawDate ? formatShareDate(new Date(rawDate).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 19)) : "";
+  const dateFormatted = rawDate ? formatShareDate(new Date(rawDate.replace(" ", "T")).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 19)) : "";
 
   const headerLines: string[] = [];
   if (entry.retailer_name) {
@@ -165,7 +165,7 @@ export const shareDepositEntry = async (entry: {
   if (rawDate && !rawDate.endsWith("Z") && !rawDate.includes("+") && !rawDate.includes("GMT")) {
     rawDate = rawDate + "Z";
   }
-  const dateFormatted = rawDate ? formatShareDate(new Date(rawDate).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 19)) : "";
+  const dateFormatted = rawDate ? formatShareDate(new Date(rawDate.replace(" ", "T")).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 19)) : "";
 
   const headerLines: string[] = [];
   if (entry.deposit_type === "staff") {

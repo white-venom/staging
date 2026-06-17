@@ -68,7 +68,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const mappedCols = cols.map((c: any) => {
         let dtStr = "N/A";
         if (c.created_at) {
-          const d = new Date(c.created_at + (c.created_at.includes("Z") ? "" : "Z"));
+          const cleanCreatedAt = c.created_at.replace(" ", "T");
+          const d = new Date(cleanCreatedAt + (cleanCreatedAt.includes("Z") ? "" : "Z"));
           dtStr = new Intl.DateTimeFormat('en-GB', {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', hour12: false,
@@ -100,7 +101,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       const mappedDeps = deps.map((d: any) => {
         let dtStr = d.deposit_date || "N/A";
         if (d.created_at) {
-          const dateObj = new Date(d.created_at + (d.created_at.includes("Z") ? "" : "Z"));
+          const cleanCreatedAt = d.created_at.replace(" ", "T");
+          const dateObj = new Date(cleanCreatedAt + (cleanCreatedAt.includes("Z") ? "" : "Z"));
           dtStr = new Intl.DateTimeFormat('en-GB', {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', hour12: false,

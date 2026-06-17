@@ -87,12 +87,13 @@ export default function MobileOverview({
     const last7Days = Array.from({ length: 7 }, (_, i) => subDays(new Date(), i)).reverse();
     
     return last7Days.map(day => {
+      const targetDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(day);
       const dayCollections = collections
-        .filter(c => isSameDay(new Date(c.created_at || c.date), day))
+        .filter(c => c.date.split(" ")[0] === targetDateStr)
         .reduce((sum, c) => sum + (c.totalAmount || 0), 0);
         
       const dayDeposits = deposits
-        .filter(d => isSameDay(new Date(d.created_at || d.date), day) && d.depositType?.toLowerCase() !== 'virtual')
+        .filter(d => d.date.split(" ")[0] === targetDateStr && d.depositType?.toLowerCase() !== 'virtual')
         .reduce((sum, d) => sum + (d.amount || 0), 0);
         
       return {

@@ -19,7 +19,10 @@ import {
 
 const getUtcDate = (dateStr: any) => {
   if (!dateStr) return new Date();
-  const s = String(dateStr);
+  let s = String(dateStr).trim();
+  if (s.includes(" ") && !s.includes("GMT") && !s.includes("+")) {
+    s = s.replace(" ", "T");
+  }
   if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
     return new Date(s + "Z");
   }
@@ -32,6 +35,8 @@ export default function CashOutLedgerPage() {
   const [deposits, setDeposits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Modal edit states
@@ -329,7 +334,14 @@ ${dateFormatted}`;
   const filteredDeposits = deposits.filter(d => {
     const displayName = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : d.target_name;
     const targetMatch = displayName?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
-    return targetMatch;
+    if (searchQuery && !targetMatch) return false;
+
+    if (d.created_at) {
+      const dateOnlyStr = getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 10);
+      if (dateFrom && dateOnlyStr < dateFrom) return false;
+      if (dateTo && dateOnlyStr > dateTo) return false;
+    }
+    return true;
   });
 
   // Group by date
@@ -372,6 +384,34 @@ ${dateFormatted}`;
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-[11px] text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold shadow-sm"
           />
+        </div>
+
+        {/* Date Filters */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 shadow-sm">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <div className="flex-1 flex flex-col min-w-0">
+              <span className="text-[7.5px] text-slate-400 font-black uppercase">Date From</span>
+              <input autoComplete="one-time-code"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="bg-transparent border-none text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none w-full cursor-pointer p-0 h-4 min-h-0"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 shadow-sm">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <div className="flex-1 flex flex-col min-w-0">
+              <span className="text-[7.5px] text-slate-400 font-black uppercase">Date To</span>
+              <input autoComplete="one-time-code"
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="bg-transparent border-none text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none w-full cursor-pointer p-0 h-4 min-h-0"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Deposits historical records */}

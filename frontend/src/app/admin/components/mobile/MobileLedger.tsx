@@ -240,16 +240,16 @@ export default function MobileLedger() {
 
     // Apply Date Range
     if (filters.dateFrom) {
-      combined = combined.filter(tx => format(new Date(tx.created_at || tx.date), 'yyyy-MM-dd') >= filters.dateFrom);
+      combined = combined.filter(tx => tx.date.split(" ")[0] >= filters.dateFrom);
     }
     if (filters.dateTo) {
-      combined = combined.filter(tx => format(new Date(tx.created_at || tx.date), 'yyyy-MM-dd') <= filters.dateTo);
+      combined = combined.filter(tx => tx.date.split(" ")[0] <= filters.dateTo);
     }
 
     // Apply Sorting
     combined.sort((a, b) => {
-      if (filters.sortBy === "date-desc") return new Date(b.created_at || b.date).getTime() - new Date(a.created_at || a.date).getTime();
-      if (filters.sortBy === "date-asc") return new Date(a.created_at || a.date).getTime() - new Date(b.created_at || b.date).getTime();
+      if (filters.sortBy === "date-desc") return new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime();
+      if (filters.sortBy === "date-asc") return new Date(a.date.replace(" ", "T")).getTime() - new Date(b.date.replace(" ", "T")).getTime();
       if (filters.sortBy === "amount-desc") return getTxAmount(b) - getTxAmount(a);
       if (filters.sortBy === "amount-asc") return getTxAmount(a) - getTxAmount(b);
       return 0;
@@ -264,7 +264,7 @@ export default function MobileLedger() {
   const handleExportCSV = () => {
     const headers = ["Date", "Description", "Staff", "Type", "Received"];
     const rows = filteredLedger.map(tx => [
-      format(new Date(tx.created_at || tx.date), "yyyy-MM-dd HH:mm"),
+      tx.date,
       tx.party || 'N/A',
       tx.staff || 'Admin',
       tx.type,
@@ -341,9 +341,9 @@ export default function MobileLedger() {
                  <tr className={`hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedLedgerId(prev => prev === (item.id || idx) ? null : (item.id || idx))}>
                    <td className="py-2.5 px-2.5 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400">
                      <div className="flex flex-col text-[13px]">
-                       <span className="whitespace-nowrap">{format(new Date(item.created_at || item.date), "dd-MM-yyyy")}</span>
+                       <span className="whitespace-nowrap">{item.date.split(" ")[0].split("-").reverse().join("-")}</span>
                        <span className="text-xs font-bold opacity-60">
-                         {format(new Date(item.created_at || item.date), "HH:mm")}
+                         {item.date.split(" ")[1]}
                        </span>
                      </div>
                    </td>

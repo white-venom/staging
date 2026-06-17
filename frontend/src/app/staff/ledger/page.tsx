@@ -25,7 +25,10 @@ import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "..
 
 const getUtcDate = (dateStr: any) => {
   if (!dateStr) return new Date();
-  const s = String(dateStr);
+  let s = String(dateStr).trim();
+  if (s.includes(" ") && !s.includes("GMT") && !s.includes("+")) {
+    s = s.replace(" ", "T");
+  }
   if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
     return new Date(s + "Z");
   }
@@ -39,6 +42,8 @@ export default function StaffLedgerPage() {
   const [deposits, setDeposits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "in" | "out">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
@@ -148,11 +153,15 @@ export default function StaffLedgerPage() {
 
   const netPortfolio = totalCollectedSum - totalDepositedSum;
 
-  // Filter based on active tab and search query
+  // Filter based on active tab, date range, and search query
   const filteredCombined = rawCombined.filter(item => {
     // Tab filter
     if (activeTab === "in" && item.type !== "collection") return false;
     if (activeTab === "out" && item.type !== "deposit") return false;
+
+    // Date range filter
+    if (dateFrom && item.date && item.date.split(" ")[0] < dateFrom) return false;
+    if (dateTo && item.date && item.date.split(" ")[0] > dateTo) return false;
 
     // Search filter
     const searchLower = searchQuery.toLowerCase();
@@ -258,6 +267,34 @@ export default function StaffLedgerPage() {
             <option value="amount-desc">AMOUNT: HIGH-LOW</option>
             <option value="amount-asc">AMOUNT: LOW-HIGH</option>
           </select>
+        </div>
+
+        {/* Date Filters */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 shadow-sm">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <div className="flex-1 flex flex-col min-w-0">
+              <span className="text-[7.5px] text-slate-400 font-black uppercase">Date From</span>
+              <input autoComplete="one-time-code"
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="bg-transparent border-none text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none w-full cursor-pointer p-0 h-4 min-h-0"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 shadow-sm">
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            <div className="flex-1 flex flex-col min-w-0">
+              <span className="text-[7.5px] text-slate-400 font-black uppercase">Date To</span>
+              <input autoComplete="one-time-code"
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="bg-transparent border-none text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none w-full cursor-pointer p-0 h-4 min-h-0"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Filter Tabs */}
