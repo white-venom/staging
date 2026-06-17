@@ -397,35 +397,35 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                     <div key={tx.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
                       {/* Left: Date & Running Balance */}
                       <div className="flex flex-col gap-1.5 min-w-0 max-w-[120px]">
-                        <span className="text-xs font-bold text-slate-700 shrink-0">{dateLabel}</span>
-                        <span className="text-[8px] font-black text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full uppercase tracking-wider self-start">
+                        <span className="text-base font-extrabold text-slate-880 shrink-0">{dateLabel}</span>
+                        <span className="text-[11px] font-black text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full uppercase tracking-wider self-start">
                           Bal. ₹{Math.round(tx.running_balance).toLocaleString("en-IN")}
                         </span>
                       </div>
                       
                       {/* Middle: Description */}
-                      <div className="flex-1 px-4 text-xs font-semibold text-slate-600 break-words whitespace-pre-wrap">
+                      <div className="flex-1 px-4 text-base font-semibold text-slate-700 break-words whitespace-pre-wrap">
                         <div>{cleanDescription(tx.description)}</div>
                         {tx.remarks && (
-                          <div className="text-[10px] text-slate-400 font-medium mt-0.5">
+                          <div className="text-xs text-slate-450 font-medium mt-0.5">
                             Remark: <span className="italic">{tx.remarks}</span>
                           </div>
                         )}
                         {tx.reference_no && (
-                          <div className="text-[10px] text-slate-400 font-medium mt-0.5">
+                          <div className="text-xs text-slate-450 font-medium mt-0.5">
                             Ref: {tx.reference_no}
                           </div>
                         )}
                       </div>
                       
                       {/* Right: Gave (Debit) vs Got (Credit) numeric columns */}
-                      <div className="flex items-center gap-3 w-40 shrink-0 text-right font-mono text-xs">
+                      <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono text-base">
                         {/* Gave Column */}
-                        <div className="w-20 font-black text-red-500">
+                        <div className="w-22 font-black text-red-500">
                           {isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
                         {/* Got Column */}
-                        <div className="w-20 font-black text-emerald-600">
+                        <div className="w-22 font-black text-emerald-600">
                           {!isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
                       </div>
@@ -459,7 +459,6 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         </button>
       </div>
 
-      <Script src="/html2pdf.bundle.min.js" strategy="lazyOnload" />
     </div>
   );
 }

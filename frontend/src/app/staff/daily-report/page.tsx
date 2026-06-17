@@ -362,7 +362,6 @@ export default function DailyReportPage() {
             </div>
           )}
         </div>
-        <Script src="/html2pdf.bundle.min.js" strategy="lazyOnload" />
       </div>
     </div>
   );

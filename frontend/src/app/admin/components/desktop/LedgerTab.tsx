@@ -613,9 +613,9 @@ export default function LedgerTab({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
+          <table className="w-full text-left text-base border-collapse">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-950 text-xs font-black uppercase tracking-tight text-slate-500 border-b border-slate-200 dark:border-slate-800">
+              <tr className="bg-slate-50 dark:bg-slate-950 text-base font-black uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800 w-32">Date & Time</th>
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800">Description</th>
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right w-24">Opening Balance</th>
@@ -638,10 +638,10 @@ export default function LedgerTab({
                 return (
                 <React.Fragment key={tx.id}>
                 <tr className={`hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedTxId(prev => prev === tx.id ? null : tx.id)}>
-                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400 text-sm">
+                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400 text-base">
                     <div className="flex flex-col">
-                      <span className="whitespace-nowrap text-sm">{tx.date.split(" ")[0].split("-").reverse().join("-")}</span>
-                      <span className="text-[11px] font-medium opacity-60">
+                      <span className="whitespace-nowrap text-base">{tx.date.split(" ")[0].split("-").reverse().join("-")}</span>
+                      <span className="text-sm font-semibold opacity-60">
                         {(() => {
                           const timePart = tx.date.split(" ")[1];
                           if (!timePart) return "";
@@ -659,16 +659,16 @@ export default function LedgerTab({
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-col">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase text-sm">
+                            <span className="font-extrabold text-slate-800 dark:text-slate-100 uppercase text-base">
                               {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms")
                                 ? `${tx.party} - ${tx.store_name || "Cash"}`
                                 : tx.party}
                             </span>
                             {tx.store_name && !tx.party?.toLowerCase().startsWith("cms") && (
-                              <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">({tx.store_name})</span>
+                              <span className="text-base text-slate-500 dark:text-slate-400 font-bold">({tx.store_name})</span>
                             )}
                             {tx.depositType === 'virtual' && (
-                              <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
+                              <span className="text-xs font-black px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
                             )}
                             {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms") && (
                               <button
@@ -677,17 +677,17 @@ export default function LedgerTab({
                                 className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
                                 title="View Remark"
                               >
-                                <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[tx.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                                <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[tx.id] ? 'rotate-180 text-indigo-500' : ''}`} />
                               </button>
                             )}
                           </div>
                           {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[tx.id] && (
-                            <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words">
-                              <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                            <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-955/40 rounded border border-slate-200/50 dark:border-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-400 max-w-[250px] break-words">
+                              <span className="text-xs uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
                               <span className="italic">{tx.rawRecord?.remarks || "no remark"}</span>
                             </div>
                           )}
-                          <span className="text-[11px] font-black text-slate-400 uppercase tracking-tighter">By {tx.staff}</span>
+                          <span className="text-sm font-black text-slate-450 uppercase tracking-tighter mt-0.5">By {tx.staff}</span>
                       </div>
                       <div className="flex items-center gap-1.5 no-print" onClick={e => e.stopPropagation()}>
                         <button
@@ -705,7 +705,7 @@ export default function LedgerTab({
                         </button>
                         <button
                           onClick={() => handleStartEditCollection(tx)}
-                          className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
+                          className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-955/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
                           title="Edit Entry"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -721,13 +721,13 @@ export default function LedgerTab({
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-right font-bold text-slate-500 text-sm">
+                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-right font-bold text-slate-500 text-base">
                     ₹{txOld.toLocaleString()}
                   </td>
-                  <td className={`p-4 border-r border-slate-50 dark:border-slate-800 text-right font-black text-sm ${tx.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
+                  <td className={`p-4 border-r border-slate-50 dark:border-slate-800 text-right font-black text-base ${tx.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
                     {tx.type === 'collection' ? '+' : '-'}₹{(tx.credit || tx.debit).toLocaleString()}
                   </td>
-                  <td className="p-4 text-right font-black text-sm text-blue-700 bg-blue-50/10 dark:bg-blue-950/5">
+                  <td className="p-4 text-right font-black text-base text-blue-700 bg-blue-50/10 dark:bg-blue-950/5">
                     ₹{txNew.toLocaleString()}
                   </td>
                 </tr>
@@ -736,8 +736,8 @@ export default function LedgerTab({
                     <td colSpan={5} className="px-6 pb-4 pt-2">
                       <div className="flex flex-wrap gap-4 items-start">
                         <div>
-                          <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
-                          <div className="grid grid-cols-3 gap-x-6 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                          <span className="text-xs font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
+                          <div className="grid grid-cols-3 gap-x-6 gap-y-0.5 text-sm font-bold text-slate-600 dark:text-slate-300">
                             {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
                             {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
                             {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
@@ -746,17 +746,17 @@ export default function LedgerTab({
                             {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
                             {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
                             {Number(den.online_amount) > 0 && <span>UPI/Online = ₹{Number(den.online_amount).toLocaleString()}</span>}
-                            {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && <span className="text-slate-400 italic">No breakdown available</span>}
+                            {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && <span className="text-slate-400 italic text-sm">No breakdown available</span>}
                           </div>
                         </div>
                         <div className="ml-auto text-right">
-                          <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1">Amount in Words</span>
-                          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 italic">{numberToWordsIndian(txAmount)} Rupees</span>
+                          <span className="text-xs font-black uppercase text-slate-400 tracking-wider block mb-1">Amount in Words</span>
+                          <span className="text-sm font-bold text-slate-600 dark:text-slate-300 italic">{numberToWordsIndian(txAmount)} Rupees</span>
                         </div>
                       </div>
                       {tx.rawRecord?.remarks && (
-                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500">
-                          <span className="text-[8px] uppercase font-black text-slate-400 mr-2">Remarks:</span>
+                        <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-500">
+                          <span className="text-xs uppercase font-black text-slate-400 mr-2">Remarks:</span>
                           <span className="italic">{tx.rawRecord.remarks}</span>
                         </div>
                       )}

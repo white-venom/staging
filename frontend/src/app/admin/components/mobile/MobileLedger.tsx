@@ -319,127 +319,127 @@ export default function MobileLedger() {
       {/* Transaction List (Table Format) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-xs mb-4">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[9.5px] border-collapse min-w-[500px]">
+          <table className="w-full text-left text-sm border-collapse min-w-[500px]">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-950 text-[8px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-200 dark:border-slate-800">
-                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 w-24">Date & Time</th>
-                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800">Description</th>
-                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 text-center w-16">Type</th>
-                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 text-right w-20 bg-slate-100/50 dark:bg-slate-800/50">Received</th>
-                <th className="py-1.5 px-2 text-right bg-blue-50/20 dark:bg-blue-950/5 w-20">Staff</th>
+              <tr className="bg-slate-50 dark:bg-slate-955 text-[11px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                <th className="py-2.5 px-2.5 border-r border-slate-100 dark:border-slate-800 w-24">Date & Time</th>
+                <th className="py-2.5 px-2.5 border-r border-slate-100 dark:border-slate-800">Description</th>
+                <th className="py-2.5 px-2.5 border-r border-slate-100 dark:border-slate-800 text-center w-16">Type</th>
+                <th className="py-2.5 px-2.5 border-r border-slate-100 dark:border-slate-800 text-right w-20 bg-slate-100/50 dark:bg-slate-800/50">Received</th>
+                <th className="py-2.5 px-2.5 text-right bg-blue-50/20 dark:bg-blue-950/5 w-20">Staff</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredLedger.length === 0 ? (
-                <tr><td colSpan={5} className="py-6 text-center text-slate-400 italic font-bold">No matching records</td></tr>
+                <tr><td colSpan={5} className="py-8 text-center text-slate-400 italic font-bold">No matching records</td></tr>
               ) : filteredLedger.map((item: any, idx) => {
                 const isExpanded = expandedLedgerId === (item.id || idx);
                 const den = item.denominations || {};
                 const txAmount = getTxAmount(item);
                 return (
                 <React.Fragment key={item.id || idx}>
-                <tr className={`hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedLedgerId(prev => prev === (item.id || idx) ? null : (item.id || idx))}>
-                  <td className="py-1 px-2 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400">
-                    <div className="flex flex-col">
-                      <span className="whitespace-nowrap">{format(new Date(item.created_at || item.date), "dd-MM-yyyy")}</span>
-                      <span className="text-[7.5px] font-bold opacity-60">
-                        {format(new Date(item.created_at || item.date), "HH:mm")}
+                 <tr className={`hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedLedgerId(prev => prev === (item.id || idx) ? null : (item.id || idx))}>
+                   <td className="py-2.5 px-2.5 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400">
+                     <div className="flex flex-col text-[13px]">
+                       <span className="whitespace-nowrap">{format(new Date(item.created_at || item.date), "dd-MM-yyyy")}</span>
+                       <span className="text-xs font-bold opacity-60">
+                         {format(new Date(item.created_at || item.date), "HH:mm")}
+                       </span>
+                     </div>
+                   </td>
+                   <td className="py-2.5 px-2.5 border-r border-slate-50 dark:border-slate-800">
+                     <div className="flex flex-col gap-1 text-[13.5px]">
+                       <div className="flex items-center justify-between gap-1.5">
+                         <div className="flex items-center gap-1.5 flex-wrap">
+                           <span className="font-black text-slate-800 dark:text-slate-100 uppercase">
+                             {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
+                               ? `${item.party} - ${item.store_name || "Cash"}`
+                               : item.party || 'General Entry'}
+                           </span>
+                           {item.store_name && !(item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")) && (
+                             <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>
+                           )}
+                           {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
+                             <button
+                               type="button"
+                               onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] })); }}
+                               className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                               title="View Remark"
+                             >
+                               <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                             </button>
+                           )}
+                         </div>
+                         <div className="flex items-center gap-1 no-print" onClick={e => e.stopPropagation()}>
+                           <button
+                             onClick={() => {
+                               if (item.type === 'collection') {
+                                 shareCollectionEntry(item, item.staff || 'Staff');
+                               } else {
+                                 shareDepositEntry(item, item.staff || 'Staff');
+                               }
+                             }}
+                             className="p-0.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-955/20 dark:text-emerald-400 rounded hover:bg-emerald-100 transition-colors cursor-pointer active:scale-95"
+                             title="Share Entry"
+                           >
+                             <Share2 className="w-3.5 h-3.5" />
+                           </button>
+                           <button
+                             onClick={() => handleStartEditCollection(item)}
+                             className="p-0.5 bg-blue-50 text-blue-600 dark:bg-blue-955/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
+                             title="Edit Entry"
+                           >
+                             <Edit2 className="w-3.5 h-3.5" />
+                           </button>
+                           <button
+                             onClick={() => handleDeleteEntry(item)}
+                             className="p-0.5 bg-red-50 text-red-650 dark:bg-red-955/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer active:scale-95 transition-transform"
+                             title="Delete Entry"
+                           >
+                             <Trash2 className="w-3.5 h-3.5" />
+                           </button>
+                           <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                         </div>
+                       </div>
+                       {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
+                         <div className="mt-0.5 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-400 max-w-[200px] break-words">
+                           <span className="text-xs uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                           <span className="italic">{item.remarks || "no remark"}</span>
+                         </div>
+                       )}
+                     </div>
+                   </td>
+                   <td className="py-2.5 px-2.5 border-r border-slate-50 dark:border-slate-800 text-center">
+                      <span className={`text-[11px] font-black uppercase px-1.5 py-0.5 rounded-md ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                         {item.type === 'collection' ? 'Cash In' : 'Cash Out'}
                       </span>
-                    </div>
-                  </td>
-                  <td className="py-1 px-2 border-r border-slate-50 dark:border-slate-800">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center justify-between gap-1.5">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-black text-slate-805 dark:text-slate-100 uppercase">
-                            {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")
-                              ? `${item.party} - ${item.store_name || "Cash"}`
-                              : item.party || 'General Entry'}
-                          </span>
-                          {item.store_name && !(item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")) && (
-                            <span className="text-[8px] text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>
-                          )}
-                          {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] })); }}
-                              className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
-                              title="View Remark"
-                            >
-                              <ChevronDown className={`w-2.5 h-2.5 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-505' : ''}`} />
-                            </button>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 no-print" onClick={e => e.stopPropagation()}>
-                          <button
-                            onClick={() => {
-                              if (item.type === 'collection') {
-                                shareCollectionEntry(item, item.staff || 'Staff');
-                              } else {
-                                shareDepositEntry(item, item.staff || 'Staff');
-                              }
-                            }}
-                            className="p-0.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-955/20 dark:text-emerald-400 rounded hover:bg-emerald-100 transition-colors cursor-pointer active:scale-95"
-                            title="Share Entry"
-                          >
-                            <Share2 className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => handleStartEditCollection(item)}
-                            className="p-0.5 bg-blue-50 text-blue-600 dark:bg-blue-955/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
-                            title="Edit Entry"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteEntry(item)}
-                            className="p-0.5 bg-red-50 text-red-650 dark:bg-red-955/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer active:scale-95 transition-transform"
-                            title="Delete Entry"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                          <ChevronDown className={`w-2.5 h-2.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                        </div>
-                      </div>
-                      {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
-                        <div className="mt-0.5 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[8px] font-medium text-slate-600 dark:text-slate-400 max-w-[200px] break-words">
-                          <span className="text-[7px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
-                          <span className="italic">{item.remarks || "no remark"}</span>
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-1 px-2 border-r border-slate-50 dark:border-slate-800 text-center">
-                     <span className={`text-[7px] font-black uppercase px-1 py-0.5 rounded-md ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                        {item.type === 'collection' ? 'Cash In' : 'Cash Out'}
-                     </span>
-                  </td>
-                  <td className={`py-1 px-2 border-r border-slate-50 dark:border-slate-800 text-right font-black ${item.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
-                    {item.type === 'collection' ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
-                  </td>
-                  <td className="py-1 px-2 text-right font-bold text-slate-500 uppercase text-[8px]">
-                    {item.staff || 'Admin'}
-                  </td>
-                </tr>
-                {isExpanded && (
-                  <tr key={`${item.id || idx}-exp`} className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
-                    <td colSpan={5} className="px-3 pb-2 pt-1">
-                      <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[8px] font-bold text-slate-600 dark:text-slate-300">
-                        {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
-                        {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
-                        {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
-                        {Number(den.note_50) > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
-                        {Number(den.note_20) > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
-                        {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
-                        {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
-                        {Number(den.online_amount) > 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
-                      </div>
-                      <div className="mt-1 text-[8px] font-bold text-slate-500 italic">{numberToWordsIndian(txAmount)} Rupees</div>
-                      {item.remarks && <div className="mt-1 text-[8px] font-bold text-slate-400"><span className="font-black uppercase">Remark: </span>{item.remarks}</div>}
-                    </td>
-                  </tr>
-                )}
+                   </td>
+                   <td className={`py-2.5 px-2.5 border-r border-slate-50 dark:border-slate-800 text-right font-black text-[13.5px] ${item.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
+                     {item.type === 'collection' ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
+                   </td>
+                   <td className="py-2.5 px-2.5 text-right font-black text-slate-500 uppercase text-xs">
+                     {item.staff || 'Admin'}
+                   </td>
+                 </tr>
+                 {isExpanded && (
+                   <tr key={`${item.id || idx}-exp`} className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
+                     <td colSpan={5} className="px-3 pb-2.5 pt-1.5 text-xs">
+                       <span className="text-xs font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
+                       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs font-bold text-slate-600 dark:text-slate-300">
+                         {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
+                         {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
+                         {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
+                         {Number(den.note_50) > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
+                         {Number(den.note_20) > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
+                         {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
+                         {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
+                         {Number(den.online_amount) > 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
+                       </div>
+                       <div className="mt-1 text-xs font-bold text-slate-500 italic">{numberToWordsIndian(txAmount)} Rupees</div>
+                       {item.remarks && <div className="mt-1 text-xs font-bold text-slate-500"><span className="font-black uppercase text-slate-400 text-xs">Remark: </span>{item.remarks}</div>}
+                     </td>
+                   </tr>
+                 )}
                 </React.Fragment>
                 );
               })}
