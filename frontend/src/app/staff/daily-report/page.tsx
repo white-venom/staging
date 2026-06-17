@@ -158,9 +158,13 @@ export default function DailyReportPage() {
       return;
     }
 
+    const staffNameClean = (currentUser?.name || "Staff").trim().replace(/\s+/g, "_");
+    const dateStrClean = selectedDate.trim().replace(/\s+/g, "_");
+    const filename = `${staffNameClean}_${dateStrClean}.pdf`;
+
     const opt = {
       margin:       [0.3, 0.3, 0.3, 0.3],
-      filename:     `Detailed_Cash_Report_${selectedDate}.pdf`,
+      filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, logging: false },
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
@@ -182,13 +186,29 @@ export default function DailyReportPage() {
       }
     };
 
-    if ((window as any).html2pdf) {
-      runDownload();
-    } else {
-      console.warn("html2pdf not found on window, falling back to print");
-      window.print();
-      setIsDownloading(false);
-    }
+    const loadAndRun = () => {
+      if ((window as any).html2pdf) {
+        runDownload();
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "/html2pdf.bundle.min.js";
+      script.onload = () => {
+        if ((window as any).html2pdf) {
+          runDownload();
+        } else {
+          window.print();
+          setIsDownloading(false);
+        }
+      };
+      script.onerror = () => {
+        window.print();
+        setIsDownloading(false);
+      };
+      document.head.appendChild(script);
+    };
+
+    loadAndRun();
   };
 
   return (
@@ -275,8 +295,8 @@ export default function DailyReportPage() {
 
                 {/* Centered Report Title bar at bottom */}
                 <div className="border-t border-slate-200 bg-slate-50/50 py-1.5 text-center relative z-10">
-                  <span className="text-[9px] font-black text-slate-950 uppercase tracking-widest">
-                    Detailed Cash Report (Today)
+                  <span className="text-[9px] font-black text-slate-955 uppercase tracking-widest">
+                    Detailed Cash Report - {new Date(selectedDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
                   </span>
                 </div>
               </div>
@@ -304,9 +324,13 @@ export default function DailyReportPage() {
                       let source = "";
                       let destination = "";
                       if (isCol) {
+                        const isCms = item.retailer_name?.toLowerCase().startsWith("cms");
+                        const retDispName = isCms 
+                          ? `${item.retailer_name} - ${item.store_name || "Cash"}` 
+                          : (item.from_staff_name || item.retailer_name || "Retailer");
                         source = item.from_office
                           ? "Super Distributor"
-                          : (item.from_staff_name || item.retailer_name || "Retailer");
+                          : retDispName;
                         destination = staffName;
                       } else {
                         source = staffName;
@@ -332,6 +356,11 @@ export default function DailyReportPage() {
                           {/* Description */}
                           <td className="py-1.5 px-2 border-r border-slate-200 text-center font-semibold text-slate-800 break-words text-[9px] leading-normal whitespace-pre-line">
                             <div className="text-slate-700 font-bold">{narration}</div>
+                            {isCol && item.retailer_name?.toLowerCase().startsWith("cms") && item.remarks && (
+                              <div className="text-[8px] text-slate-500 font-medium mt-0.5 italic">
+                                Remark: {item.remarks}
+                              </div>
+                            )}
                           </td>
                           
                           {/* In */}

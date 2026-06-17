@@ -168,9 +168,13 @@ export default function LedgerReportView({
       return;
     }
 
+    const nameClean = title.trim().replace(/\s+/g, "_");
+    const dateRangeStr = startDate === endDate ? startDate : `${startDate}_to_${endDate}`;
+    const filename = `${nameClean}_${dateRangeStr}.pdf`;
+
     const opt = {
       margin:       [0.4, 0.4, 0.4, 0.4],
-      filename:     `Ledger_Report_${title.replace(/\s+/g, "_")}.pdf`,
+      filename:     filename,
       image:        { type: "jpeg", quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, logging: false },
       jsPDF:        { unit: "in", format: "a4", orientation: "portrait" }
@@ -192,13 +196,29 @@ export default function LedgerReportView({
       }
     };
 
-    if ((window as any).html2pdf) {
-      runDownload();
-    } else {
-      console.warn("html2pdf not found on window, falling back to print");
-      window.print();
-      setIsDownloading(false);
-    }
+    const loadAndRun = () => {
+      if ((window as any).html2pdf) {
+        runDownload();
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = "/html2pdf.bundle.min.js";
+      script.onload = () => {
+        if ((window as any).html2pdf) {
+          runDownload();
+        } else {
+          window.print();
+          setIsDownloading(false);
+        }
+      };
+      script.onerror = () => {
+        window.print();
+        setIsDownloading(false);
+      };
+      document.head.appendChild(script);
+    };
+
+    loadAndRun();
   };
 
   const handleShare = async () => {
@@ -345,7 +365,12 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <div>
                 <h1 className="text-lg font-black text-slate-900">{title}</h1>
                 {subtitle && <p className="text-xs text-slate-500 font-bold mt-0.5">{subtitle}</p>}
-                <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString()}</p>
+                {startDate && endDate && (
+                  <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                    Statement Period: {startDate === endDate ? startDate : `${startDate} to ${endDate}`}
+                  </p>
+                )}
+                <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN")}</p>
               </div>
               <div className="text-right">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Net Balance</span>

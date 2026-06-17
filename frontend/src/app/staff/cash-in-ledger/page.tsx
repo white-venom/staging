@@ -425,7 +425,7 @@ ${dateFormatted}`;
           ) : (
             Object.entries(groupedCollections).map(([date, items]) => (
               <div key={date} className="space-y-1.5">
-                <h2 className="text-[8px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 border-b border-slate-200 dark:border-slate-800 pb-0.5 mt-1">
+                <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 border-b border-slate-200 dark:border-slate-800 pb-0.5 mt-1">
                   {date}
                 </h2>
                 {items.map((c: any) => {
@@ -438,11 +438,11 @@ ${dateFormatted}`;
                     >
                       <div
                         onClick={() => toggleExpand(c.id)}
-                        className="p-2 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors"
+                        className="p-2 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-955/40 transition-colors"
                       >
                          <div>
                           <div className="flex items-center gap-1">
-                            <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-200">
+                            <h3 className="text-[13px] font-black text-slate-800 dark:text-slate-200">
                               {c.retailer_name?.toLowerCase().startsWith("cms")
                                 ? `${c.retailer_name} - ${c.store_name || "Cash"}`
                                 : c.retailer_name}
@@ -461,12 +461,12 @@ ${dateFormatted}`;
                             )}
                           </div>
                           {c.retailer_name?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[c.id] && (
-                            <div className="mt-1 px-1.5 py-0.5 bg-slate-55/40 dark:bg-slate-955/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400">
-                              <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                            <div className="mt-1 px-1.5 py-0.5 bg-slate-55/40 dark:bg-slate-955/40 rounded border border-slate-200/50 dark:border-slate-800 text-[10px] font-medium text-slate-605 dark:text-slate-400">
+                              <span className="text-[8.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
                               <span className="italic">{c.remarks || "no remark"}</span>
                             </div>
                           )}
-                          <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
                             <span>{c.portal_name || "N/A"}</span>
                             <span>•</span>
                             <span>{getUtcDate(c.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</span>
@@ -475,7 +475,7 @@ ${dateFormatted}`;
 
                         <div className="flex items-center gap-2">
                           <div className="text-right">
-                            <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-500 block">
+                            <span className="text-[13px] font-black text-emerald-600 dark:text-emerald-500 block">
                               +₹{c.total_amount?.toLocaleString()}
                             </span>
                           </div>

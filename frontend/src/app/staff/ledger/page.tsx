@@ -332,7 +332,7 @@ export default function StaffLedgerPage() {
           ) : (
             Object.entries(groupedTimeline).map(([date, items]) => (
               <div key={date} className="space-y-1.5">
-                <h2 className="text-[8px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 border-b border-slate-200 dark:border-slate-800 pb-0.5 mt-1.5">
+                <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 border-b border-slate-200 dark:border-slate-800 pb-0.5 mt-1.5">
                   {date}
                 </h2>
                 {items.map((item: any) => {
@@ -368,10 +368,10 @@ export default function StaffLedgerPage() {
                             )}
                           </div>
                           <div className="min-w-0">
-                            <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-tight truncate">
+                            <h3 className="text-[15px] font-black text-slate-800 dark:text-slate-100 tracking-tight truncate">
                               {item.displayName}
                             </h3>
-                            <div className="text-[11px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
+                            <div className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
                               <span className="text-blue-500">{item.displayPortal}</span>
                               <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                               <span>{getUtcDate(item.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</span>
@@ -379,7 +379,7 @@ export default function StaffLedgerPage() {
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-2 flex items-center gap-1.5">
-                          <span className={`text-sm font-black tracking-tight block ${
+                          <span className={`text-base font-black tracking-tight block ${
                             item.type === "collection" ? "text-emerald-600 dark:text-emerald-500" : "text-red-600 dark:text-red-400"
                           }`}>
                             {item.type === "collection" ? "+" : "-"}₹{item.totalAmount.toLocaleString("en-IN")}
@@ -389,14 +389,14 @@ export default function StaffLedgerPage() {
                       </div>
 
                       {/* Running Balance Segment */}
-                      <div className="grid grid-cols-2 gap-1 bg-slate-100/50 dark:bg-slate-950/40 mx-2 mb-2 p-1.5 rounded-lg border border-slate-200/30 dark:border-slate-800/40">
+                      <div className="grid grid-cols-2 gap-1 bg-slate-100/50 dark:bg-slate-955/40 mx-2 mb-2 p-1.5 rounded-lg border border-slate-200/30 dark:border-slate-800/40">
                         <div className="flex flex-col pl-1">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
-                          <span className="text-xs font-semibold text-slate-650 dark:text-slate-400">₹{snapshots.prev.toLocaleString("en-IN")}</span>
+                          <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
+                          <span className="text-sm font-semibold text-slate-650 dark:text-slate-400">₹{snapshots.prev.toLocaleString("en-IN")}</span>
                         </div>
                         <div className="flex flex-col text-right pr-1">
-                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
-                          <span className="text-xs font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString("en-IN")}</span>
+                          <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
+                          <span className="text-sm font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString("en-IN")}</span>
                         </div>
                       </div>
 

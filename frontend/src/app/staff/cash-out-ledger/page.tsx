@@ -428,7 +428,7 @@ ${dateFormatted}`;
           ) : (
             Object.entries(groupedDeposits).map(([date, items]) => (
               <div key={date} className="space-y-1.5">
-                <h2 className="text-[8px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 border-b border-slate-200 dark:border-slate-800 pb-0.5 mt-1">
+                <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 border-b border-slate-200 dark:border-slate-800 pb-0.5 mt-1">
                   {date}
                 </h2>
                 {items.map((d: any) => {
@@ -441,13 +441,13 @@ ${dateFormatted}`;
                     >
                       <div
                         onClick={() => toggleExpand(d.id)}
-                        className="p-2 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors"
+                        className="p-2 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-955/40 transition-colors"
                       >
                         <div>
-                          <h3 className="text-[11px] font-black text-slate-800 dark:text-slate-200">
+                          <h3 className="text-[13px] font-black text-slate-800 dark:text-slate-200">
                              {d.deposit_type === "portal" && d.portal_group_name ? d.portal_group_name : d.target_name}
                            </h3>
-                          <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
                             <span className="capitalize">{d.deposit_type}</span>
                             <span>•</span>
                             <span>{getUtcDate(d.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</span>
@@ -457,11 +457,11 @@ ${dateFormatted}`;
                         <div className="flex items-center gap-2">
                           <div className="text-right">
                             {d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff" ? (
-                              <span className="text-[11px] font-black text-emerald-600 dark:text-emerald-500 block">
+                              <span className="text-[13px] font-black text-emerald-600 dark:text-emerald-500 block">
                                 +₹{d.amount?.toLocaleString()}
                               </span>
                             ) : (
-                              <span className="text-[11px] font-black text-red-650 dark:text-red-500 block">
+                              <span className="text-[13px] font-black text-red-650 dark:text-red-500 block">
                                 -₹{d.amount?.toLocaleString()}
                               </span>
                             )}
