@@ -395,7 +395,7 @@ export default function RetailersTab({
                 <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium">Current Net Balance</span>
-                    <span className={`font-black ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-655 dark:text-emerald-500' : 'text-red-655 dark:text-red-400'}`}>
+                    <span className={`font-black ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
                       ₹{Math.abs(editingRetailer.balance || 0).toLocaleString()}
                     </span>
                   </div>

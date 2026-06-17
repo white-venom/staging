@@ -299,12 +299,12 @@ export default function MobilePortals({
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <Globe className="w-3.5 h-3.5 text-indigo-650 shrink-0" />
+                    <Globe className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <h3 className="font-bold text-xs text-slate-900 dark:text-white truncate uppercase tracking-tight flex items-center gap-1.5">
                         {group.name}
                         {group.show_in_online_payment && (
-                          <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-650 dark:text-emerald-500 text-[6px] font-black rounded uppercase shrink-0">Online</span>
+                          <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[6px] font-black rounded uppercase shrink-0">Online</span>
                         )}
                       </h3>
                       <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{(group.portals || []).length} Accounts</p>
@@ -313,22 +313,22 @@ export default function MobilePortals({
                   <div className="flex items-center gap-1 shrink-0">
                     <button 
                       onClick={() => handleStartEditPortal(group)}
-                      className="p-1 bg-blue-50 text-blue-650 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"
+                      className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"
                     >
-                      <Edit className="w-3 h-3" />
+                      <Edit className="w-3.5 h-3.5" />
                     </button>
                     <button 
                       onClick={() => handleDeletePortalGroup(group.id, group.name)}
                       className="p-1 bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
 
                 <div className="bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px]">
                   <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Portal Balance</span>
-                  <span className={`font-black ${group.balance < 0 ? 'text-red-650 dark:text-red-400' : 'text-emerald-650 dark:text-emerald-500'}`}>
+                  <span className={`font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
                     {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
                   </span>
                 </div>
@@ -339,10 +339,10 @@ export default function MobilePortals({
                     <button
                       type="button"
                       onClick={() => toggleGroupExpand(group.id)}
-                      className="w-full flex items-center justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 hover:text-indigo-650 transition-colors"
+                      className="w-full flex items-center justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 hover:text-indigo-600 transition-colors"
                     >
                       <span>Registered Banks ({group.portals.length})</span>
-                      <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${expandedGroups[group.id] ? "rotate-180 text-indigo-600" : ""}`} />
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedGroups[group.id] ? "rotate-180 text-indigo-600" : ""}`} />
                     </button>
                     
                     {expandedGroups[group.id] && (
@@ -382,8 +382,8 @@ export default function MobilePortals({
                 {/* Inline Form to Add Bank Account */}
                 <div className="mt-1">
                   {selectedGroupIdForNewBank === group.id ? (
-                    <div className="bg-slate-50 dark:bg-slate-950 p-2 border border-slate-100 dark:border-slate-850 rounded-lg space-y-2 animate-in fade-in duration-200">
-                      <p className="text-[8px] font-bold text-indigo-650 uppercase tracking-wider">New Bank Account</p>
+                    <div className="bg-slate-50 dark:bg-slate-900 p-2 border border-slate-100 dark:border-slate-800 rounded-lg space-y-2 animate-in fade-in duration-200">
+                      <p className="text-[8px] font-bold text-indigo-600 uppercase tracking-wider">New Bank Account</p>
                       <div className="space-y-1">
                         <input autoComplete="one-time-code"
                           type="text"
@@ -405,14 +405,14 @@ export default function MobilePortals({
                             placeholder="Account Number"
                             value={bAccNo}
                             onChange={e => setBAccNo(e.target.value)}
-                            className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-805 rounded text-xs font-semibold focus:outline-none"
+                            className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
                           />
                           <input autoComplete="one-time-code"
                             type="text"
                             placeholder="IFSC Code"
                             value={bIfsc}
                             onChange={e => setBIfsc(e.target.value)}
-                            className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-805 rounded text-xs font-semibold focus:outline-none"
+                            className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
                           />
                         </div>
                       </div>
@@ -480,9 +480,9 @@ export default function MobilePortals({
                     required 
                   />
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-950 p-2 rounded-md border border-slate-100 dark:border-slate-800 text-[9px]">
+                <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded-md border border-slate-100 dark:border-slate-800 text-[9px]">
                    <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current Balance</span>
-                   <span className={`font-black ${editingPortalGroup.balance < 0 ? 'text-red-650 dark:text-red-400' : 'text-emerald-650 dark:text-emerald-555'}`}>
+                   <span className={`font-black ${editingPortalGroup.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
                      {editingPortalGroup.balance < 0 ? '-' : ''}₹{Math.abs(editingPortalGroup.balance || 0).toLocaleString()}
                    </span>
                  </div>
@@ -493,7 +493,7 @@ export default function MobilePortals({
                       placeholder="e.g. +1000 to add, -1000 to subtract"
                       value={editPortalBalanceAdjustment} 
                       onChange={(e) => setEditPortalBalanceAdjustment(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none" 
+                      className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none" 
                     />
                  </div>
                  <div className="flex items-center gap-1.5 py-0.5">
@@ -502,9 +502,9 @@ export default function MobilePortals({
                        id="editGroupOnlineMobile"
                        checked={editGroupOnline} 
                        onChange={(e) => setEditGroupOnline(e.target.checked)} 
-                       className="w-3.5 h-3.5 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
+                       className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-900 cursor-pointer"
                      />
-                     <label htmlFor="editGroupOnlineMobile" className="text-[9px] font-bold text-slate-550 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                     <label htmlFor="editGroupOnlineMobile" className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
                        Online
                      </label>
                   </div>

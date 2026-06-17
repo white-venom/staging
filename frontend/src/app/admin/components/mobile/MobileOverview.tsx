@@ -558,7 +558,7 @@ export default function MobileOverview({
               <option value="amount-asc">AMOUNT: LOW-HIGH</option>
             </select>
           </div>
-          <Link href="/admin/ledger" className="text-[8px] font-black text-blue-650 uppercase">View All</Link>
+          <Link href="/admin/ledger" className="text-[8px] font-black text-blue-600 uppercase">View All</Link>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 shadow-xs mb-4">
@@ -573,7 +573,7 @@ export default function MobileOverview({
               return (
               <div key={idx} className={`border-b border-slate-50 dark:border-slate-800/50 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/80 dark:bg-slate-800/20' : 'active:bg-slate-50 dark:active:bg-slate-800/30'}`} onClick={() => setExpandedActivityId(prev => prev === item.id ? null : item.id)}>
                 <div className="flex items-center gap-2 py-1.5 px-2.5">
-                  <div className={`w-7 h-7 rounded-md flex items-center justify-center ${item.type === 'collection' ? 'bg-blue-50 text-blue-650' : 'bg-red-50 text-red-650'}`}>
+                  <div className={`w-7 h-7 rounded-md flex items-center justify-center ${item.type === 'collection' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
                     {item.type === 'collection' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -620,7 +620,7 @@ export default function MobileOverview({
                   </div>
                   <div className="text-right flex items-center gap-1">
                     <div>
-                      <p className={`text-[11px] font-black ${item.type === 'collection' ? 'text-blue-650' : 'text-red-650'}`}>
+                      <p className={`text-[11px] font-black ${item.type === 'collection' ? 'text-blue-600' : 'text-red-600'}`}>
                         {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
                       </p>
                       {item.balance !== undefined && item.balance !== null && (
@@ -781,7 +781,7 @@ export default function MobileOverview({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="font-black text-emerald-650 dark:text-emerald-450 text-[11px]">
+                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-[11px]">
                       +₹{item.amount.toLocaleString()}
                     </span>
                     <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-black uppercase tracking-wider ${

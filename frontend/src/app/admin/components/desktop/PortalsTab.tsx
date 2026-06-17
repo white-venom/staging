@@ -282,14 +282,14 @@ export default function PortalsTab({
                           setEditGroupOnline(!!group.show_in_online_payment);
                           setIsAccountModalOpen(true);
                         }}
-                        className="p-1.5 text-slate-400 hover:text-blue-650 dark:text-slate-500 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-blue-600 dark:text-slate-500 dark:hover:text-blue-400 transition-colors cursor-pointer"
                         title="Edit Portal Settings"
                       >
                         <Edit className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         onClick={() => handleDeleteGroup(group.id, group.name)}
-                        className="p-1.5 text-slate-450 hover:text-red-600 transition-colors cursor-pointer"
+                        className="p-1.5 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
                         title="Delete Portal Group"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -299,8 +299,8 @@ export default function PortalsTab({
                   
                   <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                      <span className="text-[8px] font-black text-slate-455 uppercase tracking-wider block mb-0.5">Portal Balance</span>
-                      <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-655 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Portal Balance</span>
+                      <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
                         {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
                       </span>
                     </div>
@@ -310,7 +310,7 @@ export default function PortalsTab({
                     <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
                       <button
                         onClick={() => toggleGroupExpand(group.id)}
-                        className="w-full flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-wider hover:text-indigo-650 transition-colors"
+                        className="w-full flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-wider hover:text-indigo-600 transition-colors"
                       >
                         <span>Registered Banks ({group.portals.length})</span>
                         <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedGroups[group.id] ? "rotate-180 text-indigo-600" : ""}`} />
@@ -354,7 +354,7 @@ export default function PortalsTab({
                       setEditGroupOnline(!!group.show_in_online_payment);
                       setIsAccountModalOpen(true);
                     }}
-                    className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-955 dark:hover:bg-slate-900 text-slate-655 dark:text-slate-355 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
+                    className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
                   >
                     <Edit className="w-3.5 h-3.5" /> Manage Portal & Banks
                   </button>

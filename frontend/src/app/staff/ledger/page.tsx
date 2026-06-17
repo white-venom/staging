@@ -336,14 +336,14 @@ export default function StaffLedgerPage() {
                             </h3>
                             <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
                               <span className="text-blue-500">{item.displayPortal}</span>
-                              <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-650"></span>
+                              <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                               <span>{getUtcDate(item.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</span>
                             </div>
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-2 flex items-center gap-1.5">
                           <span className={`text-xs font-black tracking-tight block ${
-                            item.type === "collection" ? "text-emerald-600 dark:text-emerald-500" : "text-red-650 dark:text-red-400"
+                            item.type === "collection" ? "text-emerald-600 dark:text-emerald-500" : "text-red-600 dark:text-red-400"
                           }`}>
                             {item.type === "collection" ? "+" : "-"}₹{item.totalAmount.toLocaleString("en-IN")}
                           </span>
@@ -365,7 +365,7 @@ export default function StaffLedgerPage() {
 
                       {/* Expanded Section */}
                       {isExpanded && (
-                        <div className="px-2 mx-2 mb-2 pb-2 pt-1.5 border-t border-slate-200/40 dark:border-slate-800/40 space-y-2 text-[10px] font-bold text-slate-650 dark:text-slate-400" onClick={e => e.stopPropagation()}>
+                        <div className="px-2 mx-2 mb-2 pb-2 pt-1.5 border-t border-slate-200/40 dark:border-slate-800/40 space-y-2 text-[10px] font-bold text-slate-600 dark:text-slate-400" onClick={e => e.stopPropagation()}>
                           <div>
                             <span className="text-[7.5px] uppercase font-black text-slate-400 block mb-0.5">Cash Breakdown:</span>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-slate-700 dark:text-slate-350">

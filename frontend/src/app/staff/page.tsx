@@ -720,7 +720,7 @@ export default function StaffDashboard() {
                 )}
                 <button
                   onClick={handleLogout}
-                  className="w-full py-4 bg-red-50 text-red-650 dark:bg-red-900/10 dark:text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform cursor-pointer"
+                  className="w-full py-4 bg-red-50 text-red-600 dark:bg-red-900/10 dark:text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform cursor-pointer"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Log Out Securely

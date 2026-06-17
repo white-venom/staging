@@ -388,7 +388,7 @@ export default function MobileRetailers({
                 {/* Row Header */}
                 <div className="flex items-center justify-between gap-1 mb-1">
                   <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <Store className="w-3.5 h-3.5 text-emerald-650 shrink-0" />
+                    <Store className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline gap-1.5">
                         <span className="font-bold text-xs text-slate-900 dark:text-white truncate max-w-[130px]">{retailer.name}</span>
@@ -514,7 +514,7 @@ export default function MobileRetailers({
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-950 p-2 rounded-md border border-slate-100 dark:border-slate-800 text-[9px] flex justify-between items-center">
                   <span className="text-slate-400 font-bold uppercase tracking-wider">Net Balance</span>
-                  <span className={`font-extrabold ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-650 dark:text-emerald-500' : 'text-red-650 dark:text-red-400'}`}>
+                  <span className={`font-extrabold ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
                     ₹{Math.abs(editingRetailer.balance || 0).toLocaleString()}
                   </span>
                 </div>
@@ -537,7 +537,7 @@ export default function MobileRetailers({
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-sm p-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2 shrink-0">
               <div className="flex items-center gap-2">
-                <Store className="w-4 h-4 text-blue-650" />
+                <Store className="w-4 h-4 text-blue-600" />
                 <div>
                   <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Manage Stores</h3>
                   <p className="text-[9px] font-bold text-slate-450">{selectedRetailerStore.name}</p>
@@ -594,7 +594,7 @@ export default function MobileRetailers({
                                   type="text"
                                   value={editStoreArea}
                                   onChange={(e) => setEditStoreArea(e.target.value)}
-                                  className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-805 rounded text-xs font-semibold focus:outline-none"
+                                  className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
                                   placeholder="Area / Address"
                                 />
                                 <div className="flex gap-1.5">
@@ -606,7 +606,7 @@ export default function MobileRetailers({
                                   </button>
                                   <button
                                     onClick={() => setEditingStoreId(null)}
-                                    className="px-2 py-1 bg-slate-100 dark:bg-slate-805 text-slate-655 dark:text-slate-455 rounded text-[9px] font-bold cursor-pointer"
+                                    className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded text-[9px] font-bold cursor-pointer"
                                   >
                                     Cancel
                                   </button>
