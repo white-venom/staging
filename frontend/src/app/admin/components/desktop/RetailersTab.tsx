@@ -29,6 +29,7 @@ export default function RetailersTab({
   const [newStoreName, setNewStoreName] = useState("");
   const [newStoreArea, setNewStoreArea] = useState("");
   const [isCreatingStore, setIsCreatingStore] = useState(false);
+  const [storeSearch, setStoreSearch] = useState("");
 
   // Ledger Report View State
   const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
@@ -71,6 +72,7 @@ export default function RetailersTab({
   useEffect(() => {
     if (selectedRetailer) {
       fetchStores(selectedRetailer.id);
+      setStoreSearch("");
     }
   }, [selectedRetailer]);
 
@@ -424,6 +426,7 @@ export default function RetailersTab({
                   setSelectedRetailer(null);
                   setStores([]);
                   setEditingStoreId(null);
+                  setStoreSearch("");
                 }}
                 className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"
               >
@@ -433,76 +436,102 @@ export default function RetailersTab({
 
             <div className="flex-1 overflow-y-auto space-y-4 pr-1">
               <div className="space-y-3">
-                <span className="text-[10px] uppercase font-black text-slate-400 tracking-wide">Active Store Locations</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] uppercase font-black text-slate-400 tracking-wide">Active Store Locations</span>
+                  {stores.length > 0 && (
+                    <div className="relative w-48">
+                      <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400" />
+                      <input autoComplete="off"
+                        type="text"
+                        placeholder="Search stores..."
+                        value={storeSearch}
+                        onChange={(e) => setStoreSearch(e.target.value)}
+                        className="w-full pl-8 pr-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-semibold placeholder-slate-400 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
                 {stores.length > 0 ? (
-                  <div className="space-y-2">
-                    {stores.map((s) => (
-                      <div key={s.id} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl">
-                        {editingStoreId === s.id ? (
-                          /* EDIT MODE */
-                          <div className="space-y-2">
-                            <input autoComplete="one-time-code"
-                              type="text"
-                              value={editStoreName}
-                              onChange={(e) => setEditStoreName(e.target.value)}
-                              className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded-lg text-xs font-semibold focus:outline-none"
-                              placeholder="Store Name"
-                            />
-                            <input autoComplete="one-time-code"
-                              type="text"
-                              value={editStoreArea}
-                              onChange={(e) => setEditStoreArea(e.target.value)}
-                              className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
-                              placeholder="Area / Address"
-                            />
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleSaveStoreEdit(s.id)}
-                                className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1"
-                              >
-                                <Check className="w-3 h-3" /> Save
-                              </button>
-                              <button
-                                onClick={() => setEditingStoreId(null)}
-                                className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-[10px] font-bold"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          /* VIEW MODE */
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
-                                <StoreIcon className="w-4 h-4 text-blue-500" />
+                  (() => {
+                    const filteredStores = stores.filter((s) =>
+                      (s.store_name || "").toLowerCase().includes(storeSearch.toLowerCase()) ||
+                      (s.address || "").toLowerCase().includes(storeSearch.toLowerCase())
+                    );
+                    return filteredStores.length > 0 ? (
+                      <div className="space-y-2">
+                        {filteredStores.map((s) => (
+                          <div key={s.id} className="p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl">
+                            {editingStoreId === s.id ? (
+                              /* EDIT MODE */
+                              <div className="space-y-2">
+                                <input autoComplete="one-time-code"
+                                  type="text"
+                                  value={editStoreName}
+                                  onChange={(e) => setEditStoreName(e.target.value)}
+                                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded-lg text-xs font-semibold focus:outline-none"
+                                  placeholder="Store Name"
+                                />
+                                <input autoComplete="one-time-code"
+                                  type="text"
+                                  value={editStoreArea}
+                                  onChange={(e) => setEditStoreArea(e.target.value)}
+                                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                                  placeholder="Area / Address"
+                                />
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleSaveStoreEdit(s.id)}
+                                    className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1"
+                                  >
+                                    <Check className="w-3 h-3" /> Save
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingStoreId(null)}
+                                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-[10px] font-bold"
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{s.store_name}</p>
-                                <p className="text-[9px] text-slate-400 font-medium">{s.address || "—"}</p>
+                            ) : (
+                              /* VIEW MODE */
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+                                    <StoreIcon className="w-4 h-4 text-blue-500" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{s.store_name}</p>
+                                    <p className="text-[9px] text-slate-400 font-medium">{s.address || "—"}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => handleStartEditStore(s)}
+                                    className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                    title="Edit store"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteStore(s.id, s.store_name)}
+                                    className="p-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                                    title="Delete store"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <button
-                                onClick={() => handleStartEditStore(s)}
-                                className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
-                                title="Edit store"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteStore(s.id, s.store_name)}
-                                className="p-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-                                title="Delete store"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
+                            )}
                           </div>
-                        )}
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    ) : (
+                      <div className="text-center py-4 border border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
+                        <p className="text-[10px] text-slate-400 font-bold">No matching stores found</p>
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div className="text-center py-6 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
                     <p className="text-[10px] text-slate-400 font-bold">No stores registered for this retailer</p>

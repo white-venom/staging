@@ -185,8 +185,6 @@ export default function AdminDesktopLayout({ children }: { children: React.React
 
   const navLinks = [
     { id: "overview", label: "Dashboard", icon: LayoutGrid, path: "/admin" },
-    { id: "collections", label: "Cash In", icon: ClipboardList, path: "/admin/collections" },
-    { id: "deposits", label: "Cash Out", icon: TrendingUp, path: "/admin/deposits" },
     { id: "ledger", label: "Ledger", icon: BookOpen, path: "/admin/ledger" },
     { id: "wallet-transfer", label: "Virtual Money Transfer", icon: CreditCard, path: "/admin/wallet-transfer" },
     { id: "portals", label: "Portals", icon: Globe, path: "/admin/portals" },

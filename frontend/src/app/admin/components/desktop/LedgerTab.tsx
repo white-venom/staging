@@ -445,7 +445,71 @@ export default function LedgerTab({
           
           <div className="flex gap-2">
             <button 
-              onClick={() => window.print()}
+              onClick={() => {
+                const printWindow = window.open('', '_blank', 'width=900,height=700');
+                if (!printWindow) return;
+                const tableHTML = document.querySelector('.print-area')?.innerHTML || '';
+                const partyName = partyFilter !== 'all' ? partyFilter : portalFilter !== 'all' ? portalFilter : 'All Parties';
+                printWindow.document.write(`
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <title>Ledger Report - ${partyName}</title>
+                    <style>
+                      body { font-family: Arial, sans-serif; font-size: 13px; color: #1e293b; margin: 0; padding: 20px; }
+                      h1 { font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; color: #1e293b; margin: 0; }
+                      p { margin: 4px 0; color: #64748b; font-size: 11px; }
+                      .summary { display: flex; gap: 40px; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 16px 0; margin: 16px 0; }
+                      .summary div { text-align: center; }
+                      .summary span.label { display: block; font-size: 9px; font-weight: 900; text-transform: uppercase; color: #94a3b8; margin-bottom: 4px; }
+                      .summary span.value { font-size: 18px; font-weight: 900; }
+                      .red { color: #dc2626; } .green { color: #059669; } .blue { color: #2563eb; }
+                      table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 12px; }
+                      th { background: #f8fafc; padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; border-bottom: 2px solid #e2e8f0; }
+                      td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+                      tr:nth-child(even) td { background: #f8fafc; }
+                      .credit { color: #059669; font-weight: 900; } .debit { color: #dc2626; font-weight: 900; }
+                      .bal { color: #2563eb; font-weight: 900; }
+                      tfoot td { font-weight: 900; background: #f1f5f9; border-top: 2px solid #cbd5e1; padding: 12px; }
+                      @media print { body { padding: 10px; } }
+                    </style>
+                  </head>
+                  <body>
+                    <div style="text-align:center; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
+                      <h1>Do-It Services</h1>
+                      <p>Official Ledger Report &mdash; ${partyName}</p>
+                      <p>Generated: ${new Date().toLocaleString('en-IN')}</p>
+                    </div>
+                    <div class="summary">
+                      <div><span class="label">Total Debit (Out)</span><span class="value red">&#8377;${totalDebit.toLocaleString()}.00</span></div>
+                      <div><span class="label">Total Credit (In)</span><span class="value green">&#8377;${totalCredit.toLocaleString()}.00</span></div>
+                      <div><span class="label">Net Balance</span><span class="value blue">&#8377;${Math.abs(netBalance).toLocaleString()}.00 ${netBalance >= 0 ? 'Dr' : 'Cr'}</span></div>
+                    </div>
+                    <table>
+                      <thead><tr><th>Date &amp; Time</th><th>Party</th><th>Staff</th><th style="text-align:right">Opening Bal</th><th style="text-align:right">Received / Paid</th><th style="text-align:right">Balance</th></tr></thead>
+                      <tbody>
+                        ${allTransactions.map(tx => {
+                          const snap = snapshots.get(tx.id) || { old: 0, new: 0 };
+                          const txOld = snap.old;
+                          const txNew = snap.new;
+                          const isCredit = tx.type === 'collection';
+                          return `<tr>
+                            <td>${tx.date.split(' ')[0].split('-').reverse().join('-')}<br><small style="color:#94a3b8">${tx.date.split(' ')[1] || ''}</small></td>
+                            <td style="font-weight:700">${tx.party || '-'}</td>
+                            <td style="color:#64748b">${tx.staff}</td>
+                            <td style="text-align:right; color:#64748b">&#8377;${txOld.toLocaleString()}</td>
+                            <td style="text-align:right" class="${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '-'}&#8377;${(tx.credit || tx.debit).toLocaleString()}</td>
+                            <td style="text-align:right" class="bal">&#8377;${txNew.toLocaleString()}</td>
+                          </tr>`;
+                        }).join('')}
+                      </tbody>
+                      <tfoot><tr><td colspan="4" style="text-align:right">Grand Total</td><td style="text-align:right; color:#059669">+&#8377;${totalCredit.toLocaleString()}<br><span style="color:#dc2626">-&#8377;${totalDebit.toLocaleString()}</span></td><td style="text-align:right; color:#2563eb">&#8377;${Math.abs(netBalance).toLocaleString()}.00 ${netBalance >= 0 ? 'Dr' : 'Cr'}</td></tr></tfoot>
+                    </table>
+                    <script>window.onload = function() { window.print(); }<\/script>
+                  </body></html>
+                `);
+                printWindow.document.close();
+              }}
               className="px-4 py-1.5 bg-slate-800 text-white text-[10px] font-black rounded-lg hover:bg-slate-900 transition-all"
             >
               PDF Report
@@ -549,9 +613,9 @@ export default function LedgerTab({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[11px] border-collapse">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-tight text-slate-500 border-b border-slate-200 dark:border-slate-800">
+              <tr className="bg-slate-50 dark:bg-slate-950 text-xs font-black uppercase tracking-tight text-slate-500 border-b border-slate-200 dark:border-slate-800">
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800 w-32">Date & Time</th>
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800">Description</th>
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800 text-right w-24">Opening Balance</th>
@@ -574,10 +638,10 @@ export default function LedgerTab({
                 return (
                 <React.Fragment key={tx.id}>
                 <tr className={`hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedTxId(prev => prev === tx.id ? null : tx.id)}>
-                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400">
+                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400 text-sm">
                     <div className="flex flex-col">
-                      <span className="whitespace-nowrap">{tx.date.split(" ")[0].split("-").reverse().join("-")}</span>
-                      <span className="text-[9px] font-medium opacity-60">
+                      <span className="whitespace-nowrap text-sm">{tx.date.split(" ")[0].split("-").reverse().join("-")}</span>
+                      <span className="text-[11px] font-medium opacity-60">
                         {(() => {
                           const timePart = tx.date.split(" ")[1];
                           if (!timePart) return "";
@@ -595,13 +659,13 @@ export default function LedgerTab({
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-col">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase">
+                            <span className="font-extrabold text-slate-850 dark:text-slate-100 uppercase text-sm">
                               {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms")
                                 ? `${tx.party} - ${tx.store_name || "Cash"}`
                                 : tx.party}
                             </span>
                             {tx.store_name && !tx.party?.toLowerCase().startsWith("cms") && (
-                              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">({tx.store_name})</span>
+                              <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">({tx.store_name})</span>
                             )}
                             {tx.depositType === 'virtual' && (
                               <span className="text-[7px] font-black px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
@@ -623,7 +687,7 @@ export default function LedgerTab({
                               <span className="italic">{tx.rawRecord?.remarks || "no remark"}</span>
                             </div>
                           )}
-                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">By {tx.staff}</span>
+                          <span className="text-[11px] font-black text-slate-400 uppercase tracking-tighter">By {tx.staff}</span>
                       </div>
                       <div className="flex items-center gap-1.5 no-print" onClick={e => e.stopPropagation()}>
                         <button
@@ -657,13 +721,13 @@ export default function LedgerTab({
                       </div>
                     </div>
                   </td>
-                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-right font-bold text-slate-500">
+                  <td className="p-4 border-r border-slate-50 dark:border-slate-800 text-right font-bold text-slate-500 text-sm">
                     ₹{txOld.toLocaleString()}
                   </td>
-                  <td className={`p-4 border-r border-slate-50 dark:border-slate-800 text-right font-black ${tx.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
+                  <td className={`p-4 border-r border-slate-50 dark:border-slate-800 text-right font-black text-sm ${tx.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
                     {tx.type === 'collection' ? '+' : '-'}₹{(tx.credit || tx.debit).toLocaleString()}
                   </td>
-                  <td className="p-4 text-right font-black text-blue-700 bg-blue-50/10 dark:bg-blue-950/5">
+                  <td className="p-4 text-right font-black text-sm text-blue-700 bg-blue-50/10 dark:bg-blue-950/5">
                     ₹{txNew.toLocaleString()}
                   </td>
                 </tr>
@@ -706,9 +770,9 @@ export default function LedgerTab({
             {allTransactions.length > 0 && (
               <tfoot>
                 <tr className="bg-slate-100 dark:bg-slate-950 font-black border-t-2 border-slate-200 dark:border-slate-800">
-                  <td colSpan={3} className="p-4 text-right text-slate-500 uppercase tracking-wide text-[10px]">Grand Total</td>
+                  <td colSpan={3} className="p-4 text-right text-slate-500 uppercase tracking-wide text-xs">Grand Total</td>
                   <td className="p-4 text-right border-r border-slate-200 dark:border-slate-800 bg-slate-100/50">
-                    <div className="flex flex-col items-end gap-1 text-[11px] whitespace-nowrap">
+                    <div className="flex flex-col items-end gap-1 text-sm whitespace-nowrap">
                       {totalCredit > 0 && (
                         <div className="flex justify-between w-full max-w-[120px]">
                           <span className="text-slate-500 font-normal">Total In:</span>

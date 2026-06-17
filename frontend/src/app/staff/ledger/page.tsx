@@ -201,7 +201,7 @@ export default function StaffLedgerPage() {
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
             <div>
-              <h1 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Combined Ledger</h1>
+              <h1 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">Ledger</h1>
               <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">Your unified transaction history</p>
             </div>
           </div>

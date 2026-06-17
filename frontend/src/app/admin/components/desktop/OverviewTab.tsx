@@ -849,7 +849,15 @@ export default function OverviewTab({
                                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                               </div>
                               {item.balance !== undefined && item.balance !== null && (
-                                <div className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase">Due: ₹{Number(item.balance).toLocaleString()}</div>
+                                <div className={`text-[9px] font-bold mt-0.5 uppercase ${
+                                  Number(item.balance) < 0 
+                                    ? 'text-emerald-600 dark:text-emerald-500' 
+                                    : Number(item.balance) > 0 
+                                      ? 'text-red-600 dark:text-red-400' 
+                                      : 'text-slate-400'
+                                }`}>
+                                  Due: {Number(item.balance) < 0 ? '-' : ''}₹{Math.abs(Number(item.balance)).toLocaleString()}
+                                </div>
                               )}
                             </td>
                           </tr>

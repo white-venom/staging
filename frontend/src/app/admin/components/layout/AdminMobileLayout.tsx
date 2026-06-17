@@ -126,8 +126,6 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
 
   const navItems = [
     { label: "HOME", icon: LayoutDashboard, href: "/admin" },
-    { label: "CASH IN", icon: ArrowUpRight, href: "/admin/collections" },
-    { label: "CASH OUT", icon: ArrowDownLeft, href: "/admin/deposits" },
     { label: "LEDGER", icon: BookOpen, href: "/admin/ledger" },
     { label: "VIRTUAL MONEY TRANSFER", icon: CreditCard, href: "/admin/wallet-transfer" },
     { label: "STAFF", icon: Users, href: "/admin/staff" },

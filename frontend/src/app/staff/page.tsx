@@ -669,30 +669,6 @@ export default function StaffDashboard() {
                   <button
                     onClick={() => {
                       setIsSidebarOpen(false);
-                      router.push("/staff/cash-in-ledger");
-                    }}
-                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
-                  >
-                    <div className="flex-shrink-0">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <span className="text-xs tracking-wider uppercase">Cash In Ledger</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsSidebarOpen(false);
-                      router.push("/staff/cash-out-ledger");
-                    }}
-                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
-                  >
-                    <div className="flex-shrink-0">
-                      <FileText className="w-5 h-5" />
-                    </div>
-                    <span className="text-xs tracking-wider uppercase">Cash Out Ledger</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsSidebarOpen(false);
                       router.push("/staff/ledger");
                     }}
                     className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
@@ -700,7 +676,7 @@ export default function StaffDashboard() {
                     <div className="flex-shrink-0">
                       <FileText className="w-5 h-5" />
                     </div>
-                    <span className="text-xs tracking-wider uppercase">Combined Ledger</span>
+                    <span className="text-xs tracking-wider uppercase">Ledger</span>
                   </button>
                   <button
                     onClick={() => {
