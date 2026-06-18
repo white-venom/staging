@@ -256,6 +256,169 @@ def test_core_operations_flow():
     print(f"   ↳ Outstanding Debt: ₹{data_public['outstanding_balance']}")
     print(f"   ↳ Transaction: {data_public['statement_history'][0]['description']} (Amount: ₹{data_public['statement_history'][0]['amount']})")
 
+    # 10.1 Test Cash Collection Description with Store Name
+    print("🔄 Testing Cash-only Collection with Store Name in Ledger Description...")
+    # Register a Store under the Retailer
+    r_store = client.post(f"/retailers/{id_retailer}/stores", headers=headers_admin, json={
+        "store_name": "Dwarka Sector 15 Outlet"
+    })
+    assert r_store.status_code == 201
+    id_store = r_store.json()["id"]
+
+    # Submit a cash-only collection linked to that store
+    cash_collection_payload = {
+        "retailer_id": id_retailer,
+        "store_id": id_store,
+        "total_amount": 5000.00,
+        "remarks": "Cash-only collection from store",
+        "denominations": {
+            "note_500": 10,
+            "note_200": 0,
+            "note_100": 0,
+            "note_50": 0,
+            "note_20": 0,
+            "note_10": 0,
+            "coins": 0.00,
+            "online_amount": 0.00
+        }
+    }
+    r_cash_coll = client.post("/collections", headers=headers_staff_a, json=cash_collection_payload)
+    assert r_cash_coll.status_code == 201
+    id_cash_collection = r_cash_coll.json()["id"]
+
+    # Fetch public ledger and assert description is the store name
+    r_public_store = client.get(f"/public/ledger/{ledger_token}")
+    assert r_public_store.status_code == 200
+    data_public_store = r_public_store.json()
+    # There should be 2 transactions now
+    assert len(data_public_store["statement_history"]) == 2
+    # Find the newly added transaction
+    tx_store = [t for t in data_public_store["statement_history"] if t["amount"] == 5000.0]
+    assert len(tx_store) == 1
+    assert tx_store[0]["description"] == "Dwarka Sector 15 Outlet", f"Expected description 'Dwarka Sector 15 Outlet', got '{tx_store[0]['description']}'"
+    print("   ↳ Checked: Ledger entry description correctly shows Store Name.")
+
+    # Delete the temporary cash collection to restore balances
+    r_del_cash = client.delete(f"/collections/{id_cash_collection}", headers=headers_staff_a)
+    assert r_del_cash.status_code == 204
+    print("   ↳ Deleted temporary cash collection successfully.")
+
+    # 10c. Test Collection Edit & In-place Portal Deposit Sync (Point 8)
+    print("🔄 Testing Collection Update & In-place Deposit Sync...")
+    # Fetch existing portal deposit
+    r_deps_init = client.get("/bank-deposits", headers=headers_staff_a)
+    assert r_deps_init.status_code == 200
+    portal_deps_init = [d for d in r_deps_init.json() if d["deposit_type"] == "portal"]
+    assert len(portal_deps_init) == 1, f"Expected 1 portal deposit, got {len(portal_deps_init)}"
+    id_portal_deposit = portal_deps_init[0]["id"]
+    print(f"   ↳ Found auto-created portal deposit ID: {id_portal_deposit} with amount: ₹{portal_deps_init[0]['amount']}")
+
+    # Create another Portal to test changing the portal bank
+    r_portal_zepto = client.post("/portals", headers=headers_admin, json={
+        "group_id": id_group,
+        "portal_name": "Zepto Store Sector 10",
+        "bank_name": "ICICI Bank",
+        "bank_account_no": "60100412345678",
+        "ifsc_code": "ICIC0000123"
+    })
+    assert r_portal_zepto.status_code == 201
+    id_portal_zepto = r_portal_zepto.json()["id"]
+
+    # Update the collection to change portal and increase online amount
+    update_payload = {
+        "retailer_id": id_retailer,
+        "portal_id": id_portal_zepto,
+        "total_amount": 16200.00,
+        "remarks": "Updated collection check with UPI scan",
+        "denominations": {
+            "note_500": 20,
+            "note_200": 10,
+            "note_100": 12,
+            "note_50": 0,
+            "note_20": 0,
+            "note_10": 0,
+            "coins": 0.00,
+            "online_amount": 3000.00
+        }
+    }
+    r_update = client.put(f"/collections/{id_collection}", headers=headers_staff_a, json=update_payload)
+    assert r_update.status_code == 200, f"Collection update failed: {r_update.text}"
+    print("   ↳ Collection updated successfully to ₹16,200 (Online: ₹3,000 via Zepto).")
+
+    # Verify that the portal deposit was updated in-place (same ID)
+    r_deps_updated = client.get("/bank-deposits", headers=headers_staff_a)
+    portal_deps_updated = [d for d in r_deps_updated.json() if d["id"] == id_portal_deposit]
+    assert len(portal_deps_updated) == 1, "Deposit with original ID not found after update!"
+    assert float(portal_deps_updated[0]["amount"]) == 3000.0, f"Expected amount 3000.0, got {portal_deps_updated[0]['amount']}"
+    assert portal_deps_updated[0]["portal_id"] == id_portal_zepto, "Portal ID did not update on the deposit!"
+    print("   ↳ Checked: Deposit was updated in-place (retained ID, updated portal and amount).")
+
+    # Update collection to have zero online amount (cash-only)
+    cash_only_payload = {
+        "retailer_id": id_retailer,
+        "portal_id": None,
+        "total_amount": 13200.00,
+        "remarks": "Updated collection to cash only",
+        "denominations": {
+            "note_500": 20,
+            "note_200": 10,
+            "note_100": 12,
+            "note_50": 0,
+            "note_20": 0,
+            "note_10": 0,
+            "coins": 0.00,
+            "online_amount": 0.00
+        }
+    }
+    r_update_cash = client.put(f"/collections/{id_collection}", headers=headers_staff_a, json=cash_only_payload)
+    assert r_update_cash.status_code == 200, f"Cash-only update failed: {r_update_cash.text}"
+    print("   ↳ Collection updated to cash-only (₹13,200).")
+
+    # Verify that the portal deposit has been deleted
+    r_deps_cash_only = client.get("/bank-deposits", headers=headers_staff_a)
+    portal_deps_cash_only = [d for d in r_deps_cash_only.json() if d["id"] == id_portal_deposit]
+    assert len(portal_deps_cash_only) == 0, "Portal deposit was not deleted after shifting to cash-only!"
+    print("   ↳ Checked: Auto-created deposit was deleted successfully.")
+
+    # Restore collection back to the initial state to ensure subsequent tests pass unchanged
+    restore_payload = {
+        "retailer_id": id_retailer,
+        "portal_id": id_portal,
+        "total_amount": 15200.00,
+        "remarks": "Regular collection check with UPI scan",
+        "denominations": {
+            "note_500": 20,
+            "note_200": 10,
+            "note_100": 12,
+            "note_50": 0,
+            "note_20": 0,
+            "note_10": 0,
+            "coins": 0.00,
+            "online_amount": 2000.00
+        }
+    }
+    r_restore = client.put(f"/collections/{id_collection}", headers=headers_staff_a, json=restore_payload)
+    assert r_restore.status_code == 200, f"Restoring collection failed: {r_restore.text}"
+    print("   ↳ Restored collection to initial state for subsequent test assertions.")
+
+    # 10b. Test GET /staff/daily-summary endpoint
+    import datetime
+    today_str = datetime.datetime.utcnow().date().isoformat()
+    r_summary = client.get(f"/staff/daily-summary?selected_date={today_str}", headers=headers_staff_a)
+    assert r_summary.status_code == 200, f"Daily summary failed: {r_summary.text}"
+    summary_data = r_summary.json()
+    print("DEBUG: summary_data is", summary_data)
+    assert summary_data["opening_balance"] == 0.0
+    assert summary_data["total_in"] == 15200.0
+    assert summary_data["total_out"] == 5200.0
+    assert summary_data["closing_balance"] == 10000.0
+    print(f"🥇 DAILY SUMMARY BALANCES VERIFIED:")
+    print(f"   ↳ Opening Balance: ₹{summary_data['opening_balance']}")
+    print(f"   ↳ Total In: ₹{summary_data['total_in']}")
+    print(f"   ↳ Total Out: ₹{summary_data['total_out']}")
+    print(f"   ↳ Closing Balance: ₹{summary_data['closing_balance']}")
+
+
     # 11. Staff A checks out (KM: 12610)
     r_checkout = client.post("/attendance/check-out", headers=headers_staff_a, json={
         "end_km": 12610

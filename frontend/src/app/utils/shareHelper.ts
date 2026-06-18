@@ -94,11 +94,19 @@ export const shareCollectionEntry = async (entry: {
     } else if (entry.retailer_name === "Office" || entry.retailer_name === "Unknown Source") {
       headerLines.push(entry.retailer_name);
     } else {
-      headerLines.push(`Retailer: ${entry.retailer_name}`);
+      const isCms = entry.retailer_name.toLowerCase().startsWith("cms");
+      const storeSuffix = (isCms && entry.store_name) ? ` - ${entry.store_name}` : "";
+      headerLines.push(`Retailer: ${entry.retailer_name}${storeSuffix}`);
     }
   }
+  if (entry.store_name && !entry.retailer_name?.toLowerCase().startsWith("cms")) {
+    headerLines.push(`Store: ${entry.store_name}`);
+  }
   if (entry.portal_name && entry.portal_name !== "Cash" && entry.portal_name !== "N/A") {
-    headerLines.push(`Store: ${entry.portal_name}`);
+    headerLines.push(`Portal: ${entry.portal_name}`);
+  }
+  if (entry.remarks) {
+    headerLines.push(`Remark: ${entry.remarks}`);
   }
   const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
 

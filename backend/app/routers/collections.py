@@ -67,6 +67,7 @@ def submit_collection(
 
     # Perform within a database transaction
     try:
+        from datetime import date
         db_collection = Collection(
             retailer_id=payload.retailer_id,
             staff_id=current_user.id,
@@ -76,6 +77,7 @@ def submit_collection(
             portal_id=payload.portal_id,
             total_amount=payload.total_amount,
             remarks=payload.remarks,
+            collection_date=payload.collection_date or date.today(),
             status="verified"
         )
         db.add(db_collection)
@@ -127,7 +129,10 @@ def submit_collection(
                 else:
                     description = f"online collection (₹{d.online_amount:.2f} via {portal_name})"
             else:
-                description = "cash in"
+                store_obj = None
+                if payload.store_id:
+                    store_obj = db.scalar(select(Store).where(Store.id == payload.store_id))
+                description = store_obj.store_name if store_obj else "Cash"
             
             ledger_entry = Ledger(
                 retailer_id=payload.retailer_id,
@@ -374,12 +379,18 @@ def verify_collection(
     # Collections reduce what they owe DO IT SERVICES (credit)
     new_balance = prev_balance - collection.total_amount
 
+    store_name = "Cash"
+    if collection.store_id:
+        store_obj = db.scalar(select(Store).where(Store.id == collection.store_id))
+        if store_obj:
+            store_name = store_obj.store_name
+
     ledger_entry = Ledger(
         retailer_id=collection.retailer_id,
         transaction_type="credit",
         amount=collection.total_amount,
         balance=new_balance,
-        description="cash in",
+        description=store_name,
         collection_id=collection.id
     )
     db.add(ledger_entry)
@@ -512,6 +523,8 @@ def update_collection(
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
         
+    new_collection_date = payload.collection_date or collection.collection_date
+        
     if current_user.role != "admin":
         if collection.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this collection")
@@ -555,67 +568,112 @@ def update_collection(
                     portal.group.balance -= diff
 
     # Sync corresponding auto-created portal deposit if needed
-    if old_retailer_id:
-        old_online_amount = collection.denominations.online_amount if collection.denominations else Decimal("0.00")
-        new_online_amount = payload.denominations.online_amount if payload.denominations else Decimal("0.00")
-        if old_portal_id != new_portal_id or old_online_amount != new_online_amount:
-            # Revert the old deposit if it existed
-            if old_portal_id and old_online_amount > 0:
-                old_dep = db.scalar(
-                    select(BankDeposit).where(
-                        and_(
-                            BankDeposit.deposit_type == "portal",
-                            BankDeposit.staff_id == collection.staff_id,
-                            BankDeposit.portal_id == old_portal_id,
-                            BankDeposit.amount == old_online_amount,
-                            BankDeposit.deposit_date == collection.collection_date
-                        )
+    old_online_amount = collection.denominations.online_amount if collection.denominations else Decimal("0.00")
+    new_online_amount = payload.denominations.online_amount if payload.denominations else Decimal("0.00")
+    
+    # Find the existing auto-created deposit if it existed
+    existing_dep = None
+    if old_portal_id and old_online_amount > 0:
+        existing_dep = db.scalar(
+            select(BankDeposit).where(
+                and_(
+                    BankDeposit.deposit_type == "portal",
+                    BankDeposit.staff_id == collection.staff_id,
+                    BankDeposit.portal_id == old_portal_id,
+                    BankDeposit.amount == old_online_amount,
+                    BankDeposit.deposit_date == collection.collection_date
+                )
+            )
+        )
+        # Fallback search without date if not found (in case of previous mismatch)
+        if not existing_dep:
+            existing_dep = db.scalar(
+                select(BankDeposit).where(
+                    and_(
+                        BankDeposit.deposit_type == "portal",
+                        BankDeposit.staff_id == collection.staff_id,
+                        BankDeposit.portal_id == old_portal_id,
+                        BankDeposit.amount == old_online_amount
                     )
-                )
-                if old_dep:
-                    old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
-                    if old_portal:
-                        old_portal.balance -= old_online_amount
-                        if old_portal.group:
-                            old_portal.group.balance -= old_online_amount
-                    db.delete(old_dep)
-                    
-            # Create the new deposit if needed
-            if new_portal_id and new_online_amount > 0:
-                new_portal_obj = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
-                db_deposit = BankDeposit(
-                    staff_id=collection.staff_id,
-                    deposit_type="portal",
-                    portal_id=new_portal_id,
-                    recipient_staff_id=None,
-                    to_office=False,
-                    payment_mode="online",
-                    amount=new_online_amount,
-                    deposit_date=collection.collection_date,
-                    status="verified",
-                    balance_snapshot=Decimal("0.00")
-                )
-                db.add(db_deposit)
-                db.flush()
-                
-                db_deposit_denom = Denomination(
-                    deposit_id=db_deposit.id,
-                    note_500=0,
-                    note_200=0,
-                    note_100=0,
-                    note_50=0,
-                    note_20=0,
-                    note_10=0,
+                ).limit(1)
+            )
+
+    # If the collection should have an auto-created portal deposit in its new state
+    if new_retailer_id and new_portal_id and new_online_amount > 0:
+        if existing_dep:
+            # Revert old portal balance changes
+            if existing_dep.portal_id:
+                old_port = db.scalar(select(Portal).where(Portal.id == existing_dep.portal_id).with_for_update())
+                if old_port:
+                    old_port.balance -= existing_dep.amount
+                    if old_port.group:
+                        old_port.group.balance -= existing_dep.amount
+            
+            # Update existing deposit in-place
+            existing_dep.portal_id = new_portal_id
+            existing_dep.amount = new_online_amount
+            existing_dep.deposit_date = new_collection_date
+            
+            if existing_dep.denominations:
+                existing_dep.denominations.online_amount = new_online_amount
+            else:
+                db_denom = Denomination(
+                    deposit_id=existing_dep.id,
+                    note_500=0, note_200=0, note_100=0, note_50=0, note_20=0, note_10=0,
                     coins=Decimal("0.00"),
                     online_amount=new_online_amount
                 )
-                db.add(db_deposit_denom)
-                
-                if new_portal_obj:
-                    new_portal_obj.balance += new_online_amount
-                    db_deposit.balance_snapshot = new_portal_obj.balance
-                    if new_portal_obj.group:
-                        new_portal_obj.group.balance += new_online_amount
+                db.add(db_denom)
+            
+            # Apply new portal balance changes
+            new_port = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
+            if new_port:
+                new_port.balance += new_online_amount
+                existing_dep.balance_snapshot = new_port.balance
+                if new_port.group:
+                    new_port.group.balance += new_online_amount
+        else:
+            # Create a brand new deposit
+            new_port = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
+            db_deposit = BankDeposit(
+                staff_id=collection.staff_id,
+                deposit_type="portal",
+                portal_id=new_portal_id,
+                recipient_staff_id=None,
+                to_office=False,
+                payment_mode="online",
+                amount=new_online_amount,
+                deposit_date=new_collection_date,
+                status="verified",
+                balance_snapshot=Decimal("0.00")
+            )
+            db.add(db_deposit)
+            db.flush()
+            
+            db_denom = Denomination(
+                deposit_id=db_deposit.id,
+                note_500=0, note_200=0, note_100=0, note_50=0, note_20=0, note_10=0,
+                coins=Decimal("0.00"),
+                online_amount=new_online_amount
+            )
+            db.add(db_denom)
+            
+            if new_port:
+                new_port.balance += new_online_amount
+                db_deposit.balance_snapshot = new_port.balance
+                if new_port.group:
+                    new_port.group.balance += new_online_amount
+    else:
+        # The new state should NOT have an auto-created portal deposit
+        if existing_dep:
+            if existing_dep.portal_id:
+                old_port = db.scalar(select(Portal).where(Portal.id == existing_dep.portal_id).with_for_update())
+                if old_port:
+                    old_port.balance -= existing_dep.amount
+                    if old_port.group:
+                        old_port.group.balance -= existing_dep.amount
+            db.delete(existing_dep)
+
 
     # Update main fields safely
     for field, value in payload.model_dump(exclude_unset=True, exclude={"denominations"}).items():
@@ -658,7 +716,10 @@ def update_collection(
             else:
                 ledger_entry.description = f"online collection (₹{new_online_amount:.2f} via {portal_name})"
         else:
-            ledger_entry.description = "cash in"
+            store_obj = None
+            if payload.store_id:
+                store_obj = db.scalar(select(Store).where(Store.id == payload.store_id))
+            ledger_entry.description = store_obj.store_name if store_obj else "Cash"
 
     # Sync corresponding staff handover deposit if needed
     if old_from_staff_id != new_from_staff_id:
@@ -683,7 +744,7 @@ def update_collection(
                 to_office=False,
                 payment_mode="cash",
                 amount=payload.total_amount,
-                deposit_date=collection.collection_date,
+                deposit_date=new_collection_date,
                 status="verified",
                 balance_snapshot=Decimal("0.00")
             )
@@ -717,7 +778,7 @@ def update_collection(
         )
         if matching_deposit:
             matching_deposit.amount = payload.total_amount
-            matching_deposit.deposit_date = collection.collection_date
+            matching_deposit.deposit_date = new_collection_date
             if matching_deposit.denominations:
                 d = payload.denominations
                 matching_deposit.denominations.note_500 = d.note_500

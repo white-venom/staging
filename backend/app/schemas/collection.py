@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel, Field
@@ -13,7 +13,7 @@ class DenominationSchema(BaseModel):
     note_50: int = Field(0)
     note_20: int = Field(0)
     note_10: int = Field(0)
-    coins: Decimal = Field(Decimal("0.00"), ge=0)
+    coins: Decimal = Field(Decimal("0.00"))
     online_amount: Decimal = Field(Decimal("0.00"), ge=0)
     online_portal_id: Optional[str] = None
 
@@ -29,6 +29,7 @@ class CollectionCreate(BaseModel):
     portal_id: Optional[uuid.UUID] = None
     total_amount: Decimal  # Can be zero (pure note exchange), negative (net outflow), or positive
     remarks: Optional[str] = Field(None, max_length=255)
+    collection_date: Optional[date] = None
     denominations: DenominationSchema
 
 
@@ -43,6 +44,7 @@ class CollectionResponse(BaseModel):
     remarks: Optional[str]
     status: str
     balance_snapshot: Decimal
+    collection_date: date
     created_at: datetime
     denominations: Optional[DenominationSchema]
     

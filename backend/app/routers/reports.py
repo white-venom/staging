@@ -217,3 +217,70 @@ def get_staff_cash_in_hand(
         "total_pocket_cash": float(total_pocket_cash),
         "note_breakdown": pocket
     }
+
+
+@router.get("/staff/daily-summary")
+def get_staff_daily_summary(
+    selected_date: date,
+    staff_id: str = None,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_any_user)
+):
+    """Calculates a staff member's opening balance, daily total In, daily total Out, and closing balance for a specific date."""
+    import uuid
+    from typing import Optional
+
+    if current_user.role != "admin":
+        target_staff_id = current_user.id
+    else:
+        target_staff_id = uuid.UUID(staff_id) if staff_id else current_user.id
+
+    # 1. Total Collections (In) before the selected date
+    collections_before = db.scalar(
+        select(func.sum(Collection.total_amount))
+        .where(and_(
+            Collection.staff_id == target_staff_id,
+            func.date(Collection.created_at) < selected_date
+        ))
+    ) or Decimal("0.00")
+
+    # 2. Total Deposits (Out) before the selected date
+    deposits_before = db.scalar(
+        select(func.sum(BankDeposit.amount))
+        .where(and_(
+            BankDeposit.staff_id == target_staff_id,
+            func.date(BankDeposit.created_at) < selected_date
+        ))
+    ) or Decimal("0.00")
+
+    opening_balance = collections_before - deposits_before
+
+    # 3. Total Collections (In) today
+    collections_today = db.scalar(
+        select(func.sum(Collection.total_amount))
+        .where(and_(
+            Collection.staff_id == target_staff_id,
+            func.date(Collection.created_at) == selected_date
+        ))
+    ) or Decimal("0.00")
+
+    # 4. Total Deposits (Out) today
+    deposits_today = db.scalar(
+        select(func.sum(BankDeposit.amount))
+        .where(and_(
+            BankDeposit.staff_id == target_staff_id,
+            func.date(BankDeposit.created_at) == selected_date
+        ))
+    ) or Decimal("0.00")
+
+    closing_balance = opening_balance + collections_today - deposits_today
+
+    return {
+        "staff_id": str(target_staff_id),
+        "date": selected_date.isoformat(),
+        "opening_balance": float(opening_balance),
+        "total_in": float(collections_today),
+        "total_out": float(deposits_today),
+        "closing_balance": float(closing_balance)
+    }
+

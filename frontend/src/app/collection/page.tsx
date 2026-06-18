@@ -32,6 +32,11 @@ function NewCollectionContent() {
   // Network State status bar
   const [isOnline, setIsOnline] = useState(true);
 
+  // Collection Date Selector
+  const [collectionDate, setCollectionDate] = useState<string>(() => {
+    return new Date().toISOString().substring(0, 10);
+  });
+
   // Search & Selector State
   const [retailers, setRetailers] = useState<CachedRetailer[]>([]);
   const [selectedRetailer, setSelectedRetailer] = useState<CachedRetailer | null>(null);
@@ -113,6 +118,8 @@ function NewCollectionContent() {
               if (target.denominations.online_portal_id) {
                 setShowOnlinePortal(true);
               }
+            if (target.collection_date) {
+              setCollectionDate(target.collection_date.substring(0, 10));
             }
             setRemarks(target.remarks || "");
           }
@@ -215,11 +222,11 @@ function NewCollectionContent() {
       setDenominations(prev => ({ ...prev, [key]: value }));
       return;
     }
-    // coins and online_amount must stay >= 0; note counts can be negative (exchange)
-    const isNoteKey = ["note_500", "note_200", "note_100", "note_50", "note_20", "note_10"].includes(key);
+    // coins and note counts can be negative (exchange); online_amount must stay >= 0
+    const isNoteOrCoinsKey = ["note_500", "note_200", "note_100", "note_50", "note_20", "note_10", "coins"].includes(key);
     let val = value === "" ? 0 : parseFloat(value);
     if (isNaN(val)) val = 0;
-    if (!isNoteKey && val < 0) val = 0; // coins/online can't be negative
+    if (!isNoteOrCoinsKey && val < 0) val = 0; // online can't be negative
     setDenominations(prev => ({
       ...prev,
       [key]: val
@@ -287,6 +294,7 @@ function NewCollectionContent() {
         store_id: selectedStoreId || null,
         portal_id: denominations.online_portal_id || null,
         total_amount: totalCollectionAmount,
+        collection_date: collectionDate,
         denominations: denominations,
         remarks: remarks || ""
       };
@@ -622,6 +630,19 @@ function NewCollectionContent() {
                   </p>
                 )}
               </div>
+          </div>
+
+          {/* Collection Date Selector */}
+          <div className="space-y-1">
+            <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 px-1">
+              Collection Date
+            </label>
+            <input autoComplete="one-time-code"
+              type="date"
+              value={collectionDate}
+              onChange={(e) => setCollectionDate(e.target.value)}
+              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
+            />
           </div>
 
           {/* REMARKS COMPONENT */}

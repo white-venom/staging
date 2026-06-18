@@ -103,6 +103,26 @@ export default function DailyReportPage() {
     })
   ].sort((a, b) => getUtcDate(a.created_at).getTime() - getUtcDate(b.created_at).getTime());
 
+  // Calculate Running Balances
+  const totalInBefore = collections
+    .filter(c => {
+      const localDateStr = getUtcDate(c.created_at).toISOString().substring(0, 10);
+      return localDateStr < selectedDate;
+    })
+    .reduce((sum, c) => sum + Number(c.total_amount), 0);
+
+  const totalOutBefore = deposits
+    .filter(d => {
+      const localDateStr = getUtcDate(d.created_at).toISOString().substring(0, 10);
+      return localDateStr < selectedDate;
+    })
+    .reduce((sum, d) => sum + Number(d.amount), 0);
+
+  const openingBalance = totalInBefore - totalOutBefore;
+  const totalInToday = reportItems.reduce((sum, item) => sum + Number(item.inAmount || 0), 0);
+  const totalOutToday = reportItems.reduce((sum, item) => sum + Number(item.outAmount || 0), 0);
+  const lastBalance = openingBalance + totalInToday - totalOutToday;
+
   // Generate breakdown content cell in the format matching SS
   const renderNotesBreakdown = (item: any) => {
     const denoms = item.denominations || {};
@@ -232,7 +252,7 @@ export default function DailyReportPage() {
 
           <button
             onClick={downloadPDF}
-            disabled={isDownloading || reportItems.length === 0}
+            disabled={isDownloading}
             className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold shadow disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <Download className="w-3 h-3" />
@@ -266,11 +286,6 @@ export default function DailyReportPage() {
             <div className="flex justify-center p-8">
               <RefreshCw className="w-5 h-5 animate-spin text-slate-400" />
             </div>
-          ) : reportItems.length === 0 ? (
-            <div className="p-8 text-center text-[10px] text-slate-400 bg-white font-bold">
-              <FileText className="w-5 h-5 text-slate-300 mx-auto mb-1" />
-              No transaction records found for {new Date(selectedDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}.
-            </div>
           ) : (
             <div id="report-content" className="bg-white text-black p-2.5 font-sans flex flex-col gap-2.5">
               
@@ -301,6 +316,26 @@ export default function DailyReportPage() {
                 </div>
               </div>
 
+              {/* Balance Summary Row */}
+              <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50/50 py-2 text-center divide-x divide-slate-200">
+                <div className="flex flex-col justify-center">
+                  <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider">Opening Balance</span>
+                  <span className="text-xs font-black text-blue-900 mt-0.5">₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex flex-col justify-center">
+                  <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider">Today's In</span>
+                  <span className="text-xs font-black text-emerald-600 mt-0.5">₹{totalInToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex flex-col justify-center">
+                  <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider">Today's Out</span>
+                  <span className="text-xs font-black text-red-650 text-red-600 mt-0.5">₹{totalOutToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex flex-col justify-center">
+                  <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider">Last Balance</span>
+                  <span className="text-xs font-black text-blue-900 mt-0.5">₹{lastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+
               {/* Transaction Data Table */}
               <div className="border border-slate-200 rounded-lg overflow-x-auto">
                 <table className="w-full text-[10px] text-left border-collapse min-w-[550px]">
@@ -316,75 +351,107 @@ export default function DailyReportPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {reportItems.map((item, idx) => {
-                      const dt = formatDateTime(item.created_at);
-                      const isCol = item.itemType === "collection";
-                      
-                      const staffName = item.staff_name || currentUser?.name || "Staff";
-                      let source = "";
-                      let destination = "";
-                      if (isCol) {
-                        const isCms = item.retailer_name?.toLowerCase().startsWith("cms");
-                        const retDispName = isCms 
-                          ? `${item.retailer_name} - ${item.store_name || "Cash"}` 
-                          : (item.from_staff_name || item.retailer_name || "Retailer");
-                        source = item.from_office
-                          ? "Super Distributor"
-                          : retDispName;
-                        destination = staffName;
-                      } else {
-                        source = staffName;
-                        destination = item.to_office
-                          ? "Super Distributor"
-                          : (item.target_name || "Recipient");
-                      }
-                      const narration = `From ${source} to ${destination}`;
+                    {/* Opening Balance Row */}
+                    <tr className="bg-slate-50/50 font-semibold text-slate-800 border-b border-slate-200">
+                      <td className="py-1.5 px-1 border-r border-slate-200 text-center font-bold text-slate-400">-</td>
+                      <td className="py-1.5 px-1 border-r border-slate-200 text-center text-[9px] text-slate-400">-</td>
+                      <td className="py-1.5 px-2 border-r border-slate-200 text-left font-black text-slate-800 uppercase text-[9px] tracking-wider" colSpan={3}>
+                        Opening Balance
+                      </td>
+                      <td className="py-1.5 px-2 text-right font-black text-blue-900 text-[10px]" colSpan={2}>
+                        ₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
 
-                      return (
-                        <tr key={item.id} className="border-b border-slate-200 hover:bg-slate-50/30">
-                          {/* No */}
-                          <td className="py-1.5 px-1 border-r border-slate-200 text-center font-bold text-slate-800">
-                            {idx + 1}
-                          </td>
-                          
-                          {/* Date & Time */}
-                          <td className="py-1.5 px-1 border-r border-slate-200 text-center text-[9px] leading-tight font-semibold text-slate-700">
-                            <div>{dt.date}</div>
-                            <div className="text-slate-400 mt-0.5">{dt.time}</div>
-                          </td>
-                          
-                          {/* Description */}
-                          <td className="py-1.5 px-2 border-r border-slate-200 text-center font-semibold text-slate-800 break-words text-[9px] leading-normal whitespace-pre-line">
-                            <div className="text-slate-700 font-bold">{narration}</div>
-                            {isCol && item.retailer_name?.toLowerCase().startsWith("cms") && item.remarks && (
-                              <div className="text-[8px] text-slate-500 font-medium mt-0.5 italic">
-                                Remark: {item.remarks}
-                              </div>
-                            )}
-                          </td>
-                          
-                          {/* In */}
-                          <td className="py-1.5 px-2 border-r border-slate-200 text-center font-extrabold text-emerald-600">
-                            {isCol ? `₹${Number(item.inAmount).toLocaleString()}` : <span className="text-red-500">-</span>}
-                          </td>
-                          
-                          {/* Out */}
-                          <td className="py-1.5 px-2 border-r border-slate-200 text-center font-extrabold text-red-500">
-                            {!isCol ? `-₹${Number(item.outAmount).toLocaleString()}` : <span className="text-red-500">-</span>}
-                          </td>
-                          
-                          {/* Remarks */}
-                          <td className="py-1.5 px-1 border-r border-slate-200 text-center font-semibold text-slate-500 text-[9px] break-words">
-                            {item.remarks || "-"}
-                          </td>
-                          
-                          {/* Notes */}
-                          <td className="py-1.5 px-2 align-middle bg-slate-50/20">
-                            {renderNotesBreakdown(item)}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {reportItems.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-6 text-center text-[10px] text-slate-400 font-bold bg-white italic">
+                          No transaction records found for {new Date(selectedDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}.
+                        </td>
+                      </tr>
+                    ) : (
+                      reportItems.map((item, idx) => {
+                        const dt = formatDateTime(item.created_at);
+                        const isCol = item.itemType === "collection";
+                        
+                        const staffName = item.staff_name || currentUser?.name || "Staff";
+                        let source = "";
+                        let destination = "";
+                        if (isCol) {
+                          const isCms = item.retailer_name?.toLowerCase().startsWith("cms");
+                          const retDispName = isCms 
+                            ? `${item.retailer_name} - ${item.store_name || "Cash"}` 
+                            : (item.from_staff_name || item.retailer_name || "Retailer");
+                          source = item.from_office
+                            ? "Super Distributor"
+                            : retDispName;
+                          destination = staffName;
+                        } else {
+                          source = staffName;
+                          destination = item.to_office
+                            ? "Super Distributor"
+                            : (item.target_name || "Recipient");
+                        }
+                        const narration = `From ${source} to ${destination}`;
+
+                        return (
+                          <tr key={item.id} className="border-b border-slate-200 hover:bg-slate-50/30">
+                            {/* No */}
+                            <td className="py-1.5 px-1 border-r border-slate-200 text-center font-bold text-slate-800">
+                              {idx + 1}
+                            </td>
+                            
+                            {/* Date & Time */}
+                            <td className="py-1.5 px-1 border-r border-slate-200 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                              <div>{dt.date}</div>
+                              <div className="text-slate-400 mt-0.5">{dt.time}</div>
+                            </td>
+                            
+                            {/* Description */}
+                            <td className="py-1.5 px-2 border-r border-slate-200 text-center font-semibold text-slate-800 break-words text-[9px] leading-normal whitespace-pre-line">
+                              <div className="text-slate-700 font-bold">{narration}</div>
+                              {isCol && item.retailer_name?.toLowerCase().startsWith("cms") && item.remarks && (
+                                <div className="text-[8px] text-slate-500 font-medium mt-0.5 italic">
+                                  Remark: {item.remarks}
+                                </div>
+                              )}
+                            </td>
+                            
+                            {/* In */}
+                            <td className="py-1.5 px-2 border-r border-slate-200 text-center font-extrabold text-emerald-600">
+                              {isCol ? `₹${Number(item.inAmount).toLocaleString()}` : <span className="text-red-500">-</span>}
+                            </td>
+                            
+                            {/* Out */}
+                            <td className="py-1.5 px-2 border-r border-slate-200 text-center font-extrabold text-red-500">
+                              {!isCol ? `-₹${Number(item.outAmount).toLocaleString()}` : <span className="text-red-500">-</span>}
+                            </td>
+                            
+                            {/* Remarks */}
+                            <td className="py-1.5 px-1 border-r border-slate-200 text-center font-semibold text-slate-500 text-[9px] break-words">
+                              {item.remarks || "-"}
+                            </td>
+                            
+                            {/* Notes */}
+                            <td className="py-1.5 px-2 align-middle bg-slate-50/20">
+                              {renderNotesBreakdown(item)}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+
+                    {/* Last Balance Row */}
+                    <tr className="bg-slate-50/50 font-semibold text-slate-800 border-t border-slate-200">
+                      <td className="py-1.5 px-1 border-r border-slate-200 text-center font-bold text-slate-400">-</td>
+                      <td className="py-1.5 px-1 border-r border-slate-200 text-center text-[9px] text-slate-400">-</td>
+                      <td className="py-1.5 px-2 border-r border-slate-200 text-left font-black text-slate-800 uppercase text-[9px] tracking-wider" colSpan={3}>
+                        Last Balance
+                      </td>
+                      <td className="py-1.5 px-2 text-right font-black text-blue-900 text-[10px]" colSpan={2}>
+                        ₹{lastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
