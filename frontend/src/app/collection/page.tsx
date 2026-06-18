@@ -118,6 +118,7 @@ function NewCollectionContent() {
               if (target.denominations.online_portal_id) {
                 setShowOnlinePortal(true);
               }
+            }
             if (target.collection_date) {
               setCollectionDate(target.collection_date.substring(0, 10));
             }
