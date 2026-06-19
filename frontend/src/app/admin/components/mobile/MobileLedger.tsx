@@ -528,12 +528,22 @@ export default function MobileLedger() {
                     <select
                       value={selectedNewPortalId}
                       onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
                     >
                       <option value="">None / Cash</option>
-                      {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
-                        <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
-                      ))}
+                      {portalDirectory
+                        .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
+                        .filter((p: any) => p.show_in_online_payment)
+                        .map((p: any) => {
+                          const displayName = p.groupName && p.groupName.toLowerCase() !== p.portal_name.toLowerCase()
+                            ? `${p.groupName} - ${p.portal_name}`
+                            : p.portal_name;
+                          return (
+                            <option key={p.id} value={p.id}>
+                              {displayName} {p.bank_name ? `(${p.bank_name})` : ""}
+                            </option>
+                          );
+                        })}
                     </select>
                   </div>
 
