@@ -52,7 +52,7 @@ def update_all_tenants():
                         if dep.deposit_type == "retailer":
                             new_desc = "cash out"
                         elif dep.deposit_type == "virtual":
-                            if dep.payment_mode == "refund" or dep.is_refund:
+                            if dep.payment_mode == "refund" or getattr(dep, "is_refund", False):
                                 new_desc = "move to distributor"
                             else:
                                 new_desc = "virtual transfer"
@@ -69,7 +69,9 @@ def update_all_tenants():
                 # Fallback if no linked IDs
                 else:
                     desc_lower = (entry.description or "").lower()
-                    if "collection" in desc_lower or "cash in" in desc_lower:
+                    if "opening balance" in desc_lower:
+                        pass
+                    elif "collection" in desc_lower or "cash in" in desc_lower:
                         new_desc = "cash in"
                     elif "refund" in desc_lower or "move to distributor" in desc_lower:
                         new_desc = "move to distributor"
