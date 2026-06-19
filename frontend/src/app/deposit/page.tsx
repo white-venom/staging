@@ -153,13 +153,19 @@ function NewDepositContent() {
         setPortalGroups(mappedGroups);
         setRetailers(mappedRetailers);
         setStaffUsers(mappedStaff);
-        const onlineGroups = groups.filter((g: any) => 
-          (g.portals || []).some((p: any) => p.show_in_online_payment)
-        );
-        setPortalsList(onlineGroups.map((g: any) => ({
-          id: g.portals?.[0]?.id || "",
-          name: g.name
-        })));
+        // Flatten: only individual portal accounts marked show_in_online_payment=true
+        const onlinePortals: { id: string; name: string }[] = [];
+        for (const g of groups) {
+          for (const p of (g.portals || [])) {
+            if (p.show_in_online_payment) {
+              onlinePortals.push({
+                id: p.id,
+                name: g.portals.length > 1 ? `${g.name} - ${p.portal_name}` : g.name
+              });
+            }
+          }
+        }
+        setPortalsList(onlinePortals);
         
         if (mappedGroups.length > 0) setSelectedGroupId(mappedGroups[0].id);
         // Do not auto-select the first retailer on mount, keep it empty for search selection
