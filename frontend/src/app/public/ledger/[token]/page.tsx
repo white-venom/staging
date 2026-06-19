@@ -55,7 +55,9 @@ export default function PublicRetailerLedgerPage() {
     running_balance: Number(tx.running_balance),
     description: tx.description,
     remarks: tx.remarks,
-    reference_no: tx.reference_no
+    reference_no: tx.reference_no,
+    store_name: tx.store_name,
+    portal_name: tx.portal_name
   }));
 
   const publicLink = typeof window !== "undefined" 

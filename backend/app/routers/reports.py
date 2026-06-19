@@ -29,7 +29,10 @@ def get_public_ledger(
         .where(Ledger.retailer_id == retailer.id)
         .options(
             joinedload(Ledger.collection).joinedload(Collection.denominations),
-            joinedload(Ledger.deposit).joinedload(BankDeposit.denominations)
+            joinedload(Ledger.collection).joinedload(Collection.store),
+            joinedload(Ledger.collection).joinedload(Collection.portal),
+            joinedload(Ledger.deposit).joinedload(BankDeposit.denominations),
+            joinedload(Ledger.deposit).joinedload(BankDeposit.portal)
         )
         .order_by(Ledger.created_at)
     ).all()
@@ -48,6 +51,18 @@ def get_public_ledger(
         remarks = tx.collection.remarks if (tx.collection and tx.collection.remarks) else ""
         reference_no = tx.deposit.reference_no if (tx.deposit and tx.deposit.reference_no) else ""
         
+        # Get store name and portal name if available
+        store_name = None
+        portal_name = None
+        if tx.collection:
+            if tx.collection.store:
+                store_name = tx.collection.store.store_name
+            if tx.collection.portal:
+                portal_name = tx.collection.portal.portal_name
+        elif tx.deposit:
+            if tx.deposit.portal:
+                portal_name = tx.deposit.portal.portal_name
+
         # Extract denominations if available
         denom_dict = None
         denom_obj = None
@@ -79,6 +94,8 @@ def get_public_ledger(
             "reference_no": reference_no,
             "collection_id": str(tx.collection_id) if tx.collection_id else None,
             "deposit_id": str(tx.deposit_id) if tx.deposit_id else None,
+            "store_name": store_name,
+            "portal_name": portal_name,
             "denominations": denom_dict
         })
 
