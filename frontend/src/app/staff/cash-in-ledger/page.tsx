@@ -16,6 +16,7 @@ import {
   Trash2,
   Share2
 } from "lucide-react";
+import { numberToWordsIndian, formatShareDate } from "../../utils/shareHelper";
 
 const getUtcDate = (dateStr: any) => {
   if (!dateStr) return new Date();
@@ -102,49 +103,6 @@ export default function CashInLedgerPage() {
     setExpandedId(prev => (prev === id ? null : id));
   };
 
-  const numberToWordsIndian = (num: number): string => {
-    const absNum = Math.abs(num);
-    if (absNum === 0) return "Zero";
-    
-    const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
-    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
-    
-    const helper = (n: number): string => {
-      if (n < 20) return ones[n];
-      if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + ones[n % 10] : "");
-      if (n < 1000) return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + helper(n % 100) : "");
-      if (n < 100000) return helper(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + helper(n % 1000) : "");
-      if (n < 10000000) return helper(Math.floor(n / 100000)) + " Lakh" + (n % 100000 ? " " + helper(n % 100000) : "");
-      return helper(Math.floor(n / 10000000)) + " Crore" + (n % 10000000 ? " " + helper(n % 10000000) : "");
-    };
-    
-    const words = helper(absNum);
-    return (num < 0 ? "Minus " : "") + words;
-  };
-
-  const formatShareDate = (dateStr: string): string => {
-    try {
-      const d = new Date(dateStr.replace(" ", "T"));
-      if (isNaN(d.getTime())) return dateStr;
-      
-      const day = d.getDate();
-      const month = d.getMonth() + 1;
-      const year = d.getFullYear();
-      
-      let hours = d.getHours();
-      const minutes = d.getMinutes().toString().padStart(2, '0');
-      const ampm = hours >= 12 ? 'pm' : 'am';
-      hours = hours % 12 || 12;
-      const hoursStr = hours.toString().padStart(2, '0');
-      
-      const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      const dayName = days[d.getDay()];
-      
-      return `${day}/${month}/${year} ${hoursStr}:${minutes} ${ampm} ${dayName}`;
-    } catch (e) {
-      return dateStr;
-    }
-  };
 
   const handleShareEntry = async (entry: any) => {
     const den = entry.denominations || {};
@@ -178,7 +136,7 @@ export default function CashInLedgerPage() {
 
     const totalVal = Number(entry.total_amount) * mult;
     const totalWords = numberToWordsIndian(totalVal);
-    const dateFormatted = entry.created_at ? formatShareDate(getUtcDate(entry.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 19)) : "";
+    const dateFormatted = entry.created_at ? formatShareDate(entry.created_at) : "";
     const collectorName = currentUser?.name || "Mehruddin";
 
     let headerLines: string[] = [];
@@ -317,6 +275,7 @@ ${dateFormatted}`;
         status: updated.status,
         remarks: updated.remarks,
         date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        created_at: updated.created_at,
       };
       store.setCollections(store.collections.map(c => c.id === editingItem.id ? mappedUpdated : c));
 

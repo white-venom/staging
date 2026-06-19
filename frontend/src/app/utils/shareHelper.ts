@@ -23,19 +23,32 @@ export const numberToWordsIndian = (num: number): string => {
 
 export const formatShareDate = (dateStr: string): string => {
   try {
-    const d = new Date(dateStr.replace(" ", "T"));
+    let parseStr = dateStr;
+    if (!dateStr.endsWith("Z") && !dateStr.includes("+") && !dateStr.includes("GMT")) {
+      parseStr = dateStr.replace(" ", "T") + "Z";
+    }
+    const d = new Date(parseStr);
     if (isNaN(d.getTime())) return dateStr;
-    const day = d.getDate();
-    const month = d.getMonth() + 1;
-    const year = d.getFullYear();
-    let hours = d.getHours();
-    const minutes = d.getMinutes().toString().padStart(2, "0");
-    const ampm = hours >= 12 ? "pm" : "am";
-    hours = hours % 12 || 12;
-    const hoursStr = hours.toString().padStart(2, "0");
-    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const dayName = days[d.getDay()];
-    return `${day}/${month}/${year} ${hoursStr}:${minutes} ${ampm} ${dayName}`;
+
+    // Use Intl to format explicitly to Asia/Kolkata (IST)
+    const options: Intl.DateTimeFormatOptions = {
+      day: "numeric",
+      month: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata"
+    };
+    
+    // Returns string like "19/6/2026, 01:31 pm" or similar
+    const formatted = d.toLocaleString("en-IN", options);
+    
+    // Get day name in IST
+    const formatterDay = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "Asia/Kolkata" });
+    const dayName = formatterDay.format(d);
+    
+    return `${formatted} ${dayName}`;
   } catch {
     return dateStr;
   }
@@ -81,11 +94,7 @@ export const shareCollectionEntry = async (entry: {
   const totalVal = Number(entry.total_amount || 0);
   const totalWords = numberToWordsIndian(totalVal);
 
-  let rawDate = entry.created_at || "";
-  if (rawDate && !rawDate.endsWith("Z") && !rawDate.includes("+") && !rawDate.includes("GMT")) {
-    rawDate = rawDate + "Z";
-  }
-  const dateFormatted = rawDate ? formatShareDate(new Date(rawDate.replace(" ", "T")).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 19)) : "";
+  const dateFormatted = entry.created_at ? formatShareDate(entry.created_at) : "";
 
   const headerLines: string[] = [];
   if (entry.retailer_name) {
@@ -169,11 +178,7 @@ export const shareDepositEntry = async (entry: {
   const totalVal = Number(entry.amount || 0) * mult;
   const totalWords = numberToWordsIndian(Math.abs(totalVal));
 
-  let rawDate = entry.created_at || "";
-  if (rawDate && !rawDate.endsWith("Z") && !rawDate.includes("+") && !rawDate.includes("GMT")) {
-    rawDate = rawDate + "Z";
-  }
-  const dateFormatted = rawDate ? formatShareDate(new Date(rawDate.replace(" ", "T")).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 19)) : "";
+  const dateFormatted = entry.created_at ? formatShareDate(entry.created_at) : "";
 
   const headerLines: string[] = [];
   if (entry.deposit_type === "staff") {

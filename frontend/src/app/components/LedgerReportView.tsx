@@ -214,19 +214,32 @@ export default function LedgerReportView({
     };
   }, [filteredTransactions]);
 
-  const formatDateLabel = (dateStr: string) => {
+  const formatIST = (dateStr: string) => {
     try {
-      const d = new Date(dateStr.replace(" ", "T"));
-      if (isNaN(d.getTime())) return dateStr;
-      
-      const day = d.getDate();
-      const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      const month = monthNames[d.getMonth()];
-      const year = d.getFullYear().toString().substring(2);
-      
-      return `${day} ${month} ${year}`;
+      let parseStr = dateStr;
+      if (!dateStr.endsWith("Z") && !dateStr.includes("+")) {
+        parseStr = dateStr.replace(" ", "T") + "Z";
+      }
+      const d = new Date(parseStr);
+      if (isNaN(d.getTime())) return { date: dateStr, time: "", full: dateStr };
+
+      const datePart = d.toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "2-digit",
+        timeZone: "Asia/Kolkata"
+      });
+
+      const timePart = d.toLocaleTimeString("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata"
+      });
+
+      return { date: datePart, time: timePart, full: `${datePart}, ${timePart}` };
     } catch {
-      return dateStr;
+      return { date: dateStr, time: "", full: dateStr };
     }
   };
 
@@ -526,7 +539,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             ) : (
               <div className="divide-y divide-slate-100">
                 {filteredTransactions.map((tx) => {
-                  const dateLabel = formatDateLabel(tx.date);
+                  const formattedIST = formatIST(tx.date);
                   const isDebit = tx.transaction_type === "debit"; // You Gave
                   
                   return (
@@ -538,9 +551,12 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                       className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors cursor-pointer"
                     >
                       {/* Left: Date & Running Balance */}
-                      <div className="flex flex-col gap-1.5 min-w-0 max-w-[120px]">
-                        <span className="text-base font-extrabold text-slate-880 shrink-0">{dateLabel}</span>
-                        <span className="text-[11px] font-black text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full uppercase tracking-wider self-start">
+                      <div className="flex flex-col gap-1 min-w-0 max-w-[125px]">
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-sm font-extrabold text-slate-800 shrink-0">{formattedIST.date}</span>
+                          <span className="text-[10px] font-bold text-slate-400 mt-0.5">{formattedIST.time}</span>
+                        </div>
+                        <span className="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full uppercase tracking-wider self-start mt-1">
                           Bal. ₹{Math.round(tx.running_balance).toLocaleString("en-IN")}
                         </span>
                       </div>
@@ -622,7 +638,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                   Transaction Details
                 </h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                  {formatDateLabel(selectedEntryForDetails.date)}
+                  {formatIST(selectedEntryForDetails.date).full}
                 </p>
               </div>
               <button
@@ -696,15 +712,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                     </div>
                   )}
                   {selectedEntryForDetails.portal_bank_name && (
-                    <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
+                    <div className="flex justify-between pb-0.5">
                       <span>Bank Name</span>
                       <span className="font-extrabold">{selectedEntryForDetails.portal_bank_name}</span>
-                    </div>
-                  )}
-                  {selectedEntryForDetails.portal_bank_account && (
-                    <div className="flex justify-between pb-0.5">
-                      <span>Account No.</span>
-                      <span className="font-mono font-extrabold">{selectedEntryForDetails.portal_bank_account}</span>
                     </div>
                   )}
                 </div>
@@ -732,7 +742,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                   const entry = selectedEntryForDetails;
                   setSelectedEntryForDetails(null);
                   const shareText = `Statement Entry details:
-Date: ${formatDateLabel(entry.date)}
+Date: ${formatIST(entry.date).full}
 Type: ${entry.transaction_type === "credit" ? "Cash In" : "Cash Out"}
 Amount: ₹ ${Math.round(entry.amount).toLocaleString()}
 Desc: ${entry.description}

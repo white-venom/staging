@@ -42,6 +42,7 @@ export interface CollectionItem {
   remarks?: string;
   date: string;
   retailer_ledger_token?: string;
+  created_at?: string;
 }
 
 export interface DepositItem {
@@ -57,6 +58,7 @@ export interface DepositItem {
   status: "pending" | "verified";
   date: string;
   retailer_ledger_token?: string;
+  created_at?: string;
 }
 
 interface AppStore {
@@ -69,11 +71,11 @@ interface AppStore {
   checkIn: (startKm: number) => void;
   checkOut: (endKm: number) => void;
   restoreAttendance: (attendance: AttendanceState) => void;
-  addCollection: (col: Omit<CollectionItem, "id" | "date" | "status">) => void;
+  addCollection: (col: Omit<CollectionItem, "id" | "date" | "status" | "created_at">) => void;
   setCollections: (cols: CollectionItem[]) => void;
   verifyCollection: (id: string) => void;
   editCollection: (id: string, amount: number, remarks: string) => void;
-  addDeposit: (dep: Omit<DepositItem, "id" | "date" | "status">) => void;
+  addDeposit: (dep: Omit<DepositItem, "id" | "date" | "status" | "created_at">) => void;
   setDeposits: (deps: DepositItem[]) => void;
   verifyDeposit: (id: string) => void;
   toggleTheme: () => void;
@@ -114,7 +116,8 @@ export const useAppStore = create<AppStore>()(
             ...col,
             id: `col-${Date.now()}`,
             status: "pending",
-            date: new Date().toISOString().replace("T", " ").substring(0, 16),
+            date: new Date().toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+            created_at: new Date().toISOString(),
           },
           ...state.collections,
         ]
@@ -136,7 +139,8 @@ export const useAppStore = create<AppStore>()(
             ...dep,
             id: `dep-${Date.now()}`,
             status: "pending",
-            date: new Date().toISOString().replace("T", " ").substring(0, 16),
+            date: new Date().toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+            created_at: new Date().toISOString(),
           },
           ...state.deposits,
         ]

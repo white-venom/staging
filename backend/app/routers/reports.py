@@ -32,7 +32,9 @@ def get_public_ledger(
             joinedload(Ledger.collection).joinedload(Collection.store),
             joinedload(Ledger.collection).joinedload(Collection.portal),
             joinedload(Ledger.deposit).joinedload(BankDeposit.denominations),
-            joinedload(Ledger.deposit).joinedload(BankDeposit.portal)
+            joinedload(Ledger.deposit).joinedload(BankDeposit.portal),
+            joinedload(Ledger.deposit).joinedload(BankDeposit.retailer),
+            joinedload(Ledger.deposit).joinedload(BankDeposit.recipient_staff)
         )
         .order_by(Ledger.created_at)
     ).all()
@@ -54,14 +56,30 @@ def get_public_ledger(
         # Get store name and portal name if available
         store_name = None
         portal_name = None
+        portal_bank_name = None
         if tx.collection:
             if tx.collection.store:
                 store_name = tx.collection.store.store_name
             if tx.collection.portal:
                 portal_name = tx.collection.portal.portal_name
+                portal_bank_name = tx.collection.portal.bank_name
         elif tx.deposit:
             if tx.deposit.portal:
                 portal_name = tx.deposit.portal.portal_name
+                portal_bank_name = tx.deposit.portal.bank_name
+            elif tx.deposit.deposit_type == "retailer" and tx.deposit.retailer:
+                portal_name = tx.deposit.retailer.retailer_name
+            elif tx.deposit.deposit_type == "staff":
+                if tx.deposit.to_office:
+                    portal_name = "Main Office Cashier"
+                elif tx.deposit.recipient_staff:
+                    portal_name = tx.deposit.recipient_staff.name
+            elif tx.deposit.deposit_type == "virtual":
+                if tx.deposit.portal:
+                    portal_name = tx.deposit.portal.portal_name
+                    portal_bank_name = tx.deposit.portal.bank_name
+                else:
+                    portal_name = "Virtual Transfer"
 
         # Extract denominations if available
         denom_dict = None
@@ -96,6 +114,7 @@ def get_public_ledger(
             "deposit_id": str(tx.deposit_id) if tx.deposit_id else None,
             "store_name": store_name,
             "portal_name": portal_name,
+            "portal_bank_name": portal_bank_name,
             "denominations": denom_dict
         })
 
