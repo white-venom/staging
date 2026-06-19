@@ -570,6 +570,15 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                             Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
                           </div>
                         )}
+                        {isDebit && tx.portal_name && (
+                          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                            {tx.deposit_type === "retailer"
+                              ? `Retailer - ${tx.portal_name}`
+                              : tx.deposit_type === "staff"
+                              ? `Staff - ${tx.portal_name}`
+                              : tx.portal_name}
+                          </div>
+                        )}
                         {tx.remarks && (
                           <div className="text-xs text-slate-450 font-medium mt-0.5">
                             Remark: <span className="italic">{tx.remarks}</span>
@@ -705,17 +714,16 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               {/* Cash Out (Deposit/Payout) Details */}
               {selectedEntryForDetails.transaction_type === "debit" && (selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_bank_name) && (
                 <div className="bg-indigo-50/50 dark:bg-indigo-950/15 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/30 space-y-2 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
-                  <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target Account</span>
+                  <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target</span>
                   {selectedEntryForDetails.portal_name && (
                     <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
-                      <span>
-                        {selectedEntryForDetails.deposit_type === "retailer" 
-                          ? "Retailer Name" 
-                          : selectedEntryForDetails.deposit_type === "staff" 
-                            ? "Staff Name" 
-                            : "Portal Name"}
+                      <span className="font-extrabold uppercase tracking-wide">
+                        {selectedEntryForDetails.deposit_type === "retailer"
+                          ? `Retailer - ${selectedEntryForDetails.portal_name}`
+                          : selectedEntryForDetails.deposit_type === "staff"
+                          ? `Staff - ${selectedEntryForDetails.portal_name}`
+                          : selectedEntryForDetails.portal_name}
                       </span>
-                      <span className="font-extrabold uppercase">{selectedEntryForDetails.portal_name}</span>
                     </div>
                   )}
                   {selectedEntryForDetails.portal_bank_name && (
