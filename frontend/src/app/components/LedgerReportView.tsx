@@ -547,12 +547,10 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                       
                       {/* Middle: Description */}
                       <div className="flex-1 px-4 text-base font-semibold text-slate-700 break-words whitespace-pre-wrap">
-                        <div>{cleanDescription(tx.description)}</div>
+                        <div className="text-slate-900 font-extrabold">{cleanDescription(tx.description)}</div>
                         {tx.store_name && (
-                          <div className="text-xs font-bold text-indigo-600 mt-0.5">
-                            <span className="bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block">
-                              Store: {tx.store_name}
-                            </span>
+                          <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                            Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
                           </div>
                         )}
                         {tx.remarks && (
