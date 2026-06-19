@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { Search, Download, X, CheckCircle2, Edit, Trash2 } from "lucide-react";
+import { Search, Download, X, CheckCircle2, Edit, Trash2, Save } from "lucide-react";
 import { api } from "../../../utils/api";
+import { useAdmin } from "../../context/AdminContext";
 
 interface DepositsTabProps {
   deposits: any[];
@@ -19,6 +20,98 @@ export default function DepositsTab({
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [editAmount, setEditAmount] = React.useState(0);
   const [editRef, setEditRef] = React.useState("");
+
+  const { retailerDirectory, portalDirectory, userDirectory } = useAdmin();
+
+  const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
+  const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
+  
+  const [selectedNewRetailerId, setSelectedNewRetailerId] = React.useState("");
+  const [selectedNewPortalId, setSelectedNewPortalId] = React.useState("");
+  const [selectedNewRemarks, setSelectedNewRemarks] = React.useState("");
+  const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = React.useState("");
+  const [selectedNewToOffice, setSelectedNewToOffice] = React.useState(false);
+  const [selectedNewDepositType, setSelectedNewDepositType] = React.useState("");
+  const [selectedNewPaymentMode, setSelectedNewPaymentMode] = React.useState("");
+  const [selectedNewAmount, setSelectedNewAmount] = React.useState(0);
+  const [selectedNewDate, setSelectedNewDate] = React.useState("");
+  const [selectedNewRefNo, setSelectedNewRefNo] = React.useState("");
+  const [isSavingCollection, setIsSavingCollection] = React.useState(false);
+  
+  const [selectedNewDenoms, setSelectedNewDenoms] = React.useState({
+    note_500: 0,
+    note_200: 0,
+    note_100: 0,
+    note_50: 0,
+    note_20: 0,
+    note_10: 0,
+    coins: 0,
+    online_amount: 0,
+  });
+
+  const handleStartEditDeposit = (item: any) => {
+    setEditingCollection(item);
+    setSelectedNewRetailerId(item.retailer_id || "");
+    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewRemarks(item.remarks || "");
+    setSelectedNewDepositType(item.depositType || item.deposit_type || "virtual");
+    setSelectedNewPaymentMode(item.paymentMode || item.payment_mode || "online");
+    setSelectedNewAmount(Number(item.amount || 0));
+    setSelectedNewDate(item.deposit_date ? item.deposit_date : (item.date ? item.date.split(" ")[0] : new Date().toISOString().split("T")[0]));
+    setSelectedNewRefNo(item.reference_no || item.referenceNo || "");
+    setSelectedNewRecipientStaffId(item.recipient_staff_id || item.recipientStaffId || "");
+    setSelectedNewToOffice(item.to_office === true);
+    
+    const den = item.denominations || {};
+    setSelectedNewDenoms({
+      note_500: Number(den.note_500 || 0),
+      note_200: Number(den.note_200 || 0),
+      note_100: Number(den.note_100 || 0),
+      note_50: Number(den.note_50 || 0),
+      note_20: Number(den.note_20 || 0),
+      note_10: Number(den.note_10 || 0),
+      coins: Number(den.coins || 0),
+      online_amount: Number(den.online_amount || 0),
+    });
+    
+    setIsEditCollectionModalOpen(true);
+    setSelectedDepositId(null);
+  };
+
+  const handleSaveDepositEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCollection) return;
+    setIsSavingCollection(true);
+    
+    try {
+      const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+      const retailerId = selectedNewDepositType === "retailer" || selectedNewDepositType === "virtual" ? selectedNewRetailerId : null;
+      const recipientStaffId = selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null;
+      const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
+
+      await api.updateDeposit(editingCollection.id, {
+        deposit_type: selectedNewDepositType,
+        portal_id: portalId || null,
+        retailer_id: retailerId || null,
+        recipient_staff_id: recipientStaffId || null,
+        to_office: toOffice,
+        payment_mode: selectedNewPaymentMode,
+        amount: Number(selectedNewAmount),
+        deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+        reference_no: selectedNewRefNo || null,
+        remarks: selectedNewRemarks || "",
+        denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null
+      });
+      
+      if (showToastNotification) showToastNotification("Cash Out updated successfully.");
+      setIsEditCollectionModalOpen(false);
+      if (fetchData) fetchData();
+    } catch (err: any) {
+      alert("Failed to update: " + err.message);
+    } finally {
+      setIsSavingCollection(false);
+    }
+  };
 
   const currentSelection = (deposits || []).find(d => d.id === selectedDepositId);
 
@@ -277,9 +370,7 @@ export default function DepositsTab({
                 <div className="space-y-2">
                   <button 
                     onClick={() => {
-                      setEditAmount(currentSelection.amount);
-                      setEditRef(currentSelection.reference_no || "");
-                      setIsEditMode(true);
+                      handleStartEditDeposit(currentSelection);
                     }}
                     className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
                   >
@@ -374,6 +465,207 @@ export default function DepositsTab({
           </table>
         </div>
       </div>
+      {/* Edit Deposit Modal */}
+      {isEditCollectionModalOpen && editingCollection && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto animate-fade-in text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter">
+                Edit Cash Out (Deposit) Entry
+              </h3>
+              <button 
+                onClick={() => setIsEditCollectionModalOpen(false)} 
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveDepositEdit} className="space-y-4">
+              
+              <div className="space-y-3">
+                {/* Deposit Type */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Deposit/Payout Type</label>
+                  <select
+                    value={selectedNewDepositType}
+                    onChange={(e) => setSelectedNewDepositType(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                  >
+                    <option value="portal">Portal Bank Deposit</option>
+                    <option value="retailer">Retailer Payout</option>
+                    <option value="staff">Staff/Office Handover</option>
+                    <option value="virtual">Virtual Limit Transfer</option>
+                  </select>
+                </div>
+
+                {/* Target Fields depending on deposit type */}
+                {selectedNewDepositType === "portal" && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Portal</label>
+                    <select
+                      value={selectedNewPortalId}
+                      onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    >
+                      <option value="">Select Portal Bank Account</option>
+                      {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {selectedNewDepositType === "retailer" && (
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Retailer</label>
+                    <select
+                      value={selectedNewRetailerId}
+                      onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    >
+                      <option value="">Select Retailer</option>
+                      {retailerDirectory.map((r: any) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {selectedNewDepositType === "staff" && (
+                  <>
+                    <div className="flex items-center gap-2 py-1">
+                      <input
+                        type="checkbox"
+                        id="editToOfficeCheckbox"
+                        checked={selectedNewToOffice}
+                        onChange={(e) => setSelectedNewToOffice(e.target.checked)}
+                        className="w-4 h-4 text-blue-650 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                      />
+                      <label htmlFor="editToOfficeCheckbox" className="text-xs font-bold text-slate-700 dark:text-slate-350">Handover to Main Office Cashier</label>
+                    </div>
+
+                    {!selectedNewToOffice && (
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Recipient Staff</label>
+                        <select
+                          value={selectedNewRecipientStaffId}
+                          onChange={(e) => setSelectedNewRecipientStaffId(e.target.value)}
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                        >
+                          <option value="">Select Staff Member</option>
+                          {(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => (
+                            <option key={u.id} value={u.id}>{u.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {selectedNewDepositType === "virtual" && (
+                  <>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Source Portal</label>
+                      <select
+                        value={selectedNewPortalId}
+                        onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      >
+                        <option value="">Select Portal Bank Account</option>
+                        {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                          <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Retailer</label>
+                      <select
+                        value={selectedNewRetailerId}
+                        onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      >
+                        <option value="">Select Retailer</option>
+                        {retailerDirectory.map((r: any) => (
+                          <option key={r.id} value={r.id}>{r.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                {/* Payment Mode */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Payment Mode</label>
+                  <select
+                    value={selectedNewPaymentMode}
+                    onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="online">Online</option>
+                    <option value="refund">Refund (Virtual only)</option>
+                  </select>
+                </div>
+
+                {/* Amount */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Amount</label>
+                  <input autoComplete="one-time-code"
+                    type="number"
+                    value={selectedNewAmount}
+                    onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    required
+                  />
+                </div>
+
+                {/* Date */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Date</label>
+                  <input autoComplete="one-time-code"
+                    type="date"
+                    value={selectedNewDate}
+                    onChange={(e) => setSelectedNewDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    required
+                  />
+                </div>
+
+                {/* Reference No */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Reference No</label>
+                  <input autoComplete="one-time-code"
+                    type="text"
+                    value={selectedNewRefNo}
+                    onChange={(e) => setSelectedNewRefNo(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsEditCollectionModalOpen(false)}
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingCollection}
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  {isSavingCollection ? "Saving..." : "Save Entry"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
