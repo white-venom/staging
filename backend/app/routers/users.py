@@ -29,13 +29,31 @@ def create_user(
     current_user=Depends(require_admin)
 ):
     """Admin-only endpoint to create new users (Staff or Admin)."""
-    # Check if phone already exists
+    # Check if phone already exists (including soft-deleted users)
     existing_user = db.scalar(select(User).where(User.phone == user_data.phone))
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User with this phone number already exists."
-        )
+        if not existing_user.is_active:
+            # Re-activate and update the existing soft-deleted user
+            existing_user.name = user_data.name
+            existing_user.role = user_data.role
+            existing_user.password_hash = get_password_hash(user_data.password)
+            existing_user.late_threshold = user_data.late_threshold
+            existing_user.late_penalty = user_data.late_penalty
+            existing_user.auto_checkout_time = user_data.auto_checkout_time
+            existing_user.is_active = True
+            
+            # Reset virtual balance for the re-added staff member
+            from decimal import Decimal
+            existing_user.virtual_balance = Decimal("0.00")
+            
+            db.commit()
+            db.refresh(existing_user)
+            return existing_user
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User with this phone number already exists."
+            )
 
     db_user = User(
         name=user_data.name,
@@ -72,6 +90,16 @@ def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # Check if new phone is already taken by another user (active or inactive)
+    if user.phone != user_data.phone:
+        existing_phone = db.scalar(select(User).where(User.phone == user_data.phone))
+        if existing_phone:
+            status_desc = "active" if existing_phone.is_active else "inactive"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Another {status_desc} user with this phone number already exists."
+            )
+            
     user.name = user_data.name
     user.phone = user_data.phone
     user.role = user_data.role

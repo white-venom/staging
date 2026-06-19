@@ -30,6 +30,34 @@ def create_retailer(
         if not staff:
             raise HTTPException(status_code=400, detail="Assigned staff member not found")
 
+    # Check if retailer phone number already exists
+    existing_retailer = db.scalar(select(Retailer).where(Retailer.phone == retailer_data.phone))
+    if existing_retailer:
+        if not existing_retailer.is_active:
+            # Re-activate and update the existing soft-deleted retailer
+            existing_retailer.retailer_name = retailer_data.retailer_name
+            existing_retailer.address = retailer_data.address
+            existing_retailer.assigned_staff_id = retailer_data.assigned_staff_id
+            existing_retailer.email = retailer_data.email
+            existing_retailer.opening_to_give = retailer_data.opening_to_give
+            existing_retailer.opening_to_take = retailer_data.opening_to_take
+            existing_retailer.is_active = True
+            
+            from decimal import Decimal
+            existing_retailer.balance = Decimal("0.00")
+            db.commit()
+            
+            from app.logic.ledger import recalculate_balances
+            recalculate_balances(existing_retailer.id, db)
+            db.commit()
+            db.refresh(existing_retailer)
+            return existing_retailer
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Retailer with this phone number already exists."
+            )
+
     db_retailer = Retailer(
         retailer_name=retailer_data.retailer_name,
         address=retailer_data.address,
@@ -75,6 +103,16 @@ def update_retailer(
     if retailer_data.opening_to_take is not None and retailer_data.opening_to_take < 0:
         raise HTTPException(status_code=400, detail="To Take cannot be negative")
 
+    # Check for duplicate phone collision
+    if retailer_data.phone is not None and retailer.phone != retailer_data.phone:
+        existing_phone = db.scalar(select(Retailer).where(Retailer.phone == retailer_data.phone))
+        if existing_phone:
+            status_desc = "active" if existing_phone.is_active else "inactive"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Another {status_desc} retailer with this phone number already exists."
+            )
+
     # Update fields safely
     for field, value in retailer_data.model_dump(exclude_unset=True).items():
         if field == "assigned_staff_id" and value:
@@ -91,7 +129,6 @@ def update_retailer(
         delta_take = Decimal(str(retailer_data.opening_to_take))
         retailer.opening_to_take = (retailer.opening_to_take or Decimal("0.00")) + delta_take
         retailer.balance = (retailer.balance or Decimal("0.00")) + delta_take
-
 
     db.commit()
     
