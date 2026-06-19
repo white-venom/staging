@@ -63,6 +63,23 @@ export default function StaffDashboard() {
   const [showIOSModal, setShowIOSModal] = useState(false);
   const { isStandalone, isIOS, installable, triggerInstall } = usePWAInstall();
 
+  // In-place edit modal states
+  const [editingItem, setEditingItem] = useState<any | null>(null);
+  const [editDenoms, setEditDenoms] = useState<any>({
+    note_500: 0,
+    note_200: 0,
+    note_100: 0,
+    note_50: 0,
+    note_20: 0,
+    note_10: 0,
+    coins: 0,
+    online_amount: 0
+  });
+  const [editRemarks, setEditRemarks] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [editWindow, setEditWindow] = useState<number>(5);
+  const [deleteWindow, setDeleteWindow] = useState<number>(5);
+
   useEffect(() => {
     if (isSidebarOpen) {
       document.body.style.overflow = "hidden";
@@ -189,10 +206,16 @@ export default function StaffDashboard() {
     if (!mounted || !currentUser || !isOnline) return;
     const syncWithAPI = async () => {
       try {
-        const [apiCols, apiDeps] = await Promise.all([
+        const [apiCols, apiDeps, settings] = await Promise.all([
           api.getCollections(),
-          api.getDeposits()
+          api.getDeposits(),
+          api.getAdminSettings().catch(() => ({ edit_window_minutes: 5, delete_window_minutes: 5 }))
         ]);
+        
+        const ew = settings.edit_window_minutes ?? 5;
+        const dw = settings.delete_window_minutes ?? 5;
+        setEditWindow(ew);
+        setDeleteWindow(dw);
         
         // Map collections
         const mappedCollections = apiCols.map((c: any) => ({
@@ -260,6 +283,131 @@ export default function StaffDashboard() {
     };
     syncWithAPI();
   }, [mounted, currentUser, isOnline]);
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem) return;
+    setIsSaving(true);
+
+    const totalCash = (
+      editDenoms.note_500 * 500 +
+      editDenoms.note_200 * 200 +
+      editDenoms.note_100 * 100 +
+      editDenoms.note_50 * 50 +
+      editDenoms.note_20 * 20 +
+      editDenoms.note_10 * 10 +
+      editDenoms.coins
+    );
+    const totalAmount = totalCash + editDenoms.online_amount;
+
+    const isCollection = editingItem.type === "collection";
+    if (isCollection) {
+      if (totalAmount === 0) {
+        alert("Collection total cannot be zero.");
+        setIsSaving(false);
+        return;
+      }
+    } else {
+      if (totalAmount <= 0) {
+        alert("Deposit total must be greater than zero.");
+        setIsSaving(false);
+        return;
+      }
+    }
+
+    try {
+      const isCollection = editingItem.type === "collection";
+      if (isCollection) {
+        const payload: any = {
+          total_amount: totalAmount,
+          remarks: editRemarks,
+          denominations: editDenoms,
+          retailer_id: editingItem.retailer_id,
+          store_id: editingItem.store_id,
+          portal_id: editingItem.portal_id,
+          from_staff_id: editingItem.from_staff_id,
+          from_office: editingItem.from_office,
+        };
+
+        const updated = await api.updateCollection(editingItem.id, payload);
+
+        // Update Zustand store
+        const store = useAppStore.getState();
+        const mappedUpdated = {
+          id: updated.id,
+          retailer_id: updated.retailer_id,
+          store_id: updated.store_id,
+          retailerName: updated.retailer_name || "Unknown Retailer",
+          portalName: updated.portal_name || "Cash",
+          staffName: updated.staff_name,
+          totalAmount: Number(updated.total_amount),
+          denominations: {
+            note_500: Number(updated.denominations?.note_500 || 0),
+            note_200: Number(updated.denominations?.note_200 || 0),
+            note_100: Number(updated.denominations?.note_100 || 0),
+            note_50: Number(updated.denominations?.note_50 || 0),
+            note_20: Number(updated.denominations?.note_20 || 0),
+            note_10: Number(updated.denominations?.note_10 || 0),
+            coins: Number(updated.denominations?.coins || 0),
+            online_amount: Number(updated.denominations?.online_amount || 0),
+            online_portal_id: updated.denominations?.online_portal_id,
+          },
+          status: updated.status,
+          remarks: updated.remarks,
+          date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+          created_at: updated.created_at,
+        };
+        store.setCollections(store.collections.map(col => col.id === editingItem.id ? mappedUpdated : col));
+      } else {
+        const payload: any = {
+          amount: totalAmount,
+          remarks: editRemarks,
+          denominations: editDenoms,
+          deposit_type: editingItem.depositType || editingItem.deposit_type,
+          portal_id: editingItem.portal_id,
+          retailer_id: editingItem.retailer_id,
+          recipient_staff_id: editingItem.recipient_staff_id,
+          to_office: editingItem.to_office,
+          payment_mode: editingItem.paymentMode || editingItem.payment_mode,
+        };
+
+        const updated = await api.updateDeposit(editingItem.id, payload);
+
+        // Update Zustand store
+        const store = useAppStore.getState();
+        const mappedUpdated = {
+          id: updated.id,
+          portal_id: updated.portal_id,
+          retailer_id: updated.retailer_id,
+          recipient_staff_id: updated.recipient_staff_id,
+          depositType: updated.deposit_type,
+          targetName: (updated.deposit_type === "portal" && updated.portal_group_name) ? updated.portal_group_name : (updated.target_name || "Super Distributor"),
+          amount: Number(updated.amount),
+          paymentMode: (updated.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
+          denominations: updated.denominations ? {
+            note_500: Number(updated.denominations.note_500 || 0),
+            note_200: Number(updated.denominations.note_200 || 0),
+            note_100: Number(updated.denominations.note_100 || 0),
+            note_50: Number(updated.denominations.note_50 || 0),
+            note_20: Number(updated.denominations.note_20 || 0),
+            note_10: Number(updated.denominations.note_10 || 0),
+            coins: Number(updated.denominations.coins || 0),
+            online_amount: Number(updated.denominations.online_amount || 0),
+            online_portal_id: updated.denominations.online_portal_id,
+          } : undefined,
+          status: updated.status,
+          date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+          created_at: updated.created_at,
+        };
+        store.setDeposits(store.deposits.map(dep => dep.id === editingItem.id ? mappedUpdated : dep));
+      }
+      setEditingItem(null);
+    } catch (err: any) {
+      alert("Failed to update: " + (err.response?.data?.detail || err.message));
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (!mounted || !currentUser) return null;
 
@@ -839,10 +987,11 @@ export default function StaffDashboard() {
                const isExpanded = expandedHomeId === c.id;
                const den = c.denominations || {};
                const txAmount = c.totalAmount || 0;
-               // 5-minute edit/delete window check
+               // Edit and Delete window checks
                const createdMs = c.date ? new Date(c.date.replace(' ', 'T') + 'Z').getTime() : 0;
                const elapsedMin = (Date.now() - createdMs) / 60000;
-               const canEditDelete = elapsedMin <= 5;
+               const canEdit = editWindow === -1 || elapsedMin <= editWindow;
+               const canDelete = deleteWindow === -1 || elapsedMin <= deleteWindow;
                return (
                  <div
                    key={c.id}
@@ -947,44 +1096,68 @@ export default function StaffDashboard() {
                          >
                            <Share2 className="w-2.5 h-2.5" /> Share
                          </button>
-                         {canEditDelete && (
+                         {canEdit || canDelete ? (
                            <>
-                             <button
-                               onClick={() => {
-                                 router.push(c.type === 'collection' ? `/collection?editId=${c.id}` : `/deposit?editId=${c.id}`);
-                               }}
-                               className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
-                             >
-                               <Edit2 className="w-2.5 h-2.5" /> Edit
-                             </button>
-                             <button
-                               onClick={async () => {
-                                 if (!confirm('Delete this entry?')) return;
-                                 try {
-                                   if (c.type === 'collection') {
-                                     await api.deleteCollection(c.id);
-                                   } else {
-                                     await api.deleteDeposit(c.id);
+                             {canEdit ? (
+                               <button
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setEditingItem(c);
+                                   setEditDenoms({
+                                     note_500: Number(c.denominations?.note_500 || 0),
+                                     note_200: Number(c.denominations?.note_200 || 0),
+                                     note_100: Number(c.denominations?.note_100 || 0),
+                                     note_50: Number(c.denominations?.note_50 || 0),
+                                     note_20: Number(c.denominations?.note_20 || 0),
+                                     note_10: Number(c.denominations?.note_10 || 0),
+                                     coins: Number(c.denominations?.coins || 0),
+                                     online_amount: Number(c.denominations?.online_amount || 0),
+                                   });
+                                   setEditRemarks(c.remarks || "");
+                                 }}
+                                 className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-955/20 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
+                               >
+                                 <Edit2 className="w-2.5 h-2.5" /> Edit
+                               </button>
+                             ) : (
+                               <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-md border border-slate-100/10">
+                                 Edit expired
+                               </div>
+                             )}
+                             {canDelete ? (
+                               <button
+                                 onClick={async (e) => {
+                                   e.stopPropagation();
+                                   if (!confirm('Delete this entry?')) return;
+                                   try {
+                                     if (c.type === 'collection') {
+                                       await api.deleteCollection(c.id);
+                                     } else {
+                                       await api.deleteDeposit(c.id);
+                                     }
+                                     // Refresh data
+                                     const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
+                                     const { setCollections, setDeposits } = useAppStore.getState();
+                                     setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
+                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
+                                     setExpandedHomeId(null);
+                                   } catch (err: any) {
+                                     alert('Delete failed: ' + err.message);
                                    }
-                                   // Refresh data
-                                   const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
-                                   const { setCollections, setDeposits } = useAppStore.getState();
-                                   setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
-                                   setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
-                                   setExpandedHomeId(null);
-                                 } catch (err: any) {
-                                   alert('Delete failed: ' + err.message);
-                                 }
-                               }}
-                               className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 active:scale-95 transition-transform"
-                             >
-                               <Trash2 className="w-2.5 h-2.5" /> Delete
-                             </button>
+                                 }}
+                                 className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 active:scale-95 transition-transform"
+                               >
+                                 <Trash2 className="w-2.5 h-2.5" /> Delete
+                               </button>
+                             ) : (
+                               <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-md border border-slate-100/10">
+                                 Delete expired
+                               </div>
+                             )}
                            </>
-                         )}
-                         {!canEditDelete && (
+                         ) : (
                            <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50 dark:bg-slate-800/50 rounded-md border border-slate-100 dark:border-slate-800">
-                             Edit/Delete window (5 min) expired
+                             Action window expired
                            </div>
                          )}
                        </div>
@@ -1011,6 +1184,146 @@ export default function StaffDashboard() {
           -moz-appearance: textfield;
         }
       `}</style>
+      
+      {/* In-place Edit Modal */}
+      {editingItem && (() => {
+        const isCol = editingItem.type === "collection";
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
+            <div 
+              className="absolute inset-0"
+              onClick={() => setEditingItem(null)}
+            />
+            <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xs max-h-[85vh] overflow-y-auto p-4 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col gap-3 text-slate-800 dark:text-slate-100">
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-wider">
+                  {isCol ? "Edit Cash In Entry" : "Edit Cash Out Entry"}
+                </h3>
+                <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">Update counts and remarks</p>
+              </div>
+
+              <form onSubmit={handleSaveEdit} className="space-y-3">
+                <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+                  {[
+                    { label: "₹500 Notes", key: "note_500", val: 500 },
+                    { label: "₹200 Notes", key: "note_200", val: 200 },
+                    { label: "₹100 Notes", key: "note_100", val: 100 },
+                    { label: "₹50 Notes", key: "note_50", val: 50 },
+                    { label: "₹20 Notes", key: "note_20", val: 20 },
+                    { label: "₹10 Notes", key: "note_10", val: 10 },
+                  ].map(note => (
+                    <div key={note.key} className="flex items-center justify-between text-[11px]">
+                      <span className="font-bold text-slate-500">{note.label}</span>
+                      <div className="flex items-center gap-2.5">
+                        <input autoComplete="one-time-code"
+                          type="number"
+                          value={editDenoms[note.key] === 0 ? "" : editDenoms[note.key]}
+                          onChange={(e) => {
+                            const v = e.target.value === "" ? 0 : parseInt(e.target.value);
+                            setEditDenoms((prev: any) => ({ ...prev, [note.key]: isNaN(v) ? 0 : v }));
+                          }}
+                          className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
+                          placeholder={isCol ? "0" : undefined}
+                          min={isCol ? undefined : "0"}
+                        />
+                        <span className={`w-14 text-right font-bold ${isCol && (editDenoms[note.key] || 0) < 0 ? 'text-red-500' : 'text-slate-500'}`}>
+                          ₹{((editDenoms[note.key] || 0) * note.val).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-slate-500">Coins Sum</span>
+                    <div className="flex items-center gap-2.5">
+                      <input autoComplete="one-time-code"
+                        type="number"
+                        step="0.01"
+                        value={editDenoms.coins || ""}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                          setEditDenoms((prev: any) => ({ ...prev, coins: isNaN(v) ? 0 : v }));
+                        }}
+                        className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200/80 rounded text-xs font-bold"
+                        min="0"
+                      />
+                      <span className="w-14 text-right text-slate-500 font-bold">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="font-bold text-slate-500">UPI Online</span>
+                    <div className="flex items-center gap-2.5">
+                      <input autoComplete="one-time-code"
+                        type="number"
+                        value={editDenoms.online_amount || ""}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? 0 : parseInt(e.target.value);
+                          setEditDenoms((prev: any) => ({ ...prev, online_amount: isNaN(v) ? 0 : v }));
+                        }}
+                        className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200/80 rounded text-xs font-bold"
+                        min="0"
+                      />
+                      <span className="w-14 text-right text-slate-500 font-bold">₹{Number(editDenoms.online_amount || 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[8px] uppercase font-black text-slate-400">Remarks</label>
+                  <textarea
+                    value={editRemarks}
+                    onChange={(e) => setEditRemarks(e.target.value)}
+                    className="w-full p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs focus:outline-none focus:border-slate-400 font-bold"
+                    rows={2}
+                    placeholder="Enter remarks..."
+                  />
+                </div>
+
+                <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                  <div>
+                    <span className="text-[7.5px] font-black uppercase text-slate-400 tracking-wider">Total Amount</span>
+                    {isCol && (() => {
+                      const tot = editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount;
+                      if (tot < 0) return <p className="text-[8px] text-amber-500 font-bold mt-0.5">⚠ Negative total — note exchange mode</p>;
+                      return null;
+                    })()}
+                  </div>
+                  <span className={`text-sm font-black ${isCol && (editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount) < 0 ? 'text-red-500' : ''}`}>
+                    ₹{(
+                      editDenoms.note_500 * 500 +
+                      editDenoms.note_200 * 200 +
+                      editDenoms.note_100 * 100 +
+                      editDenoms.note_50 * 50 +
+                      editDenoms.note_20 * 20 +
+                      editDenoms.note_10 * 10 +
+                      editDenoms.coins +
+                      editDenoms.online_amount
+                    ).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditingItem(null)}
+                    className="flex-1 py-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-xs font-bold rounded-lg active:scale-[0.98] transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 text-xs font-bold rounded-lg active:scale-[0.98] transition-all cursor-pointer"
+                  >
+                    {isSaving ? "Saving..." : "Save"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
