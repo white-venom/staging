@@ -707,7 +707,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                   <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target Account</span>
                   {selectedEntryForDetails.portal_name && (
                     <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
-                      <span>Portal/Account Name</span>
+                      <span>Portal Name</span>
                       <span className="font-extrabold uppercase">{selectedEntryForDetails.portal_name}</span>
                     </div>
                   )}
