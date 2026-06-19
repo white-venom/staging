@@ -10,7 +10,12 @@ import {
   Copy, 
   Check, 
   Filter,
-  ArrowUpDown
+  ArrowUpDown,
+  Phone,
+  Edit2,
+  Trash2,
+  Store,
+  X
 } from "lucide-react";
 import Script from "next/script";
 
@@ -31,6 +36,8 @@ interface LedgerTransaction {
   description: string;
   remarks?: string;
   reference_no?: string;
+  collection_id?: string | null;
+  deposit_id?: string | null;
 }
 
 interface LedgerReportViewProps {
@@ -41,6 +48,12 @@ interface LedgerReportViewProps {
   isPublic?: boolean;
   onBack?: () => void;
   publicLink?: string;
+  onEditRetailer?: () => void;
+  onDeleteRetailer?: () => void;
+  onManageStores?: () => void;
+  phone?: string;
+  onEditEntry?: (entry: any) => void;
+  onDeleteEntry?: (entry: any) => void;
 }
 
 export default function LedgerReportView({
@@ -50,8 +63,15 @@ export default function LedgerReportView({
   outstandingBalance,
   isPublic = false,
   onBack,
-  publicLink
+  publicLink,
+  onEditRetailer,
+  onDeleteRetailer,
+  onManageStores,
+  phone,
+  onEditEntry,
+  onDeleteEntry
 }: LedgerReportViewProps) {
+  const [selectedEntryForActions, setSelectedEntryForActions] = useState<LedgerTransaction | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -286,6 +306,47 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
       </div>
 
       <div className="flex-1 w-full max-w-lg mx-auto px-4 py-4 space-y-4">
+        {/* Retailer Actions (Admin Only / Non-Public) */}
+        {!isPublic && (onEditRetailer || onDeleteRetailer || onManageStores || phone) && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm flex items-center justify-around gap-2">
+            {phone && (
+              <a
+                href={`tel:${phone}`}
+                className="flex-1 py-2 px-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-700 text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 border border-slate-100"
+              >
+                <Phone className="w-4 h-4 text-slate-500" />
+                <span>Call</span>
+              </a>
+            )}
+            {onEditRetailer && (
+              <button
+                onClick={onEditRetailer}
+                className="flex-1 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 border border-blue-100/50 cursor-pointer"
+              >
+                <Edit2 className="w-4 h-4" />
+                <span>Edit Profile</span>
+              </button>
+            )}
+            {onManageStores && (
+              <button
+                onClick={onManageStores}
+                className="flex-1 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 border border-indigo-100/50 cursor-pointer"
+              >
+                <Store className="w-4 h-4" />
+                <span>Stores</span>
+              </button>
+            )}
+            {onDeleteRetailer && title.toLowerCase().trim() !== "cms" && (
+              <button
+                onClick={onDeleteRetailer}
+                className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 border border-red-100/50 cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete</span>
+              </button>
+            )}
+          </div>
+        )}
         {/* 2. Start Date & End Date controls */}
         <div className="grid grid-cols-2 gap-3">
           <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
@@ -418,8 +479,17 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                   const dateLabel = formatDateLabel(tx.date);
                   const isDebit = tx.transaction_type === "debit"; // You Gave
                   
+                  const hasActions = !isPublic && (tx.collection_id || tx.deposit_id) && (onEditEntry || onDeleteEntry);
                   return (
-                    <div key={tx.id} className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                    <div 
+                      key={tx.id} 
+                      onClick={() => {
+                        if (hasActions) {
+                          setSelectedEntryForActions(tx);
+                        }
+                      }}
+                      className={`p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors ${hasActions ? "cursor-pointer" : ""}`}
+                    >
                       {/* Left: Date & Running Balance */}
                       <div className="flex flex-col gap-1.5 min-w-0 max-w-[120px]">
                         <span className="text-base font-extrabold text-slate-880 shrink-0">{dateLabel}</span>
@@ -483,6 +553,88 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           SHARE
         </button>
       </div>
+
+      {/* Entry Actions Bottom Sheet */}
+      {!isPublic && selectedEntryForActions && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center select-none">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setSelectedEntryForActions(null)}
+          />
+          {/* Content */}
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl p-6 shadow-2xl space-y-4 animate-slide-up border-t border-slate-200 dark:border-slate-800 pb-8 z-10">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">
+                  Transaction Actions
+                </h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
+                  {formatDateLabel(selectedEntryForActions.date)} • ₹{Math.round(selectedEntryForActions.amount).toLocaleString()} ({selectedEntryForActions.transaction_type === "credit" ? "Cash In" : "Cash Out"})
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedEntryForActions(null)}
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {onEditEntry && (
+                <button
+                  onClick={() => {
+                    const entry = selectedEntryForActions;
+                    setSelectedEntryForActions(null);
+                    onEditEntry(entry);
+                  }}
+                  className="py-3 px-2 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl text-xs font-black flex flex-col items-center gap-1.5 cursor-pointer border border-blue-100 dark:border-blue-900/30"
+                >
+                  <Edit2 className="w-5 h-5" />
+                  <span>Edit Entry</span>
+                </button>
+              )}
+              {onDeleteEntry && (
+                <button
+                  onClick={() => {
+                    const entry = selectedEntryForActions;
+                    setSelectedEntryForActions(null);
+                    onDeleteEntry(entry);
+                  }}
+                  className="py-3 px-2 bg-red-50 dark:bg-red-955/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 rounded-2xl text-xs font-black flex flex-col items-center gap-1.5 cursor-pointer border border-red-100 dark:border-red-900/30"
+                >
+                  <Trash2 className="w-5 h-5" />
+                  <span>Delete Entry</span>
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  const entry = selectedEntryForActions;
+                  setSelectedEntryForActions(null);
+                  // Trigger sharing
+                  const shareText = `Statement Entry details:
+Date: ${formatDateLabel(entry.date)}
+Type: ${entry.transaction_type === "credit" ? "Cash In" : "Cash Out"}
+Amount: ₹ ${Math.round(entry.amount).toLocaleString()}
+Desc: ${entry.description}
+Remarks: ${entry.remarks || 'None'}`;
+                  if (navigator.share) {
+                    navigator.share({ title: "Transaction Receipt", text: shareText }).catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(shareText);
+                    alert("Receipt summary copied!");
+                  }
+                }}
+                className="py-3 px-2 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl text-xs font-black flex flex-col items-center gap-1.5 cursor-pointer border border-emerald-100 dark:border-emerald-900/30"
+              >
+                <Share2 className="w-5 h-5" />
+                <span>Share Receipt</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

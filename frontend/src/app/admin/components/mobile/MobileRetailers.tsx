@@ -28,7 +28,7 @@ export default function MobileRetailers({
   showToastNotification,
   fetchData
 }: MobileRetailersProps) {
-  const { collections, deposits } = useAdmin();
+  const { collections, deposits, portalDirectory, userDirectory } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -85,6 +85,151 @@ export default function MobileRetailers({
   const [editStoreName, setEditStoreName] = useState("");
   const [editStoreArea, setEditStoreArea] = useState("");
   const [editStoreRetailerId, setEditStoreRetailerId] = useState("");
+
+  // Entry Edit/Delete states
+  const [isEditEntryModalOpen, setIsEditEntryModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<any | null>(null);
+  const [editingIsDeposit, setEditingIsDeposit] = useState(false);
+  
+  const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
+  const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
+  const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
+  const [selectedNewToOffice, setSelectedNewToOffice] = useState(false);
+  const [selectedNewDepositType, setSelectedNewDepositType] = useState("");
+  const [selectedNewPaymentMode, setSelectedNewPaymentMode] = useState("");
+  const [selectedNewAmount, setSelectedNewAmount] = useState(0);
+  const [selectedNewDate, setSelectedNewDate] = useState("");
+  const [selectedNewRefNo, setSelectedNewRefNo] = useState("");
+  const [selectedNewRemarks, setSelectedNewRemarks] = useState("");
+  const [isSavingEntry, setIsSavingEntry] = useState(false);
+  
+  const [selectedNewDenoms, setSelectedNewDenoms] = useState({
+    note_500: 0,
+    note_200: 0,
+    note_100: 0,
+    note_50: 0,
+    note_20: 0,
+    note_10: 0,
+    coins: 0,
+    online_amount: 0,
+  });
+
+  const reloadLedger = async (retailer: any) => {
+    setLoadingLedger(true);
+    try {
+      const res = await api.getPublicLedger(retailer.ledger_token);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      showToastNotification("Failed to reload ledger: " + err.message);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
+
+  const handleStartEditEntry = (item: any) => {
+    const isDeposit = item.deposit_id != null;
+    setEditingIsDeposit(isDeposit);
+    setEditingEntry(item);
+    
+    setSelectedNewRetailerId(item.retailer_id || (ledgerRetailer ? ledgerRetailer.id : ""));
+    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewRemarks(item.remarks || "");
+    
+    if (isDeposit) {
+      setSelectedNewDepositType(item.deposit_type || "retailer");
+      setSelectedNewPaymentMode(item.payment_mode || "online");
+      setSelectedNewAmount(Number(item.amount || 0));
+      setSelectedNewDate((item.date || "").split(" ")[0]);
+      setSelectedNewRefNo(item.reference_no || "");
+      setSelectedNewRecipientStaffId(item.recipient_staff_id || "");
+      setSelectedNewToOffice(item.to_office === true);
+    } else {
+      setSelectedNewAmount(Number(item.amount || 0));
+    }
+    
+    // Set denominations
+    setSelectedNewDenoms({
+      note_500: 0,
+      note_200: 0,
+      note_100: 0,
+      note_50: 0,
+      note_20: 0,
+      note_10: 0,
+      coins: 0,
+      online_amount: Number(item.amount || 0),
+    });
+    
+    setIsEditEntryModalOpen(true);
+  };
+
+  const handleDeleteEntry = async (item: any) => {
+    if (!window.confirm("Delete this entry? This will permanently update balances.")) return;
+    try {
+      const isDeposit = item.deposit_id != null;
+      const targetId = item.collection_id || item.deposit_id;
+      if (!targetId) return;
+
+      if (isDeposit) {
+        await api.deleteDeposit(targetId);
+      } else {
+        await api.deleteCollection(targetId);
+      }
+      showToastNotification("Entry deleted successfully.");
+      if (ledgerRetailer) {
+        await reloadLedger(ledgerRetailer);
+      }
+      fetchData();
+    } catch (err: any) {
+      showToastNotification("Failed to delete entry: " + err.message);
+    }
+  };
+
+  const handleSaveEntryEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEntry) return;
+    setIsSavingEntry(true);
+    
+    try {
+      const targetId = editingEntry.collection_id || editingEntry.deposit_id;
+      if (!targetId) return;
+
+      if (editingIsDeposit) {
+        await api.updateDeposit(targetId, {
+          deposit_type: selectedNewDepositType,
+          portal_id: selectedNewDepositType === "portal" ? selectedNewPortalId : null,
+          retailer_id: selectedNewDepositType === "retailer" ? selectedNewRetailerId : null,
+          recipient_staff_id: selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null,
+          to_office: selectedNewDepositType === "staff" ? selectedNewToOffice : false,
+          payment_mode: selectedNewPaymentMode,
+          amount: Number(selectedNewAmount),
+          deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          reference_no: selectedNewRefNo || null,
+          remarks: selectedNewRemarks || null
+        });
+      } else {
+        // Adjust denoms to match edited total amount
+        const updatedDenoms = { ...selectedNewDenoms, online_amount: selectedNewAmount };
+        await api.updateCollection(targetId, {
+          retailer_id: selectedNewRetailerId || null,
+          portal_id: selectedNewPortalId || null,
+          total_amount: selectedNewAmount,
+          remarks: selectedNewRemarks || "",
+          denominations: updatedDenoms
+        });
+      }
+      showToastNotification("Entry updated successfully.");
+      setIsEditEntryModalOpen(false);
+      if (ledgerRetailer) {
+        await reloadLedger(ledgerRetailer);
+      }
+      fetchData();
+    } catch (err: any) {
+      showToastNotification("Failed to update: " + err.message);
+    } finally {
+      setIsSavingEntry(false);
+    }
+  };
 
   React.useEffect(() => {
     if (selectedRetailerStore) {
@@ -383,75 +528,28 @@ export default function MobileRetailers({
             return (
               <div 
                 key={retailer.id}
-                className="bg-white dark:bg-slate-900 py-1.5 px-2 border-b border-slate-50 dark:border-slate-900/50 hover:bg-slate-50/50 dark:hover:bg-slate-950/20"
+                onClick={() => handleOpenLedger(retailer)}
+                className="bg-white dark:bg-slate-900 py-3 px-3 border-b border-slate-50 dark:border-slate-900/50 hover:bg-slate-50/50 dark:hover:bg-slate-955/20 flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all"
               >
-                {/* Row Header */}
-                <div className="flex items-center justify-between gap-1 mb-1">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <Store className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="font-bold text-xs text-slate-900 dark:text-white truncate max-w-[130px]">{retailer.name}</span>
-                        {retailer.name.toLowerCase().trim() !== "cms" && retailer.area && (
-                          <span className="text-[9px] font-bold text-slate-400 uppercase truncate">({retailer.area})</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    {retailer.phone && retailer.name.toLowerCase().trim() !== "cms" && (
-                      <a 
-                        href={`tel:${retailer.phone}`}
-                        className="p-1 bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400 rounded hover:bg-slate-100 transition-colors"
-                      >
-                        <Phone className="w-3 h-3" />
-                      </a>
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <Store className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <span className="font-bold text-xs text-slate-900 dark:text-white truncate block">{retailer.name}</span>
+                    {retailer.name.toLowerCase().trim() !== "cms" && retailer.area && (
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide truncate block mt-0.5">{retailer.area}</span>
                     )}
-                    <button 
-                      onClick={() => handleStartEditRetailer(retailer)}
-                      className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                    {retailer.name.toLowerCase().trim() !== "cms" && (
-                      <button 
-                        onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
-                        className="p-1 bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleOpenLedger(retailer)}
-                      className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-bold rounded cursor-pointer"
-                      title="View Ledger"
-                    >
-                      Ledger
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedRetailerStore(retailer);
-                        setIsStoreModalOpen(true);
-                      }}
-                      className="px-1.5 py-0.5 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[9px] font-bold rounded cursor-pointer"
-                      title="Manage Stores"
-                    >
-                      Stores
-                    </button>
                   </div>
                 </div>
 
-                {/* Net Balance only */}
-                <div className="mt-1 flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800 text-[10px]">
-                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Net Bal:</span>
-                  <span className={`font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    ₹{Math.round(Math.abs(retailer.balance || 0))}
+                <div className="text-right shrink-0">
+                  <span className={`font-black text-xs ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
+                    ₹{Math.round(Math.abs(retailer.balance || 0)).toLocaleString()}
                   </span>
+                  <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-tighter mt-0.5">Net Balance</span>
                 </div>
               </div>
-            );})
+            );
+          })
         )}
       </div>
 
@@ -698,7 +796,7 @@ export default function MobileRetailers({
           ) : (
             <LedgerReportView 
               title={ledgerRetailer.name}
-              subtitle={`Route: ${ledgerRetailer.area} • Phone: ${ledgerRetailer.phone}`}
+              subtitle={`Route: ${ledgerRetailer.area}`}
               data={ledgerData}
               outstandingBalance={ledgerOutstanding}
               isPublic={false}
@@ -708,8 +806,212 @@ export default function MobileRetailers({
                 setLedgerData([]);
               }}
               publicLink={typeof window !== "undefined" ? `${window.location.origin}/public/ledger/${ledgerRetailer.ledger_token}` : ""}
+              onEditRetailer={() => handleStartEditRetailer(ledgerRetailer)}
+              onDeleteRetailer={() => {
+                handleDeleteRetailer(ledgerRetailer.id, ledgerRetailer.name);
+                setIsLedgerModalOpen(false);
+              }}
+              onManageStores={() => {
+                setSelectedRetailerStore(ledgerRetailer);
+                setIsStoreModalOpen(true);
+              }}
+              phone={ledgerRetailer.phone}
+              onEditEntry={handleStartEditEntry}
+              onDeleteEntry={handleDeleteEntry}
             />
           )}
+        </div>
+      )}
+      {/* EDIT TRANSACTION ENTRY MODAL */}
+      {isEditEntryModalOpen && editingEntry && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 select-none animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-6 animate-slide-up shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
+                {editingIsDeposit ? "Edit Cash Out Entry" : "Edit Cash In Entry"}
+              </h3>
+              <button 
+                onClick={() => setIsEditEntryModalOpen(false)} 
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-505 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEntryEdit} className="space-y-4">
+              <div className="space-y-3">
+                
+                {/* Retailer select (only for collections) */}
+                {!editingIsDeposit && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Retailer</label>
+                    <select
+                      value={selectedNewRetailerId}
+                      onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                    >
+                      <option value="">No Retailer</option>
+                      {retailerDirectory.map((r: any) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Portal select */}
+                {!editingIsDeposit && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Portal Channel</label>
+                    <select
+                      value={selectedNewPortalId}
+                      onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                    >
+                      <option value="">None / Cash</option>
+                      {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Deposit Fields */}
+                {editingIsDeposit && (
+                  <>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Deposit Type</label>
+                      <select
+                        value={selectedNewDepositType}
+                        onChange={(e) => setSelectedNewDepositType(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                      >
+                        <option value="portal">Portal Bank Deposit</option>
+                        <option value="retailer">Retailer Payout</option>
+                        <option value="staff">Staff/Office Handover</option>
+                        <option value="virtual">Virtual Limit Transfer</option>
+                      </select>
+                    </div>
+
+                    {selectedNewDepositType === "portal" && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Portal</label>
+                        <select
+                          value={selectedNewPortalId}
+                          onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                        >
+                          <option value="">Select Portal Bank Account</option>
+                          {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                            <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {selectedNewDepositType === "retailer" && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Retailer</label>
+                        <select
+                          value={selectedNewRetailerId}
+                          onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                        >
+                          <option value="">Select Retailer</option>
+                          {retailerDirectory.map((r: any) => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {selectedNewDepositType === "staff" && (
+                      <>
+                        <div className="flex items-center gap-1.5 py-0.5">
+                          <input
+                            type="checkbox"
+                            id="editToOfficeCheckboxMobile"
+                            checked={selectedNewToOffice}
+                            onChange={(e) => setSelectedNewToOffice(e.target.checked)}
+                            className="w-3.5 h-3.5 rounded text-indigo-600 border-slate-200 dark:border-slate-800"
+                          />
+                          <label htmlFor="editToOfficeCheckboxMobile" className="text-[10px] font-bold text-slate-650 dark:text-slate-400 uppercase">Handover to Cashier</label>
+                        </div>
+                        {!selectedNewToOffice && (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Recipient Staff</label>
+                            <select
+                              value={selectedNewRecipientStaffId}
+                              onChange={(e) => setSelectedNewRecipientStaffId(e.target.value)}
+                              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                            >
+                              <option value="">Select Staff</option>
+                              {(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Payment Mode</label>
+                      <select
+                        value={selectedNewPaymentMode}
+                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="online">Online</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Reference No</label>
+                      <input 
+                        type="text" 
+                        value={selectedNewRefNo} 
+                        onChange={(e) => setSelectedNewRefNo(e.target.value)} 
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                        placeholder="Optional reference number"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Amount */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
+                  <input 
+                    type="number" 
+                    value={selectedNewAmount} 
+                    onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))} 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    required 
+                  />
+                </div>
+
+                {/* Remarks */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Remarks</label>
+                  <textarea 
+                    value={selectedNewRemarks} 
+                    onChange={(e) => setSelectedNewRemarks(e.target.value)} 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    rows={2}
+                    placeholder="Remarks"
+                  />
+                </div>
+
+              </div>
+              <button 
+                type="submit" 
+                disabled={isSavingEntry}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+              >
+                {isSavingEntry ? "Saving..." : "Save Changes"}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

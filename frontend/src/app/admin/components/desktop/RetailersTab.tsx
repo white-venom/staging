@@ -21,7 +21,7 @@ export default function RetailersTab({
   fetchData
 }: RetailersTabProps) {
   const router = useRouter();
-  const { collections, deposits, setLedgerSearchTerm } = useAdmin();
+  const { collections, deposits, setLedgerSearchTerm, portalDirectory, userDirectory } = useAdmin();
   const [retailerSearch, setRetailerSearch] = useState("");
   const [selectedRetailer, setSelectedRetailer] = useState<any | null>(null);
   const [stores, setStores] = useState<any[]>([]);
@@ -68,6 +68,151 @@ export default function RetailersTab({
   const [editStoreName, setEditStoreName] = useState("");
   const [editStoreArea, setEditStoreArea] = useState("");
   const [editStoreRetailerId, setEditStoreRetailerId] = useState("");
+
+  // Entry Edit/Delete states
+  const [isEditEntryModalOpen, setIsEditEntryModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<any | null>(null);
+  const [editingIsDeposit, setEditingIsDeposit] = useState(false);
+  
+  const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
+  const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
+  const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
+  const [selectedNewToOffice, setSelectedNewToOffice] = useState(false);
+  const [selectedNewDepositType, setSelectedNewDepositType] = useState("");
+  const [selectedNewPaymentMode, setSelectedNewPaymentMode] = useState("");
+  const [selectedNewAmount, setSelectedNewAmount] = useState(0);
+  const [selectedNewDate, setSelectedNewDate] = useState("");
+  const [selectedNewRefNo, setSelectedNewRefNo] = useState("");
+  const [selectedNewRemarks, setSelectedNewRemarks] = useState("");
+  const [isSavingEntry, setIsSavingEntry] = useState(false);
+  
+  const [selectedNewDenoms, setSelectedNewDenoms] = useState({
+    note_500: 0,
+    note_200: 0,
+    note_100: 0,
+    note_50: 0,
+    note_20: 0,
+    note_10: 0,
+    coins: 0,
+    online_amount: 0,
+  });
+
+  const reloadLedger = async (retailer: any) => {
+    setLoadingLedger(true);
+    try {
+      const res = await api.getPublicLedger(retailer.ledger_token);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      showToastNotification("Failed to reload ledger: " + err.message);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
+
+  const handleStartEditEntry = (item: any) => {
+    const isDeposit = item.deposit_id != null;
+    setEditingIsDeposit(isDeposit);
+    setEditingEntry(item);
+    
+    setSelectedNewRetailerId(item.retailer_id || (ledgerRetailer ? ledgerRetailer.id : ""));
+    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewRemarks(item.remarks || "");
+    
+    if (isDeposit) {
+      setSelectedNewDepositType(item.deposit_type || "retailer");
+      setSelectedNewPaymentMode(item.payment_mode || "online");
+      setSelectedNewAmount(Number(item.amount || 0));
+      setSelectedNewDate((item.date || "").split(" ")[0]);
+      setSelectedNewRefNo(item.reference_no || "");
+      setSelectedNewRecipientStaffId(item.recipient_staff_id || "");
+      setSelectedNewToOffice(item.to_office === true);
+    } else {
+      setSelectedNewAmount(Number(item.amount || 0));
+    }
+    
+    // Set denominations
+    setSelectedNewDenoms({
+      note_500: 0,
+      note_200: 0,
+      note_100: 0,
+      note_50: 0,
+      note_20: 0,
+      note_10: 0,
+      coins: 0,
+      online_amount: Number(item.amount || 0),
+    });
+    
+    setIsEditEntryModalOpen(true);
+  };
+
+  const handleDeleteEntry = async (item: any) => {
+    if (!window.confirm("Delete this entry? This will permanently update balances.")) return;
+    try {
+      const isDeposit = item.deposit_id != null;
+      const targetId = item.collection_id || item.deposit_id;
+      if (!targetId) return;
+
+      if (isDeposit) {
+        await api.deleteDeposit(targetId);
+      } else {
+        await api.deleteCollection(targetId);
+      }
+      showToastNotification("Entry deleted successfully.");
+      if (ledgerRetailer) {
+        await reloadLedger(ledgerRetailer);
+      }
+      fetchData();
+    } catch (err: any) {
+      showToastNotification("Failed to delete entry: " + err.message);
+    }
+  };
+
+  const handleSaveEntryEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEntry) return;
+    setIsSavingEntry(true);
+    
+    try {
+      const targetId = editingEntry.collection_id || editingEntry.deposit_id;
+      if (!targetId) return;
+
+      if (editingIsDeposit) {
+        await api.updateDeposit(targetId, {
+          deposit_type: selectedNewDepositType,
+          portal_id: selectedNewDepositType === "portal" ? selectedNewPortalId : null,
+          retailer_id: selectedNewDepositType === "retailer" ? selectedNewRetailerId : null,
+          recipient_staff_id: selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null,
+          to_office: selectedNewDepositType === "staff" ? selectedNewToOffice : false,
+          payment_mode: selectedNewPaymentMode,
+          amount: Number(selectedNewAmount),
+          deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          reference_no: selectedNewRefNo || null,
+          remarks: selectedNewRemarks || null
+        });
+      } else {
+        // Adjust denoms to match edited total amount
+        const updatedDenoms = { ...selectedNewDenoms, online_amount: selectedNewAmount };
+        await api.updateCollection(targetId, {
+          retailer_id: selectedNewRetailerId || null,
+          portal_id: selectedNewPortalId || null,
+          total_amount: selectedNewAmount,
+          remarks: selectedNewRemarks || "",
+          denominations: updatedDenoms
+        });
+      }
+      showToastNotification("Entry updated successfully.");
+      setIsEditEntryModalOpen(false);
+      if (ledgerRetailer) {
+        await reloadLedger(ledgerRetailer);
+      }
+      fetchData();
+    } catch (err: any) {
+      showToastNotification("Failed to update: " + err.message);
+    } finally {
+      setIsSavingEntry(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedRetailer) {
@@ -209,7 +354,6 @@ export default function RetailersTab({
           <Plus className="w-4 h-4" /> Register Retailer
         </button>
       </div>
-
       <div className="grid md:grid-cols-2 gap-4">
         {[...(retailerDirectory || [])]
           .filter(r => (r.name || "").toLowerCase().includes((retailerSearch || "").toLowerCase()))
@@ -223,148 +367,29 @@ export default function RetailersTab({
           .map((retailer) => (
             <div
               key={retailer.id}
-              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4 flex flex-col justify-between group relative overflow-hidden"
+              onClick={() => handleOpenLedger(retailer)}
+              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between cursor-pointer group active:scale-[0.99] select-none"
             >
-              <div>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-3">
-                    <div>
-                      <h3 className="text-xs font-black text-slate-800 dark:text-slate-100">{retailer.name}</h3>
-                      {retailer.name.toLowerCase().trim() !== "cms" && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <MapPin className="w-2.5 h-2.5 text-slate-400" />
-                          <span className="text-[9px] text-slate-400 uppercase tracking-wide font-bold">Route: {retailer.area}</span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Actions Overlay */}
-                    <div className="flex items-center gap-1 transition-opacity">
-                      <button 
-                        onClick={() => handleStartEditRetailer(retailer)}
-                        className="p-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
-                        title="Edit Retailer"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </button>
-                      {retailer.name.toLowerCase().trim() !== "cms" && (
-                        <button 
-                          onClick={() => handleDeleteRetailer(retailer.id, retailer.name)}
-                          className="p-1.5 bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
-                          title="Delete Retailer"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end">
-                    {retailer.name.toLowerCase().trim() !== "cms" && (
-                      <div className="flex items-center gap-1">
-                        <Phone className="w-2.5 h-2.5 text-slate-400" />
-                        <span className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold">{retailer.phone}</span>
-                      </div>
-                    )}
-                    {retailer.email && (
-                      <span className="text-[8px] text-blue-500 font-medium mt-0.5">{retailer.email}</span>
-                    )}
-                  </div>
+              <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700/60 shadow-xs text-slate-555 dark:text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0">
+                  <StoreIcon className="w-5 h-5" />
                 </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Net Balance:</span>
-                  <span className={`text-xs font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
-                    ₹{Math.abs(retailer.balance || 0).toLocaleString()}
-                  </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 transition-colors truncate">{retailer.name}</h3>
+                  {retailer.name.toLowerCase().trim() !== "cms" && retailer.area && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <MapPin className="w-3 h-3 text-slate-450" />
+                      <span className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">{retailer.area}</span>
+                    </div>
+                  )}
                 </div>
-
-                {false && (
-                  <div className="mt-4 pt-3 border-t border-slate-150 dark:border-slate-800 space-y-2">
-                    <span className="text-[9px] uppercase font-black text-slate-400 tracking-wider block">Retailer Transaction Ledger</span>
-                    {(() => {
-                      const retailerTx = [
-                        ...(collections || [])
-                          .filter(c => c.retailerId === retailer.id)
-                          .map(c => ({
-                            id: c.id,
-                            date: c.date,
-                            type: "Cash In",
-                            staff: c.staffName || "Admin",
-                            amount: c.totalAmount,
-                            isCredit: true,
-                            balance: c.balance_snapshot
-                          })),
-                        ...(deposits || [])
-                          .filter(d => d.retailerId === retailer.id)
-                          .map(d => ({
-                            id: d.id,
-                            date: d.date,
-                            type: "Cash Out",
-                            staff: d.staffName || "Admin",
-                            amount: d.amount,
-                            isCredit: false,
-                            balance: d.balance_snapshot
-                          }))
-                      ].sort((a, b) => new Date(b.date.replace(" ", "T")).getTime() - new Date(a.date.replace(" ", "T")).getTime());
-
-                      if (retailerTx.length === 0) {
-                        return (
-                          <p className="text-[10px] font-bold text-slate-400 italic py-2">No transaction history found.</p>
-                        );
-                      }
-
-                      return (
-                        <div className="max-h-48 overflow-y-auto border border-slate-100 dark:border-slate-800/80 rounded-xl divide-y divide-slate-150/40 dark:divide-slate-800/40">
-                          {retailerTx.map(tx => (
-                            <div key={tx.id} className="p-2.5 flex items-center justify-between text-[10px] bg-slate-50/40 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors">
-                              <div>
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-extrabold text-slate-750 dark:text-slate-200 uppercase">{tx.type}</span>
-                                  <span className="text-[8px] font-bold text-slate-400">by {tx.staff}</span>
-                                </div>
-                                <span className="text-[8px] text-slate-400 block mt-0.5">{tx.date}</span>
-                              </div>
-                              <div className="text-right">
-                                <span className={`font-black ${tx.isCredit ? 'text-emerald-600' : 'text-red-500'}`}>
-                                  {tx.isCredit ? '+' : '-'}₹{tx.amount.toLocaleString()}
-                                </span>
-                                {tx.balance !== undefined && (
-                                  <span className="text-[8px] text-slate-400 block mt-0.5">Bal: ₹{Number(tx.balance).toLocaleString()}</span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
               </div>
 
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <button
-                  onClick={() => handleOpenLedger(retailer)}
-                  className="py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-105 dark:border-emerald-800/40 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center"
-                >
-                  View Ledger
-                </button>
-                <button
-                  onClick={() => {
-                    setLedgerSearchTerm(retailer.name);
-                    router.push("/admin/ledger");
-                  }}
-                  className="py-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-650 dark:text-slate-350 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer"
-                >
-                  Audit
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedRetailer(retailer);
-                    setIsStoreModalOpen(true);
-                  }}
-                  className="py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/30 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-1"
-                >
-                  Stores
-                </button>
+              <div className="text-right shrink-0">
+                <span className={`text-sm font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
+                  ₹{Math.abs(retailer.balance || 0).toLocaleString()}
+                </span>
+                <span className="text-[8px] font-black text-slate-455 uppercase block tracking-wider mt-1">Outstanding Balance</span>
               </div>
             </div>
           ))}
@@ -582,7 +607,7 @@ export default function RetailersTab({
           ) : (
             <LedgerReportView 
               title={ledgerRetailer.name}
-              subtitle={`Route: ${ledgerRetailer.area} • Phone: ${ledgerRetailer.phone}`}
+              subtitle={`Route: ${ledgerRetailer.area}`}
               data={ledgerData}
               outstandingBalance={ledgerOutstanding}
               isPublic={false}
@@ -592,8 +617,212 @@ export default function RetailersTab({
                 setLedgerData([]);
               }}
               publicLink={typeof window !== "undefined" ? `${window.location.origin}/public/ledger/${ledgerRetailer.ledger_token}` : ""}
+              onEditRetailer={() => handleStartEditRetailer(ledgerRetailer)}
+              onDeleteRetailer={() => {
+                handleDeleteRetailer(ledgerRetailer.id, ledgerRetailer.name);
+                setIsLedgerModalOpen(false);
+              }}
+              onManageStores={() => {
+                setSelectedRetailer(ledgerRetailer);
+                setIsStoreModalOpen(true);
+              }}
+              phone={ledgerRetailer.phone}
+              onEditEntry={handleStartEditEntry}
+              onDeleteEntry={handleDeleteEntry}
             />
           )}
+        </div>
+      )}
+      {/* EDIT TRANSACTION ENTRY MODAL */}
+      {isEditEntryModalOpen && editingEntry && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 select-none animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-6 animate-slide-up shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
+                {editingIsDeposit ? "Edit Cash Out Entry" : "Edit Cash In Entry"}
+              </h3>
+              <button 
+                onClick={() => setIsEditEntryModalOpen(false)} 
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-550 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEntryEdit} className="space-y-4">
+              <div className="space-y-3">
+                
+                {/* Retailer select (only for collections) */}
+                {!editingIsDeposit && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Retailer</label>
+                    <select
+                      value={selectedNewRetailerId}
+                      onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                    >
+                      <option value="">No Retailer</option>
+                      {retailerDirectory.map((r: any) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Portal select */}
+                {!editingIsDeposit && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Portal Channel</label>
+                    <select
+                      value={selectedNewPortalId}
+                      onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                    >
+                      <option value="">None / Cash</option>
+                      {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Deposit Fields */}
+                {editingIsDeposit && (
+                  <>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Deposit Type</label>
+                      <select
+                        value={selectedNewDepositType}
+                        onChange={(e) => setSelectedNewDepositType(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                      >
+                        <option value="portal">Portal Bank Deposit</option>
+                        <option value="retailer">Retailer Payout</option>
+                        <option value="staff">Staff/Office Handover</option>
+                        <option value="virtual">Virtual Limit Transfer</option>
+                      </select>
+                    </div>
+
+                    {selectedNewDepositType === "portal" && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Portal</label>
+                        <select
+                          value={selectedNewPortalId}
+                          onChange={(e) => setSelectedNewPortalId(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                        >
+                          <option value="">Select Portal Bank Account</option>
+                          {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
+                            <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {selectedNewDepositType === "retailer" && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Retailer</label>
+                        <select
+                          value={selectedNewRetailerId}
+                          onChange={(e) => setSelectedNewRetailerId(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                        >
+                          <option value="">Select Retailer</option>
+                          {retailerDirectory.map((r: any) => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {selectedNewDepositType === "staff" && (
+                      <>
+                        <div className="flex items-center gap-1.5 py-0.5">
+                          <input
+                            type="checkbox"
+                            id="editToOfficeCheckboxDesktop"
+                            checked={selectedNewToOffice}
+                            onChange={(e) => setSelectedNewToOffice(e.target.checked)}
+                            className="w-3.5 h-3.5 rounded text-indigo-600 border-slate-205 dark:border-slate-800"
+                          />
+                          <label htmlFor="editToOfficeCheckboxDesktop" className="text-[10px] font-bold text-slate-650 dark:text-slate-400 uppercase">Handover to Cashier</label>
+                        </div>
+                        {!selectedNewToOffice && (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Recipient Staff</label>
+                            <select
+                              value={selectedNewRecipientStaffId}
+                              onChange={(e) => setSelectedNewRecipientStaffId(e.target.value)}
+                              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                            >
+                              <option value="">Select Staff</option>
+                              {(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => (
+                                <option key={u.id} value={u.id}>{u.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Payment Mode</label>
+                      <select
+                        value={selectedNewPaymentMode}
+                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="online">Online</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Reference No</label>
+                      <input 
+                        type="text" 
+                        value={selectedNewRefNo} 
+                        onChange={(e) => setSelectedNewRefNo(e.target.value)} 
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                        placeholder="Optional reference number"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Amount */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
+                  <input 
+                    type="number" 
+                    value={selectedNewAmount} 
+                    onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))} 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    required 
+                  />
+                </div>
+
+                {/* Remarks */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Remarks</label>
+                  <textarea 
+                    value={selectedNewRemarks} 
+                    onChange={(e) => setSelectedNewRemarks(e.target.value)} 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    rows={2}
+                    placeholder="Remarks"
+                  />
+                </div>
+
+              </div>
+              <button 
+                type="submit" 
+                disabled={isSavingEntry}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+              >
+                {isSavingEntry ? "Saving..." : "Save Changes"}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

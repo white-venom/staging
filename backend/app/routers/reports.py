@@ -49,7 +49,9 @@ def get_public_ledger(
             "running_balance": float(tx.balance),
             "description": tx.description or "",
             "remarks": remarks,
-            "reference_no": reference_no
+            "reference_no": reference_no,
+            "collection_id": str(tx.collection_id) if tx.collection_id else None,
+            "deposit_id": str(tx.deposit_id) if tx.deposit_id else None
         })
 
     return {
