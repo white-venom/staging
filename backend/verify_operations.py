@@ -295,8 +295,8 @@ def test_core_operations_flow():
     # Find the newly added transaction
     tx_store = [t for t in data_public_store["statement_history"] if t["amount"] == 5000.0]
     assert len(tx_store) == 1
-    assert tx_store[0]["description"] == "Dwarka Sector 15 Outlet", f"Expected description 'Dwarka Sector 15 Outlet', got '{tx_store[0]['description']}'"
-    print("   ↳ Checked: Ledger entry description correctly shows Store Name.")
+    assert tx_store[0]["description"] == "cash in", f"Expected description 'cash in', got '{tx_store[0]['description']}'"
+    print("   ↳ Checked: Ledger entry description correctly shows cash in.")
 
     # Delete the temporary cash collection to restore balances
     r_del_cash = client.delete(f"/collections/{id_cash_collection}", headers=headers_staff_a)

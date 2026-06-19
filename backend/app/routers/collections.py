@@ -117,18 +117,7 @@ def submit_collection(
             if payload.portal_id:
                 portal_obj = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
             
-            if d.online_amount > 0 and portal_obj:
-                portal_name = (portal_obj.group.name if portal_obj.group else None) or portal_obj.portal_name
-                cash_amount = payload.total_amount - d.online_amount
-                if cash_amount > 0:
-                    description = f"collection (Cash: ₹{cash_amount:.2f}, Online: ₹{d.online_amount:.2f} via {portal_name})"
-                else:
-                    description = f"online collection (₹{d.online_amount:.2f} via {portal_name})"
-            else:
-                store_obj = None
-                if payload.store_id:
-                    store_obj = db.scalar(select(Store).where(Store.id == payload.store_id))
-                description = store_obj.store_name if store_obj else "Cash"
+            description = "cash in"
             
             ledger_entry = Ledger(
                 retailer_id=payload.retailer_id,
@@ -695,23 +684,7 @@ def update_collection(
             ledger_entry.retailer_id = new_retailer_id
             
         # Update description based on breakdown
-        new_online_amount = payload.denominations.online_amount if payload.denominations else Decimal("0.00")
-        if new_online_amount > 0 and new_portal_id:
-            new_portal_obj = db.scalar(select(Portal).where(Portal.id == new_portal_id))
-            if new_portal_obj:
-                portal_name = (new_portal_obj.group.name if new_portal_obj.group else None) or new_portal_obj.portal_name
-            else:
-                portal_name = "Online"
-            cash_amount = new_amount - new_online_amount
-            if cash_amount > 0:
-                ledger_entry.description = f"collection (Cash: ₹{cash_amount:.2f}, Online: ₹{new_online_amount:.2f} via {portal_name})"
-            else:
-                ledger_entry.description = f"online collection (₹{new_online_amount:.2f} via {portal_name})"
-        else:
-            store_obj = None
-            if payload.store_id:
-                store_obj = db.scalar(select(Store).where(Store.id == payload.store_id))
-            ledger_entry.description = store_obj.store_name if store_obj else "Cash"
+        ledger_entry.description = "cash in"
 
     # Sync corresponding staff handover deposit if needed
     if old_from_staff_id != new_from_staff_id:

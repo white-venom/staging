@@ -158,9 +158,7 @@ def submit_deposit(
             new_balance = prev_balance + payload.amount
             
             # Step C: Log a 'debit' entry in Retailer's Ledger
-            desc_text = f"Virtual Portal Transfer from {portal.portal_name}"
-            if payload.reference_no:
-                desc_text += f" (Ref: {payload.reference_no})"
+            desc_text = "virtual transfer"
                 
             ledger_entry = Ledger(
                 retailer_id=payload.retailer_id,

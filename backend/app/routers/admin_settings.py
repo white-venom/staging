@@ -165,14 +165,13 @@ def process_virtual_transfer(
             else:
                 prev_balance = Decimal(str(retailer.opening_to_take or 0))
                 
-            p_name = portal.group.name if portal.group else portal.portal_name
             if payload.direction == "refund":
                 new_balance = prev_balance - payload.amount
-                desc_text = f"Virtual Portal Refund to {p_name}"
+                desc_text = "move to distributor"
                 transaction_type = "credit"
             else:
                 new_balance = prev_balance + payload.amount
-                desc_text = f"Virtual Portal Transfer from {p_name}"
+                desc_text = "virtual transfer"
                 transaction_type = "debit"
             
             # Log in bank deposits to keep audit trail
