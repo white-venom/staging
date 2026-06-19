@@ -110,6 +110,28 @@ export default function RetailersTab({
     }
   };
 
+  const handleDenomValChange = (key: string, value: string) => {
+    const val = value === "" ? 0 : parseFloat(value) || 0;
+    setSelectedNewDenoms(prev => {
+      const updated = {
+        ...prev,
+        [key]: val
+      };
+      
+      const totalCash = (
+        (updated.note_500 || 0) * 500 +
+        (updated.note_200 || 0) * 200 +
+        (updated.note_100 || 0) * 100 +
+        (updated.note_50 || 0) * 50 +
+        (updated.note_20 || 0) * 20 +
+        (updated.note_10 || 0) * 10 +
+        (updated.coins || 0)
+      );
+      setSelectedNewAmount(totalCash);
+      return updated;
+    });
+  };
+
   const handleStartEditEntry = (item: any) => {
     const isDeposit = item.deposit_id != null;
     setEditingIsDeposit(isDeposit);
@@ -118,30 +140,43 @@ export default function RetailersTab({
     setSelectedNewRetailerId(item.retailer_id || (ledgerRetailer ? ledgerRetailer.id : ""));
     setSelectedNewPortalId(item.portal_id || "");
     setSelectedNewRemarks(item.remarks || "");
+    setSelectedNewDate((item.date || "").split(" ")[0]);
+    
+    const isOnlineCol = !isDeposit && (item.portal_id != null || (item.denominations && Number(item.denominations.online_amount || 0) > 0));
+    const initialPaymentMode = isDeposit ? (item.payment_mode || "online") : (isOnlineCol ? "online" : "cash");
+    setSelectedNewPaymentMode(initialPaymentMode);
+    setSelectedNewAmount(Number(item.amount || 0));
     
     if (isDeposit) {
       setSelectedNewDepositType(item.deposit_type || "retailer");
-      setSelectedNewPaymentMode(item.payment_mode || "online");
-      setSelectedNewAmount(Number(item.amount || 0));
-      setSelectedNewDate((item.date || "").split(" ")[0]);
       setSelectedNewRefNo(item.reference_no || "");
       setSelectedNewRecipientStaffId(item.recipient_staff_id || "");
       setSelectedNewToOffice(item.to_office === true);
-    } else {
-      setSelectedNewAmount(Number(item.amount || 0));
     }
     
-    // Set denominations
-    setSelectedNewDenoms({
-      note_500: 0,
-      note_200: 0,
-      note_100: 0,
-      note_50: 0,
-      note_20: 0,
-      note_10: 0,
-      coins: 0,
-      online_amount: Number(item.amount || 0),
-    });
+    if (item.denominations) {
+      setSelectedNewDenoms({
+        note_500: Number(item.denominations.note_500 || 0),
+        note_200: Number(item.denominations.note_200 || 0),
+        note_100: Number(item.denominations.note_100 || 0),
+        note_50: Number(item.denominations.note_50 || 0),
+        note_20: Number(item.denominations.note_20 || 0),
+        note_10: Number(item.denominations.note_10 || 0),
+        coins: Number(item.denominations.coins || 0),
+        online_amount: Number(item.denominations.online_amount || 0),
+      });
+    } else {
+      setSelectedNewDenoms({
+        note_500: 0,
+        note_200: 0,
+        note_100: 0,
+        note_50: 0,
+        note_20: 0,
+        note_10: 0,
+        coins: 0,
+        online_amount: initialPaymentMode === "online" ? Number(item.amount || 0) : 0,
+      });
+    }
     
     setIsEditEntryModalOpen(true);
   };
@@ -177,6 +212,10 @@ export default function RetailersTab({
       const targetId = editingEntry.collection_id || editingEntry.deposit_id;
       if (!targetId) return;
 
+      const payloadDenoms = selectedNewPaymentMode === "cash"
+        ? { ...selectedNewDenoms, online_amount: 0 }
+        : { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online_amount: Number(selectedNewAmount) };
+
       if (editingIsDeposit) {
         await api.updateDeposit(targetId, {
           deposit_type: selectedNewDepositType,
@@ -188,17 +227,17 @@ export default function RetailersTab({
           amount: Number(selectedNewAmount),
           deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
           reference_no: selectedNewRefNo || null,
-          remarks: selectedNewRemarks || null
+          remarks: selectedNewRemarks || null,
+          denominations: payloadDenoms
         });
       } else {
-        // Adjust denoms to match edited total amount
-        const updatedDenoms = { ...selectedNewDenoms, online_amount: selectedNewAmount };
         await api.updateCollection(targetId, {
           retailer_id: selectedNewRetailerId || null,
-          portal_id: selectedNewPortalId || null,
+          portal_id: selectedNewPaymentMode === "online" ? selectedNewPortalId : null,
           total_amount: selectedNewAmount,
+          collection_date: selectedNewDate || new Date().toISOString().split("T")[0],
           remarks: selectedNewRemarks || "",
-          denominations: updatedDenoms
+          denominations: payloadDenoms
         });
       }
       showToastNotification("Entry updated successfully.");
@@ -405,7 +444,7 @@ export default function RetailersTab({
 
       {/* RETAILER EDIT MODAL */}
       {isEditRetailerModalOpen && editingRetailer && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-6 select-none animate-slide-up shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">Edit Retailer Profile</h3>
@@ -434,7 +473,7 @@ export default function RetailersTab({
 
       {/* STORE MANAGEMENT MODAL */}
       {isStoreModalOpen && selectedRetailer && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-6 select-none animate-slide-up shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
@@ -651,14 +690,14 @@ export default function RetailersTab({
             <form onSubmit={handleSaveEntryEdit} className="space-y-4">
               <div className="space-y-3">
                 
-                {/* Retailer select (only for collections) */}
+                {/* RETAILER INPUT (only for collections/Cash In) */}
                 {!editingIsDeposit && (
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Retailer</label>
                     <select
                       value={selectedNewRetailerId}
                       onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
                     >
                       <option value="">No Retailer</option>
                       {retailerDirectory.map((r: any) => (
@@ -668,16 +707,38 @@ export default function RetailersTab({
                   </div>
                 )}
 
-                {/* Portal select */}
+                {/* PAYMENT MODE SELECTOR (for Collections) */}
                 {!editingIsDeposit && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Payment Mode</label>
+                    <select
+                      value={selectedNewPaymentMode}
+                      onChange={(e) => {
+                        const mode = e.target.value;
+                        setSelectedNewPaymentMode(mode);
+                        if (mode === "cash") {
+                          setSelectedNewPortalId("");
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="online">Online</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* PORTAL SELECTOR (only for Online collections) */}
+                {!editingIsDeposit && selectedNewPaymentMode === "online" && (
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Portal Channel</label>
                     <select
                       value={selectedNewPortalId}
                       onChange={(e) => setSelectedNewPortalId(e.target.value)}
                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                      required
                     >
-                      <option value="">None / Cash</option>
+                      <option value="">Select Portal Bank Account</option>
                       {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
                         <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
                       ))}
@@ -685,7 +746,7 @@ export default function RetailersTab({
                   </div>
                 )}
 
-                {/* Deposit Fields */}
+                {/* DEPOSIT TYPE AND FIELDS (only for Deposits/Cash Out) */}
                 {editingIsDeposit && (
                   <>
                     <div>
@@ -709,6 +770,7 @@ export default function RetailersTab({
                           value={selectedNewPortalId}
                           onChange={(e) => setSelectedNewPortalId(e.target.value)}
                           className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                          required
                         >
                           <option value="">Select Portal Bank Account</option>
                           {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
@@ -725,6 +787,7 @@ export default function RetailersTab({
                           value={selectedNewRetailerId}
                           onChange={(e) => setSelectedNewRetailerId(e.target.value)}
                           className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                          required
                         >
                           <option value="">Select Retailer</option>
                           {retailerDirectory.map((r: any) => (
@@ -753,6 +816,7 @@ export default function RetailersTab({
                               value={selectedNewRecipientStaffId}
                               onChange={(e) => setSelectedNewRecipientStaffId(e.target.value)}
                               className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                              required
                             >
                               <option value="">Select Staff</option>
                               {(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => (
@@ -789,19 +853,72 @@ export default function RetailersTab({
                   </>
                 )}
 
-                {/* Amount */}
+                {/* DATE FIELD (Always visible) */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Transaction Date</label>
+                  <input 
+                    type="date" 
+                    value={selectedNewDate} 
+                    onChange={(e) => setSelectedNewDate(e.target.value)} 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    required 
+                  />
+                </div>
+
+                {/* AMOUNT FIELD (Always visible) */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
                   <input 
                     type="number" 
                     value={selectedNewAmount} 
                     onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))} 
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold disabled:opacity-75 disabled:bg-slate-100" 
                     required 
+                    disabled={selectedNewPaymentMode === "cash"}
                   />
                 </div>
 
-                {/* Remarks */}
+                {/* DENOMINATIONS (for Cash Mode) */}
+                {selectedNewPaymentMode === "cash" && (
+                  <div className="bg-slate-50 dark:bg-slate-955 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 select-none">
+                    <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Cash Denominations</label>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-bold">
+                      {[
+                        { label: "500", key: "note_500" },
+                        { label: "200", key: "note_200" },
+                        { label: "100", key: "note_100" },
+                        { label: "50", key: "note_50" },
+                        { label: "20", key: "note_20" },
+                        { label: "10", key: "note_10" },
+                      ].map((n) => (
+                        <div key={n.key} className="flex items-center gap-1.5 justify-between">
+                          <span className="text-slate-500 w-8">₹{n.label}</span>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            value={selectedNewDenoms[n.key as keyof typeof selectedNewDenoms] || ""}
+                            onChange={(e) => handleDenomValChange(n.key, e.target.value)}
+                            className="w-16 px-1.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-center text-xs outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      ))}
+                      <div className="col-span-2 flex items-center gap-1.5 justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500">Coins / ₹1</span>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          min="0"
+                          value={selectedNewDenoms.coins || ""}
+                          onChange={(e) => handleDenomValChange("coins", e.target.value)}
+                          className="w-16 px-1.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-center text-xs outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* REMARKS FIELD */}
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Remarks</label>
                   <textarea 

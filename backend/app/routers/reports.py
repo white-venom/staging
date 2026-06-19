@@ -21,10 +21,16 @@ def get_public_ledger(
     if not retailer:
         raise HTTPException(status_code=404, detail="Secure statement link is invalid or expired.")
 
+    from sqlalchemy.orm import joinedload
+
     # Fetch chronological transaction ledger
     transactions = db.scalars(
         select(Ledger)
         .where(Ledger.retailer_id == retailer.id)
+        .options(
+            joinedload(Ledger.collection).joinedload(Collection.denominations),
+            joinedload(Ledger.deposit).joinedload(BankDeposit.denominations)
+        )
         .order_by(Ledger.created_at)
     ).all()
 
@@ -41,6 +47,27 @@ def get_public_ledger(
     for tx in transactions:
         remarks = tx.collection.remarks if (tx.collection and tx.collection.remarks) else ""
         reference_no = tx.deposit.reference_no if (tx.deposit and tx.deposit.reference_no) else ""
+        
+        # Extract denominations if available
+        denom_dict = None
+        denom_obj = None
+        if tx.collection and tx.collection.denominations:
+            denom_obj = tx.collection.denominations
+        elif tx.deposit and tx.deposit.denominations:
+            denom_obj = tx.deposit.denominations
+            
+        if denom_obj:
+            denom_dict = {
+                "note_500": int(denom_obj.note_500 or 0),
+                "note_200": int(denom_obj.note_200 or 0),
+                "note_100": int(denom_obj.note_100 or 0),
+                "note_50": int(denom_obj.note_50 or 0),
+                "note_20": int(denom_obj.note_20 or 0),
+                "note_10": int(denom_obj.note_10 or 0),
+                "coins": float(denom_obj.coins or 0.0),
+                "online_amount": float(denom_obj.online_amount or 0.0)
+            }
+
         tx_list.append({
             "id": tx.id,
             "date": tx.created_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -51,7 +78,8 @@ def get_public_ledger(
             "remarks": remarks,
             "reference_no": reference_no,
             "collection_id": str(tx.collection_id) if tx.collection_id else None,
-            "deposit_id": str(tx.deposit_id) if tx.deposit_id else None
+            "deposit_id": str(tx.deposit_id) if tx.deposit_id else None,
+            "denominations": denom_dict
         })
 
     return {

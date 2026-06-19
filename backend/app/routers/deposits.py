@@ -496,12 +496,36 @@ def update_deposit(
                     creator.virtual_balance -= Decimal(str(deposit.amount))
                 else:
                     creator.virtual_balance += Decimal(str(deposit.amount))
-
-    # Apply new values
+    
     old_retailer_id = deposit.retailer_id
     
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    for field, value in payload.model_dump(exclude_unset=True, exclude={"denominations"}).items():
         setattr(deposit, field, value)
+
+    if payload.denominations:
+        d = payload.denominations
+        if deposit.denominations:
+            deposit.denominations.note_500 = d.note_500
+            deposit.denominations.note_200 = d.note_200
+            deposit.denominations.note_100 = d.note_100
+            deposit.denominations.note_50 = d.note_50
+            deposit.denominations.note_20 = d.note_20
+            deposit.denominations.note_10 = d.note_10
+            deposit.denominations.coins = d.coins
+            deposit.denominations.online_amount = d.online_amount
+        else:
+            db_denom = Denomination(
+                deposit_id=deposit.id,
+                note_500=d.note_500,
+                note_200=d.note_200,
+                note_100=d.note_100,
+                note_50=d.note_50,
+                note_20=d.note_20,
+                note_10=d.note_10,
+                coins=d.coins,
+                online_amount=d.online_amount
+            )
+            db.add(db_denom)
         
     # Re-apply new balances (similar to submit_deposit)
     dt = payload.deposit_type.lower().strip()
