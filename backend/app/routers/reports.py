@@ -115,6 +115,7 @@ def get_public_ledger(
             "store_name": store_name,
             "portal_name": portal_name,
             "portal_bank_name": portal_bank_name,
+            "deposit_type": tx.deposit.deposit_type if tx.deposit else None,
             "denominations": denom_dict
         })
 

@@ -78,6 +78,7 @@ interface LedgerTransaction {
   portal_name?: string | null;
   portal_bank_name?: string | null;
   portal_bank_account?: string | null;
+  deposit_type?: string | null;
   denominations?: {
     note_500: number;
     note_200: number;
@@ -707,7 +708,13 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                   <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target Account</span>
                   {selectedEntryForDetails.portal_name && (
                     <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
-                      <span>Portal Name</span>
+                      <span>
+                        {selectedEntryForDetails.deposit_type === "retailer" 
+                          ? "Retailer Name" 
+                          : selectedEntryForDetails.deposit_type === "staff" 
+                            ? "Staff Name" 
+                            : "Portal Name"}
+                      </span>
                       <span className="font-extrabold uppercase">{selectedEntryForDetails.portal_name}</span>
                     </div>
                   )}
