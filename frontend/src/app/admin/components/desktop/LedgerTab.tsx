@@ -200,21 +200,31 @@ export default function LedgerTab({
 
   // Merge and Filter all transactions
   let allTransactions = [
-    ...(collections || []).map(c => ({
-      id: c.id,
-      date: c.date,
-      partyId: c.retailer_id,
-      party: c.retailerName,
-      store_name: c.store_name || null,
-      portal: c.portalName,
-      staff: c.staffName || "Admin",
-      debit: 0,
-      credit: c.totalAmount,
-      balance_snapshot: c.balance_snapshot,
-      type: 'collection',
-      depositType: null,
-      rawRecord: c
-    })),
+    ...(collections || []).map(c => {
+      let party = c.retailerName;
+      if (c.from_staff_id || c.retailerName?.toLowerCase().startsWith("staff")) {
+        const nameOnly = c.retailerName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "");
+        party = `Staff - ${nameOnly || "Staff Member"}`;
+      } else if (c.retailer_id) {
+        const nameOnly = c.retailerName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
+        party = `Retailer - ${nameOnly || "Retailer"}`;
+      }
+      return {
+        id: c.id,
+        date: c.date,
+        partyId: c.retailer_id,
+        party,
+        store_name: c.store_name || null,
+        portal: c.portalName,
+        staff: c.staffName || "Admin",
+        debit: 0,
+        credit: c.totalAmount,
+        balance_snapshot: c.balance_snapshot,
+        type: 'collection',
+        depositType: null,
+        rawRecord: c
+      };
+    }),
     ...(deposits || []).map(d => {
       const isRef = d.isRefund === true;
       const isVirtual = d.depositType === 'virtual';
@@ -228,6 +238,14 @@ export default function LedgerTab({
         partyId = d.retailer_id;
         const ret = (retailerDirectory || []).find((r: any) => r.id === d.retailer_id);
         party = ret?.name || d.targetName;
+      }
+      
+      if (d.depositType === "staff") {
+        const cleanName = d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "");
+        party = `Staff - ${cleanName || "Staff Member"}`;
+      } else if (d.depositType === "retailer") {
+        const cleanName = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
+        party = `Retailer - ${cleanName || "Retailer"}`;
       }
       
       return {

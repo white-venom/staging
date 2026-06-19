@@ -7,7 +7,7 @@ from sqlalchemy import select, and_, desc, update
 from sqlalchemy.orm import Session, joinedload
 
 from app.database.db import get_db
-from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, Portal, BankDeposit
+from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, Portal, BankDeposit, BusinessSettings
 from app.schemas.collection import CollectionCreate, CollectionResponse
 from app.dependencies import require_staff, require_admin, require_any_user
 from app.logic.ledger import recalculate_balances
@@ -434,9 +434,12 @@ def delete_collection(
     if current_user.role != "admin":
         if collection.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this collection")
-        # Check if within 5 minutes
-        if datetime.utcnow() - collection.created_at > timedelta(minutes=5):
-            raise HTTPException(status_code=403, detail="Can only delete collections within 5 minutes of creation")
+        # Check if within delete window
+        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+        delete_window = settings.delete_window_minutes if settings else 5
+        if delete_window != -1:
+            if datetime.utcnow() - collection.created_at > timedelta(minutes=delete_window):
+                raise HTTPException(status_code=403, detail=f"Can only delete collections within {delete_window} minutes of creation")
     
     retailer_id = collection.retailer_id
     
@@ -513,9 +516,12 @@ def update_collection(
     if current_user.role != "admin":
         if collection.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this collection")
-        # Check if within 5 minutes
-        if datetime.utcnow() - collection.created_at > timedelta(minutes=5):
-            raise HTTPException(status_code=403, detail="Can only update collections within 5 minutes of creation")
+        # Check if within edit window
+        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+        edit_window = settings.edit_window_minutes if settings else 5
+        if edit_window != -1:
+            if datetime.utcnow() - collection.created_at > timedelta(minutes=edit_window):
+                raise HTTPException(status_code=403, detail=f"Can only update collections within {edit_window} minutes of creation")
     
     old_amount = collection.total_amount
     new_amount = payload.total_amount

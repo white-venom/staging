@@ -6,7 +6,7 @@ from sqlalchemy import select, and_, or_, desc
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database.db import get_db
-from app.database.models import BankDeposit, Denomination, Portal, PortalGroup, Retailer, User, Ledger
+from app.database.models import BankDeposit, Denomination, Portal, PortalGroup, Retailer, User, Ledger, BusinessSettings
 from app.logic.ledger import recalculate_balances
 from sqlalchemy import update, delete
 from decimal import Decimal
@@ -365,9 +365,12 @@ def delete_deposit(
             )
         if deposit.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this deposit")
-        # Check if within 5 minutes
-        if datetime.utcnow() - deposit.created_at > timedelta(minutes=5):
-            raise HTTPException(status_code=403, detail="Can only delete deposits within 5 minutes of creation")
+        # Check if within delete window
+        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+        delete_window = settings.delete_window_minutes if settings else 5
+        if delete_window != -1:
+            if datetime.utcnow() - deposit.created_at > timedelta(minutes=delete_window):
+                raise HTTPException(status_code=403, detail=f"Can only delete deposits within {delete_window} minutes of creation")
     
     retailer_id = deposit.retailer_id
     
@@ -449,9 +452,12 @@ def update_deposit(
             )
         if deposit.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this deposit")
-        # Check if within 5 minutes
-        if datetime.utcnow() - deposit.created_at > timedelta(minutes=5):
-            raise HTTPException(status_code=403, detail="Can only update deposits within 5 minutes of creation")
+        # Check if within edit window
+        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+        edit_window = settings.edit_window_minutes if settings else 5
+        if edit_window != -1:
+            if datetime.utcnow() - deposit.created_at > timedelta(minutes=edit_window):
+                raise HTTPException(status_code=403, detail=f"Can only update deposits within {edit_window} minutes of creation")
             
     # For a full update, it's safest to rely on the delete logic to reverse balances, 
     # and then the submit logic to re-apply them. However, since the endpoint is PUT

@@ -7,7 +7,10 @@ import {
   Edit, 
   Trash2, 
   Search,
-  ShieldAlert
+  ShieldAlert,
+  Clock,
+  Save,
+  Infinity
 } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
@@ -57,8 +60,16 @@ export default function AdministrationTab({
   const [retToTake, setRetToTake] = useState<string>("");
   const [retToGive, setRetToGive] = useState<string>("");
 
+  // Entry Window Settings state
+  const [editWindow, setEditWindow] = useState<string>("5");
+  const [deleteWindow, setDeleteWindow] = useState<string>("5");
+  const [editPermanent, setEditPermanent] = useState(false);
+  const [deletePermanent, setDeletePermanent] = useState(false);
+  const [savingWindows, setSavingWindows] = useState(false);
+
   useEffect(() => {
     loadUsers();
+    loadWindowSettings();
   }, []);
 
   const loadUsers = async () => {
@@ -67,6 +78,39 @@ export default function AdministrationTab({
       setUsers(usersData);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const loadWindowSettings = async () => {
+    try {
+      const s = await api.getAdminSettings();
+      const em = s.edit_window_minutes ?? 5;
+      const dm = s.delete_window_minutes ?? 5;
+      setEditPermanent(em === -1);
+      setDeletePermanent(dm === -1);
+      setEditWindow(em === -1 ? "5" : String(em));
+      setDeleteWindow(dm === -1 ? "5" : String(dm));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveWindowSettings = async () => {
+    setSavingWindows(true);
+    try {
+      const current = await api.getAdminSettings();
+      await api.updateAdminSettings({
+        late_threshold: current.late_threshold ?? "10:00",
+        late_penalty: current.late_penalty ?? 100,
+        auto_checkout_time: current.auto_checkout_time ?? "20:00",
+        edit_window_minutes: editPermanent ? -1 : (parseInt(editWindow) || 5),
+        delete_window_minutes: deletePermanent ? -1 : (parseInt(deleteWindow) || 5),
+      });
+      showToastNotification("Entry window settings saved!");
+    } catch (err: any) {
+      alert("Failed to save: " + err.message);
+    } finally {
+      setSavingWindows(false);
     }
   };
 
@@ -399,6 +443,89 @@ export default function AdministrationTab({
             </div>
           </div>
         </div>
+
+        {/* Entry Window Settings Card */}
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-5">
+          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <Clock className="w-5 h-5 text-purple-600" />
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Entry Edit / Delete Window</h3>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Staff kitne time tak apni entry edit ya delete kar sakta hai. -1 ya Permanent = koi limit nahi.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Edit Window */}
+            <div className="space-y-3">
+              <label className="block text-[10px] text-slate-400 uppercase font-bold">Edit Window (Minutes)</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="1"
+                  value={editWindow}
+                  onChange={e => setEditWindow(e.target.value)}
+                  disabled={editPermanent}
+                  className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  placeholder="e.g. 5"
+                />
+                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={editPermanent}
+                    onChange={e => setEditPermanent(e.target.checked)}
+                    className="w-4 h-4 rounded text-purple-600 border-slate-300 dark:border-slate-700 cursor-pointer"
+                  />
+                  <span className="text-[10px] font-black text-purple-600 uppercase tracking-wider flex items-center gap-0.5">
+                    <Infinity className="w-3 h-3" /> Permanent
+                  </span>
+                </label>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                {editPermanent ? "✅ Staff kisi bhi time edit kar sakta hai." : `⏱ Staff sirf ${editWindow || 5} minute(s) tak edit kar sakta hai.`}
+              </p>
+            </div>
+
+            {/* Delete Window */}
+            <div className="space-y-3">
+              <label className="block text-[10px] text-slate-400 uppercase font-bold">Delete Window (Minutes)</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min="1"
+                  value={deleteWindow}
+                  onChange={e => setDeleteWindow(e.target.value)}
+                  disabled={deletePermanent}
+                  className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  placeholder="e.g. 5"
+                />
+                <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={deletePermanent}
+                    onChange={e => setDeletePermanent(e.target.checked)}
+                    className="w-4 h-4 rounded text-red-500 border-slate-300 dark:border-slate-700 cursor-pointer"
+                  />
+                  <span className="text-[10px] font-black text-red-500 uppercase tracking-wider flex items-center gap-0.5">
+                    <Infinity className="w-3 h-3" /> Permanent
+                  </span>
+                </label>
+              </div>
+              <p className="text-[10px] text-slate-400">
+                {deletePermanent ? "✅ Staff kisi bhi time delete kar sakta hai." : `⏱ Staff sirf ${deleteWindow || 5} minute(s) tak delete kar sakta hai.`}
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveWindowSettings}
+            disabled={savingWindows}
+            className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow-md shadow-purple-200 dark:shadow-none transition-all active:scale-[0.98] disabled:opacity-60"
+          >
+            <Save className="w-4 h-4" />
+            {savingWindows ? "Saving..." : "Save Window Settings"}
+          </button>
+        </div>
+
       </div>
     </div>
   );

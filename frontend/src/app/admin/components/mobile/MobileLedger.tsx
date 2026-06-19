@@ -196,19 +196,36 @@ export default function MobileLedger() {
   // Combine and Apply ALL Filters
   const filteredLedger = useMemo(() => {
     let combined = [
-      ...(collections || []).map(c => ({ 
-        ...c, 
-        type: 'collection',
-        party: c.retailerName,
-        portal: c.portalName,
-        staff: c.staffName || "Admin"
-      })),
+      ...(collections || []).map(c => {
+        let party = c.retailerName;
+        if (c.from_staff_id || c.retailerName?.toLowerCase().startsWith("staff")) {
+          const nameOnly = c.retailerName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "");
+          party = `Staff - ${nameOnly || "Staff Member"}`;
+        } else if (c.retailer_id) {
+          const nameOnly = c.retailerName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
+          party = `Retailer - ${nameOnly || "Retailer"}`;
+        }
+        return { 
+          ...c, 
+          type: 'collection',
+          party,
+          portal: c.portalName,
+          staff: c.staffName || "Admin"
+        };
+      }),
       ...(deposits || []).map(d => {
         const isVirtual = d.depositType === 'virtual';
         let party = d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
         if (isVirtual && d.retailer_id) {
           const ret = (retailerDirectory || []).find((r: any) => r.id === d.retailer_id);
           party = ret?.name || d.targetName;
+        }
+        if (d.depositType === "staff") {
+          const cleanName = d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "");
+          party = `Staff - ${cleanName || "Staff Member"}`;
+        } else if (d.depositType === "retailer") {
+          const cleanName = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
+          party = `Retailer - ${cleanName || "Retailer"}`;
         }
         return {
           ...d, 

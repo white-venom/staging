@@ -160,14 +160,17 @@ class Attendance(Base):
 
 
 class BusinessSettings(Base):
-    """Global settings for the business (e.g., late arrival threshold)."""
+    """Global settings for the business (e.g., late arrival threshold, entry edit/delete windows)."""
     __tablename__ = "business_settings"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     late_threshold: Mapped[str] = mapped_column(String(10), default="10:00") # HH:MM format
     late_penalty: Mapped[float] = mapped_column(Float, default=100.0)
     auto_checkout_time: Mapped[str] = mapped_column(String(10), default="20:00", server_default="20:00")
-    
+    # Staff entry edit/delete window in minutes. -1 = permanent (no time restriction).
+    edit_window_minutes: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
+    delete_window_minutes: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
+
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 

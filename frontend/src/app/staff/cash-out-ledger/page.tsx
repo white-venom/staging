@@ -39,6 +39,8 @@ export default function CashOutLedgerPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editWindow, setEditWindow] = useState<number>(5);
+  const [deleteWindow, setDeleteWindow] = useState<number>(5);
 
   // Modal edit states
   const [editingItem, setEditingItem] = useState<any | null>(null);
@@ -62,9 +64,16 @@ export default function CashOutLedgerPage() {
   const fetchDeposits = async () => {
     setIsLoading(true);
     try {
-      const data = await api.getDeposits();
+      const [data, settings] = await Promise.all([
+        api.getDeposits(),
+        api.getAdminSettings().catch(() => ({ edit_window_minutes: 5, delete_window_minutes: 5 }))
+      ]);
       const filteredData = data.filter((d: any) => !(d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff"));
       setDeposits(filteredData);
+      const ew = settings.edit_window_minutes ?? 5;
+      const dw = settings.delete_window_minutes ?? 5;
+      setEditWindow(ew);
+      setDeleteWindow(dw);
 
       if (typeof window !== "undefined") {
         const params = new URLSearchParams(window.location.search);
@@ -73,7 +82,8 @@ export default function CashOutLedgerPage() {
           const item = filteredData.find((d: any) => String(d.id) === editId);
           if (item) {
             const diffMinutes = (new Date().getTime() - getUtcDate(item.created_at).getTime()) / 60000;
-            if (diffMinutes <= 5) {
+            const canEdit = ew === -1 || diffMinutes <= ew;
+            if (canEdit) {
               setEditingItem(item);
               setEditDenoms({
                 note_500: Number(item.denominations?.note_500 || 0),
@@ -87,7 +97,7 @@ export default function CashOutLedgerPage() {
               });
               setEditRemarks(item.remarks || "");
             } else {
-              alert("Edit window (5 min) has expired for this entry.");
+              alert(`Edit window (${ew === -1 ? 'unlimited' : `${ew} min`}) has expired for this entry.`);
             }
           }
         }
@@ -467,24 +477,34 @@ ${dateFormatted}`;
                           )}
 
                           {/* Edit/Delete Actions */}
-                          {d.staff_id === currentUser?.id && (new Date().getTime() - getUtcDate(d.created_at).getTime()) < 5 * 60 * 1000 && (
-                            <div className="border-t border-slate-200/40 dark:border-slate-800/40 pt-2 flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={(e) => handleEdit(d, e)}
-                                className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-[9px] font-bold"
-                              >
-                                <Edit2 className="w-3 h-3" />
-                                Edit
-                              </button>
-                              <button
-                                onClick={(e) => handleDelete(d.id, e)}
-                                className="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 text-red-650 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-[9px] font-bold"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                                Delete
-                              </button>
-                            </div>
-                          )}
+                          {d.staff_id === currentUser?.id && (() => {
+                            const diffMinutes = d.created_at ? (new Date().getTime() - getUtcDate(d.created_at).getTime()) / 60000 : 999999;
+                            const canEdit = editWindow === -1 || diffMinutes <= editWindow;
+                            const canDelete = deleteWindow === -1 || diffMinutes <= deleteWindow;
+                            if (!canEdit && !canDelete) return null;
+                            return (
+                              <div className="border-t border-slate-200/40 dark:border-slate-800/40 pt-2 flex items-center justify-end gap-1.5">
+                                {canEdit && (
+                                  <button
+                                    onClick={(e) => handleEdit(d, e)}
+                                    className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-[9px] font-bold"
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                    Edit
+                                  </button>
+                                )}
+                                {canDelete && (
+                                  <button
+                                    onClick={(e) => handleDelete(d.id, e)}
+                                    className="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 text-red-655 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-[9px] font-bold"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>

@@ -17,6 +17,8 @@ class SettingsUpdate(BaseModel):
     late_threshold: str
     late_penalty: float
     auto_checkout_time: str
+    edit_window_minutes: int = 5   # -1 = permanent
+    delete_window_minutes: int = 5 # -1 = permanent
 
 class PenaltyApproval(BaseModel):
     attendance_id: uuid.UUID
@@ -31,14 +33,22 @@ class VirtualTransferRequest(BaseModel):
     direction: str = "load"  # "load" (Portal -> Retailer) or "refund" (Retailer -> Portal)
 
 @router.get("/business", response_model=dict)
-def get_business_settings(db: Session = Depends(get_db), current_user=Depends(require_admin)):
+def get_business_settings(db: Session = Depends(get_db), current_user=Depends(require_any_user)):
     settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
     if not settings:
-        return {"late_threshold": "10:00", "late_penalty": 100.0, "auto_checkout_time": "20:00"}
+        return {
+            "late_threshold": "10:00",
+            "late_penalty": 100.0,
+            "auto_checkout_time": "20:00",
+            "edit_window_minutes": 5,
+            "delete_window_minutes": 5
+        }
     return {
         "late_threshold": settings.late_threshold,
         "late_penalty": settings.late_penalty,
-        "auto_checkout_time": getattr(settings, 'auto_checkout_time', "20:00")
+        "auto_checkout_time": getattr(settings, 'auto_checkout_time', "20:00"),
+        "edit_window_minutes": getattr(settings, 'edit_window_minutes', 5),
+        "delete_window_minutes": getattr(settings, 'delete_window_minutes', 5),
     }
 
 @router.put("/business")
@@ -46,18 +56,23 @@ def update_business_settings(data: SettingsUpdate, db: Session = Depends(get_db)
     settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
     if not settings:
         settings = BusinessSettings(
-            id=1, 
-            late_threshold=data.late_threshold, 
+            id=1,
+            late_threshold=data.late_threshold,
             late_penalty=data.late_penalty,
-            auto_checkout_time=data.auto_checkout_time
+            auto_checkout_time=data.auto_checkout_time,
+            edit_window_minutes=data.edit_window_minutes,
+            delete_window_minutes=data.delete_window_minutes,
         )
         db.add(settings)
     else:
         settings.late_threshold = data.late_threshold
         settings.late_penalty = data.late_penalty
         settings.auto_checkout_time = data.auto_checkout_time
+        settings.edit_window_minutes = data.edit_window_minutes
+        settings.delete_window_minutes = data.delete_window_minutes
     db.commit()
     return {"message": "Settings updated successfully"}
+
 
 @router.get("/pending-penalties")
 def list_pending_penalties(db: Session = Depends(get_db), current_user=Depends(require_admin)):

@@ -47,6 +47,8 @@ export default function StaffLedgerPage() {
   const [activeTab, setActiveTab] = useState<"all" | "in" | "out">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
+  const [editWindow, setEditWindow] = useState<number>(5);
+  const [deleteWindow, setDeleteWindow] = useState<number>(5);
 
   useEffect(() => {
     loadLedgerData();
@@ -55,12 +57,15 @@ export default function StaffLedgerPage() {
   const loadLedgerData = async () => {
     setIsLoading(true);
     try {
-      const [apiCols, apiDeps] = await Promise.all([
+      const [apiCols, apiDeps, settings] = await Promise.all([
         api.getCollections(),
-        api.getDeposits()
+        api.getDeposits(),
+        api.getAdminSettings().catch(() => ({ edit_window_minutes: 5, delete_window_minutes: 5 }))
       ]);
       setCollections(apiCols);
       setDeposits(apiDeps);
+      setEditWindow(settings.edit_window_minutes ?? 5);
+      setDeleteWindow(settings.delete_window_minutes ?? 5);
     } catch (err) {
       console.error("Failed to load staff ledger data:", err);
     } finally {
@@ -102,26 +107,47 @@ export default function StaffLedgerPage() {
 
   // Build unified list sorted chronologically to compute running balances
   const rawCombined = [
-    ...collections.map(c => ({
-      ...c,
-      type: "collection" as const,
-      totalAmount: Number(c.total_amount),
-      date: getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
-      displayName: c.retailer_name?.toLowerCase().startsWith("cms")
-        ? `${c.retailer_name} - ${c.store_name || "Cash"}`
-        : (c.retailer_name || "Unknown Retailer"),
-      displayPortal: c.portal_name || "Cash"
-    })),
+    ...collections.map(c => {
+      let displayName = c.retailer_name || "Unknown Retailer";
+      if (c.from_staff_id || c.retailer_name?.toLowerCase().startsWith("staff")) {
+        const nameOnly = c.retailer_name?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "") || c.from_staff_name || "Staff Member";
+        displayName = `Staff - ${nameOnly}`;
+      } else if (c.retailer_id) {
+        const nameOnly = c.retailer_name?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
+        displayName = `Retailer - ${nameOnly || "Retailer"}`;
+      } else if (c.retailer_name?.toLowerCase().startsWith("cms")) {
+        displayName = `${c.retailer_name} - ${c.store_name || "Cash"}`;
+      }
+      return {
+        ...c,
+        type: "collection" as const,
+        totalAmount: Number(c.total_amount),
+        date: getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        displayName,
+        displayPortal: c.portal_name || "Cash"
+      };
+    }),
     ...deposits.map(d => {
       const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
       const targetName = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : (d.target_name || "Super Distributor");
+      
+      let displayName = targetName;
+      if (d.deposit_type === "staff") {
+        const nameOnly = isRecipient ? d.staff_name : d.target_name;
+        const cleanName = nameOnly?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "");
+        displayName = `Staff - ${cleanName || "Staff Member"}`;
+      } else if (d.deposit_type === "retailer") {
+        const cleanName = d.target_name?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
+        displayName = `Retailer - ${cleanName || "Retailer"}`;
+      }
+      
       return {
         ...d,
         type: isRecipient ? ("collection" as const) : ("deposit" as const),
         isStaffHandoverReceived: isRecipient,
         totalAmount: Number(d.amount),
         date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
-        displayName: isRecipient ? `Received from: ${d.staff_name}` : targetName,
+        displayName,
         displayPortal: d.deposit_type === "staff" ? "Staff Handover" : (d.deposit_type || "Deposit")
       };
     })
@@ -340,10 +366,11 @@ export default function StaffLedgerPage() {
                   const isExpanded = expandedId === item.id;
                   const den = item.denominations || {};
                   
-                  // 5-minute edit/delete window check
+                  // Edit and Delete window checks
                   const createdMs = item.created_at ? new Date(getUtcDate(item.created_at)).getTime() : 0;
                   const elapsedMin = (Date.now() - createdMs) / 60000;
-                  const canEditDelete = elapsedMin <= 5;
+                  const canEdit = editWindow === -1 || elapsedMin <= editWindow;
+                  const canDelete = deleteWindow === -1 || elapsedMin <= deleteWindow;
 
                   return (
                     <div
@@ -470,12 +497,13 @@ export default function StaffLedgerPage() {
                                 }
                               }}
                               className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 active:scale-95 transition-transform"
-                            >
-                              <Share2 className="w-2.5 h-2.5" /> Share
-                            </button>
+                          >
+                            <Share2 className="w-2.5 h-2.5" /> Share
+                          </button>
 
-                            {canEditDelete ? (
-                              <>
+                          {canEdit || canDelete ? (
+                            <>
+                              {canEdit ? (
                                 <button
                                   onClick={() => {
                                     const path = item.type === "collection" ? "/staff/cash-in-ledger" : "/staff/cash-out-ledger";
@@ -485,18 +513,29 @@ export default function StaffLedgerPage() {
                                 >
                                   <Edit2 className="w-2.5 h-2.5" /> Edit
                                 </button>
+                              ) : (
+                                <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-150/40 dark:bg-slate-850/20 rounded-md border border-slate-200/10">
+                                  Edit expired
+                                </div>
+                              )}
+                              {canDelete ? (
                                 <button
                                   onClick={(e) => handleDelete(item, e)}
-                                  className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 active:scale-95 transition-transform"
+                                  className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-650 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 active:scale-95 transition-transform"
                                 >
                                   <Trash2 className="w-2.5 h-2.5" /> Delete
                                 </button>
-                              </>
-                            ) : (
-                              <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-100 dark:bg-slate-800/40 rounded-md border border-slate-200/30 dark:border-slate-800">
-                                Edit/Delete window (5 min) expired
-                              </div>
-                            )}
+                              ) : (
+                                <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-150/40 dark:bg-slate-850/20 rounded-md border border-slate-200/10">
+                                  Delete expired
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-100 dark:bg-slate-800/40 rounded-md border border-slate-200/30 dark:border-slate-800">
+                              Action window expired
+                            </div>
+                          )}
                           </div>
                         </div>
                       )}
