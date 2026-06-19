@@ -118,11 +118,7 @@ def submit_collection(
                 portal_obj = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
             
             if d.online_amount > 0 and portal_obj:
-                group_name = portal_obj.group.name if portal_obj.group else ""
-                if group_name and group_name.lower() != portal_obj.portal_name.lower():
-                    portal_name = f"{group_name} - {portal_obj.portal_name}"
-                else:
-                    portal_name = portal_obj.portal_name
+                portal_name = (portal_obj.group.name if portal_obj.group else None) or portal_obj.portal_name
                 cash_amount = payload.total_amount - d.online_amount
                 if cash_amount > 0:
                     description = f"collection (Cash: ₹{cash_amount:.2f}, Online: ₹{d.online_amount:.2f} via {portal_name})"
@@ -703,11 +699,7 @@ def update_collection(
         if new_online_amount > 0 and new_portal_id:
             new_portal_obj = db.scalar(select(Portal).where(Portal.id == new_portal_id))
             if new_portal_obj:
-                group_name = new_portal_obj.group.name if new_portal_obj.group else ""
-                if group_name and group_name.lower() != new_portal_obj.portal_name.lower():
-                    portal_name = f"{group_name} - {new_portal_obj.portal_name}"
-                else:
-                    portal_name = new_portal_obj.portal_name
+                portal_name = (new_portal_obj.group.name if new_portal_obj.group else None) or new_portal_obj.portal_name
             else:
                 portal_name = "Online"
             cash_amount = new_amount - new_online_amount
