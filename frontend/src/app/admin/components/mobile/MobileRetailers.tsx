@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Search, 
   Plus, 
@@ -92,6 +92,8 @@ export default function MobileRetailers({
   const [editingIsDeposit, setEditingIsDeposit] = useState(false);
   
   const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
+  const [selectedNewStoreId, setSelectedNewStoreId] = useState("");
+  const [availableStores, setAvailableStores] = useState<any[]>([]);
   const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
   const [selectedNewToOffice, setSelectedNewToOffice] = useState(false);
@@ -113,6 +115,30 @@ export default function MobileRetailers({
     coins: 0,
     online_amount: 0,
   });
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      if (selectedNewRetailerId) {
+        try {
+          const stores = await api.getRetailerStores(selectedNewRetailerId);
+          setAvailableStores(stores || []);
+          if (editingEntry && (editingEntry.retailer_id === selectedNewRetailerId || editingEntry.retailerId === selectedNewRetailerId)) {
+            setSelectedNewStoreId(editingEntry.store_id || editingEntry.storeId || "");
+          } else {
+            setSelectedNewStoreId("");
+          }
+        } catch (err) {
+          console.error("Failed to fetch stores in edit modal:", err);
+          setAvailableStores([]);
+          setSelectedNewStoreId("");
+        }
+      } else {
+        setAvailableStores([]);
+        setSelectedNewStoreId("");
+      }
+    };
+    fetchStores();
+  }, [selectedNewRetailerId, editingEntry]);
 
   const reloadLedger = async (retailer: any) => {
     setLoadingLedger(true);
@@ -155,6 +181,7 @@ export default function MobileRetailers({
     setEditingEntry(item);
     
     setSelectedNewRetailerId(item.retailer_id || (ledgerRetailer ? ledgerRetailer.id : ""));
+    setSelectedNewStoreId(item.store_id || item.storeId || "");
     setSelectedNewPortalId(item.portal_id || "");
     setSelectedNewRemarks(item.remarks || "");
     setSelectedNewDate((item.date || "").split(" ")[0]);
@@ -251,6 +278,7 @@ export default function MobileRetailers({
         await api.updateCollection(targetId, {
           retailer_id: selectedNewRetailerId || null,
           portal_id: selectedNewPaymentMode === "online" ? selectedNewPortalId : null,
+          store_id: selectedNewStoreId || null,
           total_amount: selectedNewAmount,
           collection_date: selectedNewDate || new Date().toISOString().split("T")[0],
           remarks: selectedNewRemarks || "",
@@ -879,7 +907,6 @@ export default function MobileRetailers({
             <form onSubmit={handleSaveEntryEdit} className="space-y-4">
               <div className="space-y-3">
                 
-                {/* RETAILER INPUT (only for collections/Cash In) */}
                 {!editingIsDeposit && (
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Retailer</label>
@@ -891,6 +918,22 @@ export default function MobileRetailers({
                       <option value="">No Retailer</option>
                       {retailerDirectory.map((r: any) => (
                         <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {!editingIsDeposit && availableStores.length > 0 && (
+                  <div className="animate-in fade-in duration-200">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Parent Store (Shop/Branch)</label>
+                    <select
+                      value={selectedNewStoreId}
+                      onChange={(e) => setSelectedNewStoreId(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                    >
+                      <option value="">None / Cash</option>
+                      {availableStores.map((s: any) => (
+                        <option key={s.id} value={s.id}>{s.store_name}</option>
                       ))}
                     </select>
                   </div>

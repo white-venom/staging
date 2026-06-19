@@ -36,6 +36,8 @@ export default function CollectionsTab({
   const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
   
   const [selectedNewRetailerId, setSelectedNewRetailerId] = React.useState("");
+  const [selectedNewStoreId, setSelectedNewStoreId] = React.useState("");
+  const [availableStores, setAvailableStores] = React.useState<any[]>([]);
   const [selectedNewPortalId, setSelectedNewPortalId] = React.useState("");
   const [selectedNewRemarks, setSelectedNewRemarks] = React.useState("");
   const [isSavingCollection, setIsSavingCollection] = React.useState(false);
@@ -51,10 +53,35 @@ export default function CollectionsTab({
     online_amount: 0,
   });
 
+  React.useEffect(() => {
+    const fetchStores = async () => {
+      if (selectedNewRetailerId) {
+        try {
+          const stores = await api.getRetailerStores(selectedNewRetailerId);
+          setAvailableStores(stores || []);
+          if (editingCollection && (editingCollection.retailer_id === selectedNewRetailerId || editingCollection.retailerId === selectedNewRetailerId)) {
+            setSelectedNewStoreId(editingCollection.store_id || editingCollection.storeId || "");
+          } else {
+            setSelectedNewStoreId("");
+          }
+        } catch (err) {
+          console.error("Failed to fetch stores in edit modal:", err);
+          setAvailableStores([]);
+          setSelectedNewStoreId("");
+        }
+      } else {
+        setAvailableStores([]);
+        setSelectedNewStoreId("");
+      }
+    };
+    fetchStores();
+  }, [selectedNewRetailerId, editingCollection]);
+
   const handleStartEditCollection = (item: any) => {
     setEditingCollection(item);
-    setSelectedNewRetailerId(item.retailer_id || "");
-    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewRetailerId(item.retailer_id || item.retailerId || "");
+    setSelectedNewStoreId(item.store_id || item.storeId || "");
+    setSelectedNewPortalId(item.portal_id || item.portalId || "");
     setSelectedNewRemarks(item.remarks || "");
     
     const den = item.denominations || {};
@@ -93,7 +120,7 @@ export default function CollectionsTab({
       await api.updateCollection(editingCollection.id, {
         retailer_id: selectedNewRetailerId || null,
         portal_id: selectedNewPortalId || null,
-        store_id: editingCollection.store_id || null,
+        store_id: selectedNewStoreId || null,
         total_amount: computedCollectionTotal,
         remarks: selectedNewRemarks || "",
         denominations: selectedNewDenoms
@@ -535,7 +562,7 @@ export default function CollectionsTab({
                   <select
                     value={selectedNewRetailerId}
                     onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
                   >
                     <option value="">No Retailer</option>
                     {retailerDirectory.map((r: any) => (
@@ -543,6 +570,22 @@ export default function CollectionsTab({
                     ))}
                   </select>
                 </div>
+
+                {availableStores.length > 0 && (
+                  <div className="space-y-1 animate-in fade-in duration-200">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Parent Store (Shop/Branch)</label>
+                    <select
+                      value={selectedNewStoreId}
+                      onChange={(e) => setSelectedNewStoreId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    >
+                      <option value="">None / Cash</option>
+                      {availableStores.map((s: any) => (
+                        <option key={s.id} value={s.id}>{s.store_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Portal Select */}
                 <div className="space-y-1">

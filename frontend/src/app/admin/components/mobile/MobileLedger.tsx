@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   Search, 
   Filter, 
@@ -38,6 +38,8 @@ export default function MobileLedger() {
   const [editingIsDeposit, setEditingIsDeposit] = useState(false);
   
   const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
+  const [selectedNewStoreId, setSelectedNewStoreId] = useState("");
+  const [availableStores, setAvailableStores] = useState<any[]>([]);
   const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
   const [selectedNewToOffice, setSelectedNewToOffice] = useState(false);
@@ -60,22 +62,47 @@ export default function MobileLedger() {
     online_amount: 0,
   });
 
+  useEffect(() => {
+    const fetchStores = async () => {
+      if (selectedNewRetailerId) {
+        try {
+          const stores = await api.getRetailerStores(selectedNewRetailerId);
+          setAvailableStores(stores || []);
+          if (editingCollection && (editingCollection.retailer_id === selectedNewRetailerId || editingCollection.retailerId === selectedNewRetailerId)) {
+            setSelectedNewStoreId(editingCollection.store_id || editingCollection.storeId || "");
+          } else {
+            setSelectedNewStoreId("");
+          }
+        } catch (err) {
+          console.error("Failed to fetch stores in edit modal:", err);
+          setAvailableStores([]);
+          setSelectedNewStoreId("");
+        }
+      } else {
+        setAvailableStores([]);
+        setSelectedNewStoreId("");
+      }
+    };
+    fetchStores();
+  }, [selectedNewRetailerId, editingCollection]);
+
   const handleStartEditCollection = (item: any) => {
     const isDeposit = item.depositType != null || item.deposit_type != null;
     setEditingIsDeposit(isDeposit);
     setEditingCollection(item);
     
-    setSelectedNewRetailerId(item.retailer_id || "");
-    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewRetailerId(item.retailer_id || item.retailerId || "");
+    setSelectedNewStoreId(item.store_id || item.storeId || "");
+    setSelectedNewPortalId(item.portal_id || item.portalId || "");
     setSelectedNewRemarks(item.remarks || "");
     
     if (isDeposit) {
       setSelectedNewDepositType(item.deposit_type || item.depositType || "virtual");
       setSelectedNewPaymentMode(item.payment_mode || item.paymentMode || "online");
-      setSelectedNewAmount(Number(item.amount || 0));
+      setSelectedNewAmount(Number(item.amount || item.totalAmount || item.total_amount || 0));
       setSelectedNewDate(item.deposit_date ? item.deposit_date : (item.date || "").split(" ")[0]);
-      setSelectedNewRefNo(item.reference_no || "");
-      setSelectedNewRecipientStaffId(item.recipient_staff_id || "");
+      setSelectedNewRefNo(item.reference_no || item.referenceNo || "");
+      setSelectedNewRecipientStaffId(item.recipient_staff_id || item.recipientStaffId || "");
       setSelectedNewToOffice(item.to_office === true);
     }
     
@@ -151,7 +178,7 @@ export default function MobileLedger() {
         await api.updateCollection(editingCollection.id, {
           retailer_id: selectedNewRetailerId || null,
           portal_id: selectedNewPortalId || null,
-          store_id: editingCollection.store_id || null,
+          store_id: selectedNewStoreId || null,
           total_amount: computedCollectionTotal,
           remarks: selectedNewRemarks || "",
           denominations: selectedNewDenoms
@@ -538,6 +565,22 @@ export default function MobileLedger() {
                       ))}
                     </select>
                   </div>
+
+                  {availableStores.length > 0 && (
+                    <div className="space-y-0.5 animate-in fade-in duration-200">
+                      <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Parent Store (Shop/Branch)</label>
+                      <select
+                        value={selectedNewStoreId}
+                        onChange={(e) => setSelectedNewStoreId(e.target.value)}
+                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      >
+                        <option value="">None / Cash</option>
+                        {availableStores.map((s: any) => (
+                          <option key={s.id} value={s.id}>{s.store_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Portal Select */}
                   <div className="space-y-0.5">

@@ -41,6 +41,8 @@ export default function LedgerTab({
   const [editingIsDeposit, setEditingIsDeposit] = React.useState(false);
   
   const [selectedNewRetailerId, setSelectedNewRetailerId] = React.useState("");
+  const [selectedNewStoreId, setSelectedNewStoreId] = React.useState("");
+  const [availableStores, setAvailableStores] = React.useState<any[]>([]);
   const [selectedNewPortalId, setSelectedNewPortalId] = React.useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = React.useState("");
   const [selectedNewToOffice, setSelectedNewToOffice] = React.useState(false);
@@ -63,25 +65,50 @@ export default function LedgerTab({
     online_amount: 0,
   });
   const [cmsRemarksExpanded, setCmsRemarksExpanded] = React.useState<Record<string, boolean>>({});
-  const [expandedTxId, setExpandedTxId] = React.useState<string | null>(null);;
+  const [expandedTxId, setExpandedTxId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    const fetchStores = async () => {
+      if (selectedNewRetailerId) {
+        try {
+          const stores = await api.getRetailerStores(selectedNewRetailerId);
+          setAvailableStores(stores || []);
+          if (editingCollection && (editingCollection.retailer_id === selectedNewRetailerId || editingCollection.retailerId === selectedNewRetailerId)) {
+            setSelectedNewStoreId(editingCollection.store_id || editingCollection.storeId || "");
+          } else {
+            setSelectedNewStoreId("");
+          }
+        } catch (err) {
+          console.error("Failed to fetch stores in edit modal:", err);
+          setAvailableStores([]);
+          setSelectedNewStoreId("");
+        }
+      } else {
+        setAvailableStores([]);
+        setSelectedNewStoreId("");
+      }
+    };
+    fetchStores();
+  }, [selectedNewRetailerId, editingCollection]);
 
   const handleStartEditCollection = (tx: any) => {
-    const raw = tx.rawRecord;
-    const isDeposit = tx.depositType != null;
+    const raw = tx.rawRecord || tx;
+    const isDeposit = tx.depositType != null || tx.deposit_type != null || raw.deposit_type != null || raw.depositType != null;
     setEditingIsDeposit(isDeposit);
     setEditingCollection(raw);
     
-    setSelectedNewRetailerId(raw.retailer_id || "");
-    setSelectedNewPortalId(raw.portal_id || "");
+    setSelectedNewRetailerId(raw.retailer_id || raw.retailerId || "");
+    setSelectedNewStoreId(raw.store_id || raw.storeId || "");
+    setSelectedNewPortalId(raw.portal_id || raw.portalId || "");
     setSelectedNewRemarks(raw.remarks || "");
     
     if (isDeposit) {
       setSelectedNewDepositType(raw.deposit_type || raw.depositType || "virtual");
       setSelectedNewPaymentMode(raw.payment_mode || raw.paymentMode || "online");
-      setSelectedNewAmount(Number(raw.amount || 0));
+      setSelectedNewAmount(Number(raw.amount || raw.totalAmount || raw.total_amount || 0));
       setSelectedNewDate(raw.deposit_date ? raw.deposit_date : (raw.date || "").split(" ")[0]);
-      setSelectedNewRefNo(raw.reference_no || "");
-      setSelectedNewRecipientStaffId(raw.recipient_staff_id || "");
+      setSelectedNewRefNo(raw.reference_no || raw.referenceNo || "");
+      setSelectedNewRecipientStaffId(raw.recipient_staff_id || raw.recipientStaffId || "");
       setSelectedNewToOffice(raw.to_office === true);
     }
     
@@ -105,7 +132,7 @@ export default function LedgerTab({
       return;
     }
     try {
-      const isDeposit = tx.depositType != null;
+      const isDeposit = tx.depositType != null || tx.deposit_type != null;
       if (isDeposit) {
         await api.deleteDeposit(tx.id);
       } else {
@@ -140,6 +167,7 @@ export default function LedgerTab({
           amount: Number(selectedNewAmount),
           deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
           reference_no: selectedNewRefNo || null,
+          remarks: selectedNewRemarks || null,
           denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null
         });
       } else {
@@ -157,7 +185,7 @@ export default function LedgerTab({
         await api.updateCollection(editingCollection.id, {
           retailer_id: selectedNewRetailerId || null,
           portal_id: selectedNewPortalId || null,
-          store_id: editingCollection.store_id || null,
+          store_id: selectedNewStoreId || null,
           total_amount: computedCollectionTotal,
           remarks: selectedNewRemarks || "",
           denominations: selectedNewDenoms
@@ -844,7 +872,7 @@ export default function LedgerTab({
                     <select
                       value={selectedNewRetailerId}
                       onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
                     >
                       <option value="">No Retailer</option>
                       {retailerDirectory.map((r: any) => (
@@ -852,6 +880,22 @@ export default function LedgerTab({
                       ))}
                     </select>
                   </div>
+
+                  {availableStores.length > 0 && (
+                    <div className="space-y-1 animate-in fade-in duration-200">
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Parent Store (Shop/Branch)</label>
+                      <select
+                        value={selectedNewStoreId}
+                        onChange={(e) => setSelectedNewStoreId(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      >
+                        <option value="">None / Cash</option>
+                        {availableStores.map((s: any) => (
+                          <option key={s.id} value={s.id}>{s.store_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Portal Select */}
                   <div className="space-y-1">

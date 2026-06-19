@@ -689,8 +689,13 @@ def update_collection(
         if old_retailer_id != new_retailer_id:
             ledger_entry.retailer_id = new_retailer_id
             
-        # Update description based on breakdown
-        ledger_entry.description = "cash in"
+        # Update description based on store name
+        store_name = "Cash"
+        if collection.store_id:
+            store_obj = db.scalar(select(Store).where(Store.id == collection.store_id))
+            if store_obj:
+                store_name = store_obj.store_name
+        ledger_entry.description = store_name
 
     # Sync corresponding staff handover deposit if needed
     if old_from_staff_id != new_from_staff_id:

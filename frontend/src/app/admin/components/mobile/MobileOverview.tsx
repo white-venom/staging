@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { 
   ArrowUpRight, 
   ArrowDownLeft, 
@@ -173,6 +173,8 @@ export default function MobileOverview({
   const [editingIsDeposit, setEditingIsDeposit] = useState(false);
   
   const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
+  const [selectedNewStoreId, setSelectedNewStoreId] = useState("");
+  const [availableStores, setAvailableStores] = useState<any[]>([]);
   const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
   const [selectedNewToOffice, setSelectedNewToOffice] = useState(false);
@@ -195,13 +197,38 @@ export default function MobileOverview({
     online_amount: 0,
   });
 
+  useEffect(() => {
+    const fetchStores = async () => {
+      if (selectedNewRetailerId) {
+        try {
+          const stores = await api.getRetailerStores(selectedNewRetailerId);
+          setAvailableStores(stores || []);
+          if (editingCollection && (editingCollection.retailer_id === selectedNewRetailerId || editingCollection.retailerId === selectedNewRetailerId)) {
+            setSelectedNewStoreId(editingCollection.store_id || editingCollection.storeId || "");
+          } else {
+            setSelectedNewStoreId("");
+          }
+        } catch (err) {
+          console.error("Failed to fetch stores in edit modal:", err);
+          setAvailableStores([]);
+          setSelectedNewStoreId("");
+        }
+      } else {
+        setAvailableStores([]);
+        setSelectedNewStoreId("");
+      }
+    };
+    fetchStores();
+  }, [selectedNewRetailerId, editingCollection]);
+
   const handleStartEditCollection = (item: any) => {
     const isDeposit = item.type === "deposit";
     setEditingIsDeposit(isDeposit);
     setEditingCollection(item);
     
-    setSelectedNewRetailerId(item.retailer_id || "");
-    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewRetailerId(item.retailer_id || item.retailerId || "");
+    setSelectedNewStoreId(item.store_id || item.storeId || "");
+    setSelectedNewPortalId(item.portal_id || item.portalId || "");
     setSelectedNewRemarks(item.remarks || "");
     
     if (isDeposit) {
@@ -268,7 +295,7 @@ export default function MobileOverview({
         await api.updateCollection(editingCollection.id, {
           retailer_id: selectedNewRetailerId || null,
           portal_id: selectedNewPortalId || null,
-          store_id: editingCollection.store_id || null,
+          store_id: selectedNewStoreId || null,
           total_amount: computedCollectionTotal,
           remarks: selectedNewRemarks || "",
           denominations: selectedNewDenoms
@@ -935,6 +962,22 @@ export default function MobileOverview({
                       ))}
                     </select>
                   </div>
+
+                  {availableStores.length > 0 && (
+                    <div className="space-y-0.5 animate-in fade-in duration-200">
+                      <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Parent Store (Shop/Branch)</label>
+                      <select
+                        value={selectedNewStoreId}
+                        onChange={(e) => setSelectedNewStoreId(e.target.value)}
+                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      >
+                        <option value="">None / Cash</option>
+                        {availableStores.map((s: any) => (
+                          <option key={s.id} value={s.id}>{s.store_name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
 
                   {/* Portal Select */}
                   <div className="space-y-0.5">
