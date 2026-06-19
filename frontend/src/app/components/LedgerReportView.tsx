@@ -38,7 +38,7 @@ const renderDenominations = (denom: any) => {
     { label: "10", count: denom.note_10 },
   ].filter(n => n && typeof n.count === 'number' && n.count > 0);
   
-  const hasCoins = denom.coins && parseFloat(denom.coins.toString()) > 0;
+  const hasCoins = !!(denom.coins && parseFloat(denom.coins.toString()) > 0);
   
   if (notes.length === 0 && !hasCoins) return null;
   
@@ -548,6 +548,13 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                       {/* Middle: Description */}
                       <div className="flex-1 px-4 text-base font-semibold text-slate-700 break-words whitespace-pre-wrap">
                         <div>{cleanDescription(tx.description)}</div>
+                        {tx.store_name && (
+                          <div className="text-xs font-bold text-indigo-600 mt-0.5">
+                            <span className="bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block">
+                              Store: {tx.store_name}
+                            </span>
+                          </div>
+                        )}
                         {tx.remarks && (
                           <div className="text-xs text-slate-450 font-medium mt-0.5">
                             Remark: <span className="italic">{tx.remarks}</span>
@@ -637,7 +644,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                     ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" 
                     : "bg-red-50 dark:bg-red-955/20 text-red-500 dark:text-red-400"
                 }`}>
-                  {selectedEntryForDetails.transaction_type === "credit" ? "Cash In (You Got)" : "Cash Out (You Gave)"}
+                  {cleanDescription(selectedEntryForDetails.description)}
                 </span>
               </div>
 
