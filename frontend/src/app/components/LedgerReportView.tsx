@@ -27,6 +27,42 @@ const cleanDescription = (desc: string): string => {
     .replace(/cash collection/gi, "cash in");
 };
 
+const renderDenominations = (denom: any) => {
+  if (!denom) return null;
+  const notes = [
+    { label: "500", count: denom.note_500 },
+    { label: "200", count: denom.note_200 },
+    { label: "100", count: denom.note_100 },
+    { label: "50", count: denom.note_50 },
+    { label: "20", count: denom.note_20 },
+    { label: "10", count: denom.note_10 },
+  ].filter(n => n && typeof n.count === 'number' && n.count > 0);
+  
+  const hasCoins = denom.coins && parseFloat(denom.coins.toString()) > 0;
+  
+  if (notes.length === 0 && !hasCoins) return null;
+  
+  return (
+    <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2 mt-2">
+      <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Cash Denominations</span>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-350 font-medium">
+        {notes.map(n => (
+          <div key={n.label} className="flex justify-between border-b border-slate-100 dark:border-slate-850 pb-0.5 animate-fade-in">
+            <span>₹{n.label} × {n.count}</span>
+            <span className="font-mono font-bold text-slate-850 dark:text-slate-100">₹{parseInt(n.label) * n.count}</span>
+          </div>
+        ))}
+        {hasCoins && (
+          <div className="flex justify-between border-b border-slate-100 dark:border-slate-850 pb-0.5 animate-fade-in">
+            <span>Coins</span>
+            <span className="font-mono font-bold text-slate-850 dark:text-slate-100">₹{parseFloat(denom.coins.toString()).toFixed(2)}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 interface LedgerTransaction {
   id: string;
   date: string; // YYYY-MM-DD HH:MM:SS
@@ -40,6 +76,18 @@ interface LedgerTransaction {
   deposit_id?: string | null;
   store_name?: string | null;
   portal_name?: string | null;
+  portal_bank_name?: string | null;
+  portal_bank_account?: string | null;
+  denominations?: {
+    note_500: number;
+    note_200: number;
+    note_100: number;
+    note_50: number;
+    note_20: number;
+    note_10: number;
+    coins: number;
+    online_amount: number;
+  } | null;
 }
 
 interface LedgerReportViewProps {
@@ -73,7 +121,7 @@ export default function LedgerReportView({
   onEditEntry,
   onDeleteEntry
 }: LedgerReportViewProps) {
-  const [selectedEntryForActions, setSelectedEntryForActions] = useState<LedgerTransaction | null>(null);
+  const [selectedEntryForDetails, setSelectedEntryForDetails] = useState<LedgerTransaction | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -481,16 +529,13 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                   const dateLabel = formatDateLabel(tx.date);
                   const isDebit = tx.transaction_type === "debit"; // You Gave
                   
-                  const hasActions = !isPublic && (tx.collection_id || tx.deposit_id) && (onEditEntry || onDeleteEntry);
                   return (
                     <div 
                       key={tx.id} 
                       onClick={() => {
-                        if (hasActions) {
-                          setSelectedEntryForActions(tx);
-                        }
+                        setSelectedEntryForDetails(tx);
                       }}
-                      className={`p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors ${hasActions ? "cursor-pointer" : ""}`}
+                      className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors cursor-pointer"
                     >
                       {/* Left: Date & Running Balance */}
                       <div className="flex flex-col gap-1.5 min-w-0 max-w-[120px]">
@@ -503,20 +548,6 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                       {/* Middle: Description */}
                       <div className="flex-1 px-4 text-base font-semibold text-slate-700 break-words whitespace-pre-wrap">
                         <div>{cleanDescription(tx.description)}</div>
-                        {tx.store_name && (
-                          <div className="text-xs font-bold text-indigo-600 mt-0.5">
-                            <span className="bg-indigo-50 dark:bg-indigo-950/40 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block">
-                              Store: {tx.store_name}
-                            </span>
-                          </div>
-                        )}
-                        {tx.portal_name && (
-                          <div className="text-xs font-bold text-emerald-600 mt-0.5">
-                            <span className="bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded text-[10px] uppercase tracking-wider inline-block">
-                              Portal: {tx.portal_name}
-                            </span>
-                          </div>
-                        )}
                         {tx.remarks && (
                           <div className="text-xs text-slate-450 font-medium mt-0.5">
                             Remark: <span className="italic">{tx.remarks}</span>
@@ -570,71 +601,137 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         </button>
       </div>
 
-      {/* Entry Actions Bottom Sheet */}
-      {!isPublic && selectedEntryForActions && (
+      {/* Transaction Details Bottom Sheet */}
+      {selectedEntryForDetails && (
         <div className="fixed inset-0 z-50 flex items-end justify-center select-none">
           {/* Backdrop */}
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            onClick={() => setSelectedEntryForActions(null)}
+            onClick={() => setSelectedEntryForDetails(null)}
           />
           {/* Content */}
           <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl p-6 shadow-2xl space-y-4 animate-slide-up border-t border-slate-200 dark:border-slate-800 pb-8 z-10">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">
-                  Transaction Actions
+                  Transaction Details
                 </h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                  {formatDateLabel(selectedEntryForActions.date)} • ₹{Math.round(selectedEntryForActions.amount).toLocaleString()} ({selectedEntryForActions.transaction_type === "credit" ? "Cash In" : "Cash Out"})
+                  {formatDateLabel(selectedEntryForDetails.date)}
                 </p>
               </div>
               <button
-                onClick={() => setSelectedEntryForActions(null)}
+                onClick={() => setSelectedEntryForDetails(null)}
                 className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              {onEditEntry && (
-                <button
-                  onClick={() => {
-                    const entry = selectedEntryForActions;
-                    setSelectedEntryForActions(null);
-                    onEditEntry(entry);
-                  }}
-                  className="py-3 px-2 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-2xl text-xs font-black flex flex-col items-center gap-1.5 cursor-pointer border border-blue-100 dark:border-blue-900/30"
-                >
-                  <Edit2 className="w-5 h-5" />
-                  <span>Edit Entry</span>
-                </button>
+            {/* Details Content */}
+            <div className="space-y-3.5 text-slate-700 dark:text-slate-300 max-h-[50vh] overflow-y-auto pr-1">
+              <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</span>
+                <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                  selectedEntryForDetails.transaction_type === "credit" 
+                    ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" 
+                    : "bg-red-50 dark:bg-red-955/20 text-red-500 dark:text-red-400"
+                }`}>
+                  {selectedEntryForDetails.transaction_type === "credit" ? "Cash In (You Got)" : "Cash Out (You Gave)"}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</span>
+                <span className={`text-base font-extrabold ${
+                  selectedEntryForDetails.transaction_type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                }`}>
+                  ₹ {selectedEntryForDetails.amount.toLocaleString("en-IN")}
+                </span>
+              </div>
+
+              {selectedEntryForDetails.store_name && (
+                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Store Name</span>
+                  <span className="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-wider">
+                    {selectedEntryForDetails.store_name}
+                  </span>
+                </div>
               )}
-              {onDeleteEntry && (
-                <button
-                  onClick={() => {
-                    const entry = selectedEntryForActions;
-                    setSelectedEntryForActions(null);
-                    onDeleteEntry(entry);
-                  }}
-                  className="py-3 px-2 bg-red-50 dark:bg-red-955/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 rounded-2xl text-xs font-black flex flex-col items-center gap-1.5 cursor-pointer border border-red-100 dark:border-red-900/30"
-                >
-                  <Trash2 className="w-5 h-5" />
-                  <span>Delete Entry</span>
-                </button>
+
+              {/* Cash In (Collection) Details */}
+              {selectedEntryForDetails.transaction_type === "credit" && (
+                <>
+                  {/* Show Online Portal Name if payment was online */}
+                  {selectedEntryForDetails.portal_name && (
+                    <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-3.5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex justify-between items-center text-xs">
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400">Online Portal</span>
+                      <span className="font-extrabold text-emerald-650 dark:text-emerald-400 uppercase tracking-wider">
+                        {selectedEntryForDetails.portal_name}
+                        {selectedEntryForDetails.denominations?.online_amount ? ` (₹${selectedEntryForDetails.denominations.online_amount})` : ""}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Cash Denominations breakdown */}
+                  {selectedEntryForDetails.denominations && (
+                    renderDenominations(selectedEntryForDetails.denominations)
+                  )}
+                </>
               )}
+
+              {/* Cash Out (Deposit/Payout) Details */}
+              {selectedEntryForDetails.transaction_type === "debit" && (selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_bank_name) && (
+                <div className="bg-indigo-50/50 dark:bg-indigo-950/15 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/30 space-y-2 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
+                  <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target Account</span>
+                  {selectedEntryForDetails.portal_name && (
+                    <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
+                      <span>Portal/Account Name</span>
+                      <span className="font-extrabold uppercase">{selectedEntryForDetails.portal_name}</span>
+                    </div>
+                  )}
+                  {selectedEntryForDetails.portal_bank_name && (
+                    <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
+                      <span>Bank Name</span>
+                      <span className="font-extrabold">{selectedEntryForDetails.portal_bank_name}</span>
+                    </div>
+                  )}
+                  {selectedEntryForDetails.portal_bank_account && (
+                    <div className="flex justify-between pb-0.5">
+                      <span>Account No.</span>
+                      <span className="font-mono font-extrabold">{selectedEntryForDetails.portal_bank_account}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {selectedEntryForDetails.remarks && (
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-xs">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Remarks</span>
+                  <p className="italic font-medium text-slate-600 dark:text-slate-350">{selectedEntryForDetails.remarks}</p>
+                </div>
+              )}
+
+              {selectedEntryForDetails.reference_no && (
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-xs flex justify-between items-center">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Reference No.</span>
+                  <span className="font-mono font-bold text-slate-650 dark:text-slate-300">{selectedEntryForDetails.reference_no}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Actions Grid */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex gap-2">
               <button
                 onClick={() => {
-                  const entry = selectedEntryForActions;
-                  setSelectedEntryForActions(null);
-                  // Trigger sharing
+                  const entry = selectedEntryForDetails;
+                  setSelectedEntryForDetails(null);
                   const shareText = `Statement Entry details:
 Date: ${formatDateLabel(entry.date)}
 Type: ${entry.transaction_type === "credit" ? "Cash In" : "Cash Out"}
 Amount: ₹ ${Math.round(entry.amount).toLocaleString()}
 Desc: ${entry.description}
-Remarks: ${entry.remarks || 'None'}`;
+${entry.store_name ? `Store: ${entry.store_name}\n` : ''}${entry.portal_name ? `Portal: ${entry.portal_name}\n` : ''}Remarks: ${entry.remarks || 'None'}`;
                   if (navigator.share) {
                     navigator.share({ title: "Transaction Receipt", text: shareText }).catch(() => {});
                   } else {
@@ -642,16 +739,46 @@ Remarks: ${entry.remarks || 'None'}`;
                     alert("Receipt summary copied!");
                   }
                 }}
-                className="py-3 px-2 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-2xl text-xs font-black flex flex-col items-center gap-1.5 cursor-pointer border border-emerald-100 dark:border-emerald-900/30"
+                className="flex-1 py-3 px-2 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-100 dark:border-emerald-900/30"
               >
-                <Share2 className="w-5 h-5" />
+                <Share2 className="w-4 h-4" />
                 <span>Share Receipt</span>
               </button>
+
+              {!isPublic && (selectedEntryForDetails.collection_id || selectedEntryForDetails.deposit_id) && (onEditEntry || onDeleteEntry) && (
+                <>
+                  {onEditEntry && (
+                    <button
+                      onClick={() => {
+                        const entry = selectedEntryForDetails;
+                        setSelectedEntryForDetails(null);
+                        onEditEntry(entry);
+                      }}
+                      className="flex-1 py-3 px-2 bg-blue-50 dark:bg-blue-955/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer border border-blue-100 dark:border-blue-900/30"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>Edit</span>
+                    </button>
+                  )}
+                  {onDeleteEntry && (
+                    <button
+                      onClick={() => {
+                        const entry = selectedEntryForDetails;
+                        setSelectedEntryForDetails(null);
+                        onDeleteEntry(entry);
+                      }}
+                      className="flex-1 py-3 px-2 bg-red-50 dark:bg-red-955/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer border border-red-100 dark:border-red-900/30"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete</span>
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
