@@ -4,6 +4,7 @@ import React from "react";
 import { Search, Download, X, CheckCircle2, Edit, Trash2, Save } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
+import InlineSelect from "../../../components/InlineSelect";
 
 interface DepositsTabProps {
   deposits: any[];
@@ -215,25 +216,27 @@ export default function DepositsTab({
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Filter By Bank/Target</label>
-            <select 
+            <InlineSelect 
               value={targetFilter}
-              onChange={(e) => setTargetFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs outline-none"
-            >
-              <option value="all">All Targets</option>
-              {targetList.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
+              onChange={setTargetFilter}
+              options={[
+                { value: "all", label: "All Targets" },
+                ...targetList.map(t => ({ value: t, label: t }))
+              ]}
+              placeholder="All Targets"
+            />
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Staff</label>
-            <select 
+            <InlineSelect 
               value={staffFilter}
-              onChange={(e) => setStaffFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs outline-none"
-            >
-              <option value="all">All Staff</option>
-              {staffList.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+              onChange={setStaffFilter}
+              options={[
+                { value: "all", label: "All Staff" },
+                ...staffList.map(s => ({ value: s, label: s }))
+              ]}
+              placeholder="All Staff"
+            />
           </div>
         </div>
 
@@ -497,37 +500,34 @@ export default function DepositsTab({
                     <option value="virtual">Virtual Limit Transfer</option>
                   </select>
                 </div>
-
                 {/* Target Fields depending on deposit type */}
                 {selectedNewDepositType === "portal" && (
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Portal</label>
-                    <select
+                    <InlineSelect
                       value={selectedNewPortalId}
-                      onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                    >
-                      <option value="">Select Portal Bank Account</option>
-                      {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
-                        <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
-                      ))}
-                    </select>
+                      onChange={setSelectedNewPortalId}
+                      options={[
+                        { value: "", label: "Select Portal Bank Account" },
+                        ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                      ]}
+                      placeholder="Select Portal Bank Account"
+                    />
                   </div>
                 )}
 
                 {selectedNewDepositType === "retailer" && (
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Retailer</label>
-                    <select
+                    <InlineSelect
                       value={selectedNewRetailerId}
-                      onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                    >
-                      <option value="">Select Retailer</option>
-                      {retailerDirectory.map((r: any) => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </select>
+                      onChange={setSelectedNewRetailerId}
+                      options={[
+                        { value: "", label: "Select Retailer" },
+                        ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                      ]}
+                      placeholder="Select Retailer"
+                    />
                   </div>
                 )}
 
@@ -547,16 +547,15 @@ export default function DepositsTab({
                     {!selectedNewToOffice && (
                       <div className="space-y-1">
                         <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Recipient Staff</label>
-                        <select
+                        <InlineSelect
                           value={selectedNewRecipientStaffId}
-                          onChange={(e) => setSelectedNewRecipientStaffId(e.target.value)}
-                          className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                        >
-                          <option value="">Select Staff Member</option>
-                          {(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => (
-                            <option key={u.id} value={u.id}>{u.name}</option>
-                          ))}
-                        </select>
+                          onChange={setSelectedNewRecipientStaffId}
+                          options={[
+                            { value: "", label: "Select Staff Member" },
+                            ...(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                          ]}
+                          placeholder="Select Staff Member"
+                        />
                       </div>
                     )}
                   </>
@@ -566,30 +565,28 @@ export default function DepositsTab({
                   <>
                     <div className="space-y-1">
                       <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Source Portal</label>
-                      <select
+                      <InlineSelect
                         value={selectedNewPortalId}
-                        onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                      >
-                        <option value="">Select Portal Bank Account</option>
-                        {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
-                          <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
-                        ))}
-                      </select>
+                        onChange={setSelectedNewPortalId}
+                        options={[
+                          { value: "", label: "Select Portal Bank Account" },
+                          ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                        ]}
+                        placeholder="Select Portal Bank Account"
+                      />
                     </div>
 
                     <div className="space-y-1">
                       <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Retailer</label>
-                      <select
+                      <InlineSelect
                         value={selectedNewRetailerId}
-                        onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                      >
-                        <option value="">Select Retailer</option>
-                        {retailerDirectory.map((r: any) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
+                        onChange={setSelectedNewRetailerId}
+                        options={[
+                          { value: "", label: "Select Retailer" },
+                          ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                        ]}
+                        placeholder="Select Retailer"
+                      />
                     </div>
                   </>
                 )}

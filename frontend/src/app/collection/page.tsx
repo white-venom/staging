@@ -602,14 +602,15 @@ function NewCollectionContent() {
                   </div>
                   {(showOnlinePortal || denominations.online_amount > 0) && (
                     <div className="mt-0.5 animate-in fade-in slide-in-from-top-2 duration-300">
-                      <select
+                      <InlineSelect
                         value={denominations.online_portal_id || ""}
-                        onChange={(e) => handleDenomChange("online_portal_id", e.target.value)}
-                        className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold text-slate-700 dark:text-slate-300 outline-none focus:border-slate-400"
-                      >
-                        <option value="">Select Portal Account...</option>
-                        {portals.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                      </select>
+                        onChange={(val) => handleDenomChange("online_portal_id", val)}
+                        options={[
+                          { value: "", label: "Select Portal Account..." },
+                          ...portals.map(p => ({ value: p.id, label: p.name }))
+                        ]}
+                        placeholder="Select Portal Account..."
+                      />
                     </div>
                   )}
                 </div>

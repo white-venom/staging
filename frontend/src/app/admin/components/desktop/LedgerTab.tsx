@@ -412,25 +412,27 @@ export default function LedgerTab({
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Filter By Retailer/Bank</label>
-            <select 
+            <InlineSelect 
               value={partyFilter}
-              onChange={(e) => setPartyFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs outline-none"
-            >
-              <option value="all">All Parties</option>
-              {partyList.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+              onChange={setPartyFilter}
+              options={[
+                { value: "all", label: "All Parties" },
+                ...partyList.map(p => ({ value: p, label: p }))
+              ]}
+              placeholder="All Parties"
+            />
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Filter By Portal</label>
-            <select 
+            <InlineSelect 
               value={portalFilter}
-              onChange={(e) => setPortalFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs outline-none"
-            >
-              <option value="all">All Portals</option>
-              {portalList.map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+              onChange={setPortalFilter}
+              options={[
+                { value: "all", label: "All Portals" },
+                ...portalList.map(p => ({ value: p, label: p }))
+              ]}
+              placeholder="All Portals"
+            />
           </div>
         </div>
 
@@ -449,14 +451,15 @@ export default function LedgerTab({
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Staff</label>
-            <select 
+            <InlineSelect 
               value={staffFilter}
-              onChange={(e) => setStaffFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs outline-none"
-            >
-              <option value="all">All Staff</option>
-              {staffList.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+              onChange={setStaffFilter}
+              options={[
+                { value: "all", label: "All Staff" },
+                ...staffList.map(s => ({ value: s, label: s }))
+              ]}
+              placeholder="All Staff"
+            />
           </div>
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Date From</label>
