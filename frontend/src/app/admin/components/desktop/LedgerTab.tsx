@@ -313,11 +313,14 @@ export default function LedgerTab({
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     allTransactions = allTransactions.filter(tx => 
-      tx.party.toLowerCase().includes(q) || 
-      tx.staff.toLowerCase().includes(q) ||
+      (tx.party || "").toLowerCase().includes(q) || 
+      (tx.staff || "").toLowerCase().includes(q) ||
+      (tx.portal && tx.portal.toLowerCase().includes(q)) ||
+      (tx.store_name && tx.store_name.toLowerCase().includes(q)) ||
       (tx.rawRecord?.remarks && tx.rawRecord.remarks.toLowerCase().includes(q)) ||
       (tx.rawRecord?.reference_no && tx.rawRecord.reference_no.toLowerCase().includes(q)) ||
-      (tx.rawRecord?.referenceNo && tx.rawRecord.referenceNo.toLowerCase().includes(q))
+      (tx.rawRecord?.referenceNo && tx.rawRecord.referenceNo.toLowerCase().includes(q)) ||
+      String(tx.credit || tx.debit || "").includes(q)
     );
   }
 

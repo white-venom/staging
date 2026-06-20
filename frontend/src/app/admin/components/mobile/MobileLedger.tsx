@@ -272,8 +272,10 @@ export default function MobileLedger() {
         (tx.party || "").toLowerCase().includes(q) ||
         (tx.portal || "").toLowerCase().includes(q) ||
         (tx.staff || "").toLowerCase().includes(q) ||
+        (tx.store_name || "").toLowerCase().includes(q) ||
         (tx.remarks || "").toLowerCase().includes(q) ||
-        (tx.reference_no || tx.referenceNo || "").toLowerCase().includes(q)
+        (tx.reference_no || tx.referenceNo || "").toLowerCase().includes(q) ||
+        String(tx.totalAmount || tx.amount || "").includes(q)
       );
     }
 

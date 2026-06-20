@@ -301,9 +301,19 @@ ${dateFormatted}`;
   };
 
   const filteredDeposits = deposits.filter(d => {
-    const displayName = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : d.target_name;
-    const targetMatch = displayName?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
-    if (searchQuery && !targetMatch) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const displayName = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : d.target_name;
+      const targetMatch = displayName?.toLowerCase().includes(q) || false;
+      const portalMatch = d.portal_name?.toLowerCase().includes(q) || false;
+      const remarksMatch = d.remarks?.toLowerCase().includes(q) || false;
+      const refMatch = (d.reference_no || d.referenceNo || "").toLowerCase().includes(q);
+      const amountMatch = String(d.amount || d.totalAmount || "").includes(q);
+      
+      if (!targetMatch && !portalMatch && !remarksMatch && !refMatch && !amountMatch) {
+        return false;
+      }
+    }
 
     if (d.created_at) {
       const dateOnlyStr = getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 10);

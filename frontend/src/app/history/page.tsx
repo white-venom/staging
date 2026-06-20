@@ -111,10 +111,16 @@ ${dateFormatted}`;
   };
 
   // Filter history
-  const filteredCollections = collections.filter(c => 
-    c.retailerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.portalName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCollections = collections.filter(c => {
+    const q = searchQuery.toLowerCase();
+    return (
+      (c.retailerName || "").toLowerCase().includes(q) ||
+      (c.portalName || "").toLowerCase().includes(q) ||
+      (c.store_name || "").toLowerCase().includes(q) ||
+      (c.remarks || "").toLowerCase().includes(q) ||
+      String(c.totalAmount || "").includes(q)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">

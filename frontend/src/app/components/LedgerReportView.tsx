@@ -170,12 +170,19 @@ export default function LedgerReportView({
         const cleanDesc = cleanDescription(tx.description);
         const remarkText = tx.remarks || "";
         const refNoText = tx.reference_no || "";
+        const storeText = tx.store_name || "";
+        const portalText = tx.portal_name || "";
+        const bankText = tx.portal_bank_name || "";
+        const q = searchQuery.toLowerCase();
         if (
           searchQuery && 
-          !cleanDesc.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !remarkText.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !refNoText.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !tx.amount.toString().includes(searchQuery)
+          !cleanDesc.toLowerCase().includes(q) &&
+          !remarkText.toLowerCase().includes(q) &&
+          !refNoText.toLowerCase().includes(q) &&
+          !storeText.toLowerCase().includes(q) &&
+          !portalText.toLowerCase().includes(q) &&
+          !bankText.toLowerCase().includes(q) &&
+          !tx.amount.toString().includes(q)
         ) {
           return false;
         }

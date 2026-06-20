@@ -205,8 +205,11 @@ export default function StaffLedgerPage() {
     const nameMatch = item.displayName?.toLowerCase().includes(searchLower) || false;
     const portalMatch = item.displayPortal?.toLowerCase().includes(searchLower) || false;
     const amountMatch = String(item.totalAmount).includes(searchLower);
+    const storeMatch = item.store_name?.toLowerCase().includes(searchLower) || item.storeName?.toLowerCase().includes(searchLower) || false;
+    const remarksMatch = item.remarks?.toLowerCase().includes(searchLower) || false;
+    const refMatch = item.reference_no?.toLowerCase().includes(searchLower) || item.referenceNo?.toLowerCase().includes(searchLower) || false;
     
-    return nameMatch || portalMatch || amountMatch;
+    return nameMatch || portalMatch || amountMatch || storeMatch || remarksMatch || refMatch;
   });
 
   // Apply sorting

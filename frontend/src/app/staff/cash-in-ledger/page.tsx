@@ -299,9 +299,18 @@ ${dateFormatted}`;
   };
 
   const filteredCollections = collections.filter(c => {
-    const retailerMatch = c.retailer_name?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
-    const portalMatch = c.portal_name?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
-    if (searchQuery && !retailerMatch && !portalMatch) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const retailerMatch = c.retailer_name?.toLowerCase().includes(q) || false;
+      const portalMatch = c.portal_name?.toLowerCase().includes(q) || false;
+      const storeMatch = c.store_name?.toLowerCase().includes(q) || false;
+      const remarksMatch = c.remarks?.toLowerCase().includes(q) || false;
+      const amountMatch = String(c.total_amount || c.totalAmount || "").includes(q);
+      
+      if (!retailerMatch && !portalMatch && !storeMatch && !remarksMatch && !amountMatch) {
+        return false;
+      }
+    }
 
     if (c.created_at) {
       const dateOnlyStr = getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 10);

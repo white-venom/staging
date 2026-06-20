@@ -168,7 +168,11 @@ export default function DepositsTab({
     filtered = filtered.filter(d => 
       (d.targetName || "").toLowerCase().includes(q) || 
       (d.paymentMode || "").toLowerCase().includes(q) ||
-      (d.staff || "").toLowerCase().includes(q)
+      (d.portalName || "").toLowerCase().includes(q) ||
+      (d.remarks || "").toLowerCase().includes(q) ||
+      (d.referenceNo || d.reference_no || "").toLowerCase().includes(q) ||
+      (d.staff || "").toLowerCase().includes(q) ||
+      String(d.amount || "").includes(q)
     );
   }
 

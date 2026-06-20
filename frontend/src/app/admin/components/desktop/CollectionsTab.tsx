@@ -152,7 +152,10 @@ export default function CollectionsTab({
     filtered = filtered.filter(c => 
       (c.retailerName || "").toLowerCase().includes(q) || 
       (c.portalName || "").toLowerCase().includes(q) ||
-      (c.staff || "").toLowerCase().includes(q)
+      (c.store_name || "").toLowerCase().includes(q) ||
+      (c.remarks || "").toLowerCase().includes(q) ||
+      (c.staff || "").toLowerCase().includes(q) ||
+      String(c.totalAmount || "").includes(q)
     );
   }
 
