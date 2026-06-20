@@ -63,7 +63,7 @@ export default function RetailersTab({
   const [editRetArea, setEditRetArea] = useState("");
   const [editRetEmail, setEditRetEmail] = useState("");
   const [editRetCategory, setEditRetCategory] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "category">("name");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   // (opening_to_take / to_give are set only at create time — not editable from list)
 
   // Store Edit state
@@ -412,68 +412,97 @@ export default function RetailersTab({
     }
   };
 
+  const categories = React.useMemo(() => {
+    return Array.from(
+      new Set(
+        (retailerDirectory || [])
+          .map((r) => r.category)
+          .filter((c): c is string => typeof c === "string" && c.trim() !== "")
+      )
+    ).sort();
+  }, [retailerDirectory]);
+
+  const filteredRetailers = React.useMemo(() => {
+    return [...(retailerDirectory || [])]
+      .filter(r => (r.name || "").toLowerCase().includes((retailerSearch || "").toLowerCase()))
+      .filter(r => {
+        if (selectedCategories.length === 0) return true;
+        return r.category && selectedCategories.includes(r.category);
+      })
+      .sort((a, b) => {
+        const nameA = (a.name || "").toLowerCase().trim();
+        const nameB = (b.name || "").toLowerCase().trim();
+        if (nameA === "cms" && nameB !== "cms") return -1;
+        if (nameB === "cms" && nameA !== "cms") return 1;
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+      });
+  }, [retailerDirectory, retailerSearch, selectedCategories]);
+
   return (
     <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
-          <input autoComplete="one-time-code"
-            type="text"
-            placeholder="Search store directory profiles..."
-            value={retailerSearch}
-            onChange={(e) => setRetailerSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none shadow-sm"
-          />
-        </div>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
+            <input autoComplete="one-time-code"
+              type="text"
+              placeholder="Search store directory profiles..."
+              value={retailerSearch}
+              onChange={(e) => setRetailerSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none shadow-sm"
+            />
+          </div>
 
-        <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 shadow-sm">
-          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider ml-1">Sort:</span>
-          <button 
-            type="button"
-            onClick={() => setSortBy("name")}
-            className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${sortBy === "name" ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white" : "text-slate-400 hover:text-slate-600"}`}
+          <button
+            onClick={() => setShowRetailerDrawer(true)}
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-955 text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer"
           >
-            Name
-          </button>
-          <button 
-            type="button"
-            onClick={() => setSortBy("category")}
-            className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${sortBy === "category" ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white" : "text-slate-400 hover:text-slate-600"}`}
-          >
-            Category
+            <Plus className="w-4 h-4" /> Register Retailer
           </button>
         </div>
 
-        <button
-          onClick={() => setShowRetailerDrawer(true)}
-          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-955 text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /> Register Retailer
-        </button>
+        {categories.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 shadow-xs">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider ml-1">Filter Categories:</span>
+            <button
+              type="button"
+              onClick={() => setSelectedCategories([])}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                selectedCategories.length === 0
+                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 font-black shadow-sm"
+                  : "bg-slate-50 dark:bg-slate-800/40 text-slate-450 hover:text-slate-700 dark:hover:text-slate-200"
+              }`}
+            >
+              All
+            </button>
+            {categories.map((cat) => {
+              const isActive = selectedCategories.includes(cat);
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategories((prev) =>
+                      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+                    );
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border ${
+                    isActive
+                      ? "bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20"
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-350 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200"
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
       <div className="grid md:grid-cols-2 gap-4">
-        {[...(retailerDirectory || [])]
-          .filter(r => (r.name || "").toLowerCase().includes((retailerSearch || "").toLowerCase()))
-          .sort((a, b) => {
-            const nameA = (a.name || "").toLowerCase().trim();
-            const nameB = (b.name || "").toLowerCase().trim();
-            if (nameA === "cms" && nameB !== "cms") return -1;
-            if (nameB === "cms" && nameA !== "cms") return 1;
-            
-            if (sortBy === "category") {
-              const catA = (a.category || "").toLowerCase().trim();
-              const catB = (b.category || "").toLowerCase().trim();
-              if (catA && !catB) return -1;
-              if (!catA && catB) return 1;
-              if (catA < catB) return -1;
-              if (catA > catB) return 1;
-            }
-            
-            if (nameA < nameB) return -1;
-            if (nameA > nameB) return 1;
-            return 0;
-          })
-          .map((retailer) => (
+        {filteredRetailers.map((retailer) => (
             <div
               key={retailer.id}
               onClick={() => handleOpenLedger(retailer)}
@@ -511,11 +540,11 @@ export default function RetailersTab({
           ))}
       </div>
 
-      {(retailerDirectory || []).length === 0 && (
-        <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 border-dashed dark:border-slate-800">
+      {filteredRetailers.length === 0 && (
+        <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 border-dashed dark:border-slate-800 col-span-2">
            <StoreIcon className="w-8 h-8 text-slate-300 mx-auto mb-3" />
            <p className="text-sm font-bold text-slate-500">No Retailers Found</p>
-           <p className="text-[10px] text-slate-400 mt-1">Register a retailer first.</p>
+           <p className="text-[10px] text-slate-400 mt-1">Try adjusting your filters or search terms.</p>
         </div>
       )}
 

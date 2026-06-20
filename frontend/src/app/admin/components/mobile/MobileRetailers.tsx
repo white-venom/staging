@@ -74,7 +74,7 @@ export default function MobileRetailers({
   const [editRetArea, setEditRetArea] = useState("");
   const [editRetEmail, setEditRetEmail] = useState("");
   const [editRetCategory, setEditRetCategory] = useState("");
-  const [sortBy, setSortBy] = useState<"name" | "category">("name");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   // (opening_to_take / to_give are set only at create time — not editable from list)
 
   // Retailer Store logic
@@ -457,30 +457,36 @@ export default function MobileRetailers({
     }
   };
 
-  const filtered = [...retailerDirectory]
-    .filter(r => 
-      r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      r.phone?.includes(searchTerm)
-    )
-    .sort((a, b) => {
-      const nameA = (a.name || "").toLowerCase().trim();
-      const nameB = (b.name || "").toLowerCase().trim();
-      if (nameA === "cms" && nameB !== "cms") return -1;
-      if (nameB === "cms" && nameA !== "cms") return 1;
-      
-      if (sortBy === "category") {
-        const catA = (a.category || "").toLowerCase().trim();
-        const catB = (b.category || "").toLowerCase().trim();
-        if (catA && !catB) return -1;
-        if (!catA && catB) return 1;
-        if (catA < catB) return -1;
-        if (catA > catB) return 1;
-      }
-      
-      if (nameA < nameB) return -1;
-      if (nameA > nameB) return 1;
-      return 0;
-    });
+  const categories = React.useMemo(() => {
+    return Array.from(
+      new Set(
+        (retailerDirectory || [])
+          .map((r) => r.category)
+          .filter((c): c is string => typeof c === "string" && c.trim() !== "")
+      )
+    ).sort();
+  }, [retailerDirectory]);
+
+  const filtered = React.useMemo(() => {
+    return [...retailerDirectory]
+      .filter(r => 
+        r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        r.phone?.includes(searchTerm)
+      )
+      .filter(r => {
+        if (selectedCategories.length === 0) return true;
+        return r.category && selectedCategories.includes(r.category);
+      })
+      .sort((a, b) => {
+        const nameA = (a.name || "").toLowerCase().trim();
+        const nameB = (b.name || "").toLowerCase().trim();
+        if (nameA === "cms" && nameB !== "cms") return -1;
+        if (nameB === "cms" && nameA !== "cms") return 1;
+        if (nameA < nameB) return -1;
+        if (nameA > nameB) return 1;
+        return 0;
+      });
+  }, [retailerDirectory, searchTerm, selectedCategories]);
 
   return (
     <div className="space-y-2">
@@ -598,7 +604,7 @@ export default function MobileRetailers({
       )}
 
       {/* Search & Sort */}
-      <div className="px-1 space-y-2">
+      <div className="px-1 space-y-2 shrink-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input autoComplete="one-time-code" 
@@ -609,23 +615,42 @@ export default function MobileRetailers({
             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 pl-9 pr-3 text-xs font-medium shadow-sm focus:ring-1 focus:ring-blue-500/20"
           />
         </div>
-        <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5 shadow-sm w-full">
-          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider ml-2 mr-1">Sort:</span>
-          <button 
-            type="button"
-            onClick={() => setSortBy("name")}
-            className={`flex-1 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${sortBy === "name" ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white" : "text-slate-400 hover:text-slate-655"}`}
-          >
-            Name
-          </button>
-          <button 
-            type="button"
-            onClick={() => setSortBy("category")}
-            className={`flex-1 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${sortBy === "category" ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white" : "text-slate-400 hover:text-slate-655"}`}
-          >
-            Category
-          </button>
-        </div>
+        {categories.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full">
+            <button
+              type="button"
+              onClick={() => setSelectedCategories([])}
+              className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 transition-all ${
+                selectedCategories.length === 0
+                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 font-black shadow-sm"
+                  : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400"
+              }`}
+            >
+              All
+            </button>
+            {categories.map((cat) => {
+              const isActive = selectedCategories.includes(cat);
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategories((prev) =>
+                      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+                    );
+                  }}
+                  className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 transition-all border ${
+                    isActive
+                      ? "bg-blue-600 border-blue-600 text-white shadow-sm"
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500"
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Retailer Cards */}
