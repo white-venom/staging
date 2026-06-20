@@ -26,6 +26,7 @@ export default function PortalsTab({
   const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
   const [accounts, setAccounts] = useState<any[]>([]);
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [filterOnline, setFilterOnline] = useState<"all" | "online">("all");
   
   const [newAccName, setNewAccName] = useState("");
   const [newAccBank, setNewAccBank] = useState("");
@@ -271,129 +272,75 @@ export default function PortalsTab({
         </button>
       </div>
 
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full">
+        <button
+          type="button"
+          onClick={() => setFilterOnline("all")}
+          className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 transition-all ${
+            filterOnline === "all"
+              ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-955 font-black shadow-sm"
+              : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 cursor-pointer"
+          }`}
+        >
+          All
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterOnline("online")}
+          className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 transition-all border ${
+            filterOnline === "online"
+              ? "bg-indigo-605 border-indigo-600 text-white shadow-sm font-black"
+              : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 cursor-pointer"
+          }`}
+        >
+          Online Only
+        </button>
+      </div>
+
       <div className="grid md:grid-cols-2 gap-4">
         {portalDirectory
           .filter(p => (p.name || "").toLowerCase().includes(portalSearch.toLowerCase()))
+          .filter(group => filterOnline === "all" || group.show_in_online_payment === true)
           .map((group) => (
             <div
               key={group.id}
-              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4 flex flex-col justify-between"
+              onClick={() => {
+                setSelectedGroup(group);
+                setEditingGroupId(group.id);
+                setEditingGroupName(group.name);
+                setEditingGroupBalanceAdjustment("");
+                setEditGroupOnline(!!group.show_in_online_payment);
+                setIsAccountModalOpen(true);
+              }}
+              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-slate-350 dark:hover:border-slate-700 transition-all flex flex-col justify-between cursor-pointer active:scale-[0.99]"
             >
-              <div>
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
-                        <Globe className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                          {group.name}
-                          {group.show_in_online_payment && (
-                            <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black rounded uppercase">Online</span>
-                          )}
-                        </h3>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => {
-                          setSelectedGroup(group);
-                          setEditingGroupId(group.id);
-                          setEditingGroupName(group.name);
-                          setEditingGroupBalanceAdjustment("");
-                          setEditGroupOnline(!!group.show_in_online_payment);
-                          setIsAccountModalOpen(true);
-                        }}
-                        className="p-1.5 text-slate-400 hover:text-blue-600 dark:text-slate-500 dark:hover:text-blue-400 transition-colors cursor-pointer"
-                        title="Edit Portal Settings"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteGroup(group.id, group.name)}
-                        className="p-1.5 text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
-                        title="Delete Portal Group"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
+                    <Globe className="w-5.5 h-5.5" />
                   </div>
-                  
-                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <div>
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Portal Balance</span>
-                      <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                        {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleOpenGroupLedger(group)}
-                      className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-955/30 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 text-[9px] font-black uppercase rounded cursor-pointer"
-                    >
-                      Ledger
-                    </button>
-                  </div>
-                  {/* Registered bank accounts with balances */}
-                  {group.portals && group.portals.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                      <button
-                        onClick={() => toggleGroupExpand(group.id)}
-                        className="w-full flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-wider hover:text-indigo-600 transition-colors"
-                      >
-                        <span>Registered Banks ({group.portals.length})</span>
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedGroups[group.id] ? "rotate-180 text-indigo-600" : ""}`} />
-                      </button>
-                      
-                      {expandedGroups[group.id] && (
-                        <div className="space-y-2 max-h-40 overflow-y-auto pr-1 mt-2 animate-slide-down">
-                          {group.portals.map((p: any) => (
-                            <div key={p.id} className="text-[10px] text-slate-505 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-955 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/60">
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-bold text-slate-805 dark:text-slate-200 truncate flex items-center gap-1.5">
-                                  {p.portal_name}
-                                </span>
-                                <span className="text-[8px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-black text-slate-700 dark:text-slate-300 flex-shrink-0">
-                                  ₹{Number(p.balance || 0).toLocaleString()}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleOpenLedger(p)}
-                                  className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-955/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
-                                >
-                                  Ledger
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                  <div>
+                    <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                      {group.name}
+                      {group.show_in_online_payment && (
+                        <span className="px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black rounded uppercase">Online</span>
                       )}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      setSelectedGroup(group);
-                      setEditingGroupId(group.id);
-                      setEditingGroupName(group.name);
-                      setEditingGroupBalanceAdjustment("");
-                      setEditGroupOnline(!!group.show_in_online_payment);
-                      setIsAccountModalOpen(true);
-                    }}
-                    className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 text-[10px] font-bold rounded-lg cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <Edit className="w-3.5 h-3.5" /> Manage Portal & Banks
-                  </button>
+                    </h3>
+                    <p className="text-[9px] font-bold text-slate-400 mt-0.5">{(group.portals || []).length} Accounts</p>
+                  </div>
+                </div>
+                
+                <div className="text-right">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Portal Balance</span>
+                  <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                    {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
+
       
        {portalDirectory.length === 0 && (
          <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 border-dashed dark:border-slate-800">
@@ -444,11 +391,23 @@ export default function PortalsTab({
                       className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
                     />
                   </div>
-                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] mb-2">
-                    <span className="text-slate-400 block mb-0.5">Current Balance</span>
-                    <span className={`font-black ${selectedGroup.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                      {selectedGroup.balance < 0 ? '-' : ''}₹{Math.abs(selectedGroup.balance || 0).toLocaleString()}
-                    </span>
+                  <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] mb-2 flex items-center justify-between">
+                    <div>
+                      <span className="text-slate-400 block mb-0.5">Current Balance</span>
+                      <span className={`font-black ${selectedGroup.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                        {selectedGroup.balance < 0 ? '-' : ''}₹{Math.abs(selectedGroup.balance || 0).toLocaleString()}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAccountModalOpen(false);
+                        handleOpenGroupLedger(selectedGroup);
+                      }}
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-105 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-bold rounded cursor-pointer"
+                    >
+                      Ledger
+                    </button>
                   </div>
                   <div className="space-y-1">
                     <label className="block text-[9px] text-slate-500 uppercase font-black mb-1">Adjust Balance (₹)</label>
@@ -481,6 +440,18 @@ export default function PortalsTab({
                     className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-indigo-600/20 cursor-pointer"
                   >
                     Save Portal Settings
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (confirm(`Are you sure you want to delete the portal group "${selectedGroup.name}" and all its bank accounts?`)) {
+                        handleDeleteGroup(selectedGroup.id, selectedGroup.name);
+                        setIsAccountModalOpen(false);
+                      }
+                    }}
+                    className="w-full mt-2 py-2 border border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-950/10 text-red-650 rounded-xl text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors"
+                  >
+                    Delete Portal Group
                   </button>
                 </div>
               </div>

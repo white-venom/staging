@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Search, 
   Plus, 
@@ -30,6 +30,7 @@ export default function MobilePortals({
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [filterOnline, setFilterOnline] = useState<"all" | "online">("all");
 
   // Ledger Report View State
   const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
@@ -101,6 +102,15 @@ export default function MobilePortals({
   const [pGroupOnline, setPGroupOnline] = useState(false);
   const [editGroupOnline, setEditGroupOnline] = useState(false);
   const [newAccOnline, setNewAccOnline] = useState(false);
+
+  useEffect(() => {
+    if (editingPortalGroup && portalDirectory) {
+      const fresh = portalDirectory.find(g => g.id === editingPortalGroup.id);
+      if (fresh) {
+        setEditingPortalGroup(fresh);
+      }
+    }
+  }, [portalDirectory, editingPortalGroup]);
 
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
@@ -216,9 +226,9 @@ export default function MobilePortals({
     }
   };
 
-  const filtered = portalDirectory.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filtered = portalDirectory
+    .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .filter(p => filterOnline === "all" || p.show_in_online_payment === true);
 
   return (
     <div className="space-y-2">
@@ -304,6 +314,31 @@ export default function MobilePortals({
           />
         </div>
       </div>
+      {/* Category Tabs */}
+      <div className="px-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 w-full shrink-0">
+        <button
+          type="button"
+          onClick={() => setFilterOnline("all")}
+          className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 transition-all ${
+            filterOnline === "all"
+              ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 font-black shadow-sm"
+              : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 cursor-pointer"
+          }`}
+        >
+          All
+        </button>
+        <button
+          type="button"
+          onClick={() => setFilterOnline("online")}
+          className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 transition-all border ${
+            filterOnline === "online"
+              ? "bg-indigo-650 border-indigo-600 text-white shadow-sm font-black"
+              : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 cursor-pointer"
+          }`}
+        >
+          Online Only
+        </button>
+      </div>
 
       {/* Portal Group Cards */}
       <div className="divide-y divide-slate-100 dark:divide-slate-850 pb-20">
@@ -319,188 +354,75 @@ export default function MobilePortals({
             return (
               <div 
                 key={group.id}
-                className="bg-white dark:bg-slate-900 py-2 px-2 border-b border-slate-50 dark:border-slate-900/50 hover:bg-slate-50/50 dark:hover:bg-slate-955/20 flex flex-col gap-1.5"
+                onClick={() => {
+                  setEditingPortalGroup(group);
+                  setEditPortalName(group.name);
+                  setEditPortalBalanceAdjustment("");
+                  setEditGroupOnline(!!group.show_in_online_payment);
+                  setIsEditPortalModalOpen(true);
+                }}
+                className="bg-white dark:bg-slate-900 py-3 px-3 border-b border-slate-50 dark:border-slate-900/50 hover:bg-slate-50/50 dark:hover:bg-slate-955/20 flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <Globe className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-bold text-xs text-slate-900 dark:text-white truncate uppercase tracking-tight flex items-center gap-1.5">
-                        {group.name}
-                        {group.show_in_online_payment && (
-                          <span className="px-1 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 text-[6px] font-black rounded uppercase shrink-0">Online</span>
-                        )}
-                      </h3>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">{(group.portals || []).length} Accounts</p>
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <Globe className="w-4.5 h-4.5 text-indigo-600 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-xs text-slate-900 dark:text-white truncate uppercase tracking-tight">{group.name}</span>
+                      {group.show_in_online_payment && (
+                        <span className="px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 rounded-full text-[8px] font-bold uppercase tracking-wider scale-90 origin-left">Online</span>
+                      )}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button 
-                      onClick={() => handleStartEditPortal(group)}
-                      className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
-                    <button 
-                      onClick={() => handleDeletePortalGroup(group.id, group.name)}
-                      className="p-1 bg-red-50 text-red-500 dark:bg-red-950/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">{(group.portals || []).length} Accounts</span>
                   </div>
                 </div>
 
-                <div className="bg-slate-50 dark:bg-slate-950 px-1.5 py-1 rounded border border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px]">
-                  <div className="flex flex-col">
-                    <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">Portal Balance</span>
-                    <span className={`font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                      {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleOpenGroupLedger(group)}
-                    className="px-1.5 py-0.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/30 text-[8px] font-bold rounded cursor-pointer"
-                  >
-                    Ledger
-                  </button>
-                </div>
-
-                {/* Sub-portals List */}
-                {group.portals && group.portals.length > 0 && (
-                  <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-slate-800/80">
-                    <button
-                      type="button"
-                      onClick={() => toggleGroupExpand(group.id)}
-                      className="w-full flex items-center justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider mb-0.5 hover:text-indigo-600 transition-colors"
-                    >
-                      <span>Registered Banks ({group.portals.length})</span>
-                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${expandedGroups[group.id] ? "rotate-180 text-indigo-600" : ""}`} />
-                    </button>
-                    
-                    {expandedGroups[group.id] && (
-                      <div className="space-y-1 mt-1">
-                        {group.portals.map((p: any) => (
-                          <div key={p.id} className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-955 p-1 px-1.5 rounded border border-slate-100 dark:border-slate-800">
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-bold text-slate-800 dark:text-slate-200 truncate flex items-center gap-1">
-                                {p.portal_name}
-                              </span>
-                              <span className="text-[7px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
-                            </div>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="font-black text-slate-700 dark:text-slate-300">₹{Number(p.balance || 0).toLocaleString()}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleOpenLedger(p)}
-                                className="px-1 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
-                              >
-                                Ledger
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteBankAccount(p.id, p.portal_name)}
-                                className="p-0.5 hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 className="w-2.5 h-2.5 text-slate-400 hover:text-red-500 cursor-pointer" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Inline Form to Add Bank Account */}
-                <div className="mt-1">
-                  {selectedGroupIdForNewBank === group.id ? (
-                    <div className="bg-slate-50 dark:bg-slate-900 p-2 border border-slate-100 dark:border-slate-800 rounded-lg space-y-2 animate-in fade-in duration-200">
-                      <p className="text-[8px] font-bold text-indigo-600 uppercase tracking-wider">New Bank Account</p>
-                      <div className="space-y-1">
-                        <input autoComplete="one-time-code"
-                          type="text"
-                          placeholder="Account Label (e.g. Primary, ICICI)"
-                          value={bAccLabel}
-                          onChange={e => setBAccLabel(e.target.value)}
-                          className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
-                        />
-                        <input autoComplete="one-time-code"
-                          type="text"
-                          placeholder="Bank Name (e.g. ICICI Bank)"
-                          value={bBankName}
-                          onChange={e => setBBankName(e.target.value)}
-                          className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
-                        />
-                        <div className="grid grid-cols-2 gap-1.5">
-                          <input autoComplete="one-time-code"
-                            type="text"
-                            placeholder="Account Number"
-                            value={bAccNo}
-                            onChange={e => setBAccNo(e.target.value)}
-                            className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
-                          />
-                          <input autoComplete="one-time-code"
-                            type="text"
-                            placeholder="IFSC Code"
-                            value={bIfsc}
-                            onChange={e => setBIfsc(e.target.value)}
-                            className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedGroupIdForNewBank(null)}
-                          className="flex-1 py-1 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded text-[9px] font-bold uppercase tracking-wider cursor-pointer"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleAddBankAccount(group.id)}
-                          disabled={addingBank}
-                          className="flex-1 py-1 bg-indigo-600 text-white rounded text-[9px] font-bold uppercase tracking-wider shadow-sm cursor-pointer"
-                        >
-                          {addingBank ? "Adding..." : "Add Bank"}
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setSelectedGroupIdForNewBank(group.id);
-                        setBAccLabel("");
-                        setBBankName("");
-                        setBAccNo("");
-                        setBIfsc("");
-                      }}
-                      className="w-full py-1 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-[9px] font-bold text-indigo-600 dark:text-indigo-400 rounded-md cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-0.5"
-                    >
-                      <Plus className="w-3 h-3" /> Add Bank Account
-                    </button>
-                  )}
+                <div className="text-right shrink-0">
+                  <span className={`font-black text-xs ${group.balance < 0 ? 'text-red-650 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                    {group.balance < 0 ? '-' : ''}₹{Math.round(Math.abs(group.balance || 0)).toLocaleString()}
+                  </span>
+                  <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-tighter mt-0.5">Net Balance</span>
                 </div>
               </div>
-            );})
+            );
+          })
         )}
       </div>
 
       {/* PORTAL EDIT MODAL */}
       {isEditPortalModalOpen && editingPortalGroup && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-2">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-xs p-3 space-y-3 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
-              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Edit Portal Group</h3>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[140] flex items-center justify-center p-2">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-sm p-4 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Manage Portal Group</h3>
               <button 
                 onClick={() => setIsEditPortalModalOpen(false)} 
-                className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer hover:bg-slate-200 transition-colors"
+                className="p-1 rounded bg-slate-105 dark:bg-slate-800 text-slate-500 cursor-pointer hover:bg-slate-200 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <form onSubmit={handleSavePortalEdit} className="space-y-2.5">
+            
+            {/* Balance & Ledger Button */}
+            <div className="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-150 dark:border-slate-800 text-[10px] flex items-center justify-between">
+              <div>
+                <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current Balance</span>
+                <span className={`font-black text-xs ${editingPortalGroup.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                  {editingPortalGroup.balance < 0 ? '-' : ''}₹{Math.abs(editingPortalGroup.balance || 0).toLocaleString()}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditPortalModalOpen(false);
+                  handleOpenGroupLedger(editingPortalGroup);
+                }}
+                className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
+              >
+                Ledger
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePortalEdit} className="space-y-3 border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="space-y-2">
                 <div>
                   <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Portal Name</label>
@@ -509,47 +431,150 @@ export default function MobilePortals({
                     value={editPortalName} 
                     onChange={(e) => setEditPortalName(e.target.value)} 
                     placeholder="Portal Name" 
-                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500/20" 
+                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500/20" 
                     required 
                   />
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-900 p-2 rounded-md border border-slate-100 dark:border-slate-800 text-[9px]">
-                   <span className="text-slate-400 font-bold uppercase tracking-wider block mb-0.5">Current Balance</span>
-                   <span className={`font-black ${editingPortalGroup.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                     {editingPortalGroup.balance < 0 ? '-' : ''}₹{Math.abs(editingPortalGroup.balance || 0).toLocaleString()}
-                   </span>
-                 </div>
-                 <div className="space-y-1">
-                    <label className="text-[8px] font-bold text-slate-500 uppercase block mb-0.5">Adjust Balance (₹)</label>
-                    <input autoComplete="one-time-code" 
-                      type="number" 
-                      placeholder="e.g. +1000 to add, -1000 to subtract"
-                      value={editPortalBalanceAdjustment} 
-                      onChange={(e) => setEditPortalBalanceAdjustment(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none" 
-                    />
-                 </div>
-                 <div className="flex items-center gap-1.5 py-0.5">
-                     <input 
-                       type="checkbox" 
-                       id="editGroupOnlineMobile"
-                       checked={editGroupOnline} 
-                       onChange={(e) => setEditGroupOnline(e.target.checked)} 
-                       className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-900 cursor-pointer"
-                     />
-                     <label htmlFor="editGroupOnlineMobile" className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
-                       Online
-                     </label>
-                  </div>
+                <div className="space-y-1">
+                  <label className="text-[8px] font-bold text-slate-500 uppercase block mb-0.5">Adjust Balance (₹)</label>
+                  <input autoComplete="one-time-code" 
+                    type="number" 
+                    placeholder="e.g. +1000 to add, -1000 to subtract"
+                    value={editPortalBalanceAdjustment} 
+                    onChange={(e) => setEditPortalBalanceAdjustment(e.target.value)}
+                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none" 
+                  />
+                </div>
+                <div className="flex items-center gap-1.5 py-0.5">
+                  <input 
+                    type="checkbox" 
+                    id="editGroupOnlineMobile"
+                    checked={editGroupOnline} 
+                    onChange={(e) => setEditGroupOnline(e.target.checked)} 
+                    className="w-3.5 h-3.5 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
+                  />
+                  <label htmlFor="editGroupOnlineMobile" className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                    Online
+                  </label>
+                </div>
               </div>
-              <button 
-                type="submit" 
-                disabled={submitting}
-                className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98]"
-              >
-                {submitting ? "Saving..." : "Save Changes"}
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  type="submit" 
+                  disabled={submitting}
+                  className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98]"
+                >
+                  {submitting ? "Saving..." : "Save Settings"}
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to delete the portal group "${editingPortalGroup.name}" and all its bank accounts?`)) {
+                      handleDeletePortalGroup(editingPortalGroup.id, editingPortalGroup.name);
+                      setIsEditPortalModalOpen(false);
+                    }
+                  }}
+                  className="px-3 py-2 border border-red-200 text-red-500 hover:bg-red-50 rounded-md text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  Delete Group
+                </button>
+              </div>
             </form>
+
+            {/* Active Bank Accounts section */}
+            <div className="space-y-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Registered Banks ({(editingPortalGroup.portals || []).length})</h4>
+              {editingPortalGroup.portals && editingPortalGroup.portals.length > 0 ? (
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                  {editingPortalGroup.portals.map((p: any) => (
+                    <div key={p.id} className="text-[9px] text-slate-500 dark:text-slate-400 flex items-center justify-between bg-slate-50 dark:bg-slate-955 p-2 rounded border border-slate-100 dark:border-slate-800">
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{p.portal_name}</span>
+                        <span className="text-[7px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="font-black text-slate-700 dark:text-slate-300">₹{Number(p.balance || 0).toLocaleString()}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditPortalModalOpen(false);
+                            handleOpenLedger(p);
+                          }}
+                          className="px-1 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-105 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
+                        >
+                          Ledger
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (confirm(`Delete bank account "${p.portal_name}"?`)) {
+                              await handleDeleteBankAccount(p.id, p.portal_name);
+                            }
+                          }}
+                          className="p-0.5 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-2.5 h-2.5 text-slate-400 hover:text-red-550 cursor-pointer" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[8px] font-bold text-slate-400 text-center py-2">No bank accounts registered</p>
+              )}
+            </div>
+
+            {/* Add New Bank Account section */}
+            <div className="space-y-2">
+              <h4 className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Add Bank Account</h4>
+              <div className="bg-slate-50 dark:bg-slate-950 p-2.5 border border-slate-150 dark:border-slate-800 rounded-lg space-y-2">
+                <input autoComplete="one-time-code"
+                  type="text"
+                  placeholder="Account Label (e.g. Primary, ICICI)"
+                  value={bAccLabel}
+                  onChange={e => setBAccLabel(e.target.value)}
+                  className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
+                />
+                <input autoComplete="one-time-code"
+                  type="text"
+                  placeholder="Bank Name (e.g. ICICI Bank)"
+                  value={bBankName}
+                  onChange={e => setBBankName(e.target.value)}
+                  className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
+                />
+                <div className="grid grid-cols-2 gap-1.5">
+                  <input autoComplete="one-time-code"
+                    type="text"
+                    placeholder="Account Number"
+                    value={bAccNo}
+                    onChange={e => setBAccNo(e.target.value)}
+                    className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
+                  />
+                  <input autoComplete="one-time-code"
+                    type="text"
+                    placeholder="IFSC Code"
+                    value={bIfsc}
+                    onChange={e => setBIfsc(e.target.value)}
+                    className="w-full px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-xs font-semibold focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!bAccLabel) {
+                      alert("Please enter an Account Label");
+                      return;
+                    }
+                    await handleAddBankAccount(editingPortalGroup.id);
+                  }}
+                  disabled={addingBank}
+                  className="w-full py-1.5 bg-indigo-600 text-white rounded text-[9px] font-bold uppercase tracking-wider shadow-sm cursor-pointer"
+                >
+                  {addingBank ? "Adding..." : "Register Bank Account"}
+                </button>
+              </div>
+            </div>
+
           </div>
         </div>
       )}
