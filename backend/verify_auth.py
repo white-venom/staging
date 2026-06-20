@@ -99,6 +99,7 @@ def run_auth_verification():
             scheme = "http"
         url = URL()
         base_url = "http://localhost:8000"
+        headers = {}
 
     mock_response = MockResponse()
     login_payload = LoginRequest(phone="9876543210", password="StaffPass123")
@@ -106,8 +107,23 @@ def run_auth_verification():
     login_result = login(login_data=login_payload, response=mock_response, request=MockRequest(), db=db_session)
     assert login_result["access_token"] is not None, "❌ Access Token not returned on login!"
     assert login_result["role"] == "staff", "❌ Returned role is incorrect!"
-    print("   ✅ Access Token returned successfully!")
+    print("   ✅ Access Token returned successfully for active user!")
     
+    # Verify deactivated user cannot log in
+    mock_staff.is_active = False
+    db_session.commit()
+    try:
+        login(login_data=login_payload, response=mock_response, request=MockRequest(), db=db_session)
+        print("   ❌ Security failure: Deactivated user was allowed to log in!")
+        sys.exit(1)
+    except HTTPException as ex:
+        assert ex.status_code == 403, "❌ Deactivated login should return 403 Forbidden!"
+        print("   ✅ Deactivated user rejected from logging in (403 Forbidden).")
+
+    # Restore is_active status for subsequent tests
+    mock_staff.is_active = True
+    db_session.commit()
+
     # Verify HttpOnly Cookie was set
     cookie = mock_response.cookies_store.get("refresh_token")
     assert cookie is not None, "❌ Secure refresh_token cookie was NOT injected in response!"

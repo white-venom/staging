@@ -37,6 +37,12 @@ def login(
             detail="Incorrect phone number or password"
         )
 
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated"
+        )
+
     # Check if maintenance mode is active for non-admin users
     check_maintenance_mode(request, user.role)
 
@@ -100,6 +106,12 @@ def refresh(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session belongs to a non-existent user"
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated"
         )
 
     # Rotate refresh & access tokens (Best security standard)
