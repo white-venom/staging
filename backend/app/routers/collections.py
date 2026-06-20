@@ -532,6 +532,19 @@ def update_collection(
     old_from_staff_id = collection.from_staff_id
     new_from_staff_id = payload.from_staff_id
 
+    # Capture CMS details if transitioning from CMS (no retailer) to a Retailer
+    was_cms = (old_retailer_id is None) and (new_retailer_id is not None)
+    cms_portal_name = None
+    cms_remark = None
+    if was_cms:
+        if collection.portal:
+            cms_portal_name = collection.portal.portal_name
+        elif collection.portal_id:
+            portal_obj = db.scalar(select(Portal).where(Portal.id == collection.portal_id))
+            if portal_obj:
+                cms_portal_name = portal_obj.portal_name
+        cms_remark = collection.remarks
+
     # Handle Portal Balance Adjustments (only for direct portal collections, NOT retailer collections)
     if not old_retailer_id and not new_retailer_id:
         if old_portal_id != new_portal_id:
@@ -709,6 +722,19 @@ def update_collection(
             if store_obj:
                 store_name = store_obj.store_name
         
+        # Calculate description for the ledger entry
+        description = store_name
+        if was_cms:
+            desc_parts = []
+            if cms_portal_name:
+                desc_parts.append(f"CMS Portal: {cms_portal_name}")
+            if cms_remark:
+                desc_parts.append(f"CMS Remark: {cms_remark}")
+            if desc_parts:
+                description = " | ".join(desc_parts)
+            else:
+                description = f"CMS Transfer ({store_name})"
+        
         if not ledger_entry:
             # Create a brand new ledger entry if it was previously a CMS collection
             latest_ledger = db.scalar(
@@ -730,7 +756,7 @@ def update_collection(
                 transaction_type="credit",
                 amount=new_amount,
                 balance=new_balance,
-                description=store_name,
+                description=description,
                 collection_id=collection.id,
                 created_at=collection.created_at
             )
@@ -739,7 +765,7 @@ def update_collection(
             ledger_entry.amount = new_amount
             if old_retailer_id != new_retailer_id:
                 ledger_entry.retailer_id = new_retailer_id
-            ledger_entry.description = store_name
+            ledger_entry.description = description
     else:
         # If the new retailer is None (transitioned to CMS), but a ledger entry existed, delete it
         if ledger_entry:

@@ -41,6 +41,7 @@ def create_retailer(
             existing_retailer.email = retailer_data.email
             existing_retailer.opening_to_give = retailer_data.opening_to_give
             existing_retailer.opening_to_take = retailer_data.opening_to_take
+            existing_retailer.category = retailer_data.category
             existing_retailer.is_active = True
             
             from decimal import Decimal
@@ -65,7 +66,8 @@ def create_retailer(
         email=retailer_data.email,
         phone=retailer_data.phone,
         opening_to_give=retailer_data.opening_to_give,
-        opening_to_take=retailer_data.opening_to_take
+        opening_to_take=retailer_data.opening_to_take,
+        category=retailer_data.category
     )
     db.add(db_retailer)
     db.commit()

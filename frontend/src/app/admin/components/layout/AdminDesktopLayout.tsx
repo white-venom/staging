@@ -46,6 +46,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
   const [retailerPhone, setRetailerPhone] = useState("");
   const [retailerArea, setRetailerArea] = useState("");
   const [retailerEmail, setRetailerEmail] = useState("");
+  const [retailerCategory, setRetailerCategory] = useState("");
   const [retailerToGive, setRetailerToGive] = useState<string>("");
   const [retailerToTake, setRetailerToTake] = useState<string>("");
   const [pGroupName, setPGroupName] = useState("");
@@ -144,6 +145,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
         phone: retailerPhone,
         address: retailerArea,
         email: retailerEmail,
+        category: retailerCategory || undefined,
         opening_to_give: parseFloat(retailerToGive || "0"),
         opening_to_take: parseFloat(retailerToTake || "0")
       });
@@ -153,6 +155,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       setRetailerPhone("");
       setRetailerArea("");
       setRetailerEmail("");
+      setRetailerCategory("");
       setRetailerToGive("");
       setRetailerToTake("");
       fetchData();
@@ -286,8 +289,9 @@ export default function AdminDesktopLayout({ children }: { children: React.React
             <form onSubmit={handleAddRetailer} className="space-y-4 text-xs font-semibold">
               <input autoComplete="one-time-code" type="text" placeholder="Store Name" value={retailerName} onChange={(e) => setRetailerName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" required />
               <input autoComplete="one-time-code" type="tel" placeholder="Phone" value={retailerPhone} onChange={(e) => setRetailerPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" required />
-              <input autoComplete="one-time-code" type="text" placeholder="Area" value={retailerArea} onChange={(e) => setRetailerArea(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" />
-              <input autoComplete="one-time-code" type="email" placeholder="Retailer Email" value={retailerEmail} onChange={(e) => setRetailerEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" />
+              <input autoComplete="one-time-code" type="text" placeholder="Area" value={retailerArea} onChange={(e) => setRetailerArea(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg" />
+              <input autoComplete="one-time-code" type="email" placeholder="Retailer Email" value={retailerEmail} onChange={(e) => setRetailerEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg" />
+              <input autoComplete="one-time-code" type="text" placeholder="Category (e.g. Supermarket, Wholesaler)" value={retailerCategory} onChange={(e) => setRetailerCategory(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg" />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-red-500 uppercase ml-1">To Take</label>

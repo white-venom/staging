@@ -62,6 +62,7 @@ export default function MobileRetailers({
   const [retPhone, setRetPhone] = useState("");
   const [retArea, setRetArea] = useState("");
   const [retEmail, setRetEmail] = useState("");
+  const [retCategory, setRetCategory] = useState("");
   const [retToTake, setRetToTake] = useState("");
   const [retToGive, setRetToGive] = useState("");
 
@@ -72,6 +73,8 @@ export default function MobileRetailers({
   const [editRetPhone, setEditRetPhone] = useState("");
   const [editRetArea, setEditRetArea] = useState("");
   const [editRetEmail, setEditRetEmail] = useState("");
+  const [editRetCategory, setEditRetCategory] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "category">("name");
   // (opening_to_take / to_give are set only at create time — not editable from list)
 
   // Retailer Store logic
@@ -381,6 +384,7 @@ export default function MobileRetailers({
     setEditRetPhone(retailer.phone);
     setEditRetArea(retailer.area);
     setEditRetEmail(retailer.email || "");
+    setEditRetCategory(retailer.category || "");
 
     setIsEditRetailerModalOpen(true);
   };
@@ -395,6 +399,7 @@ export default function MobileRetailers({
         phone: editRetPhone,
         address: editRetArea,
         email: editRetEmail,
+        category: editRetCategory || null
       });
       showToastNotification(`Retailer "${editRetName}" updated`);
       setIsEditRetailerModalOpen(false);
@@ -422,11 +427,12 @@ export default function MobileRetailers({
         phone: retPhone,
         address: retArea,
         email: retEmail,
+        category: retCategory || undefined,
         opening_to_take: takeVal,
         opening_to_give: giveVal
       });
       showToastNotification(`Retailer "${retName}" registered`);
-      setRetName(""); setRetPhone(""); setRetArea(""); setRetEmail(""); setRetToTake(""); setRetToGive("");
+      setRetName(""); setRetPhone(""); setRetArea(""); setRetEmail(""); setRetCategory(""); setRetToTake(""); setRetToGive("");
       setShowAddForm(false);
       fetchData();
     } catch (err: any) {
@@ -461,6 +467,18 @@ export default function MobileRetailers({
       const nameB = (b.name || "").toLowerCase().trim();
       if (nameA === "cms" && nameB !== "cms") return -1;
       if (nameB === "cms" && nameA !== "cms") return 1;
+      
+      if (sortBy === "category") {
+        const catA = (a.category || "").toLowerCase().trim();
+        const catB = (b.category || "").toLowerCase().trim();
+        if (catA && !catB) return -1;
+        if (!catA && catB) return 1;
+        if (catA < catB) return -1;
+        if (catA > catB) return 1;
+      }
+      
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
       return 0;
     });
 
@@ -534,6 +552,16 @@ export default function MobileRetailers({
                 className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/20"
               />
             </div>
+            <div>
+              <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Category</label>
+              <input autoComplete="one-time-code"
+                type="text"
+                value={retCategory}
+                onChange={e => setRetCategory(e.target.value)}
+                placeholder="e.g. Supermarket, Wholesaler"
+                className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/20"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Opening To Take (₹)</label>
@@ -569,8 +597,8 @@ export default function MobileRetailers({
         </div>
       )}
 
-      {/* Search */}
-      <div className="px-1">
+      {/* Search & Sort */}
+      <div className="px-1 space-y-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input autoComplete="one-time-code" 
@@ -580,6 +608,23 @@ export default function MobileRetailers({
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 pl-9 pr-3 text-xs font-medium shadow-sm focus:ring-1 focus:ring-blue-500/20"
           />
+        </div>
+        <div className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-0.5 shadow-sm w-full">
+          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider ml-2 mr-1">Sort:</span>
+          <button 
+            type="button"
+            onClick={() => setSortBy("name")}
+            className={`flex-1 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${sortBy === "name" ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white" : "text-slate-400 hover:text-slate-655"}`}
+          >
+            Name
+          </button>
+          <button 
+            type="button"
+            onClick={() => setSortBy("category")}
+            className={`flex-1 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${sortBy === "category" ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white" : "text-slate-400 hover:text-slate-655"}`}
+          >
+            Category
+          </button>
         </div>
       </div>
 
@@ -603,7 +648,14 @@ export default function MobileRetailers({
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
                   <Store className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
                   <div className="min-w-0 flex-1">
-                    <span className="font-bold text-xs text-slate-900 dark:text-white truncate block">{retailer.name}</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-xs text-slate-900 dark:text-white truncate">{retailer.name}</span>
+                      {retailer.category && (
+                        <span className="px-1.5 py-0.2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full text-[8px] font-bold uppercase tracking-wider scale-90 origin-left">
+                          {retailer.category}
+                        </span>
+                      )}
+                    </div>
                     {retailer.name.toLowerCase().trim() !== "cms" && retailer.area && (
                       <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide truncate block mt-0.5">{retailer.area}</span>
                     )}
@@ -676,7 +728,17 @@ export default function MobileRetailers({
                     value={editRetEmail} 
                     onChange={(e) => setEditRetEmail(e.target.value)} 
                     placeholder="Email" 
-                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/20" 
+                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/20" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Category</label>
+                  <input autoComplete="one-time-code" 
+                    type="text" 
+                    value={editRetCategory} 
+                    onChange={(e) => setEditRetCategory(e.target.value)} 
+                    placeholder="Category" 
+                    className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-emerald-500/20" 
                   />
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-950 p-2 rounded-md border border-slate-100 dark:border-slate-800 text-[9px] flex justify-between items-center">

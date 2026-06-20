@@ -9,6 +9,7 @@ class RetailerBase(BaseModel):
     assigned_staff_id: Optional[uuid.UUID] = Field(None, examples=["e3d166c3-1ff6-4279-88b1-1647413f99aa"])
     email: Optional[EmailStr] = Field(None, examples=["aggarwal.store@gmail.com"])
     phone: Optional[str] = Field(None, max_length=20, examples=["9876543210"])
+    category: Optional[str] = Field(None, max_length=100, examples=["Supermarket"])
 
 
 class RetailerCreate(RetailerBase):
@@ -24,6 +25,7 @@ class RetailerUpdate(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     opening_to_give: Optional[float] = None
     opening_to_take: Optional[float] = None
+    category: Optional[str] = Field(None, max_length=100)
 
 
 class RetailerResponse(RetailerBase):
@@ -33,6 +35,7 @@ class RetailerResponse(RetailerBase):
     opening_to_take: float
     balance: float = 0.00
     is_active: bool = True
+    category: Optional[str] = None
 
     class Config:
         from_attributes = True

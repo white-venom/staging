@@ -62,6 +62,8 @@ export default function RetailersTab({
   const [editRetPhone, setEditRetPhone] = useState("");
   const [editRetArea, setEditRetArea] = useState("");
   const [editRetEmail, setEditRetEmail] = useState("");
+  const [editRetCategory, setEditRetCategory] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "category">("name");
   // (opening_to_take / to_give are set only at create time — not editable from list)
 
   // Store Edit state
@@ -314,6 +316,7 @@ export default function RetailersTab({
     setEditRetPhone(retailer.phone);
     setEditRetArea(retailer.area);
     setEditRetEmail(retailer.email || "");
+    setEditRetCategory(retailer.category || "");
 
     setIsEditRetailerModalOpen(true);
   };
@@ -327,6 +330,7 @@ export default function RetailersTab({
         phone: editRetPhone,
         address: editRetArea,
         email: editRetEmail,
+        category: editRetCategory || null
       });
       showToastNotification(`Retailer "${editRetName}" updated.`);
       setIsEditRetailerModalOpen(false);
@@ -422,9 +426,27 @@ export default function RetailersTab({
           />
         </div>
 
+        <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2 py-1 shadow-sm">
+          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider ml-1">Sort:</span>
+          <button 
+            type="button"
+            onClick={() => setSortBy("name")}
+            className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${sortBy === "name" ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white" : "text-slate-400 hover:text-slate-600"}`}
+          >
+            Name
+          </button>
+          <button 
+            type="button"
+            onClick={() => setSortBy("category")}
+            className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${sortBy === "category" ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-white" : "text-slate-400 hover:text-slate-600"}`}
+          >
+            Category
+          </button>
+        </div>
+
         <button
           onClick={() => setShowRetailerDrawer(true)}
-          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer"
+          className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-955 text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Register Retailer
         </button>
@@ -437,6 +459,18 @@ export default function RetailersTab({
             const nameB = (b.name || "").toLowerCase().trim();
             if (nameA === "cms" && nameB !== "cms") return -1;
             if (nameB === "cms" && nameA !== "cms") return 1;
+            
+            if (sortBy === "category") {
+              const catA = (a.category || "").toLowerCase().trim();
+              const catB = (b.category || "").toLowerCase().trim();
+              if (catA && !catB) return -1;
+              if (!catA && catB) return 1;
+              if (catA < catB) return -1;
+              if (catA > catB) return 1;
+            }
+            
+            if (nameA < nameB) return -1;
+            if (nameA > nameB) return 1;
             return 0;
           })
           .map((retailer) => (
@@ -450,10 +484,17 @@ export default function RetailersTab({
                   <StoreIcon className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 transition-colors truncate">{retailer.name}</h3>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 transition-colors truncate">{retailer.name}</h3>
+                    {retailer.category && (
+                      <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                        {retailer.category}
+                      </span>
+                    )}
+                  </div>
                   {retailer.name.toLowerCase().trim() !== "cms" && retailer.area && (
                     <div className="flex items-center gap-1.5 mt-1">
-                      <MapPin className="w-3 h-3 text-slate-450" />
+                      <MapPin className="w-3 h-3 text-slate-455" />
                       <span className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">{retailer.area}</span>
                     </div>
                   )}
@@ -491,7 +532,8 @@ export default function RetailersTab({
                 <input autoComplete="one-time-code" type="text" value={editRetName} onChange={(e) => setEditRetName(e.target.value)} placeholder="Retailer Name" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
                 <input autoComplete="one-time-code" type="tel" value={editRetPhone} onChange={(e) => setEditRetPhone(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
                 <input autoComplete="one-time-code" type="text" value={editRetArea} onChange={(e) => setEditRetArea(e.target.value)} placeholder="Area / Route" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
-                <input autoComplete="one-time-code" type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
+                <input autoComplete="one-time-code" type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
+                <input autoComplete="one-time-code" type="text" value={editRetCategory} onChange={(e) => setEditRetCategory(e.target.value)} placeholder="Category (e.g. Supermarket, Wholesaler)" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
                 <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium">Current Net Balance</span>

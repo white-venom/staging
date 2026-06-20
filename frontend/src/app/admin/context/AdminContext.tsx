@@ -146,7 +146,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         email: r.email,
         opening_to_give: parseFloat(r.opening_to_give || 0),
         opening_to_take: parseFloat(r.opening_to_take || 0),
-        ledger_token: r.ledger_token
+        ledger_token: r.ledger_token,
+        category: r.category
       }));
       
       mappedCols.sort((a: any, b: any) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime());
