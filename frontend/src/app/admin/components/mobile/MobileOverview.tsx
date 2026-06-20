@@ -1123,14 +1123,31 @@ export default function MobileOverview({
                   <div className="space-y-0.5">
                     <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Deposit/Payout Type</label>
                     <select
-                      value={selectedNewDepositType}
-                      onChange={(e) => setSelectedNewDepositType(e.target.value)}
+                      value={selectedNewDepositType === "virtual" ? (selectedNewPaymentMode === "refund" ? "virtual-refund" : "virtual-load") : selectedNewDepositType}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "virtual-load") {
+                          setSelectedNewDepositType("virtual");
+                          setSelectedNewPaymentMode("online");
+                        } else if (val === "virtual-refund") {
+                          setSelectedNewDepositType("virtual");
+                          setSelectedNewPaymentMode("refund");
+                        } else {
+                          setSelectedNewDepositType(val);
+                          if (val === "portal" || val === "retailer") {
+                            setSelectedNewPaymentMode("online");
+                          } else if (val === "staff") {
+                            setSelectedNewPaymentMode("cash");
+                          }
+                        }
+                      }}
                       className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
                     >
-                      <option value="portal">Portal Bank Deposit</option>
+                      <option value="portal">Cash Out</option>
                       <option value="retailer">Retailer Payout</option>
-                      <option value="staff">Staff/Office Handover</option>
-                      <option value="virtual">Virtual Limit Transfer</option>
+                      <option value="staff">Direct Handover</option>
+                      <option value="virtual-load">Virtual Transfer</option>
+                      <option value="virtual-refund">Move to Distributor</option>
                     </select>
                   </div>
 
@@ -1256,19 +1273,10 @@ export default function MobileOverview({
                     </>
                   )}
 
-                  {/* Payment Mode */}
-                  <div className="space-y-0.5">
-                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Payment Mode / Direction</label>
-                    {selectedNewDepositType === "virtual" ? (
-                      <select
-                        value={selectedNewPaymentMode}
-                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                      >
-                        <option value="online">Virtual Transfer (Load)</option>
-                        <option value="refund">Move to Distributor (Refund)</option>
-                      </select>
-                    ) : (
+                   {/* Payment Mode */}
+                  {selectedNewDepositType !== "virtual" && (
+                    <div className="space-y-0.5">
+                      <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Payment Mode</label>
                       <select
                         value={selectedNewPaymentMode}
                         onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
@@ -1277,8 +1285,8 @@ export default function MobileOverview({
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
                       </select>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Amount */}
                   <div className="space-y-0.5">

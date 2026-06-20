@@ -86,6 +86,7 @@ export default function RetailersTab({
   const [selectedNewDate, setSelectedNewDate] = useState("");
   const [selectedNewRefNo, setSelectedNewRefNo] = useState("");
   const [selectedNewRemarks, setSelectedNewRemarks] = useState("");
+  const [selectedNewVirtualTargetType, setSelectedNewVirtualTargetType] = useState("retailer");
   const [isSavingEntry, setIsSavingEntry] = useState(false);
   
   const [selectedNewDenoms, setSelectedNewDenoms] = useState({
@@ -179,6 +180,8 @@ export default function RetailersTab({
       setSelectedNewRefNo(item.reference_no || "");
       setSelectedNewRecipientStaffId(item.recipient_staff_id || "");
       setSelectedNewToOffice(item.to_office === true);
+      const hasStaff = !!(item.recipient_staff_id || item.recipientStaffId);
+      setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
     }
     
     if (item.denominations) {
@@ -244,12 +247,17 @@ export default function RetailersTab({
         : { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online_amount: Number(selectedNewAmount) };
 
       if (editingIsDeposit) {
+        const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+        const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
+        const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
+        const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
+
         await api.updateDeposit(targetId, {
           deposit_type: selectedNewDepositType,
-          portal_id: selectedNewDepositType === "portal" ? selectedNewPortalId : null,
-          retailer_id: selectedNewDepositType === "retailer" ? selectedNewRetailerId : null,
-          recipient_staff_id: selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null,
-          to_office: selectedNewDepositType === "staff" ? selectedNewToOffice : false,
+          portal_id: portalId,
+          retailer_id: retailerId,
+          recipient_staff_id: recipientStaffId,
+          to_office: toOffice,
           payment_mode: selectedNewPaymentMode,
           amount: Number(selectedNewAmount),
           deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
@@ -799,14 +807,31 @@ export default function RetailersTab({
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Deposit Type</label>
                       <select
-                        value={selectedNewDepositType}
-                        onChange={(e) => setSelectedNewDepositType(e.target.value)}
+                        value={selectedNewDepositType === "virtual" ? (selectedNewPaymentMode === "refund" ? "virtual-refund" : "virtual-load") : selectedNewDepositType}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "virtual-load") {
+                            setSelectedNewDepositType("virtual");
+                            setSelectedNewPaymentMode("online");
+                          } else if (val === "virtual-refund") {
+                            setSelectedNewDepositType("virtual");
+                            setSelectedNewPaymentMode("refund");
+                          } else {
+                            setSelectedNewDepositType(val);
+                            if (val === "portal" || val === "retailer") {
+                              setSelectedNewPaymentMode("online");
+                            } else if (val === "staff") {
+                              setSelectedNewPaymentMode("cash");
+                            }
+                          }
+                        }}
                         className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
                       >
-                        <option value="portal">Portal Bank Deposit</option>
+                        <option value="portal">Cash Out</option>
                         <option value="retailer">Retailer Payout</option>
-                        <option value="staff">Staff/Office Handover</option>
-                        <option value="virtual">Virtual Limit Transfer</option>
+                        <option value="staff">Direct Handover</option>
+                        <option value="virtual-load">Virtual Transfer</option>
+                        <option value="virtual-refund">Move to Distributor</option>
                       </select>
                     </div>
 
@@ -868,18 +893,84 @@ export default function RetailersTab({
                         )}
                       </>
                     )}
+                    {selectedNewDepositType === "virtual" && (
+                      <>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                          </label>
+                          <InlineSelect
+                            value={selectedNewPortalId}
+                            onChange={setSelectedNewPortalId}
+                            options={[
+                              { value: "", label: "Select Portal Bank Account" },
+                              ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                            ]}
+                            placeholder="Select Portal Bank Account"
+                          />
+                        </div>
 
-                    <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Payment Mode</label>
-                      <select
-                        value={selectedNewPaymentMode}
-                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
-                      >
-                        <option value="cash">Cash</option>
-                        <option value="online">Online</option>
-                      </select>
-                    </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            {selectedNewPaymentMode === "refund" ? "Source Type" : "Destination Type"}
+                          </label>
+                          <select
+                            value={selectedNewVirtualTargetType}
+                            onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                          >
+                            <option value="retailer">Retailer</option>
+                            <option value="staff">Staff Member</option>
+                          </select>
+                        </div>
+
+                        {selectedNewVirtualTargetType === "retailer" ? (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              {selectedNewPaymentMode === "refund" ? "Source Retailer" : "Destination Retailer"}
+                            </label>
+                            <InlineSelect
+                              value={selectedNewRetailerId}
+                              onChange={setSelectedNewRetailerId}
+                              options={[
+                                { value: "", label: "Select Retailer" },
+                                ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                              ]}
+                              placeholder="Select Retailer"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              {selectedNewPaymentMode === "refund" ? "Source Staff Member" : "Destination Staff Member"}
+                            </label>
+                            <InlineSelect
+                              value={selectedNewRecipientStaffId}
+                              onChange={setSelectedNewRecipientStaffId}
+                              options={[
+                                { value: "", label: "Select Staff Member" },
+                                ...(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                              ]}
+                              placeholder="Select Staff Member"
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {selectedNewDepositType !== "virtual" && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Payment Mode</label>
+                        <select
+                          value={selectedNewPaymentMode}
+                          onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="online">Online</option>
+                        </select>
+                      </div>
+                    )}
 
                     <div>
                       <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Reference No</label>

@@ -214,8 +214,10 @@ export default function MobileLedger() {
     dateTo: getTodayDateString(),
     staff: 'all',
     type: 'all',
-    party: 'all',
-    portal: 'all',
+    retailerId: 'all',
+    storeId: 'all',
+    portalGroupId: 'all',
+    portalId: 'all',
     sortBy: 'date-desc'
   });
 
@@ -330,9 +332,31 @@ export default function MobileLedger() {
 
     // Apply Filters
     if (filters.staff !== 'all') combined = combined.filter(tx => tx.staff === filters.staff);
-    if (filters.party !== 'all') combined = combined.filter(tx => tx.party === filters.party);
-    if (filters.portal !== 'all') combined = combined.filter(tx => tx.portal === filters.portal);
     if (filters.type !== 'all') combined = combined.filter(tx => tx.type === filters.type);
+
+    if (filters.retailerId !== 'all') {
+      combined = combined.filter(tx => String(tx.retailer_id || tx.retailerId || '') === String(filters.retailerId));
+    }
+    if (filters.storeId !== 'all') {
+      combined = combined.filter(tx => String(tx.store_id || tx.storeId || '') === String(filters.storeId));
+    }
+    if (filters.portalGroupId !== 'all') {
+      combined = combined.filter(tx => {
+        if (tx.portal_group_id || tx.portalGroupId) {
+          return String(tx.portal_group_id || tx.portalGroupId) === String(filters.portalGroupId);
+        }
+        if (tx.portal_id || tx.portalId) {
+          const group = portalDirectory.find((g: any) => 
+            (g.portals || []).some((p: any) => String(p.id) === String(tx.portal_id || tx.portalId))
+          );
+          return group && String(group.id) === String(filters.portalGroupId);
+        }
+        return false;
+      });
+    }
+    if (filters.portalId !== 'all') {
+      combined = combined.filter(tx => String(tx.portal_id || tx.portalId || '') === String(filters.portalId));
+    }
 
     // Apply Date Range
     if (filters.dateFrom) {
@@ -353,6 +377,18 @@ export default function MobileLedger() {
 
     return combined;
   }, [collections, deposits, search, filters]);
+
+  const isAnyFilterActive = useMemo(() => {
+    return filters.staff !== 'all' || 
+           filters.type !== 'all' || 
+           filters.retailerId !== 'all' || 
+           filters.storeId !== 'all' || 
+           filters.portalGroupId !== 'all' || 
+           filters.portalId !== 'all' || 
+           filters.dateFrom !== getTodayDateString() || 
+           filters.dateTo !== getTodayDateString() ||
+           search !== '';
+  }, [filters, search]);
 
   // Helper: get display amount regardless of field name
   const getTxAmount = (tx: any) => tx.totalAmount ?? tx.amount ?? 0;
@@ -411,6 +447,31 @@ export default function MobileLedger() {
           <Filter className="w-3.5 h-3.5" />
         </button>
       </div>
+
+      {isAnyFilterActive && (
+        <div className="flex justify-end px-1.5">
+          <button 
+            onClick={() => {
+              const today = getTodayDateString();
+              setFilters({
+                dateFrom: today,
+                dateTo: today,
+                staff: 'all',
+                type: 'all',
+                retailerId: 'all',
+                storeId: 'all',
+                portalGroupId: 'all',
+                portalId: 'all',
+                sortBy: 'date-desc'
+              });
+              setSearch("");
+            }}
+            className="text-[9px] font-black uppercase text-red-500 bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-800 rounded-md px-2.5 py-1 active:scale-95 transition-all cursor-pointer"
+          >
+            Clear All Filters
+          </button>
+        </div>
+      )}
 
       {/* Transaction List (Table Format) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-xs mb-4">
@@ -549,8 +610,8 @@ export default function MobileLedger() {
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         staffList={staffList}
-        partyList={partyList}
-        portalList={portalList}
+        retailerDirectory={retailerDirectory || []}
+        portalDirectory={portalDirectory || []}
         filters={filters}
         setFilters={setFilters}
       />
@@ -746,14 +807,31 @@ export default function MobileLedger() {
                   <div className="space-y-0.5">
                     <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Deposit/Payout Type</label>
                     <select
-                      value={selectedNewDepositType}
-                      onChange={(e) => setSelectedNewDepositType(e.target.value)}
+                      value={selectedNewDepositType === "virtual" ? (selectedNewPaymentMode === "refund" ? "virtual-refund" : "virtual-load") : selectedNewDepositType}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "virtual-load") {
+                          setSelectedNewDepositType("virtual");
+                          setSelectedNewPaymentMode("online");
+                        } else if (val === "virtual-refund") {
+                          setSelectedNewDepositType("virtual");
+                          setSelectedNewPaymentMode("refund");
+                        } else {
+                          setSelectedNewDepositType(val);
+                          if (val === "portal" || val === "retailer") {
+                            setSelectedNewPaymentMode("online");
+                          } else if (val === "staff") {
+                            setSelectedNewPaymentMode("cash");
+                          }
+                        }
+                      }}
                       className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
                     >
-                      <option value="portal">Portal Bank Deposit</option>
+                      <option value="portal">Cash Out</option>
                       <option value="retailer">Retailer Payout</option>
-                      <option value="staff">Staff/Office Handover</option>
-                      <option value="virtual">Virtual Limit Transfer</option>
+                      <option value="staff">Direct Handover</option>
+                      <option value="virtual-load">Virtual Transfer</option>
+                      <option value="virtual-refund">Move to Distributor</option>
                     </select>
                   </div>
 
@@ -879,19 +957,10 @@ export default function MobileLedger() {
                     </>
                   )}
 
-                  {/* Payment Mode */}
-                  <div className="space-y-0.5">
-                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Payment Mode / Direction</label>
-                    {selectedNewDepositType === "virtual" ? (
-                      <select
-                        value={selectedNewPaymentMode}
-                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                      >
-                        <option value="online">Virtual Transfer (Load)</option>
-                        <option value="refund">Move to Distributor (Refund)</option>
-                      </select>
-                    ) : (
+                   {/* Payment Mode */}
+                  {selectedNewDepositType !== "virtual" && (
+                    <div className="space-y-0.5">
+                      <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Payment Mode</label>
                       <select
                         value={selectedNewPaymentMode}
                         onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
@@ -900,8 +969,8 @@ export default function MobileLedger() {
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
                       </select>
-                    )}
-                  </div>
+                    </div>
+                  )}
 
                   {/* Amount */}
                   <div className="space-y-0.5">

@@ -1,23 +1,26 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X, Calendar, User, Filter, Globe, Store, ArrowUpDown, Tag } from "lucide-react";
 import InlineSelect from "../../../../app/components/InlineSelect";
 import InlineDatePicker from "../../../../app/components/InlineDatePicker";
+import { api } from "../../../utils/api";
 
 interface MobileFilterDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   staffList: string[];
-  partyList: string[];
-  portalList: string[];
+  retailerDirectory: any[];
+  portalDirectory: any[];
   filters: {
     dateFrom: string;
     dateTo: string;
     staff: string;
     type: string;
-    party: string;
-    portal: string;
+    retailerId: string;
+    storeId: string;
+    portalGroupId: string;
+    portalId: string;
     sortBy: string;
   };
   setFilters: (filters: any) => void;
@@ -27,11 +30,40 @@ export default function MobileFilterDrawer({
   isOpen,
   onClose,
   staffList,
-  partyList,
-  portalList,
+  retailerDirectory,
+  portalDirectory,
   filters,
   setFilters
 }: MobileFilterDrawerProps) {
+  const [availableFilterStores, setAvailableFilterStores] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      if (filters.retailerId && filters.retailerId !== 'all') {
+        try {
+          const stores = await api.getRetailerStores(filters.retailerId);
+          setAvailableFilterStores(stores || []);
+        } catch (err) {
+          console.error("Failed to fetch filter stores:", err);
+          setAvailableFilterStores([]);
+        }
+      } else {
+        setAvailableFilterStores([]);
+      }
+    };
+    if (isOpen) {
+      fetchStores();
+    }
+  }, [filters.retailerId, isOpen]);
+
+  const availableFilterBanks = useMemo(() => {
+    if (filters.portalGroupId && filters.portalGroupId !== 'all') {
+      const group = portalDirectory.find((g: any) => String(g.id) === String(filters.portalGroupId));
+      return group?.portals || [];
+    }
+    return [];
+  }, [filters.portalGroupId, portalDirectory]);
+
   if (!isOpen) return null;
 
   const getTodayDateString = () => {
@@ -68,21 +100,39 @@ export default function MobileFilterDrawer({
 
         {/* Content */}
         <div className="space-y-3 overflow-y-auto pb-4 px-0.5 scrollbar-hide">
-          {/* 1. Party Filter */}
+          {/* 1. Retailer Filter */}
           <div className="space-y-1">
             <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-              <Store className="w-3 h-3" /> Retailer / Bank
+              <Store className="w-3 h-3" /> Retailer
             </label>
             <InlineSelect
-              value={filters.party}
-              onChange={(val) => setFilters({ ...filters, party: val })}
+              value={filters.retailerId}
+              onChange={(val) => setFilters({ ...filters, retailerId: val, storeId: "all" })}
               options={[
-                { value: "all", label: "All Parties" },
-                ...partyList.map(p => ({ value: p, label: p }))
+                { value: "all", label: "All Retailers" },
+                ...retailerDirectory.map(r => ({ value: String(r.id), label: r.name }))
               ]}
-              placeholder="All Parties"
+              placeholder="All Retailers"
             />
           </div>
+
+          {/* 1b. Store Filter (Dynamic) */}
+          {filters.retailerId !== "all" && availableFilterStores.length > 0 && (
+            <div className="space-y-1 animate-in fade-in duration-200">
+              <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                <Store className="w-3 h-3" /> Store
+              </label>
+              <InlineSelect
+                value={filters.storeId}
+                onChange={(val) => setFilters({ ...filters, storeId: val })}
+                options={[
+                  { value: "all", label: "All Stores" },
+                  ...availableFilterStores.map(s => ({ value: String(s.id), label: s.store_name }))
+                ]}
+                placeholder="All Stores"
+              />
+            </div>
+          )}
 
           {/* 2. Portal Filter */}
           <div className="space-y-1">
@@ -90,15 +140,36 @@ export default function MobileFilterDrawer({
               <Globe className="w-3 h-3" /> Portal Group
             </label>
             <InlineSelect
-              value={filters.portal}
-              onChange={(val) => setFilters({ ...filters, portal: val })}
+              value={filters.portalGroupId}
+              onChange={(val) => setFilters({ ...filters, portalGroupId: val, portalId: "all" })}
               options={[
-                { value: "all", label: "All Portals" },
-                ...portalList.map(p => ({ value: p, label: p }))
+                { value: "all", label: "All Portal Groups" },
+                ...portalDirectory.map(g => ({ value: String(g.id), label: g.name }))
               ]}
-              placeholder="All Portals"
+              placeholder="All Portal Groups"
             />
           </div>
+
+          {/* 2b. Bank/Account Filter (Dynamic) */}
+          {filters.portalGroupId !== "all" && availableFilterBanks.length > 0 && (
+            <div className="space-y-1 animate-in fade-in duration-200">
+              <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                <Globe className="w-3 h-3" /> Bank Account / Branch
+              </label>
+              <InlineSelect
+                value={filters.portalId}
+                onChange={(val) => setFilters({ ...filters, portalId: val })}
+                options={[
+                  { value: "all", label: "All Bank Accounts" },
+                  ...availableFilterBanks.map((p: any) => {
+                    const displayName = p.portal_name + (p.bank_name ? ` (${p.bank_name})` : "");
+                    return { value: String(p.id), label: displayName };
+                  })
+                ]}
+                placeholder="All Bank Accounts"
+              />
+            </div>
+          )}
 
           {/* 3. Transaction Type */}
           <div className="space-y-1">
@@ -184,8 +255,10 @@ export default function MobileFilterDrawer({
                 dateTo: today,
                 staff: 'all',
                 type: 'all',
-                party: 'all',
-                portal: 'all',
+                retailerId: 'all',
+                storeId: 'all',
+                portalGroupId: 'all',
+                portalId: 'all',
                 sortBy: 'date-desc'
               });
               onClose();
