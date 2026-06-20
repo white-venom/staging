@@ -37,6 +37,7 @@ export default function DepositsTab({
   const [selectedNewAmount, setSelectedNewAmount] = React.useState(0);
   const [selectedNewDate, setSelectedNewDate] = React.useState("");
   const [selectedNewRefNo, setSelectedNewRefNo] = React.useState("");
+  const [selectedNewVirtualTargetType, setSelectedNewVirtualTargetType] = React.useState("retailer");
   const [isSavingCollection, setIsSavingCollection] = React.useState(false);
   
   const [selectedNewDenoms, setSelectedNewDenoms] = React.useState({
@@ -62,6 +63,8 @@ export default function DepositsTab({
     setSelectedNewRefNo(item.reference_no || item.referenceNo || "");
     setSelectedNewRecipientStaffId(item.recipient_staff_id || item.recipientStaffId || "");
     setSelectedNewToOffice(item.to_office === true);
+    const hasStaff = !!(item.recipient_staff_id || item.recipientStaffId);
+    setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
     
     const den = item.denominations || {};
     setSelectedNewDenoms({
@@ -86,8 +89,8 @@ export default function DepositsTab({
     
     try {
       const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
-      const retailerId = selectedNewDepositType === "retailer" || selectedNewDepositType === "virtual" ? selectedNewRetailerId : null;
-      const recipientStaffId = selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null;
+      const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
+      const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
       const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
       await api.updateDeposit(editingCollection.id, {
@@ -564,11 +567,12 @@ export default function DepositsTab({
                     )}
                   </>
                 )}
-
                 {selectedNewDepositType === "virtual" && (
                   <>
                     <div className="space-y-1">
-                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Source Portal</label>
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                        {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                      </label>
                       <InlineSelect
                         value={selectedNewPortalId}
                         onChange={setSelectedNewPortalId}
@@ -581,32 +585,75 @@ export default function DepositsTab({
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Retailer</label>
-                      <InlineSelect
-                        value={selectedNewRetailerId}
-                        onChange={setSelectedNewRetailerId}
-                        options={[
-                          { value: "", label: "Select Retailer" },
-                          ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
-                        ]}
-                        placeholder="Select Retailer"
-                      />
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                        {selectedNewPaymentMode === "refund" ? "Source Type" : "Destination Type"}
+                      </label>
+                      <select
+                        value={selectedNewVirtualTargetType}
+                        onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      >
+                        <option value="retailer">Retailer</option>
+                        <option value="staff">Staff Member</option>
+                      </select>
                     </div>
+
+                    {selectedNewVirtualTargetType === "retailer" ? (
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                          {selectedNewPaymentMode === "refund" ? "Source Retailer" : "Destination Retailer"}
+                        </label>
+                        <InlineSelect
+                          value={selectedNewRetailerId}
+                          onChange={setSelectedNewRetailerId}
+                          options={[
+                            { value: "", label: "Select Retailer" },
+                            ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                          ]}
+                          placeholder="Select Retailer"
+                        />
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                          {selectedNewPaymentMode === "refund" ? "Source Staff Member" : "Destination Staff Member"}
+                        </label>
+                        <InlineSelect
+                          value={selectedNewRecipientStaffId}
+                          onChange={setSelectedNewRecipientStaffId}
+                          options={[
+                            { value: "", label: "Select Staff Member" },
+                            ...(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                          ]}
+                          placeholder="Select Staff Member"
+                        />
+                      </div>
+                    )}
                   </>
                 )}
 
                 {/* Payment Mode */}
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Payment Mode</label>
-                  <select
-                    value={selectedNewPaymentMode}
-                    onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                  >
-                    <option value="cash">Cash</option>
-                    <option value="online">Online</option>
-                    <option value="refund">Refund (Virtual only)</option>
-                  </select>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Payment Mode / Direction</label>
+                  {selectedNewDepositType === "virtual" ? (
+                    <select
+                      value={selectedNewPaymentMode}
+                      onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    >
+                      <option value="online">Virtual Transfer (Load)</option>
+                      <option value="refund">Move to Distributor (Refund)</option>
+                    </select>
+                  ) : (
+                    <select
+                      value={selectedNewPaymentMode}
+                      onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="online">Online</option>
+                    </select>
+                  )}
                 </div>
 
                 {/* Amount */}
@@ -642,6 +689,18 @@ export default function DepositsTab({
                     onChange={(e) => setSelectedNewRefNo(e.target.value)}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
                     placeholder="Optional"
+                  />
+                </div>
+
+                {/* Remarks */}
+                <div className="space-y-1">
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Remarks</label>
+                  <textarea
+                    value={selectedNewRemarks}
+                    onChange={(e) => setSelectedNewRemarks(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    rows={2}
+                    placeholder="Remarks..."
                   />
                 </div>
               </div>

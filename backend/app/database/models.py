@@ -248,6 +248,7 @@ class BankDeposit(Base):
     deposit_date: Mapped[date] = mapped_column(Date, nullable=False)
     
     reference_no: Mapped[Optional[str]] = mapped_column(String(100), unique=True, nullable=True)  # Nullable for direct handovers
+    remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)  # 'pending', 'verified'
     balance_snapshot: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False) # Snapshot of account balance after transaction
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

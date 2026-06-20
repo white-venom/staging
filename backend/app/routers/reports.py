@@ -50,7 +50,11 @@ def get_public_ledger(
 
     tx_list = []
     for tx in transactions:
-        remarks = tx.collection.remarks if (tx.collection and tx.collection.remarks) else ""
+        remarks = ""
+        if tx.collection and tx.collection.remarks:
+            remarks = tx.collection.remarks
+        elif tx.deposit and tx.deposit.remarks:
+            remarks = tx.deposit.remarks
         reference_no = tx.deposit.reference_no if (tx.deposit and tx.deposit.reference_no) else ""
         
         # Get store name and portal name if available

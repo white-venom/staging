@@ -27,9 +27,19 @@ export default function LedgerTab({
   const adminContext = useAdmin();
   const retailerDirectory = propsRetailerDir || adminContext.retailerDirectory;
   const portalDirectory = propsPortalDir || adminContext.portalDirectory;
+  const getTodayDateString = () => {
+    const d = new Date();
+    const tzString = d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const parts = new Date(tzString);
+    const y = parts.getFullYear();
+    const m = String(parts.getMonth() + 1).padStart(2, "0");
+    const day = String(parts.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
   const { ledgerSearchTerm, setLedgerSearchTerm } = adminContext;
-  const [dateFrom, setDateFrom] = React.useState("");
-  const [dateTo, setDateTo] = React.useState("");
+  const [dateFrom, setDateFrom] = React.useState(getTodayDateString());
+  const [dateTo, setDateTo] = React.useState(getTodayDateString());
   const [typeFilter, setTypeFilter] = React.useState("all");
   const [staffFilter, setStaffFilter] = React.useState("all");
   const [partyFilter, setPartyFilter] = React.useState("all");
@@ -53,6 +63,7 @@ export default function LedgerTab({
   const [selectedNewDate, setSelectedNewDate] = React.useState("");
   const [selectedNewRefNo, setSelectedNewRefNo] = React.useState("");
   const [selectedNewRemarks, setSelectedNewRemarks] = React.useState("");
+  const [selectedNewVirtualTargetType, setSelectedNewVirtualTargetType] = React.useState("retailer");
   const [isSavingCollection, setIsSavingCollection] = React.useState(false);
   
   const [selectedNewDenoms, setSelectedNewDenoms] = React.useState({
@@ -111,6 +122,8 @@ export default function LedgerTab({
       setSelectedNewRefNo(raw.reference_no || raw.referenceNo || "");
       setSelectedNewRecipientStaffId(raw.recipient_staff_id || raw.recipientStaffId || "");
       setSelectedNewToOffice(raw.to_office === true);
+      const hasStaff = !!(raw.recipient_staff_id || raw.recipientStaffId);
+      setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
     }
     
     const den = raw.denominations || {};
@@ -154,8 +167,8 @@ export default function LedgerTab({
     try {
       if (editingIsDeposit) {
         const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
-        const retailerId = selectedNewDepositType === "retailer" || selectedNewDepositType === "virtual" ? selectedNewRetailerId : null;
-        const recipientStaffId = selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null;
+        const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
+        const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
         const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
         await api.updateDeposit(editingCollection.id, {
@@ -215,16 +228,6 @@ export default function LedgerTab({
   const staffList = Array.from(new Set([
     ...(collections || []).map(c => c.staffName),
     ...(deposits || []).map(d => d.staffName)
-  ].filter(Boolean))).sort();
-
-  const partyList = Array.from(new Set([
-    ...(collections || []).map(c => c.retailerName),
-    ...(deposits || []).map(d => d.targetName)
-  ].filter(Boolean))).sort();
-
-  const portalList = Array.from(new Set([
-    ...(collections || []).map(c => c.portalName),
-    ...(deposits || []).map(d => d.targetName)
   ].filter(Boolean))).sort();
 
   // Merge and Filter all transactions
@@ -294,6 +297,14 @@ export default function LedgerTab({
       };
     })
   ];
+
+  const partyList = Array.from(new Set(
+    allTransactions.map(tx => tx.party).filter(Boolean)
+  )).sort();
+
+  const portalList = Array.from(new Set(
+    allTransactions.map(tx => tx.portal).filter(Boolean)
+  )).sort();
 
   // Calculate Initial Balance for Summary Section (starts with opening_to_take, no netting/subtraction)
   let initialBalance = 0;
@@ -1087,11 +1098,12 @@ export default function LedgerTab({
                       )}
                     </>
                   )}
-
                   {selectedNewDepositType === "virtual" && (
                     <>
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Source Portal</label>
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                          {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                        </label>
                         <InlineSelect
                           value={selectedNewPortalId}
                           onChange={setSelectedNewPortalId}
@@ -1104,32 +1116,75 @@ export default function LedgerTab({
                       </div>
 
                       <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Retailer</label>
-                        <InlineSelect
-                          value={selectedNewRetailerId}
-                          onChange={setSelectedNewRetailerId}
-                          options={[
-                            { value: "", label: "Select Retailer" },
-                            ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
-                          ]}
-                          placeholder="Select Retailer"
-                        />
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                          {selectedNewPaymentMode === "refund" ? "Source Type" : "Destination Type"}
+                        </label>
+                        <select
+                          value={selectedNewVirtualTargetType}
+                          onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                        >
+                          <option value="retailer">Retailer</option>
+                          <option value="staff">Staff Member</option>
+                        </select>
                       </div>
+
+                      {selectedNewVirtualTargetType === "retailer" ? (
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                            {selectedNewPaymentMode === "refund" ? "Source Retailer" : "Destination Retailer"}
+                          </label>
+                          <InlineSelect
+                            value={selectedNewRetailerId}
+                            onChange={setSelectedNewRetailerId}
+                            options={[
+                              { value: "", label: "Select Retailer" },
+                              ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                            ]}
+                            placeholder="Select Retailer"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                            {selectedNewPaymentMode === "refund" ? "Source Staff Member" : "Destination Staff Member"}
+                          </label>
+                          <InlineSelect
+                            value={selectedNewRecipientStaffId}
+                            onChange={setSelectedNewRecipientStaffId}
+                            options={[
+                              { value: "", label: "Select Staff Member" },
+                              ...(adminContext.userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                            ]}
+                            placeholder="Select Staff Member"
+                          />
+                        </div>
+                      )}
                     </>
                   )}
 
                   {/* Payment Mode */}
                   <div className="space-y-1">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Payment Mode</label>
-                    <select
-                      value={selectedNewPaymentMode}
-                      onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                    >
-                      <option value="cash">Cash</option>
-                      <option value="online">Online</option>
-                      <option value="refund">Refund (Virtual only)</option>
-                    </select>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Payment Mode / Direction</label>
+                    {selectedNewDepositType === "virtual" ? (
+                      <select
+                        value={selectedNewPaymentMode}
+                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      >
+                        <option value="online">Virtual Transfer (Load)</option>
+                        <option value="refund">Move to Distributor (Refund)</option>
+                      </select>
+                    ) : (
+                      <select
+                        value={selectedNewPaymentMode}
+                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="online">Online</option>
+                      </select>
+                    )}
                   </div>
 
                   {/* Amount */}
@@ -1151,7 +1206,7 @@ export default function LedgerTab({
                       type="date"
                       value={selectedNewDate}
                       onChange={(e) => setSelectedNewDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
                       required
                     />
                   </div>
@@ -1165,6 +1220,18 @@ export default function LedgerTab({
                       onChange={(e) => setSelectedNewRefNo(e.target.value)}
                       className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
                       placeholder="Optional"
+                    />
+                  </div>
+
+                  {/* Remarks */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Remarks</label>
+                    <textarea
+                      value={selectedNewRemarks}
+                      onChange={(e) => setSelectedNewRemarks(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      rows={2}
+                      placeholder="Remarks..."
                     />
                   </div>
                 </div>

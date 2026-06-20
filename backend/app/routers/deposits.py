@@ -66,6 +66,7 @@ def submit_deposit(
             amount=payload.amount,
             deposit_date=payload.deposit_date,
             reference_no=payload.reference_no,
+            remarks=payload.remarks,
             status="verified"
         )
         db.add(db_deposit)
@@ -572,10 +573,53 @@ def update_deposit(
 
     # Update ledger entry
     ledger_entry = db.scalar(select(Ledger).where(Ledger.deposit_id == deposit_id))
-    if ledger_entry:
-        ledger_entry.amount = payload.amount
-        ledger_entry.portal_id = payload.portal_id
-        ledger_entry.retailer_id = payload.retailer_id
+    dt = payload.deposit_type.lower().strip()
+    
+    if dt in ("virtual", "retailer"):
+        # We need a ledger entry if there's a retailer_id
+        if payload.retailer_id:
+            txn_type = "debit"
+            desc = "cash out"
+            if dt == "virtual":
+                txn_type = "credit" if payload.payment_mode == "refund" else "debit"
+                desc = "move to distributor" if payload.payment_mode == "refund" else "virtual transfer"
+                
+            if not ledger_entry:
+                ledger_entry = Ledger(
+                    retailer_id=payload.retailer_id,
+                    transaction_type=txn_type,
+                    amount=payload.amount,
+                    balance=Decimal("0.00"),
+                    description=desc,
+                    deposit_id=deposit.id,
+                    created_at=deposit.created_at
+                )
+                db.add(ledger_entry)
+            else:
+                ledger_entry.retailer_id = payload.retailer_id
+                ledger_entry.amount = payload.amount
+                ledger_entry.transaction_type = txn_type
+                ledger_entry.description = desc
+        else:
+            if ledger_entry:
+                db.delete(ledger_entry)
+                ledger_entry = None
+    else:
+        # If the deposit type is no longer retailer/virtual, but ledger entry exists, delete it
+        if ledger_entry:
+            db.delete(ledger_entry)
+            ledger_entry = None
+
+    if payload.deposit_date:
+        import pytz
+        from datetime import datetime
+        ist = pytz.timezone('Asia/Kolkata')
+        current_time_ist = datetime.now(ist).time()
+        transfer_datetime_ist = datetime.combine(payload.deposit_date, current_time_ist)
+        transfer_datetime_utc = ist.localize(transfer_datetime_ist).astimezone(pytz.utc).replace(tzinfo=None)
+        deposit.created_at = transfer_datetime_utc
+        if ledger_entry:
+            ledger_entry.created_at = transfer_datetime_utc
         
     db.commit()
     

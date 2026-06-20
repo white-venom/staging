@@ -50,6 +50,7 @@ export default function MobileLedger() {
   const [selectedNewDate, setSelectedNewDate] = useState("");
   const [selectedNewRefNo, setSelectedNewRefNo] = useState("");
   const [selectedNewRemarks, setSelectedNewRemarks] = useState("");
+  const [selectedNewVirtualTargetType, setSelectedNewVirtualTargetType] = useState("retailer");
   const [isSavingCollection, setIsSavingCollection] = useState(false);
   
   const [selectedNewDenoms, setSelectedNewDenoms] = useState({
@@ -105,6 +106,8 @@ export default function MobileLedger() {
       setSelectedNewRefNo(item.reference_no || item.referenceNo || "");
       setSelectedNewRecipientStaffId(item.recipient_staff_id || item.recipientStaffId || "");
       setSelectedNewToOffice(item.to_office === true);
+      const hasStaff = !!(item.recipient_staff_id || item.recipientStaffId);
+      setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
     }
     
     const den = item.denominations || {};
@@ -148,8 +151,8 @@ export default function MobileLedger() {
     try {
       if (editingIsDeposit) {
         const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
-        const retailerId = selectedNewDepositType === "retailer" || selectedNewDepositType === "virtual" ? selectedNewRetailerId : null;
-        const recipientStaffId = selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null;
+        const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
+        const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
         const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
         await api.updateDeposit(editingCollection.id, {
@@ -162,6 +165,7 @@ export default function MobileLedger() {
           amount: Number(selectedNewAmount),
           deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
           reference_no: selectedNewRefNo || null,
+          remarks: selectedNewRemarks || "",
           denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null
         });
       } else {
@@ -195,9 +199,19 @@ export default function MobileLedger() {
     }
   };
   
+  const getTodayDateString = () => {
+    const d = new Date();
+    const tzString = d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const parts = new Date(tzString);
+    const y = parts.getFullYear();
+    const m = String(parts.getMonth() + 1).padStart(2, "0");
+    const day = String(parts.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
   const [filters, setFilters] = useState({
-    dateFrom: '',
-    dateTo: '',
+    dateFrom: getTodayDateString(),
+    dateTo: getTodayDateString(),
     staff: 'all',
     type: 'all',
     party: 'all',
@@ -214,12 +228,47 @@ export default function MobileLedger() {
   }, [collections, deposits]);
 
   const partyList = useMemo(() => {
-    return (retailerDirectory || []).map((r: any) => r.name).sort();
-  }, [retailerDirectory]);
+    const rawParties = [
+      ...(collections || []).map(c => {
+        if (c.from_staff_id || c.retailerName?.toLowerCase().startsWith("staff")) {
+          const nameOnly = c.retailerName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "");
+          return `Staff - ${nameOnly || "Staff Member"}`;
+        } else if (c.retailer_id) {
+          const nameOnly = c.retailerName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
+          return `Retailer - ${nameOnly || "Retailer"}`;
+        }
+        return c.retailerName;
+      }),
+      ...(deposits || []).map(d => {
+        const isVirtual = d.depositType === 'virtual';
+        let party = d.targetName;
+        if (isVirtual && d.retailer_id) {
+          const ret = (retailerDirectory || []).find((r: any) => r.id === d.retailer_id);
+          party = ret?.name || d.targetName;
+        }
+        if (d.depositType === "staff") {
+          const cleanName = d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "");
+          return `Staff - ${cleanName || "Staff Member"}`;
+        } else if (d.depositType === "retailer") {
+          const cleanName = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
+          return `Retailer - ${cleanName || "Retailer"}`;
+        }
+        return d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
+      })
+    ];
+    return Array.from(new Set(rawParties.filter(Boolean))).sort() as string[];
+  }, [collections, deposits, retailerDirectory]);
 
   const portalList = useMemo(() => {
-    return (portalDirectory || []).map((p: any) => p.name).sort();
-  }, [portalDirectory]);
+    const rawPortals = [
+      ...(collections || []).map(c => c.portalName),
+      ...(deposits || []).map(d => {
+        const isVirtual = d.depositType === 'virtual';
+        return isVirtual ? (d.portalGroupName || d.portalName || d.targetName) : d.targetName;
+      })
+    ];
+    return Array.from(new Set(rawPortals.filter(Boolean))).sort() as string[];
+  }, [collections, deposits]);
 
   // Combine and Apply ALL Filters
   const filteredLedger = useMemo(() => {
@@ -785,32 +834,73 @@ export default function MobileLedger() {
                       </div>
 
                       <div className="space-y-0.5">
-                        <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Target Retailer</label>
-                        <InlineSelect
-                          value={selectedNewRetailerId}
-                          onChange={setSelectedNewRetailerId}
-                          options={[
-                            { value: "", label: "Select Retailer" },
-                            ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
-                          ]}
-                          placeholder="Select Retailer"
-                        />
+                        <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Target Type</label>
+                        <select
+                          value={selectedNewVirtualTargetType}
+                          onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
+                          className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                        >
+                          <option value="retailer">Retailer</option>
+                          <option value="staff">Staff Member</option>
+                        </select>
                       </div>
+
+                      {selectedNewVirtualTargetType === "retailer" ? (
+                        <div className="space-y-0.5">
+                          <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">
+                            {selectedNewPaymentMode === "refund" ? "Source Retailer" : "Target Retailer"}
+                          </label>
+                          <InlineSelect
+                            value={selectedNewRetailerId}
+                            onChange={setSelectedNewRetailerId}
+                            options={[
+                              { value: "", label: "Select Retailer" },
+                              ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                            ]}
+                            placeholder="Select Retailer"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-0.5">
+                          <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">
+                            {selectedNewPaymentMode === "refund" ? "Source Staff Member" : "Target Staff Member"}
+                          </label>
+                          <InlineSelect
+                            value={selectedNewRecipientStaffId}
+                            onChange={setSelectedNewRecipientStaffId}
+                            options={[
+                              { value: "", label: "Select Staff Member" },
+                              ...(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                            ]}
+                            placeholder="Select Staff Member"
+                          />
+                        </div>
+                      )}
                     </>
                   )}
 
                   {/* Payment Mode */}
                   <div className="space-y-0.5">
-                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Payment Mode</label>
-                    <select
-                      value={selectedNewPaymentMode}
-                      onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                    >
-                      <option value="cash">Cash</option>
-                      <option value="online">Online</option>
-                      <option value="refund">Refund (Virtual only)</option>
-                    </select>
+                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Payment Mode / Direction</label>
+                    {selectedNewDepositType === "virtual" ? (
+                      <select
+                        value={selectedNewPaymentMode}
+                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      >
+                        <option value="online">Virtual Transfer (Load)</option>
+                        <option value="refund">Move to Distributor (Refund)</option>
+                      </select>
+                    ) : (
+                      <select
+                        value={selectedNewPaymentMode}
+                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="online">Online</option>
+                      </select>
+                    )}
                   </div>
 
                   {/* Amount */}
@@ -846,6 +936,18 @@ export default function MobileLedger() {
                       onChange={(e) => setSelectedNewRefNo(e.target.value)}
                       className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
                       placeholder="Optional"
+                    />
+                  </div>
+
+                  {/* Remarks */}
+                  <div className="space-y-0.5">
+                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Remarks</label>
+                    <textarea
+                      value={selectedNewRemarks}
+                      onChange={(e) => setSelectedNewRemarks(e.target.value)}
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      rows={1.5}
+                      placeholder="Remarks..."
                     />
                   </div>
                 </div>

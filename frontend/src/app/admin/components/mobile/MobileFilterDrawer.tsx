@@ -34,6 +34,16 @@ export default function MobileFilterDrawer({
 }: MobileFilterDrawerProps) {
   if (!isOpen) return null;
 
+  const getTodayDateString = () => {
+    const d = new Date();
+    const tzString = d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const parts = new Date(tzString);
+    const y = parts.getFullYear();
+    const m = String(parts.getMonth() + 1).padStart(2, "0");
+    const day = String(parts.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center">
       <div 
@@ -168,9 +178,10 @@ export default function MobileFilterDrawer({
         <div className="mt-auto pt-3 flex gap-2 shrink-0 border-t border-slate-100 dark:border-slate-800">
           <button 
             onClick={() => {
+              const today = getTodayDateString();
               setFilters({
-                dateFrom: '',
-                dateTo: '',
+                dateFrom: today,
+                dateTo: today,
                 staff: 'all',
                 type: 'all',
                 party: 'all',

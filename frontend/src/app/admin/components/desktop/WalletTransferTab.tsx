@@ -215,7 +215,7 @@ export default function WalletTransferTab() {
               ? "Processing Transfer..." 
               : vDirection === "load" 
                 ? "Execute Money Transfer" 
-                : "Execute Reverse Transfer"}
+                : "Move to Distributor"}
           </button>
         </form>
       </div>

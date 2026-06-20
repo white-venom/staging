@@ -185,6 +185,7 @@ export default function MobileOverview({
   const [selectedNewDate, setSelectedNewDate] = useState("");
   const [selectedNewRefNo, setSelectedNewRefNo] = useState("");
   const [selectedNewRemarks, setSelectedNewRemarks] = useState("");
+  const [selectedNewVirtualTargetType, setSelectedNewVirtualTargetType] = useState("retailer");
   const [isSavingCollection, setIsSavingCollection] = useState(false);
   
   const [selectedNewDenoms, setSelectedNewDenoms] = useState({
@@ -240,6 +241,8 @@ export default function MobileOverview({
       setSelectedNewRefNo(item.reference_no || "");
       setSelectedNewRecipientStaffId(item.recipient_staff_id || "");
       setSelectedNewToOffice(item.to_office === true);
+      const hasStaff = !!(item.recipient_staff_id || item.recipientStaffId);
+      setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
     }
     
     const den = item.denominations || {};
@@ -265,8 +268,8 @@ export default function MobileOverview({
     try {
       if (editingIsDeposit) {
         const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
-        const retailerId = selectedNewDepositType === "retailer" || selectedNewDepositType === "virtual" ? selectedNewRetailerId : null;
-        const recipientStaffId = selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null;
+        const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
+        const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
         const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
         await api.updateDeposit(editingCollection.id, {
@@ -279,6 +282,7 @@ export default function MobileOverview({
           amount: Number(selectedNewAmount),
           deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
           reference_no: selectedNewRefNo || null,
+          remarks: selectedNewRemarks || "",
           denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null
         });
       } else {
@@ -1207,32 +1211,73 @@ export default function MobileOverview({
                       </div>
 
                       <div className="space-y-0.5">
-                        <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Target Retailer</label>
-                        <InlineSelect
-                          value={selectedNewRetailerId}
-                          onChange={setSelectedNewRetailerId}
-                          options={[
-                            { value: "", label: "Select Retailer" },
-                            ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
-                          ]}
-                          placeholder="Select Retailer"
-                        />
+                        <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Target Type</label>
+                        <select
+                          value={selectedNewVirtualTargetType}
+                          onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
+                          className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                        >
+                          <option value="retailer">Retailer</option>
+                          <option value="staff">Staff Member</option>
+                        </select>
                       </div>
+
+                      {selectedNewVirtualTargetType === "retailer" ? (
+                        <div className="space-y-0.5">
+                          <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">
+                            {selectedNewPaymentMode === "refund" ? "Source Retailer" : "Target Retailer"}
+                          </label>
+                          <InlineSelect
+                            value={selectedNewRetailerId}
+                            onChange={setSelectedNewRetailerId}
+                            options={[
+                              { value: "", label: "Select Retailer" },
+                              ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                            ]}
+                            placeholder="Select Retailer"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-0.5">
+                          <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">
+                            {selectedNewPaymentMode === "refund" ? "Source Staff Member" : "Target Staff Member"}
+                          </label>
+                          <InlineSelect
+                            value={selectedNewRecipientStaffId}
+                            onChange={setSelectedNewRecipientStaffId}
+                            options={[
+                              { value: "", label: "Select Staff Member" },
+                              ...(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                            ]}
+                            placeholder="Select Staff Member"
+                          />
+                        </div>
+                      )}
                     </>
                   )}
 
                   {/* Payment Mode */}
                   <div className="space-y-0.5">
-                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Payment Mode</label>
-                    <select
-                      value={selectedNewPaymentMode}
-                      onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                    >
-                      <option value="cash">Cash</option>
-                      <option value="online">Online</option>
-                      <option value="refund">Refund (Virtual only)</option>
-                    </select>
+                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Payment Mode / Direction</label>
+                    {selectedNewDepositType === "virtual" ? (
+                      <select
+                        value={selectedNewPaymentMode}
+                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      >
+                        <option value="online">Virtual Transfer (Load)</option>
+                        <option value="refund">Move to Distributor (Refund)</option>
+                      </select>
+                    ) : (
+                      <select
+                        value={selectedNewPaymentMode}
+                        onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      >
+                        <option value="cash">Cash</option>
+                        <option value="online">Online</option>
+                      </select>
+                    )}
                   </div>
 
                   {/* Amount */}
@@ -1268,6 +1313,18 @@ export default function MobileOverview({
                       onChange={(e) => setSelectedNewRefNo(e.target.value)}
                       className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
                       placeholder="Optional"
+                    />
+                  </div>
+
+                  {/* Remarks */}
+                  <div className="space-y-0.5">
+                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Remarks</label>
+                    <textarea
+                      value={selectedNewRemarks}
+                      onChange={(e) => setSelectedNewRemarks(e.target.value)}
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      rows={1.5}
+                      placeholder="Remarks..."
                     />
                   </div>
                 </div>

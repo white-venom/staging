@@ -210,7 +210,8 @@ def process_virtual_transfer(
                 deposit_date=today_ist,
                 created_at=transfer_datetime_utc,
                 status="verified",
-                balance_snapshot=new_balance
+                balance_snapshot=new_balance,
+                remarks=payload.remarks
             )
             db.add(db_deposit)
             db.flush() # flush to get db_deposit.id
@@ -264,7 +265,8 @@ def process_virtual_transfer(
                 deposit_date=today_ist,
                 created_at=transfer_datetime_utc,
                 status="verified",
-                balance_snapshot=staff.virtual_balance
+                balance_snapshot=staff.virtual_balance,
+                remarks=payload.remarks
             )
             db.add(db_deposit)
             
