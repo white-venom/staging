@@ -362,7 +362,7 @@ export default function MobilePortals({
                     onClick={() => handleOpenGroupLedger(group)}
                     className="px-1.5 py-0.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/30 text-[8px] font-bold rounded cursor-pointer"
                   >
-                    Consolidated Ledger
+                    Ledger
                   </button>
                 </div>
 

@@ -331,9 +331,9 @@ export default function PortalsTab({
                     <button
                       type="button"
                       onClick={() => handleOpenGroupLedger(group)}
-                      className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 text-[9px] font-black uppercase rounded cursor-pointer"
+                      className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-955/30 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 text-[9px] font-black uppercase rounded cursor-pointer"
                     >
-                      Consolidated Ledger
+                      Ledger
                     </button>
                   </div>
                   {/* Registered bank accounts with balances */}
