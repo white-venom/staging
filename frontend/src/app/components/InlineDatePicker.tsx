@@ -82,18 +82,6 @@ export default function InlineDatePicker({ value, onChange, label, type }: Inlin
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {value && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleClear();
-              }}
-              className="text-[8px] font-black text-red-400 uppercase px-2 py-1 bg-red-50 dark:bg-red-950/30 rounded-lg cursor-pointer"
-            >
-              Clear
-            </button>
-          )}
           <ChevronDown className="w-4 h-4 text-slate-400" />
         </div>
       </button>
