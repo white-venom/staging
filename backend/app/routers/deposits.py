@@ -136,12 +136,15 @@ def submit_deposit(
             # Admin does not have a virtual balance limit to validate/decrement.
             pass
 
-            # Step A: Decrement Portal Balance and To Give
-            portal.balance -= payload.amount
-            portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + payload.amount
-            if portal.group:
-                portal.group.balance -= payload.amount
-                portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + payload.amount
+            # Step A: Adjust Portal Balance
+            if payload.payment_mode == "refund":
+                portal.balance += payload.amount
+                if portal.group:
+                    portal.group.balance += payload.amount
+            else:
+                portal.balance -= payload.amount
+                if portal.group:
+                    portal.group.balance -= payload.amount
                 
             # Step B: Fetch latest ledger entry to calculate new running balance
             latest_ledger = db.scalar(
@@ -393,17 +396,13 @@ def delete_deposit(
                 if deposit.payment_mode == "refund":
                     # Deleting virtual refund: decrease portal balance since refund is reverted
                     portal.balance -= Decimal(str(deposit.amount))
-                    portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
                     if portal.group:
                         portal.group.balance -= Decimal(str(deposit.amount))
-                        portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
                 else:
                     # Deleting virtual load: increase portal balance since load is reverted
                     portal.balance += Decimal(str(deposit.amount))
-                    portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
                     if portal.group:
                         portal.group.balance += Decimal(str(deposit.amount))
-                        portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
 
     # Reverse staff virtual limit if virtual limit transfer is deleted
     if deposit.deposit_type == "virtual":
@@ -476,16 +475,12 @@ def update_deposit(
             elif deposit.deposit_type == "virtual":
                 if deposit.payment_mode == "refund":
                     portal.balance -= Decimal(str(deposit.amount))
-                    portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
                     if portal.group:
                         portal.group.balance -= Decimal(str(deposit.amount))
-                        portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
                 else:
                     portal.balance += Decimal(str(deposit.amount))
-                    portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
                     if portal.group:
                         portal.group.balance += Decimal(str(deposit.amount))
-                        portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
 
     if deposit.deposit_type == "virtual":
         if deposit.recipient_staff_id:
@@ -546,16 +541,12 @@ def update_deposit(
         if portal:
             if deposit.payment_mode == "refund":
                 portal.balance += Decimal(str(deposit.amount))
-                portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
                 if portal.group:
                     portal.group.balance += Decimal(str(deposit.amount))
-                    portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - Decimal(str(deposit.amount))
             else:
                 portal.balance -= Decimal(str(deposit.amount))
-                portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
                 if portal.group:
                     portal.group.balance -= Decimal(str(deposit.amount))
-                    portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + Decimal(str(deposit.amount))
         
         if payload.recipient_staff_id:
             recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id).with_for_update())

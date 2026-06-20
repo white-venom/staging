@@ -32,8 +32,7 @@ def create_portal_group(
     if group_data.opening_to_take < 0 or group_data.opening_to_give < 0:
         raise HTTPException(status_code=400, detail="Opening balances cannot be negative")
         
-    # In the additive model, we do not subtract to_give from to_take for the running balance.
-    initial_balance = Decimal(str(group_data.opening_to_take))
+    initial_balance = Decimal(str(group_data.opening_to_take)) - Decimal(str(group_data.opening_to_give))
     
     db_group = PortalGroup(
         name=group_data.name,
@@ -166,7 +165,7 @@ def create_portal(
         raise HTTPException(status_code=400, detail="Opening balances cannot be negative")
         
     # Create portal
-    initial_balance = Decimal(str(portal_data.opening_to_take))
+    initial_balance = Decimal(str(portal_data.opening_to_take)) - Decimal(str(portal_data.opening_to_give))
     db_portal = Portal(
         group_id=portal_data.group_id,
         portal_name=portal_data.portal_name,
@@ -327,7 +326,8 @@ def get_portal_ledger(
         .where(
             and_(
                 Collection.portal_id == portal_id,
-                Collection.status == "verified"
+                Collection.status == "verified",
+                Collection.retailer_id == None
             )
         )
     ).all()

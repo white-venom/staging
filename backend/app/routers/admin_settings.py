@@ -153,19 +153,15 @@ def process_virtual_transfer(
         raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
         
     try:
-        # Step A: Adjust Portal Balance and To Give
+        # Step A: Adjust Portal Balance
         if payload.direction == "refund":
             portal.balance += payload.amount
-            portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) - payload.amount
             if portal.group:
                 portal.group.balance += payload.amount
-                portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) - payload.amount
         else:
             portal.balance -= payload.amount
-            portal.opening_to_give = (portal.opening_to_give or Decimal("0.00")) + payload.amount
             if portal.group:
                 portal.group.balance -= payload.amount
-                portal.group.opening_to_give = (portal.group.opening_to_give or Decimal("0.00")) + payload.amount
             
         if payload.retailer_id:
             # Transfer to/from Retailer
