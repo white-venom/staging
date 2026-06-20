@@ -136,7 +136,7 @@ export default function InlineDatePicker({ value, onChange, label, type }: Inlin
           {/* Header */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
             <span className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
-              {displayText ? `${displayText} ▾` : "Select Date ▾"}
+              {displayText || "Select Date"}
             </span>
             <button
               type="button"

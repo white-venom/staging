@@ -206,7 +206,7 @@ def submit_deposit(
             retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
             p_name = portal.portal_name if portal else "Portal"
             r_name = retailer.retailer_name if retailer else "Retailer"
-            db_deposit.target_name = f"Virtual: {p_name} ➔ {r_name}"
+            db_deposit.target_name = f"Virtual: {p_name} -> {r_name}"
             if retailer:
                 db_deposit.retailer_ledger_token = retailer.ledger_token
             if portal and portal.group:

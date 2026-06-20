@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import MobileFilterDrawer from "./MobileFilterDrawer";
 import { api } from "../../../utils/api";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
+import InlineSelect from "@/app/components/InlineSelect";
 
 export default function MobileLedger() {
   const { collections, deposits, retailerDirectory, portalDirectory, fetchData, showToastNotification, userDirectory } = useAdmin();
@@ -554,57 +555,52 @@ export default function MobileLedger() {
                   {/* Parent Retailer Select */}
                   <div className="space-y-0.5">
                     <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Parent Retailer</label>
-                    <select
+                    <InlineSelect
                       value={selectedNewRetailerId}
-                      onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                    >
-                      <option value="">No Retailer</option>
-                      {retailerDirectory.map((r: any) => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </select>
+                      onChange={setSelectedNewRetailerId}
+                      options={[
+                        { value: "", label: "No Retailer" },
+                        ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                      ]}
+                      placeholder="No Retailer"
+                    />
                   </div>
 
                   {availableStores.length > 0 && (
                     <div className="space-y-0.5 animate-in fade-in duration-200">
                       <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Parent Store (Shop/Branch)</label>
-                      <select
+                      <InlineSelect
                         value={selectedNewStoreId}
-                        onChange={(e) => setSelectedNewStoreId(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                      >
-                        <option value="">None / Cash</option>
-                        {availableStores.map((s: any) => (
-                          <option key={s.id} value={s.id}>{s.store_name}</option>
-                        ))}
-                      </select>
+                        onChange={setSelectedNewStoreId}
+                        options={[
+                          { value: "", label: "None / Cash" },
+                          ...availableStores.map((s: any) => ({ value: String(s.id), label: s.store_name }))
+                        ]}
+                        placeholder="None / Cash"
+                      />
                     </div>
                   )}
 
                   {/* Portal Select */}
                   <div className="space-y-0.5">
                     <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Portal Channel</label>
-                    <select
+                    <InlineSelect
                       value={selectedNewPortalId}
-                      onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                    >
-                      <option value="">None / Cash</option>
-                      {portalDirectory
-                        .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
-                        .filter((p: any) => p.show_in_online_payment)
-                        .map((p: any) => {
-                          const displayName = p.groupName && p.groupName.toLowerCase() !== p.portal_name.toLowerCase()
-                            ? `${p.groupName} - ${p.portal_name}`
-                            : p.portal_name;
-                          return (
-                            <option key={p.id} value={p.id}>
-                              {displayName} {p.bank_name ? `(${p.bank_name})` : ""}
-                            </option>
-                          );
-                        })}
-                    </select>
+                      onChange={setSelectedNewPortalId}
+                      options={[
+                        { value: "", label: "None / Cash" },
+                        ...portalDirectory
+                          .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
+                          .filter((p: any) => p.show_in_online_payment)
+                          .map((p: any) => {
+                            const displayName = p.groupName && p.groupName.toLowerCase() !== p.portal_name.toLowerCase()
+                              ? `${p.groupName} - ${p.portal_name}`
+                              : p.portal_name;
+                            return { value: String(p.id), label: `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                          })
+                      ]}
+                      placeholder="None / Cash"
+                    />
                   </div>
 
                   {/* Denominations editor for Collection */}
@@ -714,32 +710,30 @@ export default function MobileLedger() {
                   {selectedNewDepositType === "portal" && (
                     <div className="space-y-0.5">
                       <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Target Portal</label>
-                      <select
+                      <InlineSelect
                         value={selectedNewPortalId}
-                        onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                      >
-                        <option value="">Select Portal Bank Account</option>
-                        {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
-                          <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
-                        ))}
-                      </select>
+                        onChange={setSelectedNewPortalId}
+                        options={[
+                          { value: "", label: "Select Portal Bank Account" },
+                          ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                        ]}
+                        placeholder="Select Portal Bank Account"
+                      />
                     </div>
                   )}
 
                   {selectedNewDepositType === "retailer" && (
                     <div className="space-y-0.5">
                       <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Target Retailer</label>
-                      <select
+                      <InlineSelect
                         value={selectedNewRetailerId}
-                        onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                      >
-                        <option value="">Select Retailer</option>
-                        {retailerDirectory.map((r: any) => (
-                          <option key={r.id} value={r.id}>{r.name}</option>
-                        ))}
-                      </select>
+                        onChange={setSelectedNewRetailerId}
+                        options={[
+                          { value: "", label: "Select Retailer" },
+                          ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                        ]}
+                        placeholder="Select Retailer"
+                      />
                     </div>
                   )}
 
@@ -759,16 +753,15 @@ export default function MobileLedger() {
                       {!selectedNewToOffice && (
                         <div className="space-y-0.5">
                           <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Recipient Staff</label>
-                          <select
+                          <InlineSelect
                             value={selectedNewRecipientStaffId}
-                            onChange={(e) => setSelectedNewRecipientStaffId(e.target.value)}
-                            className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                          >
-                            <option value="">Select Staff Member</option>
-                            {(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => (
-                              <option key={u.id} value={u.id}>{u.name}</option>
-                            ))}
-                          </select>
+                            onChange={setSelectedNewRecipientStaffId}
+                            options={[
+                              { value: "", label: "Select Staff Member" },
+                              ...(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                            ]}
+                            placeholder="Select Staff Member"
+                          />
                         </div>
                       )}
                     </>
@@ -778,30 +771,28 @@ export default function MobileLedger() {
                     <>
                       <div className="space-y-0.5">
                         <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Source Portal</label>
-                        <select
+                        <InlineSelect
                           value={selectedNewPortalId}
-                          onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                          className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                        >
-                          <option value="">Select Portal Bank Account</option>
-                          {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
-                            <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
-                          ))}
-                        </select>
+                          onChange={setSelectedNewPortalId}
+                          options={[
+                            { value: "", label: "Select Portal Bank Account" },
+                            ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                          ]}
+                          placeholder="Select Portal Bank Account"
+                        />
                       </div>
 
                       <div className="space-y-0.5">
                         <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Target Retailer</label>
-                        <select
+                        <InlineSelect
                           value={selectedNewRetailerId}
-                          onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                          className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
-                        >
-                          <option value="">Select Retailer</option>
-                          {retailerDirectory.map((r: any) => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                          ))}
-                        </select>
+                          onChange={setSelectedNewRetailerId}
+                          options={[
+                            { value: "", label: "Select Retailer" },
+                            ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                          ]}
+                          placeholder="Select Retailer"
+                        />
                       </div>
                     </>
                   )}

@@ -14,7 +14,8 @@ import {
   RefreshCw,
   Edit2,
   Trash2,
-  Share2
+  Share2,
+  AlertTriangle
 } from "lucide-react";
 import { numberToWordsIndian, formatShareDate } from "../../utils/shareHelper";
 
@@ -621,7 +622,12 @@ ${dateFormatted}`;
                   <span className="text-[7.5px] font-black uppercase text-slate-400 tracking-wider">Total Amount</span>
                   {(() => {
                     const tot = editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount;
-                    if (tot < 0) return <p className="text-[8px] text-amber-500 font-bold mt-0.5">⚠ Negative total — note exchange mode</p>;
+                    if (tot < 0) return (
+                      <div className="flex items-center gap-1 mt-0.5 text-amber-500">
+                        <AlertTriangle className="w-3 h-3 shrink-0" />
+                        <p className="text-[8px] font-bold">Negative total — note exchange mode</p>
+                      </div>
+                    );
                     return null;
                   })()}
                 </div>

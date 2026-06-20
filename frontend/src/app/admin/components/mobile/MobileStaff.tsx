@@ -65,10 +65,10 @@ export default function MobileStaff() {
           role: uRole, 
           password: uPassword || undefined 
         });
-        showToast(`✓ Staff "${uName}" updated`);
+        showToast(`Staff "${uName}" updated`);
       } else {
         await api.createUser({ name: uName, phone: uPhone, role: uRole, password: uPassword });
-        showToast(`✓ Staff "${uName}" created`);
+        showToast(`Staff "${uName}" created`);
       }
       setUName(""); setUPhone(""); setURole("staff"); setUPassword("");
       setEditingUser(null);

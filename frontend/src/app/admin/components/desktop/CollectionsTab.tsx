@@ -4,6 +4,7 @@ import React from "react";
 import { Search, Download, X, CheckCircle2, Edit, Trash2, ChevronDown, Save } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
+import InlineSelect from "../../../components/InlineSelect";
 
 interface CollectionsTabProps {
   collections: any[];
@@ -559,57 +560,52 @@ export default function CollectionsTab({
                 {/* Parent Retailer Select */}
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Parent Retailer</label>
-                  <select
+                  <InlineSelect
                     value={selectedNewRetailerId}
-                    onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                  >
-                    <option value="">No Retailer</option>
-                    {retailerDirectory.map((r: any) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
-                  </select>
+                    onChange={setSelectedNewRetailerId}
+                    options={[
+                      { value: "", label: "No Retailer" },
+                      ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                    ]}
+                    placeholder="No Retailer"
+                  />
                 </div>
 
                 {availableStores.length > 0 && (
                   <div className="space-y-1 animate-in fade-in duration-200">
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Parent Store (Shop/Branch)</label>
-                    <select
+                    <InlineSelect
                       value={selectedNewStoreId}
-                      onChange={(e) => setSelectedNewStoreId(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                    >
-                      <option value="">None / Cash</option>
-                      {availableStores.map((s: any) => (
-                        <option key={s.id} value={s.id}>{s.store_name}</option>
-                      ))}
-                    </select>
+                      onChange={setSelectedNewStoreId}
+                      options={[
+                        { value: "", label: "None / Cash" },
+                        ...availableStores.map((s: any) => ({ value: String(s.id), label: s.store_name }))
+                      ]}
+                      placeholder="None / Cash"
+                    />
                   </div>
                 )}
 
                 {/* Portal Select */}
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Portal Channel</label>
-                  <select
+                  <InlineSelect
                     value={selectedNewPortalId}
-                    onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
-                  >
-                    <option value="">None / Cash</option>
-                    {portalDirectory
-                      .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
-                      .filter((p: any) => p.show_in_online_payment)
-                      .map((p: any) => {
-                        const displayName = p.groupName && p.groupName.toLowerCase() !== p.portal_name.toLowerCase()
-                          ? `${p.groupName} - ${p.portal_name}`
-                          : p.portal_name;
-                        return (
-                          <option key={p.id} value={p.id}>
-                            {displayName} {p.bank_name ? `(${p.bank_name})` : ""}
-                          </option>
-                        );
-                      })}
-                  </select>
+                    onChange={setSelectedNewPortalId}
+                    options={[
+                      { value: "", label: "None / Cash" },
+                      ...portalDirectory
+                        .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
+                        .filter((p: any) => p.show_in_online_payment)
+                        .map((p: any) => {
+                          const displayName = p.groupName && p.groupName.toLowerCase() !== p.portal_name.toLowerCase()
+                            ? `${p.groupName} - ${p.portal_name}`
+                            : p.portal_name;
+                          return { value: String(p.id), label: `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                        })
+                    ]}
+                    placeholder="None / Cash"
+                  />
                 </div>
 
                 {/* Denominations editor for Collection */}

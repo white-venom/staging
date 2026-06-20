@@ -234,7 +234,7 @@ def submit_collection(
         if retailer and retailer.email:
             secure_link = f"https://doitservice.com/public/ledger/{retailer.ledger_token}"
             print("\n" + "="*80)
-            print("📨 [SMTP EMAIL DISPATCH SIMULATOR] TO RETAILER (AUTO-VERIFIED)")
+            print("[SMTP EMAIL DISPATCH SIMULATOR] TO RETAILER (AUTO-VERIFIED)")
             print(f"   ↳ Recipient: {retailer.retailer_name} <{retailer.email}>")
             print(f"   ↳ Subject: Collection Receipt - DO IT SERVICES (Ref: {db_collection.id.hex[:8]})")
             print(f"   ↳ Body Preview:")
@@ -242,7 +242,7 @@ def submit_collection(
             print(f"     We have successfully received your payment collection of ₹{db_collection.total_amount:.2f} today.")
             print(f"     Your outstanding ledger balance has been updated to: ₹{new_balance:.2f}.")
             print(f"     You can view your secure, real-time live statement anytime here:")
-            print(f"     🔗 {secure_link}")
+            print(f"     Link: {secure_link}")
             print("="*80 + "\n")
 
         # Trigger WhatsApp message asynchronously
@@ -392,7 +392,7 @@ def verify_collection(
     if retailer and retailer.email:
         secure_link = f"https://doitservice.com/public/ledger/{retailer.ledger_token}"
         print("\n" + "="*80)
-        print("📨 [SMTP EMAIL DISPATCH SIMULATOR] TO RETAILER")
+        print("[SMTP EMAIL DISPATCH SIMULATOR] TO RETAILER")
         print(f"   ↳ Recipient: {retailer.retailer_name} <{retailer.email}>")
         print(f"   ↳ Subject: Collection Receipt - DO IT SERVICES (Ref: {collection.id.hex[:8]})")
         print(f"   ↳ Body Preview:")
@@ -400,7 +400,7 @@ def verify_collection(
         print(f"     We have successfully received and verified your payment collection of ₹{collection.total_amount:.2f} today.")
         print(f"     Your outstanding ledger balance has been updated to: ₹{new_balance:.2f}.")
         print(f"     You can view your secure, real-time live statement anytime here:")
-        print(f"     🔗 {secure_link}")
+        print(f"     Link: {secure_link}")
         print("="*80 + "\n")
         
     # Trigger WhatsApp message asynchronously

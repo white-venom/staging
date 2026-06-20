@@ -10,7 +10,8 @@ import {
   ShieldAlert,
   Clock,
   Save,
-  Infinity
+  Infinity,
+  CheckCircle2
 } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
@@ -480,9 +481,19 @@ export default function AdministrationTab({
                   </span>
                 </label>
               </div>
-              <p className="text-[10px] text-slate-400">
-                {editPermanent ? "✅ Staff kisi bhi time edit kar sakta hai." : `⏱ Staff sirf ${editWindow || 5} minute(s) tak edit kar sakta hai.`}
-              </p>
+              <div className="text-[10px] text-slate-400 flex items-center gap-1.5 min-h-[1.5rem]">
+                {editPermanent ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Staff kisi bhi time edit kar sakta hai.</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>Staff sirf {editWindow || 5} minute(s) tak edit kar sakta hai.</span>
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Delete Window */}
@@ -510,9 +521,19 @@ export default function AdministrationTab({
                   </span>
                 </label>
               </div>
-              <p className="text-[10px] text-slate-400">
-                {deletePermanent ? "✅ Staff kisi bhi time delete kar sakta hai." : `⏱ Staff sirf ${deleteWindow || 5} minute(s) tak delete kar sakta hai.`}
-              </p>
+              <div className="text-[10px] text-slate-400 flex items-center gap-1.5 min-h-[1.5rem]">
+                {deletePermanent ? (
+                  <>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                    <span>Staff kisi bhi time delete kar sakta hai.</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    <span>Staff sirf {deleteWindow || 5} minute(s) tak delete kar sakta hai.</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
 

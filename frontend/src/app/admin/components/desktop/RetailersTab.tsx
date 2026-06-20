@@ -6,6 +6,7 @@ import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
 import { useRouter } from "next/navigation";
 import LedgerReportView from "../../../components/LedgerReportView";
+import InlineSelect from "../../../components/InlineSelect";
 
 interface RetailersTabProps {
   retailerDirectory: any[];
@@ -720,32 +721,30 @@ export default function RetailersTab({
                 {!editingIsDeposit && (
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Retailer</label>
-                    <select
+                    <InlineSelect
                       value={selectedNewRetailerId}
-                      onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
-                    >
-                      <option value="">No Retailer</option>
-                      {retailerDirectory.map((r: any) => (
-                        <option key={r.id} value={r.id}>{r.name}</option>
-                      ))}
-                    </select>
+                      onChange={setSelectedNewRetailerId}
+                      options={[
+                        { value: "", label: "No Retailer" },
+                        ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                      ]}
+                      placeholder="No Retailer"
+                    />
                   </div>
                 )}
 
                 {!editingIsDeposit && availableStores.length > 0 && (
                   <div className="animate-in fade-in duration-200">
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Parent Store (Shop/Branch)</label>
-                    <select
+                    <InlineSelect
                       value={selectedNewStoreId}
-                      onChange={(e) => setSelectedNewStoreId(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
-                    >
-                      <option value="">None / Cash</option>
-                      {availableStores.map((s: any) => (
-                        <option key={s.id} value={s.id}>{s.store_name}</option>
-                      ))}
-                    </select>
+                      onChange={setSelectedNewStoreId}
+                      options={[
+                        { value: "", label: "None / Cash" },
+                        ...availableStores.map((s: any) => ({ value: String(s.id), label: s.store_name }))
+                      ]}
+                      placeholder="None / Cash"
+                    />
                   </div>
                 )}
 
@@ -774,27 +773,23 @@ export default function RetailersTab({
                 {!editingIsDeposit && selectedNewPaymentMode === "online" && (
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Portal Channel</label>
-                    <select
+                    <InlineSelect
                       value={selectedNewPortalId}
-                      onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
-                      required
-                    >
-                      <option value="">Select Portal Bank Account</option>
-                      {portalDirectory
-                        .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
-                        .filter((p: any) => p.show_in_online_payment)
-                        .map((p: any) => {
-                          const displayName = p.groupName && p.groupName.toLowerCase() !== p.portal_name.toLowerCase()
-                            ? `${p.groupName} - ${p.portal_name}`
-                            : p.portal_name;
-                          return (
-                            <option key={p.id} value={p.id}>
-                              {displayName} {p.bank_name ? `(${p.bank_name})` : ""}
-                            </option>
-                          );
-                        })}
-                    </select>
+                      onChange={setSelectedNewPortalId}
+                      options={[
+                        { value: "", label: "Select Portal Bank Account" },
+                        ...portalDirectory
+                          .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
+                          .filter((p: any) => p.show_in_online_payment)
+                          .map((p: any) => {
+                            const displayName = p.groupName && p.groupName.toLowerCase() !== p.portal_name.toLowerCase()
+                              ? `${p.groupName} - ${p.portal_name}`
+                              : p.portal_name;
+                            return { value: String(p.id), label: `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                          })
+                      ]}
+                      placeholder="Select Portal Bank Account"
+                    />
                   </div>
                 )}
 
@@ -818,34 +813,30 @@ export default function RetailersTab({
                     {selectedNewDepositType === "portal" && (
                       <div>
                         <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Portal</label>
-                        <select
+                        <InlineSelect
                           value={selectedNewPortalId}
-                          onChange={(e) => setSelectedNewPortalId(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
-                          required
-                        >
-                          <option value="">Select Portal Bank Account</option>
-                          {portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => (
-                            <option key={p.id} value={p.id}>{p.portal_name} ({p.bank_name})</option>
-                          ))}
-                        </select>
+                          onChange={setSelectedNewPortalId}
+                          options={[
+                            { value: "", label: "Select Portal Bank Account" },
+                            ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                          ]}
+                          placeholder="Select Portal Bank Account"
+                        />
                       </div>
                     )}
 
                     {selectedNewDepositType === "retailer" && (
                       <div>
                         <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Retailer</label>
-                        <select
+                        <InlineSelect
                           value={selectedNewRetailerId}
-                          onChange={(e) => setSelectedNewRetailerId(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
-                          required
-                        >
-                          <option value="">Select Retailer</option>
-                          {retailerDirectory.map((r: any) => (
-                            <option key={r.id} value={r.id}>{r.name}</option>
-                          ))}
-                        </select>
+                          onChange={setSelectedNewRetailerId}
+                          options={[
+                            { value: "", label: "Select Retailer" },
+                            ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                          ]}
+                          placeholder="Select Retailer"
+                        />
                       </div>
                     )}
 
@@ -864,17 +855,15 @@ export default function RetailersTab({
                         {!selectedNewToOffice && (
                           <div>
                             <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Recipient Staff</label>
-                            <select
+                            <InlineSelect
                               value={selectedNewRecipientStaffId}
-                              onChange={(e) => setSelectedNewRecipientStaffId(e.target.value)}
-                              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
-                              required
-                            >
-                              <option value="">Select Staff</option>
-                              {(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => (
-                                <option key={u.id} value={u.id}>{u.name}</option>
-                              ))}
-                            </select>
+                              onChange={setSelectedNewRecipientStaffId}
+                              options={[
+                                { value: "", label: "Select Staff" },
+                                ...(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                              ]}
+                              placeholder="Select Staff"
+                            />
                           </div>
                         )}
                       </>

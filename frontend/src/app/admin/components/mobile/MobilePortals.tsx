@@ -109,7 +109,7 @@ export default function MobilePortals({
       }
 
       await api.updatePortalGroup(editingPortalGroup.id, payload);
-      showToastNotification(`✓ Portal "${editPortalName}" updated`);
+      showToastNotification(`Portal "${editPortalName}" updated`);
       setIsEditPortalModalOpen(false);
       setEditGroupOnline(false);
       fetchData();
@@ -131,7 +131,7 @@ export default function MobilePortals({
         opening_to_take: val > 0 ? val : 0,
         show_in_online_payment: pGroupOnline
       });
-      showToastNotification(`✓ Portal "${pName}" registered`);
+      showToastNotification(`Portal "${pName}" registered`);
       setPName(""); setPGroupBalance("");
       setPGroupOnline(false);
       setShowAddForm(false);
@@ -169,7 +169,7 @@ export default function MobilePortals({
         ifsc_code: bIfsc,
         show_in_online_payment: newAccOnline
       });
-      showToastNotification(`✓ Account "${bAccLabel}" registered`);
+      showToastNotification(`Account "${bAccLabel}" registered`);
       setBAccLabel(""); setBBankName(""); setBAccNo(""); setBIfsc("");
       setNewAccOnline(false);
       setSelectedGroupIdForNewBank(null);
@@ -185,7 +185,7 @@ export default function MobilePortals({
     if (!confirm(`Delete bank account "${name}"?`)) return;
     try {
       await api.deletePortal(id);
-      showToastNotification(`✓ Account "${name}" removed`);
+      showToastNotification(`Account "${name}" removed`);
       fetchData();
     } catch (err: any) {
       showToastNotification("Error: " + err.message);
