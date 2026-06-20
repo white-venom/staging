@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CreditCard, History, Edit, Trash2, X, Save, Calendar, Search, Share2, FileDown, Filter, ArrowUpDown } from "lucide-react";
+import { CreditCard, History, Edit, Trash2, X, Save } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
 import InlineSelect from "../../../components/InlineSelect";
@@ -236,28 +236,7 @@ export default function WalletTransferTab() {
     } finally {
       setIsTransferring(false);
     }
-  };  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "load" | "refund">("all");
-  const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
-  const [isDownloading, setIsDownloading] = useState(false);
-
-  useEffect(() => {
-    const virtualDeps = (deposits || []).filter((d: any) => d.depositType === "virtual");
-    if (virtualDeps.length > 0) {
-      const dates = virtualDeps.map(d => d.date?.substring(0, 10)).filter(Boolean);
-      dates.sort();
-      if (dates.length > 0) {
-        setDateFrom(prev => prev || dates[0]);
-        setDateTo(prev => prev || dates[dates.length - 1]);
-      }
-    } else {
-      const today = new Date().toISOString().substring(0, 10);
-      setDateFrom(prev => prev || today);
-      setDateTo(prev => prev || today);
-    }
-  }, [deposits]);
+  };
 
   const formatIST = (dateStr: string) => {
     try {
@@ -288,162 +267,16 @@ export default function WalletTransferTab() {
     }
   };
 
-  const handleDownloadPDF = () => {
-    setIsDownloading(true);
-    const element = document.getElementById("pdf-virtual-ledger-report");
-    if (!element) {
-      setIsDownloading(false);
-      return;
-    }
-
-    const nameClean = "Virtual_Money_Ledger";
-    const dateRangeStr = dateFrom === dateTo ? dateFrom : `${dateFrom}_to_${dateTo}`;
-    const filename = `${nameClean}_${dateRangeStr}.pdf`;
-
-    const opt = {
-      margin:       [0.4, 0.4, 0.4, 0.4],
-      filename:     filename,
-      image:        { type: "jpeg", quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false },
-      jsPDF:        { unit: "in", format: "a4", orientation: "portrait" }
-    };
-
-    const runDownload = () => {
-      try {
-        (window as any).html2pdf().set(opt).from(element).save().then(() => {
-          setIsDownloading(false);
-        }).catch((e: any) => {
-          console.error("PDF generation failed, falling back to print:", e);
-          window.print();
-          setIsDownloading(false);
-        });
-      } catch (err) {
-        console.error("html2pdf call failed, falling back to print:", err);
-        window.print();
-        setIsDownloading(false);
-      }
-    };
-
-    const loadAndRun = () => {
-      if ((window as any).html2pdf) {
-        runDownload();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "/html2pdf.bundle.min.js";
-      script.onload = () => {
-        if ((window as any).html2pdf) {
-          runDownload();
-        } else {
-          window.print();
-          setIsDownloading(false);
-        }
-      };
-      script.onerror = () => {
-        window.print();
-        setIsDownloading(false);
-      };
-      document.head.appendChild(script);
-    };
-
-    loadAndRun();
-  };
-
-  const handleShare = async () => {
-    const shareText = `Virtual Money Ledger Report
-Net Balance: ₹ ${Math.abs(stats.netBalance).toLocaleString("en-IN")}
-Total Entries: ${stats.entriesCount}
-You Gave (Virtual Transfer): ₹ ${stats.totalGave.toLocaleString("en-IN")}
-You Got (Move to Dist): ₹ ${stats.totalGot.toLocaleString("en-IN")}
-Period: ${dateFrom} to ${dateTo}`;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Virtual Money Ledger`,
-          text: shareText
-        });
-      } catch { /* ignored */ }
-    } else {
-      try {
-        await navigator.clipboard.writeText(shareText);
-        alert("Report summary copied to clipboard!");
-      } catch {
-        alert("Failed to share.");
-      }
-    }
-  };
-
-  const filteredVirtualTransfers = React.useMemo(() => {
+  const recentVirtualTransfers = React.useMemo(() => {
     const virtualDeps = (deposits || []).filter((d: any) => d.depositType === "virtual");
-    return virtualDeps
-      .filter((tx: any) => {
-        const txDateStr = tx.date?.substring(0, 10);
-        
-        // Date range filter
-        if (dateFrom && txDateStr < dateFrom) return false;
-        if (dateTo && txDateStr > dateTo) return false;
-        
-        // Search filter
-        const isRefund = tx.isRefund === true;
-        const portalName = tx.portalGroupName || tx.portalName || "Portal";
-        const retailer = (retailerDirectory || []).find((r: any) => r.id === tx.retailer_id);
-        const retailerName = retailer?.name || tx.targetName || "Retailer/Staff";
-        const narrationFrom = isRefund ? retailerName : portalName;
-        const narrationTo = isRefund ? portalName : retailerName;
-        const narration = `${isRefund ? "Move to Distributor" : "Virtual Transfer"} ${narrationFrom} to ${narrationTo}`;
-        const remarkText = tx.remarks || "";
-        const refNoText = tx.reference_no || tx.referenceNo || "";
-        const staffText = tx.staffName || "";
-        
-        const q = searchQuery.toLowerCase();
-        if (
-          searchQuery && 
-          !narration.toLowerCase().includes(q) &&
-          !remarkText.toLowerCase().includes(q) &&
-          !refNoText.toLowerCase().includes(q) &&
-          !staffText.toLowerCase().includes(q) &&
-          !tx.amount?.toString().includes(q)
-        ) {
-          return false;
-        }
-        
-        // Type filter
-        if (filterType === "load" && isRefund) return false;
-        if (filterType === "refund" && !isRefund) return false;
-        
-        return true;
-      })
+    return [...virtualDeps]
       .sort((a: any, b: any) => {
         const da = a.created_at || a.date;
         const db = b.created_at || b.date;
-        if (sortBy === "date-desc") return new Date(db || 0).getTime() - new Date(da || 0).getTime();
-        if (sortBy === "date-asc") return new Date(da || 0).getTime() - new Date(db || 0).getTime();
-        if (sortBy === "amount-desc") return (b.amount || 0) - (a.amount || 0);
-        if (sortBy === "amount-asc") return (a.amount || 0) - (b.amount || 0);
-        return 0;
-      });
-  }, [deposits, dateFrom, dateTo, searchQuery, filterType, sortBy, retailerDirectory]);
-
-  const stats = React.useMemo(() => {
-    let totalGave = 0; // load
-    let totalGot = 0;  // refund
-    
-    filteredVirtualTransfers.forEach((tx: any) => {
-      if (tx.isRefund === true) {
-        totalGot += tx.amount || 0;
-      } else {
-        totalGave += tx.amount || 0;
-      }
-    });
-    
-    return {
-      entriesCount: filteredVirtualTransfers.length,
-      totalGave,
-      totalGot,
-      netBalance: totalGave - totalGot
-    };
-  }, [filteredVirtualTransfers]);
+        return new Date(db || 0).getTime() - new Date(da || 0).getTime();
+      })
+      .slice(0, 10);
+  }, [deposits]);
 
   return (
     <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
@@ -547,246 +380,83 @@ Period: ${dateFrom} to ${dateTo}`;
                 : "Move to Distributor"}
           </button>
         </form>
-      </div>
-
-      {/* LEDGER VIEW */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4 col-span-1 lg:col-span-2">
+          {/* RECENT ENTRIES VIEW */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4 col-span-1">
         <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <History className="w-5 h-5 text-blue-600" />
+          <History className="w-5 h-5 text-blue-650" />
           <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
-            Virtual Transfer & Move to Distributor Ledger
+            Recent Virtual Transfers
           </h3>
         </div>
 
-        {/* Start & End Date controls */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 shadow-xs">
-            <Calendar className="w-4 h-4 text-slate-450 shrink-0" />
-            <div className="flex-1 flex flex-col min-w-0">
-              <span className="text-[8px] text-slate-400 font-black uppercase">Start Date</span>
-              <input autoComplete="one-time-code"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-transparent border-none text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none w-full cursor-pointer"
-              />
+        <div className="space-y-3">
+          {recentVirtualTransfers.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-505 font-bold italic animate-pulse">
+              No recent virtual transfers found.
             </div>
-          </div>
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 shadow-xs">
-            <Calendar className="w-4 h-4 text-slate-450 shrink-0" />
-            <div className="flex-1 flex flex-col min-w-0">
-              <span className="text-[8px] text-slate-400 font-black uppercase">End Date</span>
-              <input autoComplete="one-time-code"
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="bg-transparent border-none text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none w-full cursor-pointer"
-              />
-            </div>
-          </div>
-        </div>
+          ) : (
+            <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
+              {recentVirtualTransfers.map((tx: any) => {
+                const formatted = formatIST(tx.date);
+                const isRefund = tx.isRefund === true;
+                const portalName = tx.portalGroupName || tx.portalName || "Portal";
+                const retailer = (retailerDirectory || []).find((r: any) => r.id === tx.retailer_id);
+                const retailerName = retailer?.name || tx.targetName || "Retailer/Staff";
+                
+                const narrationFrom = isRefund ? retailerName : portalName;
+                const narrationTo = isRefund ? portalName : retailerName;
 
-        {/* Search, Type, and Sorting Filters */}
-        <div className="flex flex-col gap-2">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-            <input autoComplete="one-time-code"
-              type="text"
-              placeholder="Search Entries..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl pl-9 pr-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 placeholder-slate-405 focus:outline-none shadow-xs"
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 gap-2">
-            <div className="relative w-full">
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value as any)}
-                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-black text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer appearance-none pr-8 shadow-xs"
-              >
-                <option value="all">ALL ENTRIES</option>
-                <option value="load">VIRTUAL TRANSFER</option>
-                <option value="refund">MOVE TO DISTRIBUTOR</option>
-              </select>
-              <Filter className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3 pointer-events-none" />
-            </div>
-
-            <div className="relative w-full">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-black text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer appearance-none pr-8 shadow-xs"
-              >
-                <option value="date-desc">LATEST FIRST</option>
-                <option value="date-asc">OLDEST FIRST</option>
-                <option value="amount-desc">AMOUNT: HIGH-LOW</option>
-                <option value="amount-asc">AMOUNT: LOW-HIGH</option>
-              </select>
-              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3 pointer-events-none" />
-            </div>
-          </div>
-        </div>
-
-        {/* Printable container */}
-        <div id="pdf-virtual-ledger-report" className="space-y-4 bg-transparent text-slate-800 dark:text-slate-200 p-0.5">
-          {/* Printable Header - hidden on screen, shown in PDF */}
-          <div className="hidden pdf-only flex-col gap-2 border-b border-slate-200 dark:border-slate-800 pb-4 text-slate-900 dark:text-white mb-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-lg font-black">Virtual Money Ledger</h1>
-                {dateFrom && dateTo && (
-                  <p className="text-[10px] text-slate-500 font-bold mt-0.5">
-                    Period: {dateFrom === dateTo ? dateFrom : `${dateFrom} to ${dateTo}`}
-                  </p>
-                )}
-                <p className="text-[10px] text-slate-450 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN")}</p>
-              </div>
-              <div className="text-right">
-                <span className="text-[9px] font-black text-slate-405 uppercase tracking-widest block">Net Balance</span>
-                <span className="text-base font-black text-slate-900 dark:text-white">
-                  ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Net Balance Card */}
-          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-4 flex flex-col gap-3 shadow-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">Net Balance</span>
-              <span className={`text-base font-extrabold ${stats.netBalance > 0 ? "text-red-500" : stats.netBalance < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`}>
-                ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
-              </span>
-            </div>
-            
-            <div className="border-t border-slate-200 dark:border-slate-800 pt-3 grid grid-cols-3 gap-2 text-center">
-              <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-305 mt-0.5 block">{stats.entriesCount} Entries</span>
-              </div>
-              <div>
-                <span className="text-[8px] font-black text-red-500 uppercase tracking-wider block">You Gave</span>
-                <span className="text-xs font-bold text-red-500 mt-0.5 block">₹ {stats.totalGave.toLocaleString("en-IN")}</span>
-              </div>
-              <div>
-                <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-wider block">You Got</span>
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">₹ {stats.totalGot.toLocaleString("en-IN")}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Transactions Table */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-2xl overflow-hidden shadow-xs">
-            {filteredVirtualTransfers.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-500 font-bold italic">
-                No ledger transactions found in the selected date range.
-              </div>
-            ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-850">
-                {filteredVirtualTransfers.map((tx: any) => {
-                  const formatted = formatIST(tx.date);
-                  const isRefund = tx.isRefund === true;
-                  const portalName = tx.portalGroupName || tx.portalName || "Portal";
-                  const retailer = (retailerDirectory || []).find((r: any) => r.id === tx.retailer_id);
-                  const retailerName = retailer?.name || tx.targetName || "Retailer/Staff";
-                  
-                  const narrationFrom = isRefund ? retailerName : portalName;
-                  const narrationTo = isRefund ? portalName : retailerName;
-
-                  return (
-                    <div 
-                      key={tx.id} 
-                      onClick={() => {
-                        setSelectedDepositId(tx.id);
-                        setEditAmount(tx.amount || 0);
-                        setEditRef(tx.reference_no || tx.referenceNo || "");
-                      }}
-                      className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors cursor-pointer"
-                    >
-                      {/* Left: Date & Running Balance */}
-                      <div className="flex flex-col gap-1 min-w-0 max-w-[125px] shrink-0">
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 shrink-0">{formatted.date}</span>
-                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">{formatted.time}</span>
-                        </div>
-                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 px-2 py-0.5 rounded-full uppercase tracking-wider self-start mt-1">
-                          Bal. ₹{Math.round(tx.balance_snapshot || 0).toLocaleString("en-IN")}
+                return (
+                  <div 
+                    key={tx.id} 
+                    onClick={() => {
+                      setSelectedDepositId(tx.id);
+                      setEditAmount(tx.amount || 0);
+                      setEditRef(tx.reference_no || tx.referenceNo || "");
+                    }}
+                    className="py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors cursor-pointer rounded-lg px-2"
+                  >
+                    {/* Left: Date & Time */}
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200">{formatted.date}</span>
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">{formatted.time}</span>
+                    </div>
+                    
+                    {/* Middle: Narration */}
+                    <div className="flex-1 px-4 text-xs font-semibold text-slate-705 dark:text-slate-300 min-w-0">
+                      <div className="flex flex-col gap-0.5">
+                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider self-start ${
+                          isRefund
+                            ? 'bg-red-100 dark:bg-red-955 text-red-700 dark:text-red-300'
+                            : 'bg-emerald-100 dark:bg-emerald-955/40 text-emerald-700 dark:text-emerald-400'
+                        }`}>
+                          {isRefund ? 'Move to Dist' : 'Virtual Load'}
                         </span>
-                      </div>
-                      
-                      {/* Middle: Description */}
-                      <div className="flex-1 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 break-words whitespace-pre-wrap">
-                        <div className="flex flex-col gap-0.5">
-                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider self-start ${
-                            isRefund
-                              ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300'
-                              : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
-                          }`}>
-                            {isRefund ? 'Move to Distributor' : 'Virtual Transfer'}
-                          </span>
-                          <div className={`text-xs font-black flex items-center gap-1 mt-1 ${isRefund ? 'text-red-700 dark:text-red-400' : 'text-slate-805 dark:text-slate-200'}`}>
-                            <span className="truncate max-w-[80px]" title={narrationFrom}>{narrationFrom}</span>
-                            <span className="text-slate-450">→</span>
-                            <span className="truncate max-w-[80px]" title={narrationTo}>{narrationTo}</span>
+                        <div className="text-xs font-black truncate text-slate-800 dark:text-slate-200 mt-0.5">
+                          {narrationFrom} → {narrationTo}
+                        </div>
+                        {tx.remarks && (
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium truncate italic">
+                            {tx.remarks}
                           </div>
-                          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1">
-                            Staff: <span className="uppercase">{tx.staffName || 'Admin'}</span>
-                          </div>
-                          {tx.remarks && (
-                            <div className="text-[10px] text-slate-400 dark:text-slate-450 font-medium mt-0.5">
-                              Remark: <span className="italic">{tx.remarks}</span>
-                            </div>
-                          )}
-                          {(tx.reference_no || tx.referenceNo) && (
-                            <div className="text-[10px] text-slate-400 dark:text-slate-455 font-medium mt-0.5">
-                              Ref: {tx.reference_no || tx.referenceNo}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Right: Gave (Debit) vs Got (Credit) numeric columns */}
-                      <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono text-xs">
-                        {/* Gave Column */}
-                        <div className="w-22 font-black text-red-500">
-                          {!isRefund ? `₹ ${Math.round(tx.amount || 0).toLocaleString("en-IN")}` : "—"}
-                        </div>
-                        {/* Got Column */}
-                        <div className="w-22 font-black text-emerald-600 dark:text-emerald-400">
-                          {isRefund ? `₹ ${Math.round(tx.amount || 0).toLocaleString("en-IN")}` : "—"}
-                        </div>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Footer Buttons for PDF & Share */}
-        <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 no-print">
-          <button
-            onClick={handleDownloadPDF}
-            disabled={isDownloading || filteredVirtualTransfers.length === 0}
-            className="flex-1 py-3 px-4 rounded-xl border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
-          >
-            <FileDown className="w-4 h-4" />
-            {isDownloading ? "Downloading..." : "DOWNLOAD PDF"}
-          </button>
-          
-          <button
-            onClick={handleShare}
-            disabled={filteredVirtualTransfers.length === 0}
-            className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all disabled:opacity-50"
-          >
-            <Share2 className="w-4 h-4" />
-            SHARE SUMMARY
-          </button>
+                    
+                    {/* Right: Amount */}
+                    <div className={`text-right font-mono text-xs font-black shrink-0 ${
+                      isRefund ? "text-red-500" : "text-emerald-600 dark:text-emerald-400"
+                    }`}>
+                      {isRefund ? "-" : "+"} ₹{Math.round(tx.amount || 0).toLocaleString("en-IN")}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
+    </div>
 
       {/* Audit Drawer/Modal */}
       {selectedDepositId && currentSelection && (

@@ -233,11 +233,9 @@ export default function MobileLedger() {
     const rawParties = [
       ...(collections || []).map(c => {
         if (c.from_staff_id || c.retailerName?.toLowerCase().startsWith("staff")) {
-          const nameOnly = c.retailerName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "");
-          return `Staff - ${nameOnly || "Staff Member"}`;
+          return c.retailerName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "") || "Staff Member";
         } else if (c.retailer_id) {
-          const nameOnly = c.retailerName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
-          return `Retailer - ${nameOnly || "Retailer"}`;
+          return c.retailerName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
         }
         return c.retailerName;
       }),
@@ -249,11 +247,9 @@ export default function MobileLedger() {
           party = ret?.name || d.targetName;
         }
         if (d.depositType === "staff") {
-          const cleanName = d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "");
-          return `Staff - ${cleanName || "Staff Member"}`;
+          return d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "") || "Staff Member";
         } else if (d.depositType === "retailer") {
-          const cleanName = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
-          return `Retailer - ${cleanName || "Retailer"}`;
+          return d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
         }
         return d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
       })
@@ -278,11 +274,9 @@ export default function MobileLedger() {
       ...(collections || []).map(c => {
         let party = c.retailerName;
         if (c.from_staff_id || c.retailerName?.toLowerCase().startsWith("staff")) {
-          const nameOnly = c.retailerName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "");
-          party = `Staff - ${nameOnly || "Staff Member"}`;
+          party = c.retailerName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "") || "Staff Member";
         } else if (c.retailer_id) {
-          const nameOnly = c.retailerName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
-          party = `Retailer - ${nameOnly || "Retailer"}`;
+          party = c.retailerName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
         }
         return { 
           ...c, 
@@ -300,11 +294,9 @@ export default function MobileLedger() {
           party = ret?.name || d.targetName;
         }
         if (d.depositType === "staff") {
-          const cleanName = d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "");
-          party = `Staff - ${cleanName || "Staff Member"}`;
+          party = d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "") || "Staff Member";
         } else if (d.depositType === "retailer") {
-          const cleanName = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
-          party = `Retailer - ${cleanName || "Retailer"}`;
+          party = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
         }
         return {
           ...d, 

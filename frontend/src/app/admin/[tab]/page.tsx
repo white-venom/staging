@@ -16,6 +16,7 @@ import PortalsTab from "../components/desktop/PortalsTab";
 import ReportsTab from "../components/desktop/ReportsTab";
 import AttendanceTab from "../components/desktop/AttendanceTab";
 import WalletTransferTab from "../components/desktop/WalletTransferTab";
+import VirtualLedgerTab from "../components/desktop/VirtualLedgerTab";
 
 // Mobile Components
 import MobileCollections from "../components/mobile/MobileCollections";
@@ -125,6 +126,8 @@ export default function AdminTabPage() {
         );
       case "wallet-transfer":
         return <WalletTransferTab />;
+      case "virtual-ledger":
+        return <VirtualLedgerTab />;
       case "administration":
         return (
           <AdministrationTab 

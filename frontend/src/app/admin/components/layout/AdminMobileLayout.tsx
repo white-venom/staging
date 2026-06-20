@@ -16,7 +16,8 @@ import {
   Clock,
   Settings,
   BarChart2,
-  User
+  User,
+  ClipboardList
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -128,6 +129,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
     { label: "HOME", icon: LayoutDashboard, href: "/admin" },
     { label: "LEDGER", icon: BookOpen, href: "/admin/ledger" },
     { label: "VIRTUAL MONEY TRANSFER", icon: CreditCard, href: "/admin/wallet-transfer" },
+    { label: "VIRTUAL LEDGER", icon: ClipboardList, href: "/admin/virtual-ledger" },
     { label: "STAFF", icon: Users, href: "/admin/staff" },
     { label: "RETAILERS", icon: Building, href: "/admin/retailers" },
     { label: "PORTALS", icon: Globe, href: "/admin/portals" },

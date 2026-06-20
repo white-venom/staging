@@ -235,11 +235,9 @@ export default function LedgerTab({
     ...(collections || []).map(c => {
       let party = c.retailerName;
       if (c.from_staff_id || c.retailerName?.toLowerCase().startsWith("staff")) {
-        const nameOnly = c.retailerName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "");
-        party = `Staff - ${nameOnly || "Staff Member"}`;
+        party = c.retailerName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*)/i, "") || "Staff Member";
       } else if (c.retailer_id) {
-        const nameOnly = c.retailerName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
-        party = `Retailer - ${nameOnly || "Retailer"}`;
+        party = c.retailerName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
       }
       return {
         id: c.id,
@@ -273,11 +271,9 @@ export default function LedgerTab({
       }
       
       if (d.depositType === "staff") {
-        const cleanName = d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "");
-        party = `Staff - ${cleanName || "Staff Member"}`;
+        party = d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "") || "Staff Member";
       } else if (d.depositType === "retailer") {
-        const cleanName = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
-        party = `Retailer - ${cleanName || "Retailer"}`;
+        party = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
       }
       
       return {
