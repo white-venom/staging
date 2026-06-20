@@ -413,13 +413,17 @@ export default function RetailersTab({
   };
 
   const categories = React.useMemo(() => {
-    return Array.from(
-      new Set(
-        (retailerDirectory || [])
-          .map((r) => r.category)
-          .filter((c): c is string => typeof c === "string" && c.trim() !== "")
-      )
-    ).sort();
+    const normalizedList = (retailerDirectory || [])
+      .map((r) => r.category)
+      .filter((c): c is string => typeof c === "string" && c.trim() !== "")
+      .map((c) => {
+        return c.trim()
+          .toLowerCase()
+          .split(/\s+/)
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+      });
+    return Array.from(new Set(normalizedList)).sort();
   }, [retailerDirectory]);
 
   const filteredRetailers = React.useMemo(() => {
@@ -427,7 +431,13 @@ export default function RetailersTab({
       .filter(r => (r.name || "").toLowerCase().includes((retailerSearch || "").toLowerCase()))
       .filter(r => {
         if (selectedCategories.length === 0) return true;
-        return r.category && selectedCategories.includes(r.category);
+        if (!r.category) return false;
+        const normalized = r.category.trim()
+          .toLowerCase()
+          .split(/\s+/)
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+        return selectedCategories.includes(normalized);
       })
       .sort((a, b) => {
         const nameA = (a.name || "").toLowerCase().trim();
@@ -517,7 +527,11 @@ export default function RetailersTab({
                     <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 transition-colors truncate">{retailer.name}</h3>
                     {retailer.category && (
                       <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full text-[9px] font-black uppercase tracking-wider">
-                        {retailer.category}
+                        {retailer.category.trim()
+                          .toLowerCase()
+                          .split(/\s+/)
+                          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+                          .join(" ")}
                       </span>
                     )}
                   </div>

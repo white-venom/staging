@@ -458,13 +458,17 @@ export default function MobileRetailers({
   };
 
   const categories = React.useMemo(() => {
-    return Array.from(
-      new Set(
-        (retailerDirectory || [])
-          .map((r) => r.category)
-          .filter((c): c is string => typeof c === "string" && c.trim() !== "")
-      )
-    ).sort();
+    const normalizedList = (retailerDirectory || [])
+      .map((r) => r.category)
+      .filter((c): c is string => typeof c === "string" && c.trim() !== "")
+      .map((c) => {
+        return c.trim()
+          .toLowerCase()
+          .split(/\s+/)
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+      });
+    return Array.from(new Set(normalizedList)).sort();
   }, [retailerDirectory]);
 
   const filtered = React.useMemo(() => {
@@ -475,7 +479,13 @@ export default function MobileRetailers({
       )
       .filter(r => {
         if (selectedCategories.length === 0) return true;
-        return r.category && selectedCategories.includes(r.category);
+        if (!r.category) return false;
+        const normalized = r.category.trim()
+          .toLowerCase()
+          .split(/\s+/)
+          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" ");
+        return selectedCategories.includes(normalized);
       })
       .sort((a, b) => {
         const nameA = (a.name || "").toLowerCase().trim();
@@ -677,7 +687,11 @@ export default function MobileRetailers({
                       <span className="font-bold text-xs text-slate-900 dark:text-white truncate">{retailer.name}</span>
                       {retailer.category && (
                         <span className="px-1.5 py-0.2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full text-[8px] font-bold uppercase tracking-wider scale-90 origin-left">
-                          {retailer.category}
+                          {retailer.category.trim()
+                            .toLowerCase()
+                            .split(/\s+/)
+                            .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+                            .join(" ")}
                         </span>
                       )}
                     </div>
