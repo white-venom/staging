@@ -42,7 +42,16 @@ export default function DailyReportPage() {
         api.getCollections(),
         api.getDeposits()
       ]);
-      const filteredDeps = deps.filter((d: any) => !(d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff"));
+      const filteredDeps = deps.filter((d: any) => {
+        if (d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff") {
+          const hasMatchingCollection = cols.some((c: any) => 
+            c.from_staff_id === d.staff_id && 
+            Number(c.total_amount) === Number(d.amount)
+          );
+          return !hasMatchingCollection;
+        }
+        return true;
+      });
       setCollections(cols);
       setDeposits(filteredDeps);
     } catch (err) {
@@ -109,10 +118,20 @@ export default function DailyReportPage() {
       const localDateStr = getUtcDate(c.created_at).toISOString().substring(0, 10);
       return localDateStr < selectedDate;
     })
-    .reduce((sum, c) => sum + Number(c.total_amount), 0);
+    .reduce((sum, c) => sum + Number(c.total_amount), 0) +
+    deposits
+    .filter(d => {
+      const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+      if (!isRecipient) return false;
+      const localDateStr = getUtcDate(d.created_at).toISOString().substring(0, 10);
+      return localDateStr < selectedDate;
+    })
+    .reduce((sum, d) => sum + Number(d.amount), 0);
 
   const totalOutBefore = deposits
     .filter(d => {
+      const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+      if (isRecipient) return false;
       const localDateStr = getUtcDate(d.created_at).toISOString().substring(0, 10);
       return localDateStr < selectedDate;
     })

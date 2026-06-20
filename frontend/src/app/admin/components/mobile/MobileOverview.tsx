@@ -325,7 +325,7 @@ export default function MobileOverview({
   // Precalculate daily metrics for all active field staff
   const staffListData = useMemo<StaffListData[]>(() => {
     const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
-    return (staffUsers || []).map((user: { name: string }) => {
+    return (staffUsers || []).map((user: { id: string; name: string }) => {
       const name = user.name;
 
       // Today's collections & deposits
@@ -344,16 +344,33 @@ export default function MobileOverview({
         (d) => d.staffName === name && !d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
       );
 
-      const collectedToday = staffColsToday.reduce((s, c) => s + (c.totalAmount || 0), 0);
+      // Received handovers (deposit_type === "staff" and recipient_staff_id === user.id)
+      // Filter out received handovers that have matching collection to avoid double-counting
+      const receivedDepsToday = (deposits || []).filter(d => 
+        d.recipient_staff_id === user.id && 
+        d.depositType === 'staff' && 
+        d.date?.startsWith(todayStr) &&
+        !(collections || []).some(c => c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
+      );
+      
+      const receivedDepsPrev = (deposits || []).filter(d => 
+        d.recipient_staff_id === user.id && 
+        d.depositType === 'staff' && 
+        !d.date?.startsWith(todayStr) &&
+        !(collections || []).some(c => c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
+      );
+
+      const collectedToday = staffColsToday.reduce((s, c) => s + (c.totalAmount || 0), 0) + receivedDepsToday.reduce((s, d) => s + (d.amount || 0), 0);
       const depositedToday = staffDepsToday.reduce((s, d) => s + (d.amount || 0), 0);
-      const oldBalance = staffColsPrev.reduce((s, c) => s + (c.totalAmount || 0), 0)
+      const oldBalance = staffColsPrev.reduce((s, c) => s + (c.totalAmount || 0), 0) + receivedDepsPrev.reduce((s, d) => s + (d.amount || 0), 0)
                        - staffDepsPrev.reduce((s, d) => s + (d.amount || 0), 0);
       const netBalance = oldBalance + collectedToday - depositedToday;
       const remainingToday = collectedToday - depositedToday;
 
-      // Net denomination breakdown (all collections minus all deposits)
+      // Net denomination breakdown (all collections + received handovers minus all deposits)
       const allCols = [...staffColsToday, ...staffColsPrev];
       const allDeps = [...staffDepsToday, ...staffDepsPrev];
+      const allReceived = [...receivedDepsToday, ...receivedDepsPrev];
       const netDen = { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online: 0 };
       allCols.forEach(c => {
         netDen.note_500 += Number(c.denominations?.note_500 || 0);
@@ -364,6 +381,16 @@ export default function MobileOverview({
         netDen.note_10  += Number(c.denominations?.note_10  || 0);
         netDen.coins    += Number(c.denominations?.coins     || 0);
         netDen.online   += Number(c.denominations?.online_amount || 0);
+      });
+      allReceived.forEach(r => {
+        netDen.note_500 += Number(r.denominations?.note_500 || 0);
+        netDen.note_200 += Number(r.denominations?.note_200 || 0);
+        netDen.note_100 += Number(r.denominations?.note_100 || 0);
+        netDen.note_50  += Number(r.denominations?.note_50  || 0);
+        netDen.note_20  += Number(r.denominations?.note_20  || 0);
+        netDen.note_10  += Number(r.denominations?.note_10  || 0);
+        netDen.coins    += Number(r.denominations?.coins     || 0);
+        netDen.online   += Number(r.denominations?.online_amount || 0);
       });
       allDeps.forEach(d => {
         netDen.note_500 -= Number(d.denominations?.note_500 || 0);

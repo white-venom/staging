@@ -246,9 +246,18 @@ export default function StaffDashboard() {
           created_at: c.created_at,
         }));
 
-        // Map deposits (filtering out received handovers to avoid duplication with collections)
+        // Map deposits (filtering out received handovers to avoid duplication with collections if a matching collection exists)
         const mappedDeposits = apiDeps
-          .filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === "staff"))
+          .filter((d: any) => {
+            if (d.recipient_staff_id === currentUser.id && d.deposit_type === "staff") {
+              const hasMatchingCollection = apiCols.some((c: any) => 
+                c.from_staff_id === d.staff_id && 
+                Number(c.total_amount) === Number(d.amount)
+              );
+              return !hasMatchingCollection;
+            }
+            return true;
+          })
           .map((d: any) => ({
           id: d.id,
           portal_id: d.portal_id,
@@ -1242,11 +1251,12 @@ export default function StaffDashboard() {
                         step="0.01"
                         value={editDenoms.coins || ""}
                         onChange={(e) => {
-                          const v = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                          let v = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                          if (!isCol && v < 0) v = 0;
                           setEditDenoms((prev: any) => ({ ...prev, coins: isNaN(v) ? 0 : v }));
                         }}
                         className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200/80 rounded text-xs font-bold"
-                        min="0"
+                        min={isCol ? undefined : "0"}
                       />
                       <span className="w-14 text-right text-slate-500 font-bold">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
                     </div>

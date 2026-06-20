@@ -582,7 +582,6 @@ ${dateFormatted}`;
                         setEditDenoms((prev: any) => ({ ...prev, coins: isNaN(v) ? 0 : v }));
                       }}
                       className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200/80 rounded text-xs font-bold"
-                      min="0"
                     />
                     <span className="w-14 text-right text-slate-500 font-bold">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
                   </div>

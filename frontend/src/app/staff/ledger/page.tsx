@@ -127,8 +127,19 @@ export default function StaffLedgerPage() {
         displayPortal: c.portal_name || "Cash"
       };
     }),
-    ...deposits.map(d => {
-      const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+    ...deposits
+      .filter((d: any) => {
+        if (d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff") {
+          const hasMatchingCollection = collections.some((c: any) => 
+            c.from_staff_id === d.staff_id && 
+            Number(c.total_amount) === Number(d.amount)
+          );
+          return !hasMatchingCollection;
+        }
+        return true;
+      })
+      .map(d => {
+        const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
       const targetName = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : (d.target_name || "Super Distributor");
       
       let displayName = targetName;

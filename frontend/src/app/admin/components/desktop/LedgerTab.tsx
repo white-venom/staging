@@ -939,7 +939,7 @@ export default function LedgerTab({
                             type="number"
                             value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0}
                             onChange={(e) => {
-                              const val = Math.max(0, parseInt(e.target.value) || 0);
+                              const val = parseInt(e.target.value) || 0;
                               setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
                             }}
                             className="px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
@@ -953,7 +953,7 @@ export default function LedgerTab({
                           step="0.01"
                           value={selectedNewDenoms.coins}
                           onChange={(e) => {
-                            const val = Math.max(0, parseFloat(e.target.value) || 0);
+                            const val = parseFloat(e.target.value) || 0;
                             setSelectedNewDenoms(prev => ({ ...prev, coins: val }));
                           }}
                           className="px-2 py-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
