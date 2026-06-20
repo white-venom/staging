@@ -40,7 +40,12 @@ export default function LedgerTab({
   const { ledgerSearchTerm, setLedgerSearchTerm } = adminContext;
   const [dateFrom, setDateFrom] = React.useState(getTodayDateString());
   const [dateTo, setDateTo] = React.useState(getTodayDateString());
-  const [typeFilter, setTypeFilter] = React.useState("all");
+  const [selectedTypes, setSelectedTypes] = React.useState<string[]>([
+    "cash-in",
+    "cash-out",
+    "virtual-transfer",
+    "move-to-dist"
+  ]);
   const [staffFilter, setStaffFilter] = React.useState("all");
   const [partyFilter, setPartyFilter] = React.useState("all");
   const [portalFilter, setPortalFilter] = React.useState("all");
@@ -252,12 +257,18 @@ export default function LedgerTab({
         balance_snapshot: c.balance_snapshot,
         type: 'collection',
         depositType: null,
+        txType: 'cash-in',
         rawRecord: c
       };
     }),
     ...(deposits || []).map(d => {
-      const isRef = d.isRefund === true;
+      const isRef = d.isRefund === true || d.paymentMode === "refund" || d.payment_mode === "refund";
       const isVirtual = d.depositType === 'virtual';
+      
+      let txType = "cash-out";
+      if (isVirtual) {
+        txType = isRef ? "move-to-dist" : "virtual-transfer";
+      }
       
       // For virtual deposits targeting a retailer, use the retailer as party
       // so balance calculations and filtering work correctly
@@ -289,6 +300,7 @@ export default function LedgerTab({
         balance_snapshot: d.balance_snapshot,
         type: isRef ? 'collection' : 'deposit',
         depositType: d.depositType,
+        txType,
         rawRecord: d
       };
     })
@@ -332,7 +344,7 @@ export default function LedgerTab({
   }
 
   // Apply Filters
-  if (typeFilter !== "all") allTransactions = allTransactions.filter(tx => tx.type === typeFilter);
+  allTransactions = allTransactions.filter(tx => selectedTypes.includes(tx.txType));
   if (staffFilter !== "all") allTransactions = allTransactions.filter(tx => tx.staff === staffFilter);
   if (partyFilter !== "all") allTransactions = allTransactions.filter(tx => tx.party === partyFilter);
   if (portalFilter !== "all") allTransactions = allTransactions.filter(tx => tx.portal === portalFilter);
@@ -446,19 +458,7 @@ export default function LedgerTab({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
-          <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Transaction Type</label>
-            <select 
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs outline-none"
-            >
-              <option value="all">All Types</option>
-               <option value="collection">Cash In Only</option>
-               <option value="deposit">Cash Out Only</option>
-            </select>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Staff</label>
             <InlineSelect 
@@ -486,8 +486,68 @@ export default function LedgerTab({
               type="date" 
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] outline-none"
+              className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] outline-none"
             />
+          </div>
+        </div>
+
+        {/* Pills multi-select for Type Filter */}
+        <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider block ml-1">Filter by Type:</span>
+          <div className="flex flex-wrap gap-2 items-center">
+            {[
+              { id: "cash-in", label: "Cash In", color: "emerald" },
+              { id: "cash-out", label: "Cash Out", color: "rose" },
+              { id: "virtual-transfer", label: "Virtual Transfer", color: "blue" },
+              { id: "move-to-dist", label: "Move to Distributor", color: "purple" }
+            ].map((t) => {
+              const isActive = selectedTypes.includes(t.id);
+              let colorClasses = "";
+              if (t.color === "emerald") {
+                colorClasses = isActive 
+                  ? "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800"
+                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
+              } else if (t.color === "rose") {
+                colorClasses = isActive 
+                  ? "bg-rose-100 dark:bg-rose-955/80 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800"
+                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
+              } else if (t.color === "blue") {
+                colorClasses = isActive 
+                  ? "bg-blue-100 dark:bg-blue-955/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800"
+                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
+              } else if (t.color === "purple") {
+                colorClasses = isActive 
+                  ? "bg-purple-100 dark:bg-purple-955/80 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-800"
+                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
+              }
+              
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedTypes(prev => {
+                      if (prev.includes(t.id)) {
+                        return prev.filter(x => x !== t.id);
+                      } else {
+                        return [...prev, t.id];
+                      }
+                    });
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border cursor-pointer transition-all duration-200 ${colorClasses}`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+            
+            <button
+              type="button"
+              onClick={() => setSelectedTypes(["cash-in", "cash-out", "virtual-transfer", "move-to-dist"])}
+              className="px-2.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-955/20 transition-colors ml-auto cursor-pointer"
+            >
+              Select All
+            </button>
           </div>
         </div>
 

@@ -49,15 +49,13 @@ export default function VirtualLedgerTab() {
   const [dateTo, setDateTo] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
-    "cash-in",
-    "cash-out",
     "virtual-transfer",
     "move-to-dist"
   ]);
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isDownloading, setIsDownloading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -491,7 +489,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20">
+    <div className="max-w-5xl mx-auto space-y-6 pb-28 md:pb-20">
       {/* LEDGER VIEW CARD */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4">
         <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -562,22 +560,12 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
           <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider block ml-1">Filter by Type:</span>
           <div className="flex flex-wrap gap-2 items-center">
             {[
-              { id: "cash-in", label: "Cash In", color: "emerald" },
-              { id: "cash-out", label: "Cash Out", color: "rose" },
               { id: "virtual-transfer", label: "Virtual Transfer", color: "blue" },
               { id: "move-to-dist", label: "Move to Distributor", color: "purple" }
             ].map((t) => {
               const isActive = selectedTypes.includes(t.id);
               let colorClasses = "";
-              if (t.color === "emerald") {
-                colorClasses = isActive 
-                  ? "bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800"
-                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
-              } else if (t.color === "rose") {
-                colorClasses = isActive 
-                  ? "bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 border-rose-300 dark:border-rose-800"
-                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
-              } else if (t.color === "blue") {
+              if (t.color === "blue") {
                 colorClasses = isActive 
                   ? "bg-blue-100 dark:bg-blue-955/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800"
                   : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
@@ -609,8 +597,8 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
             
             <button
               type="button"
-              onClick={() => setSelectedTypes(["cash-in", "cash-out", "virtual-transfer", "move-to-dist"])}
-              className="px-2.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors ml-auto cursor-pointer"
+              onClick={() => setSelectedTypes(["virtual-transfer", "move-to-dist"])}
+              className="px-2.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-955/20 transition-colors ml-auto cursor-pointer"
             >
               Select All
             </button>
@@ -789,14 +777,14 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
         )}
 
         {/* Footer Buttons for PDF & Share */}
-        <div className="flex gap-3 pt-3 border-t border-slate-100 dark:border-slate-800 no-print">
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-3.5 px-4 flex gap-3 shadow-2xl z-40 max-w-lg mx-auto rounded-t-2xl md:relative md:bg-transparent md:border-t-0 md:py-0 md:px-0 md:shadow-none md:max-w-none md:rounded-none no-print">
           <button
             onClick={handleDownloadPDF}
             disabled={isDownloading || filteredTransfers.length === 0}
             className="flex-1 py-3 px-4 rounded-xl border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-955/20 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
           >
             <FileDown className="w-4 h-4" />
-            {isDownloading ? "Downloading..." : "DOWNLOAD PDF"}
+            {isDownloading ? "Downloading..." : "DOWNLOAD"}
           </button>
           
           <button
@@ -805,7 +793,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
             className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-550 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all disabled:opacity-50"
           >
             <Share2 className="w-4 h-4" />
-            SHARE SUMMARY
+            SHARE
           </button>
         </div>
 

@@ -213,7 +213,7 @@ export default function MobileLedger() {
     dateFrom: getTodayDateString(),
     dateTo: getTodayDateString(),
     staff: 'all',
-    type: 'all',
+    selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist"],
     retailerId: 'all',
     storeId: 'all',
     portalGroupId: 'all',
@@ -281,13 +281,21 @@ export default function MobileLedger() {
         return { 
           ...c, 
           type: 'collection',
+          txType: 'cash-in',
           party,
           portal: c.portalName,
           staff: c.staffName || "Admin"
         };
       }),
       ...(deposits || []).map(d => {
+        const isRef = d.isRefund === true || d.paymentMode === "refund" || d.payment_mode === "refund";
         const isVirtual = d.depositType === 'virtual';
+        
+        let txType = "cash-out";
+        if (isVirtual) {
+          txType = isRef ? "move-to-dist" : "virtual-transfer";
+        }
+        
         let party = d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
         if (isVirtual && d.retailer_id) {
           const ret = (retailerDirectory || []).find((r: any) => r.id === d.retailer_id);
@@ -300,7 +308,8 @@ export default function MobileLedger() {
         }
         return {
           ...d, 
-          type: d.isRefund === true ? 'collection' : 'deposit',
+          type: isRef ? 'collection' : 'deposit',
+          txType,
           party,
           portal: isVirtual ? (d.portalGroupName || d.portalName || d.targetName) : d.targetName, 
           staff: d.staffName || "Admin"
@@ -324,7 +333,7 @@ export default function MobileLedger() {
 
     // Apply Filters
     if (filters.staff !== 'all') combined = combined.filter(tx => tx.staff === filters.staff);
-    if (filters.type !== 'all') combined = combined.filter(tx => tx.type === filters.type);
+    combined = combined.filter(tx => filters.selectedTypes.includes(tx.txType));
 
     if (filters.retailerId !== 'all') {
       combined = combined.filter(tx => String(tx.retailer_id || tx.retailerId || '') === String(filters.retailerId));
@@ -372,7 +381,7 @@ export default function MobileLedger() {
 
   const isAnyFilterActive = useMemo(() => {
     return filters.staff !== 'all' || 
-           filters.type !== 'all' || 
+           filters.selectedTypes.length < 4 || 
            filters.retailerId !== 'all' || 
            filters.storeId !== 'all' || 
            filters.portalGroupId !== 'all' || 
@@ -449,7 +458,7 @@ export default function MobileLedger() {
                 dateFrom: today,
                 dateTo: today,
                 staff: 'all',
-                type: 'all',
+                selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist"],
                 retailerId: 'all',
                 storeId: 'all',
                 portalGroupId: 'all',

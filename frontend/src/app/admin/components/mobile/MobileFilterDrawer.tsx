@@ -16,7 +16,7 @@ interface MobileFilterDrawerProps {
     dateFrom: string;
     dateTo: string;
     staff: string;
-    type: string;
+    selectedTypes: string[];
     retailerId: string;
     storeId: string;
     portalGroupId: string;
@@ -176,16 +176,34 @@ export default function MobileFilterDrawer({
             <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
               <Tag className="w-3 h-3" /> Transaction Type
             </label>
-            <div className="grid grid-cols-3 gap-1.5">
-              {['all', 'collection', 'deposit'].map(type => (
-                <button 
-                  key={type}
-                  onClick={() => setFilters({ ...filters, type })}
-                  className={`py-1.5 rounded-md text-[9px] font-bold uppercase transition-all ${filters.type === type ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-50 dark:bg-slate-805 text-slate-500'}`}
-                >
-                  {type === 'all' ? 'All' : type === 'collection' ? 'Cash In' : 'Cash Out'}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {[
+                { id: "cash-in", label: "Cash In" },
+                { id: "cash-out", label: "Cash Out" },
+                { id: "virtual-transfer", label: "Virtual Transfer" },
+                { id: "move-to-dist", label: "Move to Distributor" }
+              ].map((t) => {
+                const isActive = filters.selectedTypes.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => {
+                      const next = filters.selectedTypes.includes(t.id)
+                        ? filters.selectedTypes.filter((x: string) => x !== t.id)
+                        : [...filters.selectedTypes, t.id];
+                      setFilters({ ...filters, selectedTypes: next });
+                    }}
+                    className={`px-2.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider border cursor-pointer transition-all duration-200 ${
+                      isActive 
+                        ? "bg-blue-100 dark:bg-blue-955/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800 font-bold"
+                        : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -254,7 +272,7 @@ export default function MobileFilterDrawer({
                 dateFrom: today,
                 dateTo: today,
                 staff: 'all',
-                type: 'all',
+                selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist"],
                 retailerId: 'all',
                 storeId: 'all',
                 portalGroupId: 'all',
