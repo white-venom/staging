@@ -18,7 +18,9 @@ import {
   Camera,
   ChevronDown,
   Share2,
-  Save
+  Save,
+  Calendar,
+  ArrowRight
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { api } from "../../../utils/api";
@@ -114,6 +116,74 @@ export default function OverviewTab({
   const [expandedLedgerRowId, setExpandedLedgerRowId] = React.useState<string | null>(null);
   const [sortBy, setSortBy] = React.useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = React.useState(true);
+
+  // Date range modal state
+  const [isRangeModalOpen, setIsRangeModalOpen] = React.useState(false);
+  const [rangeStartDate, setRangeStartDate] = React.useState(
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())
+  );
+  const [rangeEndDate, setRangeEndDate] = React.useState(
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())
+  );
+
+  const filteredCollections = React.useMemo(() => {
+    if (!rangeStartDate || !rangeEndDate) return [];
+    return safeCollections.filter(c => {
+      const cDate = c.date?.split(' ')[0];
+      return cDate >= rangeStartDate && cDate <= rangeEndDate;
+    });
+  }, [safeCollections, rangeStartDate, rangeEndDate]);
+
+  const filteredDeposits = React.useMemo(() => {
+    if (!rangeStartDate || !rangeEndDate) return [];
+    return safeDeposits.filter(d => {
+      const dDate = d.date?.split(' ')[0];
+      const isNotVirtual = d.depositType?.toLowerCase() !== 'virtual';
+      return isNotVirtual && dDate >= rangeStartDate && dDate <= rangeEndDate;
+    });
+  }, [safeDeposits, rangeStartDate, rangeEndDate]);
+
+  const rangeCashIn = React.useMemo(() => {
+    return filteredCollections.reduce((s, c) => s + (c.totalAmount || 0), 0);
+  }, [filteredCollections]);
+
+  const rangeCashOut = React.useMemo(() => {
+    return filteredDeposits.reduce((s, d) => s + (d.amount || 0), 0);
+  }, [filteredDeposits]);
+
+  const rangeNet = rangeCashIn - rangeCashOut;
+
+  const rangeEntries = React.useMemo(() => {
+    const combined = [
+      ...filteredCollections.map(c => ({
+        id: c.id,
+        date: c.date,
+        type: 'collection',
+        amount: c.totalAmount,
+        remarks: c.remarks || '',
+        from: c.retailerName?.toLowerCase().startsWith("cms")
+          ? `${c.retailerName}${c.store_name ? ` - ${c.store_name}` : ''}`
+          : `${c.retailerName}${c.store_name ? ` (${c.store_name})` : ''}`,
+        to: c.staffName || 'Admin'
+      })),
+      ...filteredDeposits.map(d => {
+        let toLabel = d.targetName;
+        if (d.depositType === 'staff') {
+          toLabel = d.to_office ? 'Office' : (d.recipient_staff_name || d.targetName);
+        }
+        return {
+          id: d.id,
+          date: d.date,
+          type: 'deposit',
+          amount: d.amount,
+          remarks: d.remarks || '',
+          from: d.staffName || 'Admin',
+          to: toLabel
+        };
+      })
+    ];
+    return combined.sort((a, b) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime());
+  }, [filteredCollections, filteredDeposits]);
 
   const { retailerDirectory, portalDirectory, showToastNotification } = useAdmin();
 
@@ -853,23 +923,26 @@ export default function OverviewTab({
           </div>
         </div>
 
-        {/* Net Balance */}
-        <div className="p-5 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-800 text-white rounded-2xl shadow-lg shadow-blue-900/15 border border-blue-500/20 hover:scale-[1.03] active:scale-95 transition-all relative overflow-hidden flex flex-col justify-between min-h-[140px]">
+        {/* Net Cash */}
+        <div 
+          onClick={() => setIsRangeModalOpen(true)}
+          className="p-5 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-800 text-white rounded-2xl shadow-lg shadow-blue-900/15 border border-blue-500/20 hover:scale-[1.03] active:scale-95 transition-all relative overflow-hidden flex flex-col justify-between min-h-[140px] cursor-pointer group"
+        >
           <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-white/5 rounded-full blur-xl" />
           <div className="flex items-start justify-between w-full">
             <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center shadow-inner">
               <CheckCircle2 className="w-4.5 h-4.5 text-blue-100" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-wide text-blue-100/70 bg-blue-950/30 px-2 py-0.5 rounded-full border border-blue-500/10">
-              Net Cash
+            <span className="text-[8px] font-black uppercase tracking-wide text-blue-100/70 bg-blue-950/30 px-2 py-0.5 rounded-full border border-blue-500/10 flex items-center gap-1 group-hover:bg-blue-900/60 transition-colors">
+              Net Cash <Calendar className="w-2.5 h-2.5" />
             </span>
           </div>
           <div className="mt-4">
             <span className="text-xl md:text-2xl font-black block tracking-tight text-white">
               ₹{(netCashBalance || 0).toLocaleString()}
             </span>
-             <span className="text-[10px] text-blue-100/85 font-bold block mt-1 tracking-wide">
-               {todayCount || 0} Entries Today
+             <span className="text-[10px] text-blue-100/85 font-bold block mt-1 tracking-wide group-hover:underline">
+               {todayCount || 0} Entries Today (Click to filter)
              </span>
           </div>
         </div>
@@ -1737,6 +1810,231 @@ export default function OverviewTab({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Date Range Cash Flow Report Modal */}
+      {isRangeModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl p-6 shadow-2xl animate-fade-in relative flex flex-col max-h-[85vh]">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">
+                    Cash Flow Report
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                    Select a date range to filter collections & deposits
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRangeModalOpen(false)}
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+              >
+                <X className="w-4.5 h-4.5" />
+              </button>
+            </div>
+
+            {/* Range controls & presets */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-150 dark:border-slate-850">
+              
+              {/* Presets */}
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => {
+                    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+                    setRangeStartDate(today);
+                    setRangeEndDate(today);
+                  }}
+                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-[9px] font-black text-slate-650 dark:text-slate-300 uppercase transition-all cursor-pointer"
+                >
+                  Today
+                </button>
+                <button
+                  onClick={() => {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yestStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(yesterday);
+                    setRangeStartDate(yestStr);
+                    setRangeEndDate(yestStr);
+                  }}
+                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-[9px] font-black text-slate-650 dark:text-slate-300 uppercase transition-all cursor-pointer"
+                >
+                  Yesterday
+                </button>
+                <button
+                  onClick={() => {
+                    const start = new Date();
+                    start.setDate(start.getDate() - 6);
+                    const startStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(start);
+                    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+                    setRangeStartDate(startStr);
+                    setRangeEndDate(today);
+                  }}
+                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-[9px] font-black text-slate-650 dark:text-slate-300 uppercase transition-all cursor-pointer"
+                >
+                  Last 7 Days
+                </button>
+                <button
+                  onClick={() => {
+                    const startOfMonth = new Date();
+                    startOfMonth.setDate(1);
+                    const startMonthStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(startOfMonth);
+                    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+                    setRangeStartDate(startMonthStr);
+                    setRangeEndDate(today);
+                  }}
+                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-[9px] font-black text-slate-650 dark:text-slate-300 uppercase transition-all cursor-pointer"
+                >
+                  This Month
+                </button>
+              </div>
+
+              {/* Date Inputs */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-black uppercase text-slate-400">From</span>
+                  <input
+                    type="date"
+                    value={rangeStartDate}
+                    onChange={(e) => setRangeStartDate(e.target.value)}
+                    className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg text-[10px] font-bold outline-none dark:text-white"
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-black uppercase text-slate-400">To</span>
+                  <input
+                    type="date"
+                    value={rangeEndDate}
+                    onChange={(e) => setRangeEndDate(e.target.value)}
+                    className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg text-[10px] font-bold outline-none dark:text-white"
+                  />
+                </div>
+              </div>
+
+            </div>
+
+            {/* Range Cash In / Cash Out Summary Grid */}
+            <div className="grid grid-cols-3 gap-4">
+              {/* Cash In */}
+              <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-4 flex flex-col justify-between">
+                <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-450 tracking-wider">Cash In (Collections)</span>
+                <div className="mt-2 flex items-baseline justify-between">
+                  <span className="text-lg font-black text-emerald-700 dark:text-emerald-400">
+                    ₹{rangeCashIn.toLocaleString()}
+                  </span>
+                  <span className="text-[9px] font-bold text-emerald-600/80">
+                    {filteredCollections.length} entries
+                  </span>
+                </div>
+              </div>
+
+              {/* Cash Out */}
+              <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-xl p-4 flex flex-col justify-between">
+                <span className="text-[9px] font-black uppercase text-red-600 dark:text-red-455 tracking-wider">Cash Out (Deposits)</span>
+                <div className="mt-2 flex items-baseline justify-between">
+                  <span className="text-lg font-black text-red-700 dark:text-red-400">
+                    ₹{rangeCashOut.toLocaleString()}
+                  </span>
+                  <span className="text-[9px] font-bold text-red-650/80">
+                    {filteredDeposits.length} entries
+                  </span>
+                </div>
+              </div>
+
+              {/* Net Flow */}
+              <div className={`border rounded-xl p-4 flex flex-col justify-between ${
+                rangeNet >= 0
+                  ? 'bg-blue-50/50 dark:bg-blue-955 border-blue-100 dark:border-blue-900/30'
+                  : 'bg-amber-50/50 dark:bg-amber-955 border-amber-100 dark:border-amber-900/30'
+              }`}>
+                <span className={`text-[9px] font-black uppercase tracking-wider ${rangeNet >= 0 ? 'text-blue-650' : 'text-amber-650'}`}>
+                  Net Cash Flow
+                </span>
+                <div className="mt-2">
+                  <span className={`text-lg font-black block ${rangeNet >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                    {rangeNet >= 0 ? '+' : ''}₹{rangeNet.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Entries Section */}
+            <div className="flex-1 flex flex-col min-h-0 pt-2 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1 h-3.5 bg-blue-600 rounded-full" />
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                  Transaction Entries ({rangeEntries.length})
+                </span>
+              </div>
+
+              <div className="flex-1 overflow-y-auto min-h-0 pr-1 divide-y divide-slate-100 dark:divide-slate-800 border border-slate-150 dark:border-slate-800 rounded-xl">
+                {rangeEntries.length === 0 ? (
+                  <div className="p-12 text-center text-slate-400 italic text-[11px] font-bold">
+                    No transaction entries found for this range.
+                  </div>
+                ) : (
+                  rangeEntries.map((item) => (
+                    <div key={item.id} className="p-3.5 hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        
+                        {/* Flow Description */}
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider ${
+                            item.type === 'collection'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100/60 dark:border-emerald-900/30'
+                              : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30'
+                          }`}>
+                            {item.type === 'collection' ? 'Cash In' : 'Cash Out'}
+                          </span>
+
+                          <div className="flex items-center gap-1.5 truncate font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
+                            <span className="truncate max-w-[200px]">{item.from}</span>
+                            <ArrowRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                            <span className="truncate max-w-[200px] text-blue-600 dark:text-blue-400">{item.to}</span>
+                          </div>
+                        </div>
+
+                        {/* Amount */}
+                        <span className={`font-black text-xs ${item.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
+                        </span>
+                      </div>
+
+                      {/* Meta Footer Row */}
+                      <div className="flex items-center justify-between text-[8px] font-bold text-slate-400 uppercase tracking-wider">
+                        <span>
+                          {(() => {
+                            if (!item.date) return "N/A";
+                            try {
+                              const [datePart, timePart] = item.date.split(" ");
+                              const [year, month, day] = datePart.split("-");
+                              const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                              const formattedMonth = months[parseInt(month, 10) - 1] || month;
+                              return `${formattedMonth} ${parseInt(day, 10)}, ${timePart}`;
+                            } catch (e) {
+                              return item.date;
+                            }
+                          })()}
+                        </span>
+                        {item.remarks && (
+                          <span className="italic text-slate-500 dark:text-slate-400 font-semibold normal-case truncate max-w-[300px]">
+                            Remark: {item.remarks}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+            </div>
+
           </div>
         </div>
       )}

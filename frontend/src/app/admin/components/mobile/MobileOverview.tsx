@@ -16,7 +16,9 @@ import {
   Share2,
   Edit2,
   Trash2,
-  Save
+  Save,
+  Calendar,
+  ArrowRight
 } from "lucide-react";
 import { format, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
@@ -85,6 +87,77 @@ export default function MobileOverview({
   const { retailerDirectory, portalDirectory, showToastNotification } = useAdmin();
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = useState(true);
+
+  // Date range modal state
+  const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
+  const [rangeStartDate, setRangeStartDate] = useState(
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())
+  );
+  const [rangeEndDate, setRangeEndDate] = useState(
+    new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date())
+  );
+
+  const safeCollections = collections || [];
+  const safeDeposits = deposits || [];
+
+  const filteredCollections = useMemo(() => {
+    if (!rangeStartDate || !rangeEndDate) return [];
+    return safeCollections.filter(c => {
+      const cDate = c.date?.split(' ')[0];
+      return cDate >= rangeStartDate && cDate <= rangeEndDate;
+    });
+  }, [safeCollections, rangeStartDate, rangeEndDate]);
+
+  const filteredDeposits = useMemo(() => {
+    if (!rangeStartDate || !rangeEndDate) return [];
+    return safeDeposits.filter(d => {
+      const dDate = d.date?.split(' ')[0];
+      const isNotVirtual = d.depositType?.toLowerCase() !== 'virtual';
+      return isNotVirtual && dDate >= rangeStartDate && dDate <= rangeEndDate;
+    });
+  }, [safeDeposits, rangeStartDate, rangeEndDate]);
+
+  const rangeCashIn = useMemo(() => {
+    return filteredCollections.reduce((s, c) => s + (c.totalAmount || 0), 0);
+  }, [filteredCollections]);
+
+  const rangeCashOut = useMemo(() => {
+    return filteredDeposits.reduce((s, d) => s + (d.amount || 0), 0);
+  }, [filteredDeposits]);
+
+  const rangeNet = rangeCashIn - rangeCashOut;
+
+  const rangeEntries = useMemo(() => {
+    const combined = [
+      ...filteredCollections.map(c => ({
+        id: c.id,
+        date: c.date,
+        type: 'collection',
+        amount: c.totalAmount,
+        remarks: c.remarks || '',
+        from: c.retailerName?.toLowerCase().startsWith("cms")
+          ? `${c.retailerName}${c.store_name ? ` - ${c.store_name}` : ''}`
+          : `${c.retailerName}${c.store_name ? ` (${c.store_name})` : ''}`,
+        to: c.staffName || 'Admin'
+      })),
+      ...filteredDeposits.map(d => {
+        let toLabel = d.targetName;
+        if (d.depositType === 'staff') {
+          toLabel = d.to_office ? 'Office' : (d.recipient_staff_name || d.targetName);
+        }
+        return {
+          id: d.id,
+          date: d.date,
+          type: 'deposit',
+          amount: d.amount,
+          remarks: d.remarks || '',
+          from: d.staffName || 'Admin',
+          to: toLabel
+        };
+      })
+    ];
+    return combined.sort((a, b) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime());
+  }, [filteredCollections, filteredDeposits]);
   
   // Calculate 7-day trend data
   const trendData = useMemo(() => {
@@ -453,14 +526,20 @@ export default function MobileOverview({
   return (
     <div className="space-y-3.5">
       {/* Premium Summary Card */}
-      <div className="relative overflow-hidden bg-slate-900 dark:bg-white rounded-lg p-3 text-white dark:text-slate-955 shadow-md">
+      <div 
+        onClick={() => setIsRangeModalOpen(true)}
+        className="relative overflow-hidden bg-slate-900 dark:bg-white rounded-lg p-3 text-white dark:text-slate-955 shadow-md active:scale-[0.98] transition-all cursor-pointer group"
+      >
         <div className="absolute top-0 right-0 p-2 opacity-10">
           <Wallet className="w-16 h-16 rotate-12" />
         </div>
         <div className="relative z-10 flex items-center justify-between">
           <div>
-            <p className="text-[8px] font-black uppercase tracking-widest opacity-60">Net Cash in Hand</p>
+            <p className="text-[8px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1">
+              Net Cash in Hand <Calendar className="w-2.5 h-2.5 text-blue-455 dark:text-blue-600" />
+            </p>
             <h2 className="text-xl font-black mt-0.5">₹{netCashBalance.toLocaleString()}</h2>
+            <p className="text-[6.5px] font-black text-blue-400 dark:text-blue-600 uppercase tracking-wide underline mt-0.5">Click for range report</p>
           </div>
           
           <div className="flex items-center gap-2">
@@ -1340,24 +1419,226 @@ export default function MobileOverview({
                 </div>
               )}
 
-              <div className="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Date Range Cash Flow Drawer / Modal */}
+      {isRangeModalOpen && (
+        <div className="fixed inset-0 bg-slate-955/60 backdrop-blur-sm z-50 flex flex-col justify-end">
+          <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-2xl w-full max-h-[90vh] p-4 flex flex-col gap-4 shadow-2xl animate-slide-up relative text-left">
+            
+            {/* Handle/Indicator */}
+            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto self-center -mt-1 mb-1" />
+
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <h3 className="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">
+                    Cash Flow Filter
+                  </h3>
+                  <p className="text-[7.5px] font-bold text-slate-400 dark:text-slate-500 uppercase">
+                    Select a date range
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsRangeModalOpen(false)}
+                className="p-1 rounded-md bg-slate-105 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Date Selection Control & Presets */}
+            <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-955 p-3 rounded-lg border border-slate-105 dark:border-slate-850">
+              {/* Presets */}
+              <div className="grid grid-cols-4 gap-1">
                 <button
-                  type="button"
-                  onClick={() => setIsEditCollectionModalOpen(false)}
-                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-705 dark:text-slate-200 rounded-md text-[10px] font-black transition-all cursor-pointer"
+                  onClick={() => {
+                    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+                    setRangeStartDate(today);
+                    setRangeEndDate(today);
+                  }}
+                  className="py-1 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
                 >
-                  Cancel
+                  Today
                 </button>
                 <button
-                  type="submit"
-                  disabled={isSavingCollection}
-                  className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  onClick={() => {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yestStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(yesterday);
+                    setRangeStartDate(yestStr);
+                    setRangeEndDate(yestStr);
+                  }}
+                  className="py-1 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
                 >
-                  <Save className="w-3 h-3" />
-                  {isSavingCollection ? "Saving..." : "Save Entry"}
+                  Yesterday
+                </button>
+                <button
+                  onClick={() => {
+                    const start = new Date();
+                    start.setDate(start.getDate() - 6);
+                    const startStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(start);
+                    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+                    setRangeStartDate(startStr);
+                    setRangeEndDate(today);
+                  }}
+                  className="py-1 bg-white dark:bg-slate-900 border border-slate-255 dark:border-slate-800 rounded text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
+                >
+                  7 Days
+                </button>
+                <button
+                  onClick={() => {
+                    const startOfMonth = new Date();
+                    startOfMonth.setDate(1);
+                    const startMonthStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(startOfMonth);
+                    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
+                    setRangeStartDate(startMonthStr);
+                    setRangeEndDate(today);
+                  }}
+                  className="py-1 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
+                >
+                  Month
                 </button>
               </div>
-            </form>
+
+              {/* Custom Date Fields */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[7px] font-black uppercase text-slate-400">From Date</span>
+                  <input
+                    type="date"
+                    value={rangeStartDate}
+                    onChange={(e) => setRangeStartDate(e.target.value)}
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded text-[9px] font-bold outline-none dark:text-white"
+                  />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-[7px] font-black uppercase text-slate-400">To Date</span>
+                  <input
+                    type="date"
+                    value={rangeEndDate}
+                    onChange={(e) => setRangeEndDate(e.target.value)}
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded text-[9px] font-bold outline-none dark:text-white"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Range Cash In / Cash Out Summary Grid */}
+            <div className="grid grid-cols-3 gap-2">
+              {/* Cash In */}
+              <div className="bg-emerald-50/50 dark:bg-emerald-955 border border-emerald-100 dark:border-emerald-900/30 rounded-lg p-2.5 flex flex-col justify-between">
+                <span className="text-[7.5px] font-black uppercase text-emerald-600 dark:text-emerald-450 tracking-wider">Cash In</span>
+                <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 mt-1 block">
+                  ₹{rangeCashIn.toLocaleString()}
+                </span>
+                <span className="text-[6.5px] font-bold text-slate-400 block mt-0.5">
+                  {filteredCollections.length} items
+                </span>
+              </div>
+
+              {/* Cash Out */}
+              <div className="bg-red-50/50 dark:bg-red-955 border border-red-100 dark:border-red-900/30 rounded-lg p-2.5 flex flex-col justify-between">
+                <span className="text-[7.5px] font-black uppercase text-red-600 dark:text-red-455 tracking-wider">Cash Out</span>
+                <span className="text-xs font-black text-red-700 dark:text-red-400 mt-1 block">
+                  ₹{rangeCashOut.toLocaleString()}
+                </span>
+                <span className="text-[6.5px] font-bold text-slate-400 block mt-0.5">
+                  {filteredDeposits.length} items
+                </span>
+              </div>
+
+              {/* Net Flow */}
+              <div className={`border rounded-lg p-2.5 flex flex-col justify-between ${
+                rangeNet >= 0
+                  ? 'bg-blue-50/50 dark:bg-blue-955 border-blue-100 dark:border-blue-900/30'
+                  : 'bg-amber-50/50 dark:bg-amber-955 border-amber-100 dark:border-amber-900/30'
+              }`}>
+                <span className={`text-[7.5px] font-black uppercase tracking-wider ${rangeNet >= 0 ? 'text-blue-650' : 'text-amber-650'}`}>
+                  Net Flow
+                </span>
+                <span className={`text-xs font-black mt-1 block ${rangeNet >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                  {rangeNet >= 0 ? '+' : ''}₹{rangeNet.toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            {/* Entries Section */}
+            <div className="flex-1 flex flex-col min-h-0 min-w-0 gap-1.5">
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-3 bg-blue-600 rounded-full" />
+                <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider">
+                  Transaction Entries ({rangeEntries.length})
+                </span>
+              </div>
+
+              <div className="flex-1 overflow-y-auto min-h-0 min-w-0 divide-y divide-slate-100 dark:divide-slate-800 border border-slate-150 dark:border-slate-800 rounded-lg">
+                {rangeEntries.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 italic text-[10px] font-bold">
+                    No entries for this range.
+                  </div>
+                ) : (
+                  rangeEntries.map((item) => (
+                    <div key={item.id} className="p-2.5 hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors flex flex-col gap-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        
+                        {/* Flow Description */}
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <span className={`px-1 rounded text-[7px] font-black uppercase tracking-wider flex-shrink-0 ${
+                            item.type === 'collection'
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100/60 dark:border-emerald-900/30'
+                              : 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-100/60 dark:border-red-900/30'
+                          }`}>
+                            {item.type === 'collection' ? 'In' : 'Out'}
+                          </span>
+
+                          <div className="flex items-center gap-1 truncate font-extrabold text-slate-850 dark:text-slate-150 uppercase tracking-tight text-[9px] min-w-0">
+                            <span className="truncate max-w-[90px]">{item.from}</span>
+                            <ArrowRight className="w-2.5 h-2.5 text-slate-400 flex-shrink-0" />
+                            <span className="truncate max-w-[90px] text-blue-600 dark:text-blue-400">{item.to}</span>
+                          </div>
+                        </div>
+
+                        {/* Amount */}
+                        <span className={`font-black text-[10px] flex-shrink-0 ml-1 ${item.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
+                        </span>
+                      </div>
+
+                      {/* Meta Footer Row */}
+                      <div className="flex items-center justify-between text-[7px] font-bold text-slate-400 uppercase tracking-wider">
+                        <span>
+                          {(() => {
+                            if (!item.date) return "N/A";
+                            try {
+                              const [datePart, timePart] = item.date.split(" ");
+                              const [year, month, day] = datePart.split("-");
+                              const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                              const formattedMonth = months[parseInt(month, 10) - 1] || month;
+                              return `${formattedMonth} ${parseInt(day, 10)}, ${timePart}`;
+                            } catch (e) {
+                              return item.date;
+                            }
+                          })()}
+                        </span>
+                        {item.remarks && (
+                          <span className="italic text-slate-500 dark:text-slate-400 font-semibold normal-case truncate max-w-[160px]">
+                            {item.remarks}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
       )}
