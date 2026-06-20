@@ -159,7 +159,7 @@ def submit_deposit(
             new_balance = prev_balance + payload.amount
             
             # Step C: Log a 'debit' entry in Retailer's Ledger
-            desc_text = "virtual transfer"
+            desc_text = portal.portal_name if portal else "virtual transfer"
                 
             ledger_entry = Ledger(
                 retailer_id=payload.retailer_id,
@@ -273,6 +273,7 @@ def list_deposits(
         joinedload(BankDeposit.retailer),
         joinedload(BankDeposit.recipient_staff),
         joinedload(BankDeposit.staff),
+        joinedload(BankDeposit.denominations),
         selectinload(BankDeposit.ledgers)
     )
     deposits = db.scalars(query.order_by(desc(BankDeposit.created_at))).all()
@@ -299,10 +300,10 @@ def list_deposits(
         elif dep.deposit_type == "virtual":
             portal_obj = dep.portal
             if dep.retailer:
-                dep.target_name = f"Retailer Limit: {dep.retailer.retailer_name}"
+                dep.target_name = dep.retailer.retailer_name
                 dep.retailer_ledger_token = dep.retailer.ledger_token
             elif dep.recipient_staff:
-                dep.target_name = f"Staff Limit: {dep.recipient_staff.name}"
+                dep.target_name = dep.recipient_staff.name
             else:
                 dep.target_name = "Virtual Transfer"
             # Set portal name for narration
@@ -582,7 +583,8 @@ def update_deposit(
             desc = "cash out"
             if dt == "virtual":
                 txn_type = "credit" if payload.payment_mode == "refund" else "debit"
-                desc = "move to distributor" if payload.payment_mode == "refund" else "virtual transfer"
+                portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id))
+                desc = "move to distributor" if payload.payment_mode == "refund" else (portal.portal_name if portal else "virtual transfer")
                 
             if not ledger_entry:
                 ledger_entry = Ledger(
@@ -641,10 +643,10 @@ def update_deposit(
     deposit.is_refund = (deposit.payment_mode == "refund")
     
     if deposit.retailer_id and deposit.retailer:
-        deposit.target_name = f"Retailer Limit: {deposit.retailer.retailer_name}" if deposit.deposit_type == "virtual" else deposit.retailer.retailer_name
+        deposit.target_name = deposit.retailer.retailer_name
         deposit.retailer_ledger_token = deposit.retailer.ledger_token
     elif deposit.recipient_staff_id and deposit.recipient_staff:
-        deposit.target_name = f"Staff Limit: {deposit.recipient_staff.name}" if deposit.deposit_type == "virtual" else deposit.recipient_staff.name
+        deposit.target_name = deposit.recipient_staff.name
     else:
         deposit.target_name = deposit.portal_name
 

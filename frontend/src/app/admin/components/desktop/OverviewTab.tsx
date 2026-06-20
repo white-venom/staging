@@ -881,6 +881,7 @@ export default function OverviewTab({
           ...safeCollections.map(c => ({
             id: c.id,
             date: c.date,
+            created_at: c.created_at || c.date,
             party: c.retailerName,
             store_name: c.store_name || null,
             staff: c.staffName || "Admin",
@@ -900,6 +901,7 @@ export default function OverviewTab({
           ...safeDeposits.map(d => ({
             id: d.id,
             date: d.date,
+            created_at: d.created_at || d.date,
             party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
             store_name: null,
             staff: d.staffName || "Admin",
@@ -1064,9 +1066,9 @@ export default function OverviewTab({
                                     <button
                                       onClick={() => {
                                         if (item.type === 'collection') {
-                                          shareCollectionEntry({ retailer_name: item.party, store_name: item.store_name, total_amount: item.amount, denominations: item.denominations, created_at: item.rawRecord?.created_at || item.date, remarks: item.remarks }, item.staff);
+                                          shareCollectionEntry({ retailer_name: item.party, store_name: item.store_name, total_amount: item.amount, denominations: item.denominations, created_at: item.created_at || item.rawRecord?.created_at || item.date, remarks: item.remarks }, item.staff);
                                         } else {
-                                          shareDepositEntry({ target_name: item.party, amount: item.amount, denominations: item.denominations, created_at: item.date, remarks: item.remarks }, item.staff);
+                                          shareDepositEntry({ deposit_type: item.deposit_type, target_name: item.party, amount: item.amount, denominations: item.denominations, created_at: item.created_at || item.date, remarks: item.remarks, recipient_staff_id: item.recipient_staff_id }, item.staff);
                                         }
                                       }}
                                       className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-wider rounded-lg border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 transition-all cursor-pointer flex items-center gap-1"
@@ -1261,7 +1263,7 @@ export default function OverviewTab({
                            <span className="font-black text-red-600 text-sm">-₹{(d.amount || 0).toLocaleString()}</span>
                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                              <button
-                               onClick={() => shareDepositEntry({ deposit_type: d.depositType, target_name: d.targetName, portal_group_name: d.portalName, amount: d.amount, denominations: d.denominations, created_at: d.date, remarks: d.remarks }, d.staffName || 'Staff')}
+                               onClick={() => shareDepositEntry({ deposit_type: d.depositType, target_name: d.targetName, portal_group_name: d.portalName, amount: d.amount, denominations: d.denominations, created_at: d.created_at || d.date, remarks: d.remarks, recipient_staff_id: d.recipient_staff_id || d.recipientStaffId }, d.staffName || 'Staff')}
                                className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
                                title="Share"
                              >

@@ -562,6 +562,24 @@ def update_collection(
     old_online_amount = collection.denominations.online_amount if collection.denominations else Decimal("0.00")
     new_online_amount = payload.denominations.online_amount if payload.denominations else Decimal("0.00")
     
+    # Transitioning between CMS (no retailer) and Retailer collection
+    if (old_retailer_id is None) != (new_retailer_id is None):
+        # Transitioning: Revert direct portal balance decrement if it was a CMS collection (old_retailer_id is None)
+        if not old_retailer_id and old_portal_id:
+            old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
+            if old_portal:
+                old_portal.balance += Decimal(str(old_amount))
+                if old_portal.group:
+                    old_portal.group.balance += Decimal(str(old_amount))
+    
+        # Transitioning: Apply direct portal balance decrement if it is now a CMS collection (new_retailer_id is None)
+        if not new_retailer_id and new_portal_id:
+            new_portal = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
+            if new_portal:
+                new_portal.balance -= Decimal(str(new_amount))
+                if new_portal.group:
+                    new_portal.group.balance -= Decimal(str(new_amount))
+    
     # Find the existing auto-created deposit if it existed
     existing_dep = None
     if old_portal_id and old_online_amount > 0:
@@ -682,20 +700,50 @@ def update_collection(
         collection.denominations.coins = d.coins
         collection.denominations.online_amount = d.online_amount
 
-    # Update ledger entry
+    # Update or Create ledger entry
     ledger_entry = db.scalar(select(Ledger).where(Ledger.collection_id == collection_id))
-    if ledger_entry:
-        ledger_entry.amount = new_amount
-        if old_retailer_id != new_retailer_id:
-            ledger_entry.retailer_id = new_retailer_id
-            
-        # Update description based on store name
+    if new_retailer_id:
         store_name = "Cash"
         if collection.store_id:
             store_obj = db.scalar(select(Store).where(Store.id == collection.store_id))
             if store_obj:
                 store_name = store_obj.store_name
-        ledger_entry.description = store_name
+        
+        if not ledger_entry:
+            # Create a brand new ledger entry if it was previously a CMS collection
+            latest_ledger = db.scalar(
+                select(Ledger)
+                .where(Ledger.retailer_id == new_retailer_id)
+                .order_by(desc(Ledger.created_at), desc(Ledger.id))
+                .limit(1)
+            )
+            if latest_ledger:
+                prev_balance = latest_ledger.balance
+            else:
+                ret_obj = db.scalar(select(Retailer).where(Retailer.id == new_retailer_id))
+                prev_balance = Decimal(str(ret_obj.opening_to_take or 0)) if ret_obj else Decimal("0.00")
+            
+            new_balance = prev_balance - new_amount
+            
+            ledger_entry = Ledger(
+                retailer_id=new_retailer_id,
+                transaction_type="credit",
+                amount=new_amount,
+                balance=new_balance,
+                description=store_name,
+                collection_id=collection.id,
+                created_at=collection.created_at
+            )
+            db.add(ledger_entry)
+        else:
+            ledger_entry.amount = new_amount
+            if old_retailer_id != new_retailer_id:
+                ledger_entry.retailer_id = new_retailer_id
+            ledger_entry.description = store_name
+    else:
+        # If the new retailer is None (transitioned to CMS), but a ledger entry existed, delete it
+        if ledger_entry:
+            db.delete(ledger_entry)
 
     # Sync corresponding staff handover deposit if needed
     if old_from_staff_id != new_from_staff_id:
@@ -767,9 +815,10 @@ def update_collection(
                 matching_deposit.denominations.online_amount = d.online_amount
     
     # Recalculate balances
-    if old_retailer_id != new_retailer_id:
+    if old_retailer_id:
         recalculate_balances(old_retailer_id, db)
-    recalculate_balances(new_retailer_id, db)
+    if new_retailer_id:
+        recalculate_balances(new_retailer_id, db)
     db.commit()
     
     db.refresh(collection)

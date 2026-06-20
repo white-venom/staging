@@ -127,6 +127,42 @@ def delete_user(
     if user.id != current_user.id and user.role == "admin":
         raise HTTPException(status_code=400, detail="Cannot delete other admins.")
 
+    # Prevent deleting staff with non-zero balances
+    if user.role == "staff":
+        from decimal import Decimal
+        from app.database.models import Collection, BankDeposit
+        from sqlalchemy.sql import func
+
+        # Check virtual balance
+        if user.virtual_balance != 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot delete staff with non-zero virtual balance (Current: {user.virtual_balance})."
+            )
+
+        # Check cash in hand balance
+        collections_sum = db.scalar(
+            select(func.coalesce(func.sum(Collection.total_amount), 0))
+            .where(Collection.staff_id == user_id, Collection.from_staff_id == None)
+        ) or Decimal("0.00")
+        
+        received_sum = db.scalar(
+            select(func.coalesce(func.sum(BankDeposit.amount), 0))
+            .where(BankDeposit.recipient_staff_id == user_id, BankDeposit.deposit_type == "staff", BankDeposit.status == "verified")
+        ) or Decimal("0.00")
+        
+        sent_sum = db.scalar(
+            select(func.coalesce(func.sum(BankDeposit.amount), 0))
+            .where(BankDeposit.staff_id == user_id)
+        ) or Decimal("0.00")
+        
+        net_cash_balance = collections_sum + received_sum - sent_sum
+        if net_cash_balance != 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot delete staff with non-zero cash balance (Current: {net_cash_balance})."
+            )
+
     # Soft delete instead of hard delete to preserve past records
     user.is_active = False
     db.commit()

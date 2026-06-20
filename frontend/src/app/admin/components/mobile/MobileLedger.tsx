@@ -531,7 +531,7 @@ export default function MobileLedger() {
                          <div className="flex items-center gap-1 no-print" onClick={e => e.stopPropagation()}>
                            <button
                              onClick={() => {
-                               if (item.type === 'collection') {
+                               if (item.txType === 'cash-in') {
                                  shareCollectionEntry(item, item.staff || 'Staff');
                                } else {
                                  shareDepositEntry(item, item.staff || 'Staff');

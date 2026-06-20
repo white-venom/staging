@@ -114,6 +114,7 @@ export default function MobileOverview({
       ...(collections || []).map(c => ({
         id: c.id,
         date: c.date,
+        created_at: c.created_at || c.date,
         party: c.retailerName,
         store_name: c.store_name || null,
         remarks: c.remarks || "",
@@ -129,6 +130,7 @@ export default function MobileOverview({
       ...(deposits || []).map(d => ({
         id: d.id,
         date: d.date,
+        created_at: d.created_at || d.date,
         party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
         store_name: null,
         remarks: d.remarks || "",
@@ -828,9 +830,9 @@ export default function MobileOverview({
                       <button
                         onClick={() => {
                           if (item.type === 'collection') {
-                            shareCollectionEntry({ retailer_name: item.party, store_name: item.store_name, total_amount: item.amount, denominations: item.denominations, created_at: item.date, remarks: item.remarks }, item.staff);
+                            shareCollectionEntry({ retailer_name: item.party, store_name: item.store_name, total_amount: item.amount, denominations: item.denominations, created_at: item.created_at || item.date, remarks: item.remarks }, item.staff);
                           } else {
-                            shareDepositEntry({ target_name: item.party, amount: item.amount, denominations: item.denominations, created_at: item.date, remarks: item.remarks }, item.staff);
+                            shareDepositEntry({ deposit_type: item.deposit_type, target_name: item.party, amount: item.amount, denominations: item.denominations, created_at: item.created_at || item.date, remarks: item.remarks, recipient_staff_id: item.recipient_staff_id }, item.staff);
                           }
                         }}
                         className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 active:scale-95 transition-transform"

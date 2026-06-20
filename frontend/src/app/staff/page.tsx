@@ -998,7 +998,7 @@ export default function StaffDashboard() {
                const den = c.denominations || {};
                const txAmount = c.totalAmount || 0;
                // Edit and Delete window checks
-               const createdMs = c.date ? new Date(c.date.replace(' ', 'T') + 'Z').getTime() : 0;
+               const createdMs = c.created_at ? new Date(c.created_at).getTime() : (c.date ? new Date(c.date.replace(' ', 'T') + 'Z').getTime() : 0);
                const elapsedMin = (Date.now() - createdMs) / 60000;
                const canEdit = editWindow === -1 || elapsedMin <= editWindow;
                const canDelete = deleteWindow === -1 || elapsedMin <= deleteWindow;
@@ -1097,9 +1097,9 @@ export default function StaffDashboard() {
                          <button
                            onClick={() => {
                              if (c.type === 'collection') {
-                               shareCollectionEntry({ retailer_name: c.retailerName, portal_name: c.portalName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.date + 'Z', remarks: c.remarks }, currentUser.name);
+                               shareCollectionEntry({ retailer_name: c.retailerName, portal_name: c.portalName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name);
                              } else {
-                               shareDepositEntry({ deposit_type: c.depositType, target_name: c.targetName, amount: c.totalAmount, denominations: c.denominations, created_at: c.date + 'Z', remarks: c.remarks }, currentUser.name, currentUser.id);
+                               shareDepositEntry({ deposit_type: c.depositType, target_name: c.targetName, amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name, currentUser.id);
                              }
                            }}
                            className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 active:scale-95 transition-transform"

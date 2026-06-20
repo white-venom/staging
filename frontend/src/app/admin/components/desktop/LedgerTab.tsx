@@ -812,7 +812,7 @@ export default function LedgerTab({
                       <div className="flex items-center gap-1.5 no-print" onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => {
-                            if (tx.type === 'collection') {
+                            if (tx.txType === 'cash-in') {
                               shareCollectionEntry(tx.rawRecord, tx.staff || 'Staff');
                             } else {
                               shareDepositEntry(tx.rawRecord, tx.staff || 'Staff');

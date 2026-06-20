@@ -23,10 +23,30 @@ export const numberToWordsIndian = (num: number): string => {
 
 export const formatShareDate = (dateStr: string): string => {
   try {
-    let parseStr = dateStr;
-    if (!dateStr.endsWith("Z") && !dateStr.includes("+") && !dateStr.includes("GMT")) {
-      parseStr = dateStr.replace(" ", "T") + "Z";
+    if (!dateStr) return "";
+    
+    // If it already has day name (e.g. "Fri", "Friday") or "am"/"pm", it's already formatted
+    if (/[a-zA-Z]{3,}/.test(dateStr) && (dateStr.includes("/") || dateStr.includes("-"))) {
+      return dateStr;
     }
+    
+    // Check if it's already a formatted Indian local date (like "19/6/2026, 01:31 pm")
+    if (dateStr.toLowerCase().includes("am") || dateStr.toLowerCase().includes("pm")) {
+      return dateStr;
+    }
+
+    let parseStr = dateStr;
+    const hasTimezone = dateStr.endsWith("Z") || dateStr.includes("+") || dateStr.includes("GMT");
+    
+    if (!hasTimezone) {
+      parseStr = dateStr.replace(" ", "T");
+      if (!parseStr.includes("T")) {
+        parseStr = parseStr + "T00:00:00Z";
+      } else {
+        parseStr = parseStr + "Z";
+      }
+    }
+    
     const d = new Date(parseStr);
     if (isNaN(d.getTime())) return dateStr;
 
@@ -41,10 +61,8 @@ export const formatShareDate = (dateStr: string): string => {
       timeZone: "Asia/Kolkata"
     };
     
-    // Returns string like "19/6/2026, 01:31 pm" or similar
     const formatted = d.toLocaleString("en-IN", options);
     
-    // Get day name in IST
     const formatterDay = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "Asia/Kolkata" });
     const dayName = formatterDay.format(d);
     
@@ -57,14 +75,30 @@ export const formatShareDate = (dateStr: string): string => {
 // Share a Cash In (collection) entry
 export const shareCollectionEntry = async (entry: {
   retailer_name?: string;
+  retailerName?: string;
   portal_name?: string;
+  portalName?: string;
   store_name?: string;
+  storeName?: string;
   total_amount?: number;
+  totalAmount?: number;
+  amount?: number;
   denominations?: Record<string, number>;
   created_at?: string;
+  createdAt?: string;
+  date?: string;
   remarks?: string;
   retailer_ledger_token?: string;
+  retailerLedgerToken?: string;
 }, staffName: string) => {
+  const retailer_name = entry.retailer_name || entry.retailerName;
+  const portal_name = entry.portal_name || entry.portalName;
+  const store_name = entry.store_name || entry.storeName;
+  const total_amount = entry.total_amount ?? entry.totalAmount ?? entry.amount ?? 0;
+  const created_at = entry.created_at || entry.createdAt || entry.date;
+  const remarks = entry.remarks;
+  const retailer_ledger_token = entry.retailer_ledger_token || entry.retailerLedgerToken;
+
   const den = entry.denominations || {};
 
   const notes = [
@@ -91,41 +125,37 @@ export const shareCollectionEntry = async (entry: {
     lines.push(`UPI/Online = ${Number(den.online_amount).toLocaleString("en-IN")}`);
   }
 
-  const totalVal = Number(entry.total_amount || 0);
-  const totalWords = numberToWordsIndian(totalVal);
-
-  const dateFormatted = entry.created_at ? formatShareDate(entry.created_at) : "";
+  const totalWords = numberToWordsIndian(total_amount);
+  const dateFormatted = created_at ? formatShareDate(created_at) : "";
 
   const headerLines: string[] = [];
-  if (entry.retailer_name) {
-    if (entry.retailer_name.startsWith("Staff:")) {
-      headerLines.push(entry.retailer_name);
-    } else if (entry.retailer_name === "Office" || entry.retailer_name === "Unknown Source") {
-      headerLines.push(entry.retailer_name);
+  if (retailer_name) {
+    if (retailer_name.startsWith("Staff:")) {
+      headerLines.push(retailer_name);
+    } else if (retailer_name === "Office" || retailer_name === "Unknown Source") {
+      headerLines.push(retailer_name);
     } else {
-      const isCms = entry.retailer_name.toLowerCase().startsWith("cms");
-      const storeSuffix = (isCms && entry.store_name) ? ` - ${entry.store_name}` : "";
-      headerLines.push(`Retailer: ${entry.retailer_name}${storeSuffix}`);
+      headerLines.push(`Retailer: ${retailer_name}`);
     }
   }
-  if (entry.store_name && !entry.retailer_name?.toLowerCase().startsWith("cms")) {
-    headerLines.push(`Store: ${entry.store_name}`);
+  if (store_name) {
+    headerLines.push(`Store: ${store_name}`);
   }
-  if (entry.portal_name && entry.portal_name !== "Cash" && entry.portal_name !== "N/A") {
-    headerLines.push(`Portal: ${entry.portal_name}`);
+  if (portal_name && portal_name !== "Cash" && portal_name !== "N/A") {
+    headerLines.push(`Portal: ${portal_name}`);
   }
-  if (entry.remarks) {
-    headerLines.push(`Remark: ${entry.remarks}`);
+  if (remarks) {
+    headerLines.push(`Remark: ${remarks}`);
   }
   const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
 
-  const ledgerUrl = entry.retailer_ledger_token
-    ? `\n\nLedger: ${typeof window !== "undefined" ? window.location.origin : ""}/public/ledger/${entry.retailer_ledger_token}`
+  const ledgerUrl = retailer_ledger_token
+    ? `\n\nLedger: ${typeof window !== "undefined" ? window.location.origin : ""}/public/ledger/${retailer_ledger_token}`
     : "";
 
   const text = `${headerText}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄
-Total : *₹ ${totalVal.toLocaleString("en-IN")}*  (Note: ${totalNotesCount})
+Total : *₹ ${total_amount.toLocaleString("en-IN")}*  (Note: ${totalNotesCount})
 
 ${totalWords}${ledgerUrl}
 
@@ -137,18 +167,36 @@ ${dateFormatted}`;
 
 export const shareDepositEntry = async (entry: {
   deposit_type?: string;
+  depositType?: string;
   target_name?: string;
+  targetName?: string;
   portal_group_name?: string;
+  portalGroupName?: string;
   staff_name?: string;
+  staffName?: string;
   amount?: number;
   denominations?: Record<string, number>;
   created_at?: string;
+  createdAt?: string;
+  date?: string;
   remarks?: string;
   recipient_staff_id?: string;
+  recipientStaffId?: string;
   retailer_ledger_token?: string;
+  retailerLedgerToken?: string;
 }, staffName: string, currentUserId?: string) => {
+  const deposit_type = entry.deposit_type || entry.depositType;
+  const target_name = entry.target_name || entry.targetName;
+  const portal_group_name = entry.portal_group_name || entry.portalGroupName;
+  const staff_name_val = entry.staff_name || entry.staffName;
+  const amount = entry.amount ?? 0;
+  const created_at = entry.created_at || entry.createdAt || entry.date;
+  const remarks = entry.remarks;
+  const recipient_staff_id = entry.recipient_staff_id || entry.recipientStaffId;
+  const retailer_ledger_token = entry.retailer_ledger_token || entry.retailerLedgerToken;
+
   const den = entry.denominations || {};
-  const isRecipient = entry.recipient_staff_id === currentUserId && entry.deposit_type === "staff";
+  const isRecipient = recipient_staff_id === currentUserId && deposit_type === "staff";
   const mult = isRecipient ? 1 : -1;
 
   const notes = [
@@ -175,28 +223,31 @@ export const shareDepositEntry = async (entry: {
     lines.push(`UPI/Online = ${(Number(den.online_amount) * mult).toLocaleString("en-IN")}`);
   }
 
-  const totalVal = Number(entry.amount || 0) * mult;
+  const totalVal = amount * mult;
   const totalWords = numberToWordsIndian(Math.abs(totalVal));
 
-  const dateFormatted = entry.created_at ? formatShareDate(entry.created_at) : "";
+  const dateFormatted = created_at ? formatShareDate(created_at) : "";
 
   const headerLines: string[] = [];
-  if (entry.deposit_type === "staff") {
-    headerLines.push(isRecipient ? `Received from: ${entry.staff_name}` : `Staff Handover: ${entry.target_name}`);
-  } else if (entry.deposit_type === "portal") {
-    headerLines.push(`Store/Portal: ${entry.portal_group_name || entry.target_name}`);
-  } else if (entry.deposit_type === "retailer") {
-    headerLines.push(`Retailer Payout: ${entry.target_name}`);
-  } else if (entry.deposit_type === "virtual") {
+  if (deposit_type === "staff") {
+    headerLines.push(isRecipient ? `Received from: ${staff_name_val}` : `Staff Handover: ${target_name}`);
+  } else if (deposit_type === "portal") {
+    headerLines.push(`Store/Portal: ${portal_group_name || target_name}`);
+  } else if (deposit_type === "retailer") {
+    headerLines.push(`Retailer Payout: ${target_name}`);
+  } else if (deposit_type === "virtual") {
     headerLines.push("Virtual Transfer");
-    if (entry.target_name) headerLines.push(`Retailer: ${entry.target_name}`);
-    if (entry.portal_group_name) headerLines.push(`Store: ${entry.portal_group_name}`);
+    if (target_name) headerLines.push(`Retailer: ${target_name}`);
+    if (portal_group_name) headerLines.push(`Store: ${portal_group_name}`);
+  }
+  if (remarks) {
+    headerLines.push(`Remark: ${remarks}`);
   }
 
   const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
 
-  const ledgerUrl = entry.retailer_ledger_token
-    ? `\n\nLedger: ${typeof window !== "undefined" ? window.location.origin : ""}/public/ledger/${entry.retailer_ledger_token}`
+  const ledgerUrl = retailer_ledger_token
+    ? `\n\nLedger: ${typeof window !== "undefined" ? window.location.origin : ""}/public/ledger/${retailer_ledger_token}`
     : "";
 
   const text = `${headerText}${lines.join("\n")}
