@@ -539,7 +539,6 @@ export default function MobileOverview({
               Net Cash in Hand <Calendar className="w-2.5 h-2.5 text-blue-455 dark:text-blue-600" />
             </p>
             <h2 className="text-xl font-black mt-0.5">₹{netCashBalance.toLocaleString()}</h2>
-            <p className="text-[6.5px] font-black text-blue-400 dark:text-blue-600 uppercase tracking-wide underline mt-0.5">Click for range report</p>
           </div>
           
           <div className="flex items-center gap-2">
