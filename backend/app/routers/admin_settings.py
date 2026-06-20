@@ -31,6 +31,7 @@ class VirtualTransferRequest(BaseModel):
     amount: Decimal = Field(..., gt=0)
     remarks: Optional[str] = None
     direction: str = "load"  # "load" (Portal -> Retailer) or "refund" (Retailer -> Portal)
+    transfer_date: Optional[date] = None
 
 @router.get("/business", response_model=dict)
 def get_business_settings(db: Session = Depends(get_db), current_user=Depends(require_any_user)):
@@ -118,9 +119,18 @@ def process_virtual_transfer(
 ):
     """Atomically transfers virtual balance from Portal to Retailer or Staff."""
     import pytz
-    from datetime import datetime
+    from datetime import datetime, time
     ist = pytz.timezone('Asia/Kolkata')
-    today_ist = datetime.now(ist).date()
+    today_ist = payload.transfer_date or datetime.now(ist).date()
+    current_time_ist = datetime.now(ist).time()
+    
+    if payload.transfer_date:
+        transfer_datetime_ist = datetime.combine(payload.transfer_date, current_time_ist)
+        # Convert to UTC to store in created_at (since database stores created_at in UTC)
+        transfer_datetime_utc = ist.localize(transfer_datetime_ist).astimezone(pytz.utc).replace(tzinfo=None)
+    else:
+        transfer_datetime_utc = datetime.utcnow()
+
     # 1. Fetch Source Portal (locked)
     portal = db.scalar(
         select(Portal)
@@ -198,6 +208,7 @@ def process_virtual_transfer(
                 amount=payload.amount,
                 payment_mode="refund" if payload.direction == "refund" else "online",
                 deposit_date=today_ist,
+                created_at=transfer_datetime_utc,
                 status="verified",
                 balance_snapshot=new_balance
             )
@@ -211,7 +222,8 @@ def process_virtual_transfer(
                 amount=payload.amount,
                 balance=new_balance,
                 description=desc_text,
-                deposit_id=db_deposit.id
+                deposit_id=db_deposit.id,
+                created_at=transfer_datetime_utc
             )
             db.add(ledger_entry)
             
@@ -250,6 +262,7 @@ def process_virtual_transfer(
                 amount=payload.amount,
                 payment_mode="refund" if payload.direction == "refund" else "online",
                 deposit_date=today_ist,
+                created_at=transfer_datetime_utc,
                 status="verified",
                 balance_snapshot=staff.virtual_balance
             )

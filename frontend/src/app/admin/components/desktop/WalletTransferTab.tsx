@@ -17,6 +17,15 @@ export default function WalletTransferTab() {
   const [vDestStaffId, setVDestStaffId] = useState("");
   const [vAmount, setVAmount] = useState("");
   const [vRemarks, setVRemarks] = useState("");
+  const [vDate, setVDate] = useState(() => {
+    const d = new Date();
+    const tzString = d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const parts = new Date(tzString);
+    const y = parts.getFullYear();
+    const m = String(parts.getMonth() + 1).padStart(2, "0");
+    const day = String(parts.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  });
   const [isTransferring, setIsTransferring] = useState(false);
 
   const allPortals = (portalDirectory || []).flatMap((g: any) => 
@@ -42,7 +51,8 @@ export default function WalletTransferTab() {
       portal_id: vSourcePortalId,
       amount: amt,
       remarks: vRemarks || undefined,
-      direction: vDirection
+      direction: vDirection,
+      transfer_date: vDate
     };
 
     if (vDestType === "retailer") {
@@ -79,6 +89,15 @@ export default function WalletTransferTab() {
       setVDestStaffId("");
       setVAmount("");
       setVRemarks("");
+      setVDate(() => {
+        const d = new Date();
+        const tzString = d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+        const parts = new Date(tzString);
+        const y = parts.getFullYear();
+        const m = String(parts.getMonth() + 1).padStart(2, "0");
+        const day = String(parts.getDate()).padStart(2, "0");
+        return `${y}-${m}-${day}`;
+      });
 
       if (fetchData) fetchData();
     } catch (err: any) {
@@ -160,13 +179,24 @@ export default function WalletTransferTab() {
           </div>
 
           <div>
+            <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Transfer Date</label>
+            <input autoComplete="one-time-code"
+              type="date"
+              value={vDate}
+              onChange={e => setVDate(e.target.value)}
+              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200 text-left cursor-pointer"
+              required
+            />
+          </div>
+
+          <div>
             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Amount to Load (₹)</label>
             <input autoComplete="one-time-code"
               type="number"
               value={vAmount}
               onChange={e => setVAmount(e.target.value)}
               placeholder="e.g. 15000"
-              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
+              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
               min="1"
               required
             />
