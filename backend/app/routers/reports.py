@@ -1,3 +1,4 @@
+import uuid
 from datetime import date
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException
@@ -363,7 +364,6 @@ def get_staff_ledger(
     current_user=Depends(require_any_user)
 ):
     """Retrieve chronological cash transaction ledger for a staff member."""
-    import uuid
     from sqlalchemy.orm import joinedload
     from app.database.models import User, Collection, BankDeposit
 
