@@ -320,6 +320,8 @@ export const api = {
   }),
   getPublicLedger: (token: string) => request<any>(`/public/ledger/${token}`),
   getPortalLedger: (portalId: string) => request<any>(`/portals/${portalId}/ledger`),
+  getPortalGroupLedger: (groupId: string) => request<any>(`/portals/groups/${groupId}/ledger`),
+  getStaffLedger: (staffId: string) => request<any>(`/staff/${staffId}/ledger`),
   getStaffDailySummary: (date: string, staffId?: string) => request<any>(`/staff/daily-summary?selected_date=${date}${staffId ? `&staff_id=${staffId}` : ''}`),
 };
 

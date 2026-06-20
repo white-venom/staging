@@ -355,3 +355,166 @@ def get_staff_daily_summary(
         "closing_balance": float(closing_balance)
     }
 
+
+@router.get("/staff/{staff_id}/ledger")
+def get_staff_ledger(
+    staff_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_any_user)
+):
+    """Retrieve chronological cash transaction ledger for a staff member."""
+    import uuid
+    from sqlalchemy.orm import joinedload
+    from app.database.models import User, Collection, BankDeposit
+
+    # Security check: only admins or the staff member themselves can view this ledger
+    if current_user.role != "admin" and current_user.id != staff_id:
+        raise HTTPException(status_code=403, detail="Not authorized to view this staff ledger")
+
+    staff = db.scalar(select(User).where(User.id == staff_id))
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff user not found")
+
+    # Fetch cash collections made by this staff (excluding handovers from staff)
+    collections = db.scalars(
+        select(Collection)
+        .options(joinedload(Collection.retailer), joinedload(Collection.store))
+        .where(
+            and_(
+                Collection.staff_id == staff_id,
+                Collection.from_staff_id == None
+            )
+        )
+    ).all()
+
+    # Fetch verified staff-to-staff handovers received by this staff
+    received_handovers = db.scalars(
+        select(BankDeposit)
+        .options(joinedload(BankDeposit.staff))
+        .where(
+            and_(
+                BankDeposit.recipient_staff_id == staff_id,
+                BankDeposit.deposit_type == "staff",
+                BankDeposit.status == "verified"
+            )
+        )
+    ).all()
+
+    # Fetch deposits and handovers made by this staff (exclude virtual deposits)
+    deposits_made = db.scalars(
+        select(BankDeposit)
+        .options(
+            joinedload(BankDeposit.portal),
+            joinedload(BankDeposit.retailer),
+            joinedload(BankDeposit.recipient_staff)
+        )
+        .where(
+            and_(
+                BankDeposit.staff_id == staff_id,
+                BankDeposit.deposit_type != "virtual"
+            )
+        )
+    ).all()
+
+    tx_list = []
+
+    # Format Collections (Inflows)
+    for c in collections:
+        retailer_name = c.retailer.retailer_name if c.retailer else "Retailer"
+        store_name = f" ({c.store.store_name})" if c.store else ""
+        desc = f"Collection from {retailer_name}{store_name}"
+        if c.status == "pending":
+            desc = f"[Pending] {desc}"
+            
+        tx_list.append({
+            "id": str(c.id),
+            "created_at": c.created_at,
+            "transaction_type": "credit", # cash in
+            "amount": float(c.total_amount),
+            "description": desc,
+            "remarks": c.remarks or "",
+            "reference_no": "",
+            "status": c.status
+        })
+
+    # Format Received Handovers (Inflows)
+    for d in received_handovers:
+        sender_name = d.staff.name if d.staff else "Staff"
+        desc = f"Handover received from {sender_name}"
+        tx_list.append({
+            "id": str(d.id),
+            "created_at": d.created_at,
+            "transaction_type": "credit", # cash in
+            "amount": float(d.amount),
+            "description": desc,
+            "remarks": d.remarks or "",
+            "reference_no": d.reference_no or "",
+            "status": d.status
+        })
+
+    # Format Deposits / Handovers Made (Outflows)
+    for d in deposits_made:
+        if d.deposit_type == "portal":
+            portal_name = d.portal.portal_name if d.portal else "Portal"
+            bank_name = f" ({d.portal.bank_name})" if (d.portal and d.portal.bank_name) else ""
+            desc = f"Deposit to {portal_name}{bank_name}"
+        elif d.deposit_type == "retailer":
+            retailer_name = d.retailer.retailer_name if d.retailer else "Retailer"
+            desc = f"Deposit to Retailer: {retailer_name}"
+        elif d.deposit_type == "staff":
+            if d.to_office:
+                desc = "Handover to Main Office"
+            else:
+                recipient_name = d.recipient_staff.name if d.recipient_staff else "Staff"
+                desc = f"Handover to Staff: {recipient_name}"
+        else:
+            continue
+
+        if d.status == "pending":
+            desc = f"[Pending] {desc}"
+
+        tx_list.append({
+            "id": str(d.id),
+            "created_at": d.created_at,
+            "transaction_type": "debit", # cash out
+            "amount": float(d.amount),
+            "description": desc,
+            "remarks": d.remarks or "",
+            "reference_no": d.reference_no or "",
+            "status": d.status
+        })
+
+    # Sort transactions chronologically
+    tx_list.sort(key=lambda x: x["created_at"])
+
+    # Calculate running balance
+    running_balance = 0.0
+    formatted_txs = []
+
+    for tx in tx_list:
+        if tx["transaction_type"] == "credit":
+            running_balance += tx["amount"]
+        else:
+            running_balance -= tx["amount"]
+
+        formatted_txs.append({
+            "id": tx["id"],
+            "date": tx["created_at"].strftime("%Y-%m-%d %H:%M:%S"),
+            "transaction_type": tx["transaction_type"],
+            "amount": tx["amount"],
+            "running_balance": running_balance,
+            "description": tx["description"],
+            "remarks": tx["remarks"],
+            "reference_no": tx["reference_no"],
+            "status": tx["status"]
+        })
+
+    return {
+        "staff_name": staff.name,
+        "phone": staff.phone,
+        "role": staff.role,
+        "outstanding_balance": running_balance,
+        "statement_history": formatted_txs
+    }
+
+

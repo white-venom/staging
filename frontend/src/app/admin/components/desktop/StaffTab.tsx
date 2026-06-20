@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { CheckCircle, Clock, UserPlus, ShieldAlert, Trash2, Edit, X } from "lucide-react";
 import { api } from "../../../utils/api";
+import LedgerReportView from "../../../components/LedgerReportView";
 
 interface StaffTabProps {
   staffComplianceLogs: any[];
@@ -29,6 +30,32 @@ export default function StaffTab({
   const [editPhone, setEditPhone] = useState("");
   const [editRole, setEditRole] = useState("staff");
   const [editPassword, setEditPassword] = useState("");
+
+  // Ledger Report View State
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
+  const [ledgerStaff, setLedgerStaff] = useState<any | null>(null);
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  const handleOpenLedger = async (user: any) => {
+    console.log("handleOpenLedger called for staff user:", user);
+    setLedgerStaff(user);
+    setIsLedgerModalOpen(true);
+    setLoadingLedger(true);
+    try {
+      const res = await api.getStaffLedger(user.id);
+      console.log("getStaffLedger response:", res);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      console.error("getStaffLedger failed:", err);
+      alert("Failed to load staff ledger: " + err.message);
+      setIsLedgerModalOpen(false);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
 
   const staffMembers = userDirectory.filter((u: any) => u.role === "staff" || u.role === "admin");
 
@@ -176,11 +203,18 @@ export default function StaffTab({
                         </td>
                         <td className="px-6 py-3 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => handleEditClick(u)} className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenLedger(u)}
+                              className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer transition-colors mr-1"
+                            >
+                              Ledger
+                            </button>
+                            <button onClick={() => handleEditClick(u)} className="p-1.5 text-slate-400 hover:text-indigo-605 transition-colors">
                               <Edit className="w-3.5 h-3.5" />
                             </button>
                             {u.role !== "admin" && (
-                              <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 text-slate-400 hover:text-red-600 transition-colors">
+                              <button onClick={() => handleDeleteUser(u.id)} className="p-1.5 text-slate-400 hover:text-red-605 transition-colors">
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
@@ -368,6 +402,29 @@ export default function StaffTab({
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {isLedgerModalOpen && ledgerStaff && (
+        <div className="fixed inset-0 bg-slate-955 z-50 overflow-y-auto select-none">
+          {loadingLedger ? (
+            <div className="min-h-screen bg-slate-955 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <LedgerReportView 
+              title={`${ledgerStaff.name}'s Statement`}
+              subtitle={`Role: ${ledgerStaff.role.toUpperCase()} • Phone: ${ledgerStaff.phone}`}
+              data={ledgerData}
+              outstandingBalance={ledgerOutstanding}
+              isPublic={false}
+              onBack={() => {
+                setIsLedgerModalOpen(false);
+                setLedgerStaff(null);
+                setLedgerData([]);
+              }}
+            />
+          )}
         </div>
       )}
     </div>

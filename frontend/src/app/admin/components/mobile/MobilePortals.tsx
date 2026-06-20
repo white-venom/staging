@@ -57,6 +57,30 @@ export default function MobilePortals({
     }
   };
 
+  const handleOpenGroupLedger = async (group: any) => {
+    console.log("handleOpenGroupLedger called for group in MobilePortals:", group);
+    setLedgerPortal({
+      portal_name: group.name,
+      bank_name: "Consolidated Group Wallet",
+      bank_account_no: "All Connected Banks",
+      ifsc_code: ""
+    });
+    setIsLedgerModalOpen(true);
+    setLoadingLedger(true);
+    try {
+      const res = await api.getPortalGroupLedger(group.id);
+      console.log("getPortalGroupLedger response in MobilePortals:", res);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      console.error("getPortalGroupLedger failed in MobilePortals:", err);
+      showToastNotification("Failed to load group ledger: " + err.message);
+      setIsLedgerModalOpen(false);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
+
   // Portal form states
   const [pName, setPName] = useState("");
   const [pGroupBalance, setPGroupBalance] = useState("");
@@ -326,11 +350,20 @@ export default function MobilePortals({
                   </div>
                 </div>
 
-                <div className="bg-slate-50 dark:bg-slate-950 px-1.5 py-0.5 rounded border border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px]">
-                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">Portal Balance</span>
-                  <span className={`font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                    {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
-                  </span>
+                <div className="bg-slate-50 dark:bg-slate-950 px-1.5 py-1 rounded border border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px]">
+                  <div className="flex flex-col">
+                    <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter">Portal Balance</span>
+                    <span className={`font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                      {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleOpenGroupLedger(group)}
+                    className="px-1.5 py-0.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/30 text-[8px] font-bold rounded cursor-pointer"
+                  >
+                    Consolidated Ledger
+                  </button>
                 </div>
 
                 {/* Sub-portals List */}

@@ -60,6 +60,30 @@ export default function PortalsTab({
     }
   };
 
+  const handleOpenGroupLedger = async (group: any) => {
+    console.log("handleOpenGroupLedger called for group:", group);
+    setLedgerPortal({
+      portal_name: group.name,
+      bank_name: "Consolidated Group Wallet",
+      bank_account_no: "All Connected Banks",
+      ifsc_code: ""
+    });
+    setIsLedgerModalOpen(true);
+    setLoadingLedger(true);
+    try {
+      const res = await api.getPortalGroupLedger(group.id);
+      console.log("getPortalGroupLedger response:", res);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      console.error("getPortalGroupLedger failed:", err);
+      alert("Failed to load group ledger: " + err.message);
+      setIsLedgerModalOpen(false);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
+
   // Edit states
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = useState("");
@@ -304,6 +328,13 @@ export default function PortalsTab({
                         {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
                       </span>
                     </div>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenGroupLedger(group)}
+                      className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/30 text-[9px] font-black uppercase rounded cursor-pointer"
+                    >
+                      Consolidated Ledger
+                    </button>
                   </div>
                   {/* Registered bank accounts with balances */}
                   {group.portals && group.portals.length > 0 && (

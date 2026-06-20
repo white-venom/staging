@@ -17,6 +17,7 @@ import {
 import { api } from "@/app/utils/api";
 import Link from "next/link";
 import InlineSelect from "@/app/components/InlineSelect";
+import LedgerReportView from "@/app/components/LedgerReportView";
 
 export default function MobileStaff() {
   const [users, setUsers] = useState<any[]>([]);
@@ -25,6 +26,32 @@ export default function MobileStaff() {
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState("");
+
+  // Ledger Report View State
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
+  const [ledgerStaff, setLedgerStaff] = useState<any | null>(null);
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  const handleOpenLedger = async (user: any) => {
+    console.log("handleOpenLedger called for staff user on mobile:", user);
+    setLedgerStaff(user);
+    setIsLedgerModalOpen(true);
+    setLoadingLedger(true);
+    try {
+      const res = await api.getStaffLedger(user.id);
+      console.log("getStaffLedger response on mobile:", res);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      console.error("getStaffLedger failed on mobile:", err);
+      showToast("Failed to load staff ledger: " + err.message);
+      setIsLedgerModalOpen(false);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
 
   // Form states
   const [uName, setUName] = useState("");
@@ -258,7 +285,14 @@ export default function MobileStaff() {
                   <span className="text-[9px] font-bold text-slate-400">{u.phone}</span>
                 </div>
               </div>
-              <div className="flex gap-1">
+              <div className="flex gap-1 items-center">
+                <button
+                  type="button"
+                  onClick={() => handleOpenLedger(u)}
+                  className="px-1.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer transition-transform active:scale-90"
+                >
+                  Ledger
+                </button>
                 <button
                   onClick={() => handleStartEdit(u)}
                   className="w-7 h-7 bg-blue-50 dark:bg-blue-950/30 text-blue-500 rounded-md flex items-center justify-center active:scale-90 transition-transform cursor-pointer"
@@ -278,6 +312,29 @@ export default function MobileStaff() {
           ))
         )}
       </div>
+
+      {isLedgerModalOpen && ledgerStaff && (
+        <div className="fixed inset-0 bg-slate-950 z-50 overflow-y-auto select-none">
+          {loadingLedger ? (
+            <div className="min-h-screen bg-slate-955 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <LedgerReportView 
+              title={`${ledgerStaff.name}'s Statement`}
+              subtitle={`Role: ${ledgerStaff.role.toUpperCase()} • Phone: ${ledgerStaff.phone}`}
+              data={ledgerData}
+              outstandingBalance={ledgerOutstanding}
+              isPublic={false}
+              onBack={() => {
+                setIsLedgerModalOpen(false);
+                setLedgerStaff(null);
+                setLedgerData([]);
+              }}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

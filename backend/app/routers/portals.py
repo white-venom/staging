@@ -314,7 +314,8 @@ def get_portal_ledger(
         .where(
             and_(
                 BankDeposit.portal_id == portal_id,
-                BankDeposit.status == "verified"
+                BankDeposit.status == "verified",
+                BankDeposit.deposit_type == "portal"
             )
         )
     ).all()
@@ -341,7 +342,7 @@ def get_portal_ledger(
         if d.deposit_type == "portal":
             tx_type = "credit" # You Got
             amount = float(d.amount)
-            desc_text = "Cash Deposit" if d.payment_mode == "cash" else "Online Collection Auto-Route"
+            desc_text = "Cash Deposit" if d.payment_mode == "cash" else "Online Payment through QR"
             if retailer_name:
                 desc_text += f" from {retailer_name}"
             if d.remarks:
@@ -411,5 +412,133 @@ def get_portal_ledger(
         "bank_account_no": portal.bank_account_no,
         "ifsc_code": portal.ifsc_code,
         "outstanding_balance": float(portal.balance),
+        "statement_history": formatted_txs
+    }
+
+
+@router.get("/groups/{group_id}/ledger")
+def get_portal_group_ledger(
+    group_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_any_user)
+):
+    """Fetch chronological consolidated transaction ledger for a portal group (e.g. PAYNEARBY)."""
+    from sqlalchemy import and_, select
+    from sqlalchemy.orm import joinedload
+    from app.database.models import BankDeposit, Collection, Portal
+    
+    group = db.scalar(select(PortalGroup).where(PortalGroup.id == group_id))
+    if not group:
+        raise HTTPException(status_code=404, detail="Portal group not found")
+        
+    # Get all portal IDs in this group
+    portals = db.scalars(select(Portal).where(Portal.group_id == group_id)).all()
+    portal_ids = [p.id for p in portals]
+    
+    if not portal_ids:
+        # No accounts, return empty ledger starting from group opening balances
+        return {
+            "group_name": group.name,
+            "outstanding_balance": float(group.balance),
+            "statement_history": []
+        }
+        
+    # Fetch verified deposits for these portals
+    deposits = db.scalars(
+        select(BankDeposit)
+        .options(joinedload(BankDeposit.retailer), joinedload(BankDeposit.portal))
+        .where(
+            and_(
+                BankDeposit.portal_id.in_(portal_ids),
+                BankDeposit.status == "verified"
+            )
+        )
+    ).all()
+    
+    # Fetch verified direct collections for these portals (where retailer_id is None)
+    collections = db.scalars(
+        select(Collection)
+        .options(joinedload(Collection.retailer), joinedload(Collection.portal))
+        .where(
+            and_(
+                Collection.portal_id.in_(portal_ids),
+                Collection.status == "verified",
+                Collection.retailer_id == None
+            )
+        )
+    ).all()
+    
+    tx_list = []
+    
+    for d in deposits:
+        retailer_name = d.retailer.retailer_name if d.retailer else None
+        p_name = d.portal.portal_name if d.portal else "Account"
+        if d.deposit_type == "portal":
+            tx_type = "credit"
+            amount = float(d.amount)
+            desc_text = f"[{p_name}] Cash Deposit" if d.payment_mode == "cash" else f"[{p_name}] Online Payment through QR"
+            if retailer_name:
+                desc_text += f" from {retailer_name}"
+            if d.remarks:
+                desc_text += f" ({d.remarks})"
+        elif d.deposit_type == "virtual":
+            if d.payment_mode == "refund":
+                tx_type = "credit"
+                amount = float(d.amount)
+                desc_text = f"[{p_name}] Virtual Refund"
+                if retailer_name:
+                    desc_text += f" from {retailer_name}"
+            else:
+                tx_type = "debit"
+                amount = float(d.amount)
+                desc_text = f"[{p_name}] Virtual Transfer"
+                if retailer_name:
+                    desc_text += f" to {retailer_name}"
+            if d.remarks:
+                desc_text += f" ({d.remarks})"
+        else:
+            continue
+            
+        tx_list.append({
+            "id": str(d.id),
+            "created_at": d.created_at,
+            "transaction_type": tx_type,
+            "amount": amount,
+            "description": desc_text
+        })
+        
+    for c in collections:
+        p_name = c.portal.portal_name if c.portal else "Account"
+        tx_list.append({
+            "id": str(c.id),
+            "created_at": c.created_at,
+            "transaction_type": "debit",
+            "amount": float(c.total_amount),
+            "description": f"[{p_name}] Collection from {c.retailer.retailer_name if c.retailer else 'Retailer'}" + (f" ({c.remarks})" if c.remarks else "")
+        })
+        
+    tx_list.sort(key=lambda x: x["created_at"])
+    
+    running_balance = float(group.opening_to_take - group.opening_to_give)
+    formatted_txs = []
+    
+    for tx in tx_list:
+        if tx["transaction_type"] == "credit":
+            running_balance += tx["amount"]
+        else:
+            running_balance -= tx["amount"]
+            
+        formatted_txs.append({
+            "id": tx["id"],
+            "date": tx["created_at"].strftime("%Y-%m-%d %H:%M:%S"),
+            "transaction_type": tx["transaction_type"],
+            "amount": tx["amount"],
+            "running_balance": running_balance,
+            "description": tx["description"]
+        })
+        
+    return {
+        "group_name": group.name,
+        "outstanding_balance": float(group.balance),
         "statement_history": formatted_txs
     }
