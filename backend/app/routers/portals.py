@@ -508,7 +508,7 @@ def get_portal_group_ledger(
     # Fetch verified deposits for these portals
     deposits = db.scalars(
         select(BankDeposit)
-        .options(joinedload(BankDeposit.retailer), joinedload(BankDeposit.portal))
+        .options(joinedload(BankDeposit.retailer), joinedload(BankDeposit.portal), joinedload(BankDeposit.denominations))
         .where(
             and_(
                 BankDeposit.portal_id.in_(portal_ids),
@@ -520,7 +520,7 @@ def get_portal_group_ledger(
     # Fetch verified direct collections for these portals (where retailer_id is None)
     collections = db.scalars(
         select(Collection)
-        .options(joinedload(Collection.retailer), joinedload(Collection.portal))
+        .options(joinedload(Collection.retailer), joinedload(Collection.portal), joinedload(Collection.denominations), joinedload(Collection.store))
         .where(
             and_(
                 Collection.portal_id.in_(portal_ids),
@@ -561,22 +561,71 @@ def get_portal_group_ledger(
         else:
             continue
             
+        denom_dict = None
+        if d.denominations:
+            denom_dict = {
+                "note_500": int(d.denominations.note_500 or 0),
+                "note_200": int(d.denominations.note_200 or 0),
+                "note_100": int(d.denominations.note_100 or 0),
+                "note_50": int(d.denominations.note_50 or 0),
+                "note_20": int(d.denominations.note_20 or 0),
+                "note_10": int(d.denominations.note_10 or 0),
+                "coins": float(d.denominations.coins or 0.0),
+                "online_amount": float(d.denominations.online_amount or 0.0)
+            }
+
         tx_list.append({
             "id": str(d.id),
             "created_at": d.created_at,
             "transaction_type": tx_type,
             "amount": amount,
-            "description": desc_text
+            "description": desc_text,
+            "collection_id": None,
+            "deposit_id": str(d.id),
+            "remarks": d.remarks,
+            "reference_no": d.reference_no,
+            "deposit_type": d.deposit_type,
+            "payment_mode": d.payment_mode,
+            "recipient_staff_id": str(d.recipient_staff_id) if d.recipient_staff_id else None,
+            "to_office": d.to_office,
+            "retailer_id": str(d.retailer_id) if d.retailer_id else None,
+            "store_id": None,
+            "portal_id": str(d.portal_id) if d.portal_id else None,
+            "denominations": denom_dict
         })
         
     for c in collections:
         p_name = c.portal.portal_name if c.portal else "Account"
+        denom_dict = None
+        if c.denominations:
+            denom_dict = {
+                "note_500": int(c.denominations.note_500 or 0),
+                "note_200": int(c.denominations.note_200 or 0),
+                "note_100": int(c.denominations.note_100 or 0),
+                "note_50": int(c.denominations.note_50 or 0),
+                "note_20": int(c.denominations.note_20 or 0),
+                "note_10": int(c.denominations.note_10 or 0),
+                "coins": float(c.denominations.coins or 0.0),
+                "online_amount": float(c.denominations.online_amount or 0.0)
+            }
         tx_list.append({
             "id": str(c.id),
             "created_at": c.created_at,
             "transaction_type": "debit",
             "amount": float(c.total_amount),
-            "description": f"[{p_name}] Collection from {c.retailer.retailer_name if c.retailer else 'Retailer'}" + (f" ({c.remarks})" if c.remarks else "")
+            "description": f"[{p_name}] Collection from {c.retailer.retailer_name if c.retailer else 'Retailer'}" + (f" ({c.remarks})" if c.remarks else ""),
+            "collection_id": str(c.id),
+            "deposit_id": None,
+            "remarks": c.remarks,
+            "reference_no": None,
+            "deposit_type": None,
+            "payment_mode": "cash",
+            "recipient_staff_id": None,
+            "to_office": c.from_office,
+            "retailer_id": str(c.retailer_id) if c.retailer_id else None,
+            "store_id": str(c.store_id) if c.store_id else None,
+            "portal_id": str(c.portal_id) if c.portal_id else None,
+            "denominations": denom_dict
         })
         
     tx_list.sort(key=lambda x: x["created_at"])
@@ -596,7 +645,19 @@ def get_portal_group_ledger(
             "transaction_type": tx["transaction_type"],
             "amount": tx["amount"],
             "running_balance": running_balance,
-            "description": tx["description"]
+            "description": tx["description"],
+            "collection_id": tx["collection_id"],
+            "deposit_id": tx["deposit_id"],
+            "remarks": tx["remarks"],
+            "reference_no": tx["reference_no"],
+            "deposit_type": tx["deposit_type"],
+            "payment_mode": tx["payment_mode"],
+            "recipient_staff_id": tx["recipient_staff_id"],
+            "to_office": tx["to_office"],
+            "retailer_id": tx["retailer_id"],
+            "store_id": tx["store_id"],
+            "portal_id": tx["portal_id"],
+            "denominations": tx["denominations"]
         })
         
     return {
