@@ -47,7 +47,7 @@ def submit_deposit(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only administrators are authorized to process virtual transfers."
             )
-        portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
+        portal = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == payload.portal_id).with_for_update())
         if not portal:
             raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
         retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
@@ -166,7 +166,7 @@ def submit_deposit(
             else:
                 new_balance = prev_balance + payload.amount
                 transaction_type = "debit"
-                desc_text = portal.portal_name if portal else "virtual transfer"
+                desc_text = portal.group.name if (portal and portal.group) else (portal.portal_name if portal else "virtual transfer")
             
             # Step C: Log entry in Retailer's Ledger
             ledger_entry = Ledger(
@@ -588,8 +588,8 @@ def update_deposit(
             desc = "cash out"
             if dt == "virtual":
                 txn_type = "credit" if payload.payment_mode == "refund" else "debit"
-                portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id))
-                desc = "move to distributor" if payload.payment_mode == "refund" else (portal.portal_name if portal else "virtual transfer")
+                portal = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == deposit.portal_id))
+                desc = "move to distributor" if payload.payment_mode == "refund" else (portal.group.name if (portal and portal.group) else (portal.portal_name if portal else "virtual transfer"))
                 
             if not ledger_entry:
                 ledger_entry = Ledger(

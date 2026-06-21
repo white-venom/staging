@@ -134,6 +134,7 @@ def process_virtual_transfer(
     # 1. Fetch Source Portal (locked)
     portal = db.scalar(
         select(Portal)
+        .options(joinedload(Portal.group))
         .where(Portal.id == payload.portal_id)
         .with_for_update()
     )
@@ -192,7 +193,7 @@ def process_virtual_transfer(
                 transaction_type = "credit"
             else:
                 new_balance = prev_balance + payload.amount
-                desc_text = "virtual transfer"
+                desc_text = portal.group.name if (portal and portal.group) else (portal.portal_name if portal else "virtual transfer")
                 transaction_type = "debit"
             
             # Log in bank deposits to keep audit trail
