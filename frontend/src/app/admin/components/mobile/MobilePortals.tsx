@@ -10,11 +10,15 @@ import {
   ArrowLeft,
   CreditCard,
   Edit,
-  ChevronDown
+  ChevronDown,
+  Edit2,
+  Store
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
 import LedgerReportView from "../../../components/LedgerReportView";
+import { useAdmin } from "../../context/AdminContext";
+import InlineSelect from "../../../components/InlineSelect";
 
 interface MobilePortalsProps {
   portalDirectory: any[];
@@ -27,6 +31,7 @@ export default function MobilePortals({
   showToastNotification,
   fetchData
 }: MobilePortalsProps) {
+  const { retailerDirectory, userDirectory } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -38,6 +43,231 @@ export default function MobilePortals({
   const [ledgerData, setLedgerData] = useState<any[]>([]);
   const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
   const [loadingLedger, setLoadingLedger] = useState(false);
+
+  // Edit Entry states (Portal Ledger)
+  const [isEditEntryModalOpen, setIsEditEntryModalOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<any | null>(null);
+  const [editingIsDeposit, setEditingIsDeposit] = useState(false);
+  
+  const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
+  const [selectedNewStoreId, setSelectedNewStoreId] = useState("");
+  const [availableStores, setAvailableStores] = useState<any[]>([]);
+  const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
+  const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
+  const [selectedNewToOffice, setSelectedNewToOffice] = useState(false);
+  const [selectedNewDepositType, setSelectedNewDepositType] = useState("");
+  const [selectedNewPaymentMode, setSelectedNewPaymentMode] = useState("");
+  const [selectedNewAmount, setSelectedNewAmount] = useState(0);
+  const [selectedNewDate, setSelectedNewDate] = useState("");
+  const [selectedNewRefNo, setSelectedNewRefNo] = useState("");
+  const [selectedNewRemarks, setSelectedNewRemarks] = useState("");
+  const [selectedNewVirtualTargetType, setSelectedNewVirtualTargetType] = useState("retailer");
+  const [isSavingEntry, setIsSavingEntry] = useState(false);
+  
+  const [selectedNewDenoms, setSelectedNewDenoms] = useState({
+    note_500: 0,
+    note_200: 0,
+    note_100: 0,
+    note_50: 0,
+    note_20: 0,
+    note_10: 0,
+    coins: 0,
+    online_amount: 0,
+  });
+
+  useEffect(() => {
+    const fetchStores = async () => {
+      if (selectedNewRetailerId) {
+        try {
+          const stores = await api.getRetailerStores(selectedNewRetailerId);
+          setAvailableStores(stores || []);
+          if (editingEntry && (editingEntry.retailer_id === selectedNewRetailerId || editingEntry.retailerId === selectedNewRetailerId)) {
+            setSelectedNewStoreId(editingEntry.store_id || editingEntry.storeId || "");
+          } else {
+            setSelectedNewStoreId("");
+          }
+        } catch (err) {
+          console.error("Failed to fetch stores in edit modal:", err);
+          setAvailableStores([]);
+          setSelectedNewStoreId("");
+        }
+      } else {
+        setAvailableStores([]);
+        setSelectedNewStoreId("");
+      }
+    };
+    fetchStores();
+  }, [selectedNewRetailerId, editingEntry]);
+
+  const reloadLedger = async (portal: any) => {
+    setLoadingLedger(true);
+    try {
+      let res;
+      if (portal.bank_name === "Consolidated Group Wallet") {
+        res = await api.getPortalGroupLedger(portal.id);
+      } else {
+        res = await api.getPortalLedger(portal.id);
+      }
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      showToastNotification("Failed to reload ledger: " + err.message);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
+
+  const handleDenomValChange = (key: string, value: string) => {
+    const val = value === "" ? 0 : parseFloat(value) || 0;
+    setSelectedNewDenoms(prev => {
+      const updated = {
+        ...prev,
+        [key]: val
+      };
+      
+      const totalCash = (
+        (updated.note_500 || 0) * 500 +
+        (updated.note_200 || 0) * 200 +
+        (updated.note_100 || 0) * 100 +
+        (updated.note_50 || 0) * 50 +
+        (updated.note_20 || 0) * 20 +
+        (updated.note_10 || 0) * 10 +
+        (updated.coins || 0)
+      );
+      setSelectedNewAmount(totalCash);
+      return updated;
+    });
+  };
+
+  const handleStartEditEntry = (item: any) => {
+    const isDeposit = item.deposit_id != null;
+    setEditingIsDeposit(isDeposit);
+    setEditingEntry(item);
+    
+    setSelectedNewRetailerId(item.retailer_id || "");
+    setSelectedNewStoreId(item.store_id || item.storeId || "");
+    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewRemarks(item.remarks || "");
+    setSelectedNewDate((item.date || "").split(" ")[0]);
+    
+    const isOnlineCol = !isDeposit && (item.portal_id != null || (item.denominations && Number(item.denominations.online_amount || 0) > 0));
+    const initialPaymentMode = isDeposit ? (item.payment_mode || "online") : (isOnlineCol ? "online" : "cash");
+    setSelectedNewPaymentMode(initialPaymentMode);
+    setSelectedNewAmount(Number(item.amount || 0));
+    
+    if (isDeposit) {
+      setSelectedNewDepositType(item.deposit_type || "retailer");
+      setSelectedNewRefNo(item.reference_no || "");
+      setSelectedNewRecipientStaffId(item.recipient_staff_id || "");
+      setSelectedNewToOffice(item.to_office === true);
+      const hasStaff = !!(item.recipient_staff_id || item.recipientStaffId);
+      setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
+    }
+    
+    if (item.denominations) {
+      setSelectedNewDenoms({
+        note_500: Number(item.denominations.note_500 || 0),
+        note_200: Number(item.denominations.note_200 || 0),
+        note_100: Number(item.denominations.note_100 || 0),
+        note_50: Number(item.denominations.note_50 || 0),
+        note_20: Number(item.denominations.note_20 || 0),
+        note_10: Number(item.denominations.note_10 || 0),
+        coins: Number(item.denominations.coins || 0),
+        online_amount: Number(item.denominations.online_amount || 0),
+      });
+    } else {
+      setSelectedNewDenoms({
+        note_500: 0,
+        note_200: 0,
+        note_100: 0,
+        note_50: 0,
+        note_20: 0,
+        note_10: 0,
+        coins: 0,
+        online_amount: initialPaymentMode === "online" ? Number(item.amount || 0) : 0,
+      });
+    }
+    
+    setIsEditEntryModalOpen(true);
+  };
+
+  const handleDeleteEntry = async (item: any) => {
+    if (!window.confirm("Delete this entry? This will permanently update balances.")) return;
+    try {
+      const isDeposit = item.deposit_id != null;
+      const targetId = item.collection_id || item.deposit_id;
+      if (!targetId) return;
+
+      if (isDeposit) {
+        await api.deleteDeposit(targetId);
+      } else {
+        await api.deleteCollection(targetId);
+      }
+      showToastNotification("Entry deleted successfully.");
+      if (ledgerPortal) {
+        await reloadLedger(ledgerPortal);
+      }
+      fetchData();
+    } catch (err: any) {
+      showToastNotification("Failed to delete entry: " + err.message);
+    }
+  };
+
+  const handleSaveEntryEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEntry) return;
+    setIsSavingEntry(true);
+    
+    try {
+      const targetId = editingEntry.collection_id || editingEntry.deposit_id;
+      if (!targetId) return;
+
+      const payloadDenoms = selectedNewPaymentMode === "cash"
+        ? { ...selectedNewDenoms, online_amount: 0 }
+        : { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online_amount: Number(selectedNewAmount) };
+
+      if (editingIsDeposit) {
+        const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+        const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
+        const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
+        const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
+
+        await api.updateDeposit(targetId, {
+          deposit_type: selectedNewDepositType,
+          portal_id: portalId,
+          retailer_id: retailerId,
+          recipient_staff_id: recipientStaffId,
+          to_office: toOffice,
+          payment_mode: selectedNewPaymentMode,
+          amount: Number(selectedNewAmount),
+          deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          reference_no: selectedNewRefNo || null,
+          remarks: selectedNewRemarks || null,
+          denominations: payloadDenoms
+        });
+      } else {
+        await api.updateCollection(targetId, {
+          retailer_id: selectedNewRetailerId || null,
+          portal_id: selectedNewPaymentMode === "online" ? selectedNewPortalId : null,
+          store_id: selectedNewStoreId || null,
+          total_amount: selectedNewAmount,
+          collection_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          remarks: selectedNewRemarks || "",
+          denominations: payloadDenoms
+        });
+      }
+      showToastNotification("Entry updated successfully.");
+      setIsEditEntryModalOpen(false);
+      if (ledgerPortal) {
+        await reloadLedger(ledgerPortal);
+      }
+      fetchData();
+    } catch (err: any) {
+      showToastNotification("Failed to update: " + err.message);
+    } finally {
+      setIsSavingEntry(false);
+    }
+  };
 
   const handleOpenLedger = async (portal: any) => {
     console.log("handleOpenLedger called for portal in MobilePortals:", portal);
@@ -61,6 +291,7 @@ export default function MobilePortals({
   const handleOpenGroupLedger = async (group: any) => {
     console.log("handleOpenGroupLedger called for group in MobilePortals:", group);
     setLedgerPortal({
+      id: group.id,
       portal_name: group.name,
       bank_name: "Consolidated Group Wallet",
       bank_account_no: "All Connected Banks",
@@ -605,8 +836,377 @@ export default function MobilePortals({
                 setLedgerPortal(null);
                 setLedgerData([]);
               }}
+              onEditEntry={handleStartEditEntry}
+              onDeleteEntry={handleDeleteEntry}
             />
           )}
+        </div>
+      )}
+
+      {/* EDIT TRANSACTION ENTRY MODAL */}
+      {isEditEntryModalOpen && editingEntry && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 select-none animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-6 animate-slide-up shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
+                {editingIsDeposit ? "Edit Cash Out Entry" : "Edit Cash In Entry"}
+              </h3>
+              <button 
+                onClick={() => setIsEditEntryModalOpen(false)} 
+                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-505 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEntryEdit} className="space-y-4">
+              <div className="space-y-3">
+                
+                {!editingIsDeposit && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Retailer</label>
+                    <InlineSelect
+                      value={selectedNewRetailerId}
+                      onChange={setSelectedNewRetailerId}
+                      options={[
+                        { value: "", label: "No Retailer" },
+                        ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                      ]}
+                      placeholder="No Retailer"
+                    />
+                  </div>
+                )}
+
+                {!editingIsDeposit && availableStores.length > 0 && (
+                  <div className="animate-in fade-in duration-200">
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Parent Store (Shop/Branch)</label>
+                    <InlineSelect
+                      value={selectedNewStoreId}
+                      onChange={setSelectedNewStoreId}
+                      options={[
+                        { value: "", label: "None / Cash" },
+                        ...availableStores.map((s: any) => ({ value: String(s.id), label: s.store_name }))
+                      ]}
+                      placeholder="None / Cash"
+                    />
+                  </div>
+                )}
+
+                {/* PAYMENT MODE SELECTOR (for Collections) */}
+                {!editingIsDeposit && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Payment Mode</label>
+                    <select
+                      value={selectedNewPaymentMode}
+                      onChange={(e) => {
+                        const mode = e.target.value;
+                        setSelectedNewPaymentMode(mode);
+                        if (mode === "cash") {
+                          setSelectedNewPortalId("");
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                    >
+                      <option value="cash">Cash</option>
+                      <option value="online">Online</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* PORTAL SELECTOR (only for Online collections) */}
+                {!editingIsDeposit && selectedNewPaymentMode === "online" && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Portal Channel</label>
+                    <InlineSelect
+                      value={selectedNewPortalId}
+                      onChange={setSelectedNewPortalId}
+                      options={[
+                        { value: "", label: "Select Portal Bank Account" },
+                        ...portalDirectory
+                          .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
+                          .filter((p: any) => p.show_in_online_payment)
+                          .map((p: any) => {
+                            const displayName = p.groupName && p.groupName.toLowerCase() !== p.portal_name.toLowerCase()
+                              ? `${p.groupName} - ${p.portal_name}`
+                              : p.portal_name;
+                            return { value: String(p.id), label: `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                          })
+                      ]}
+                      placeholder="Select Portal Bank Account"
+                    />
+                  </div>
+                )}
+
+                {/* DEPOSIT TYPE AND FIELDS (only for Deposits/Cash Out) */}
+                {editingIsDeposit && (
+                  <>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Deposit Type</label>
+                      <select
+                        value={selectedNewDepositType === "virtual" ? (selectedNewPaymentMode === "refund" ? "virtual-refund" : "virtual-load") : selectedNewDepositType}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "virtual-load") {
+                            setSelectedNewDepositType("virtual");
+                            setSelectedNewPaymentMode("online");
+                          } else if (val === "virtual-refund") {
+                            setSelectedNewDepositType("virtual");
+                            setSelectedNewPaymentMode("refund");
+                          } else {
+                            setSelectedNewDepositType(val);
+                            if (val === "portal" || val === "retailer") {
+                              setSelectedNewPaymentMode("online");
+                            } else if (val === "staff") {
+                              setSelectedNewPaymentMode("cash");
+                            }
+                          }
+                        }}
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                      >
+                        <option value="portal">Cash Out</option>
+                        <option value="retailer">Retailer Payout</option>
+                        <option value="staff">Direct Handover</option>
+                        <option value="virtual-load">Virtual Transfer</option>
+                        <option value="virtual-refund">Move to Distributor</option>
+                      </select>
+                    </div>
+
+                    {selectedNewDepositType === "portal" && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Portal</label>
+                        <InlineSelect
+                          value={selectedNewPortalId}
+                          onChange={setSelectedNewPortalId}
+                          options={[
+                            { value: "", label: "Select Portal Bank Account" },
+                            ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                          ]}
+                          placeholder="Select Portal Bank Account"
+                        />
+                      </div>
+                    )}
+
+                    {selectedNewDepositType === "retailer" && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Retailer</label>
+                        <InlineSelect
+                          value={selectedNewRetailerId}
+                          onChange={setSelectedNewRetailerId}
+                          options={[
+                            { value: "", label: "Select Retailer" },
+                            ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                          ]}
+                          placeholder="Select Retailer"
+                        />
+                      </div>
+                    )}
+
+                    {selectedNewDepositType === "staff" && (
+                      <>
+                        <div className="flex items-center gap-1.5 py-0.5">
+                          <input
+                            type="checkbox"
+                            id="editToOfficeCheckboxMobile"
+                            checked={selectedNewToOffice}
+                            onChange={(e) => setSelectedNewToOffice(e.target.checked)}
+                            className="w-3.5 h-3.5 rounded text-indigo-600 border-slate-200 dark:border-slate-800"
+                          />
+                          <label htmlFor="editToOfficeCheckboxMobile" className="text-[10px] font-bold text-slate-650 dark:text-slate-400 uppercase">Handover to Cashier</label>
+                        </div>
+                        {!selectedNewToOffice && (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Recipient Staff</label>
+                            <InlineSelect
+                              value={selectedNewRecipientStaffId}
+                              onChange={setSelectedNewRecipientStaffId}
+                              options={[
+                                { value: "", label: "Select Staff" },
+                                ...(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                              ]}
+                              placeholder="Select Staff"
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {selectedNewDepositType === "virtual" && (
+                      <>
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                          </label>
+                          <InlineSelect
+                            value={selectedNewPortalId}
+                            onChange={setSelectedNewPortalId}
+                            options={[
+                              { value: "", label: "Select Portal Bank Account" },
+                              ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                            ]}
+                            placeholder="Select Portal Bank Account"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                            {selectedNewPaymentMode === "refund" ? "Source Type" : "Destination Type"}
+                          </label>
+                          <select
+                            value={selectedNewVirtualTargetType}
+                            onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                          >
+                            <option value="retailer">Retailer</option>
+                            <option value="staff">Staff Member</option>
+                          </select>
+                        </div>
+
+                        {selectedNewVirtualTargetType === "retailer" ? (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              {selectedNewPaymentMode === "refund" ? "Source Retailer" : "Destination Retailer"}
+                            </label>
+                            <InlineSelect
+                              value={selectedNewRetailerId}
+                              onChange={setSelectedNewRetailerId}
+                              options={[
+                                { value: "", label: "Select Retailer" },
+                                ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
+                              ]}
+                              placeholder="Select Retailer"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                              {selectedNewPaymentMode === "refund" ? "Source Staff Member" : "Destination Staff Member"}
+                            </label>
+                            <InlineSelect
+                              value={selectedNewRecipientStaffId}
+                              onChange={setSelectedNewRecipientStaffId}
+                              options={[
+                                { value: "", label: "Select Staff Member" },
+                                ...(userDirectory || []).filter((u: any) => u.role === "staff").map((u: any) => ({ value: String(u.id), label: u.name }))
+                              ]}
+                              placeholder="Select Staff Member"
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {selectedNewDepositType !== "virtual" && (
+                      <div>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Payment Mode</label>
+                        <select
+                          value={selectedNewPaymentMode}
+                          onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                        >
+                          <option value="cash">Cash</option>
+                          <option value="online">Online</option>
+                        </select>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Reference No</label>
+                      <input 
+                        type="text" 
+                        value={selectedNewRefNo} 
+                        onChange={(e) => setSelectedNewRefNo(e.target.value)} 
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                        placeholder="Optional reference number"
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* DATE FIELD (Always visible) */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Transaction Date</label>
+                  <input 
+                    type="date" 
+                    value={selectedNewDate} 
+                    onChange={(e) => setSelectedNewDate(e.target.value)} 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    required 
+                  />
+                </div>
+
+                {/* AMOUNT FIELD (Always visible) */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
+                  <input 
+                    type="number" 
+                    value={selectedNewAmount} 
+                    onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))} 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold disabled:opacity-75 disabled:bg-slate-100" 
+                    required 
+                    disabled={selectedNewPaymentMode === "cash"}
+                  />
+                </div>
+
+                {/* DENOMINATIONS (for Cash Mode) */}
+                {selectedNewPaymentMode === "cash" && (
+                  <div className="bg-slate-50 dark:bg-slate-955 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 select-none">
+                    <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Cash Denominations</label>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-bold">
+                      {[
+                        { label: "500", key: "note_500" },
+                        { label: "200", key: "note_200" },
+                        { label: "100", key: "note_100" },
+                        { label: "50", key: "note_50" },
+                        { label: "20", key: "note_20" },
+                        { label: "10", key: "note_10" },
+                      ].map((n) => (
+                        <div key={n.key} className="flex items-center gap-1.5 justify-between">
+                          <span className="text-slate-500 w-8">₹{n.label}</span>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            value={selectedNewDenoms[n.key as keyof typeof selectedNewDenoms] || ""}
+                            onChange={(e) => handleDenomValChange(n.key, e.target.value)}
+                            className="w-16 px-1.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-center text-xs outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      ))}
+                      <div className="col-span-2 flex items-center gap-1.5 justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-500">Coins / ₹1</span>
+                        <input
+                          type="number"
+                          placeholder="0"
+                          min="0"
+                          value={selectedNewDenoms.coins || ""}
+                          onChange={(e) => handleDenomValChange("coins", e.target.value)}
+                          className="w-16 px-1.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-center text-xs outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* REMARKS FIELD */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Remarks</label>
+                  <textarea 
+                    value={selectedNewRemarks} 
+                    onChange={(e) => setSelectedNewRemarks(e.target.value)} 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    rows={2}
+                    placeholder="Remarks"
+                  />
+                </div>
+
+              </div>
+              <button 
+                type="submit" 
+                disabled={isSavingEntry}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+              >
+                {isSavingEntry ? "Saving..." : "Save Changes"}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>

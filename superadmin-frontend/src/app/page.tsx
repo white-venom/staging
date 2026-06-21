@@ -394,7 +394,7 @@ export default function DashboardPage() {
                     </svg>
                     API Error: {fetchError}
                   </div>
-                  <p className="text-slate-400 text-[10px] font-medium">Backend se data fetch nahi hua. Session expire ho sakta hai.</p>
+                  <p className="text-slate-400 text-[10px] font-medium">Failed to fetch data from backend. Session may have expired.</p>
                   <button
                     onClick={fetchTenants}
                     className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-colors cursor-pointer"

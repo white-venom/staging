@@ -451,7 +451,7 @@ export default function AdministrationTab({
             <Clock className="w-5 h-5 text-purple-600" />
             <div>
               <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Entry Edit / Delete Window</h3>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Staff kitne time tak apni entry edit ya delete kar sakta hai. -1 ya Permanent = koi limit nahi.</p>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Define the time limit for staff to edit or delete their entries. Set to -1 or check Permanent for no limit.</p>
             </div>
           </div>
 
@@ -466,7 +466,7 @@ export default function AdministrationTab({
                   value={editWindow}
                   onChange={e => setEditWindow(e.target.value)}
                   disabled={editPermanent}
-                  className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                   placeholder="e.g. 5"
                 />
                 <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -485,12 +485,12 @@ export default function AdministrationTab({
                 {editPermanent ? (
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span>Staff kisi bhi time edit kar sakta hai.</span>
+                    <span>Staff can edit entries at any time.</span>
                   </>
                 ) : (
                   <>
                     <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span>Staff sirf {editWindow || 5} minute(s) tak edit kar sakta hai.</span>
+                    <span>Staff can only edit entries within {editWindow || 5} minute(s) of creation.</span>
                   </>
                 )}
               </div>
@@ -506,7 +506,7 @@ export default function AdministrationTab({
                   value={deleteWindow}
                   onChange={e => setDeleteWindow(e.target.value)}
                   disabled={deletePermanent}
-                  className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                   placeholder="e.g. 5"
                 />
                 <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -525,12 +525,12 @@ export default function AdministrationTab({
                 {deletePermanent ? (
                   <>
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span>Staff kisi bhi time delete kar sakta hai.</span>
+                    <span>Staff can delete entries at any time.</span>
                   </>
                 ) : (
                   <>
                     <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span>Staff sirf {deleteWindow || 5} minute(s) tak delete kar sakta hai.</span>
+                    <span>Staff can only delete entries within {deleteWindow || 5} minute(s) of creation.</span>
                   </>
                 )}
               </div>
