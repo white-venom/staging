@@ -201,6 +201,8 @@ export default function MobileRetailers({
       setSelectedNewRefNo(item.reference_no || "");
       setSelectedNewRecipientStaffId(item.recipient_staff_id || "");
       setSelectedNewToOffice(item.to_office === true);
+      const hasStaff = !!(item.recipient_staff_id || item.recipientStaffId);
+      setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
     }
     
     if (item.denominations) {
@@ -266,12 +268,17 @@ export default function MobileRetailers({
         : { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online_amount: Number(selectedNewAmount) };
 
       if (editingIsDeposit) {
+        const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+        const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
+        const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
+        const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
+
         await api.updateDeposit(targetId, {
           deposit_type: selectedNewDepositType,
-          portal_id: selectedNewDepositType === "portal" ? selectedNewPortalId : null,
-          retailer_id: selectedNewDepositType === "retailer" ? selectedNewRetailerId : null,
-          recipient_staff_id: selectedNewDepositType === "staff" && !selectedNewToOffice ? selectedNewRecipientStaffId : null,
-          to_office: selectedNewDepositType === "staff" ? selectedNewToOffice : false,
+          portal_id: portalId,
+          retailer_id: retailerId,
+          recipient_staff_id: recipientStaffId,
+          to_office: toOffice,
           payment_mode: selectedNewPaymentMode,
           amount: Number(selectedNewAmount),
           deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
