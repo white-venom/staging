@@ -305,12 +305,7 @@ export default function PortalsTab({
             <div
               key={group.id}
               onClick={() => {
-                setSelectedGroup(group);
-                setEditingGroupId(group.id);
-                setEditingGroupName(group.name);
-                setEditingGroupBalanceAdjustment("");
-                setEditGroupOnline(!!group.show_in_online_payment);
-                setIsAccountModalOpen(true);
+                handleOpenGroupLedger(group);
               }}
               className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-slate-350 dark:hover:border-slate-700 transition-all flex flex-col justify-between cursor-pointer active:scale-[0.99]"
             >
@@ -330,11 +325,28 @@ export default function PortalsTab({
                   </div>
                 </div>
                 
-                <div className="text-right">
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Portal Balance</span>
-                  <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                    {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
-                  </span>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Portal Balance</span>
+                    <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                      {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedGroup(group);
+                      setEditingGroupId(group.id);
+                      setEditingGroupName(group.name);
+                      setEditingGroupBalanceAdjustment("");
+                      setEditGroupOnline(!!group.show_in_online_payment);
+                      setIsAccountModalOpen(true);
+                    }}
+                    className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
+                  >
+                    <Edit className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             </div>

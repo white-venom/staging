@@ -355,11 +355,7 @@ export default function MobilePortals({
               <div 
                 key={group.id}
                 onClick={() => {
-                  setEditingPortalGroup(group);
-                  setEditPortalName(group.name);
-                  setEditPortalBalanceAdjustment("");
-                  setEditGroupOnline(!!group.show_in_online_payment);
-                  setIsEditPortalModalOpen(true);
+                  handleOpenGroupLedger(group);
                 }}
                 className="bg-white dark:bg-slate-900 py-3 px-3 border-b border-slate-50 dark:border-slate-900/50 hover:bg-slate-50/50 dark:hover:bg-slate-955/20 flex items-center justify-between cursor-pointer active:scale-[0.99] transition-all"
               >
@@ -376,11 +372,23 @@ export default function MobilePortals({
                   </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <span className={`font-black text-xs ${group.balance < 0 ? 'text-red-650 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
-                    {group.balance < 0 ? '-' : ''}₹{Math.round(Math.abs(group.balance || 0)).toLocaleString()}
-                  </span>
-                  <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-tighter mt-0.5">Net Balance</span>
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <div className="text-right">
+                    <span className={`font-black text-xs ${group.balance < 0 ? 'text-red-650 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                      {group.balance < 0 ? '-' : ''}₹{Math.round(Math.abs(group.balance || 0)).toLocaleString()}
+                    </span>
+                    <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-tighter mt-0.5">Net Balance</span>
+                  </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleStartEditPortal(group);
+                    }}
+                    className="p-1.5 rounded bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors border border-slate-100 dark:border-slate-800 cursor-pointer"
+                  >
+                    <Edit className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             );
