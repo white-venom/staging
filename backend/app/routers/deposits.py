@@ -159,14 +159,19 @@ def submit_deposit(
             else:
                 prev_balance = Decimal(str(retailer.opening_to_take or 0))
                 
-            new_balance = prev_balance + payload.amount
+            if payload.payment_mode == "refund":
+                new_balance = prev_balance - payload.amount
+                transaction_type = "credit"
+                desc_text = "move to distributor"
+            else:
+                new_balance = prev_balance + payload.amount
+                transaction_type = "debit"
+                desc_text = portal.portal_name if portal else "virtual transfer"
             
-            # Step C: Log a 'debit' entry in Retailer's Ledger
-            desc_text = portal.portal_name if portal else "virtual transfer"
-                
+            # Step C: Log entry in Retailer's Ledger
             ledger_entry = Ledger(
                 retailer_id=payload.retailer_id,
-                transaction_type="debit",
+                transaction_type=transaction_type,
                 amount=payload.amount,
                 balance=new_balance,
                 description=desc_text,
@@ -177,6 +182,15 @@ def submit_deposit(
             # Step D: Update retailer outstanding balance cache
             retailer.balance = new_balance
             db_deposit.balance_snapshot = new_balance
+
+        if dt in ["retailer", "virtual"] and payload.retailer_id:
+            recalculate_balances(payload.retailer_id, db)
+            # Sync the balance snapshot with the recalculated ledger balance
+            ledger_entry = db.scalar(
+                select(Ledger).where(Ledger.deposit_id == db_deposit.id)
+            )
+            if ledger_entry:
+                db_deposit.balance_snapshot = ledger_entry.balance
 
         db.commit()
         db.refresh(db_deposit)

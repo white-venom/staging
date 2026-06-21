@@ -230,6 +230,13 @@ def process_virtual_transfer(
             from app.logic.ledger import recalculate_balances
             recalculate_balances(payload.retailer_id, db)
             
+            # Sync balance snapshot with recalculated balance
+            ledger_entry = db.scalar(
+                select(Ledger).where(Ledger.deposit_id == db_deposit.id)
+            )
+            if ledger_entry:
+                db_deposit.balance_snapshot = ledger_entry.balance
+            
             db.commit()
             db.refresh(retailer)
             return {

@@ -209,6 +209,15 @@ def submit_collection(
         else:
             db_collection.balance_snapshot = Decimal("0.00")
 
+        if payload.retailer_id:
+            recalculate_balances(payload.retailer_id, db)
+            # Sync the balance snapshot with the recalculated ledger balance
+            ledger_entry = db.scalar(
+                select(Ledger).where(Ledger.collection_id == db_collection.id)
+            )
+            if ledger_entry:
+                db_collection.balance_snapshot = ledger_entry.balance
+
         db.commit()
         db.refresh(db_collection)
         
