@@ -92,26 +92,39 @@ def startup_event():
     except Exception as e:
         print(f"[WARN] Failed to seed default tenant database 'do-it' during startup: {e}")
 
-    # Correct historical ledger created_at timestamps and recalculate balances for all active tenants
+    # Correct historical ledger created_at timestamps, update schemas, and recalculate balances for all active tenants
     try:
         from app.database.master_models import Tenant
         from app.database.db import MasterSessionLocal
         from app.logic.migration import fix_historical_ledger_dates
+        from sqlalchemy import text
         master_db = MasterSessionLocal()
         try:
             active_tenants = master_db.query(Tenant).filter(Tenant.status == "active").all()
             for tenant in active_tenants:
-                print(f"[INFO] Running historical ledger correction for tenant '{tenant.subdomain}'...")
+                print(f"[INFO] Running database schema checks and historical corrections for tenant '{tenant.subdomain}'...")
                 try:
                     tenant_db = get_tenant_session(tenant.subdomain)
+                    tenant_engine = tenant_db.bind
+                    with tenant_engine.begin() as conn:
+                        try:
+                            conn.execute(text("ALTER TABLE business_settings ADD COLUMN auto_checkout_time VARCHAR(10) DEFAULT '20:00'"))
+                        except Exception:
+                            pass
+                        try:
+                            conn.execute(text("ALTER TABLE business_settings ADD COLUMN opening_cash_in_hand DOUBLE PRECISION DEFAULT 0.0"))
+                            print(f"[INFO] Column opening_cash_in_hand added/verified for tenant '{tenant.subdomain}'.")
+                        except Exception:
+                            pass
+                    
                     fix_historical_ledger_dates(tenant_db)
                     tenant_db.close()
                 except Exception as t_err:
-                    print(f"[ERROR] Failed to run historical ledger correction for tenant '{tenant.subdomain}': {t_err}")
+                    print(f"[ERROR] Failed to run database updates/corrections for tenant '{tenant.subdomain}': {t_err}")
         finally:
             master_db.close()
     except Exception as e:
-        print(f"[WARN] Failed to run global ledger corrections during startup: {e}")
+        print(f"[WARN] Failed to run global ledger/schema corrections during startup: {e}")
     
     # Trigger the 2-month odometer image cleanup in a background thread
     try:

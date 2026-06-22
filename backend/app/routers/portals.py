@@ -342,7 +342,7 @@ def get_portal_ledger(
         if d.deposit_type == "portal":
             tx_type = "credit" # You Got
             amount = float(d.amount)
-            desc_text = "Cash Deposit" if d.payment_mode == "cash" else "Online Payment through QR"
+            desc_text = "Cash Deposit" if d.payment_mode == "cash" else "Online Payment"
             if retailer_name:
                 desc_text += f" from {retailer_name}"
             if d.remarks:
@@ -538,7 +538,7 @@ def get_portal_group_ledger(
         if d.deposit_type == "portal":
             tx_type = "credit"
             amount = float(d.amount)
-            desc_text = f"[{p_name}] Cash Deposit" if d.payment_mode == "cash" else f"[{p_name}] Online Payment through QR"
+            desc_text = f"[{p_name}] Cash Deposit" if d.payment_mode == "cash" else f"[{p_name}] Online Payment"
             if retailer_name:
                 desc_text += f" from {retailer_name}"
             if d.remarks:

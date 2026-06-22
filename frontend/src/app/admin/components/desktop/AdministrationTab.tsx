@@ -67,10 +67,12 @@ export default function AdministrationTab({
   const [editPermanent, setEditPermanent] = useState(false);
   const [deletePermanent, setDeletePermanent] = useState(false);
   const [savingWindows, setSavingWindows] = useState(false);
+  const [openingCashInHand, setOpeningCashInHand] = useState("0");
+  const [savingOpeningCash, setSavingOpeningCash] = useState(false);
 
   useEffect(() => {
     loadUsers();
-    loadWindowSettings();
+    loadBusinessSettings();
   }, []);
 
   const loadUsers = async () => {
@@ -82,15 +84,17 @@ export default function AdministrationTab({
     }
   };
 
-  const loadWindowSettings = async () => {
+  const loadBusinessSettings = async () => {
     try {
       const s = await api.getAdminSettings();
       const em = s.edit_window_minutes ?? 5;
       const dm = s.delete_window_minutes ?? 5;
+      const och = s.opening_cash_in_hand ?? 0;
       setEditPermanent(em === -1);
       setDeletePermanent(dm === -1);
       setEditWindow(em === -1 ? "5" : String(em));
       setDeleteWindow(dm === -1 ? "5" : String(dm));
+      setOpeningCashInHand(String(och));
     } catch (err) {
       console.error(err);
     }
@@ -106,12 +110,35 @@ export default function AdministrationTab({
         auto_checkout_time: current.auto_checkout_time ?? "20:00",
         edit_window_minutes: editPermanent ? -1 : (parseInt(editWindow) || 5),
         delete_window_minutes: deletePermanent ? -1 : (parseInt(deleteWindow) || 5),
+        opening_cash_in_hand: current.opening_cash_in_hand ?? 0,
       });
       showToastNotification("Entry window settings saved!");
+      fetchData();
     } catch (err: any) {
       alert("Failed to save: " + err.message);
     } finally {
       setSavingWindows(false);
+    }
+  };
+
+  const handleSaveOpeningCash = async () => {
+    setSavingOpeningCash(true);
+    try {
+      const current = await api.getAdminSettings();
+      await api.updateAdminSettings({
+        late_threshold: current.late_threshold ?? "10:00",
+        late_penalty: current.late_penalty ?? 100,
+        auto_checkout_time: current.auto_checkout_time ?? "20:00",
+        edit_window_minutes: current.edit_window_minutes ?? 5,
+        delete_window_minutes: current.delete_window_minutes ?? 5,
+        opening_cash_in_hand: parseFloat(openingCashInHand) || 0,
+      });
+      showToastNotification("Opening cash balance saved!");
+      fetchData();
+    } catch (err: any) {
+      alert("Failed to save: " + err.message);
+    } finally {
+      setSavingOpeningCash(false);
     }
   };
 
@@ -446,18 +473,18 @@ export default function AdministrationTab({
         </div>
 
         {/* Entry Window Settings Card */}
-        <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-5">
           <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <Clock className="w-5 h-5 text-purple-600" />
             <div>
               <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Entry Edit / Delete Window</h3>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Define the time limit for staff to edit or delete their entries. Set to -1 or check Permanent for no limit.</p>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Define the time limit for staff to edit or delete their entries.</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-4">
             {/* Edit Window */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <label className="block text-[10px] text-slate-400 uppercase font-bold">Edit Window (Minutes)</label>
               <div className="flex items-center gap-3">
                 <input
@@ -466,7 +493,7 @@ export default function AdministrationTab({
                   value={editWindow}
                   onChange={e => setEditWindow(e.target.value)}
                   disabled={editPermanent}
-                  className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                   placeholder="e.g. 5"
                 />
                 <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -476,28 +503,15 @@ export default function AdministrationTab({
                     onChange={e => setEditPermanent(e.target.checked)}
                     className="w-4 h-4 rounded text-purple-600 border-slate-300 dark:border-slate-700 cursor-pointer"
                   />
-                  <span className="text-[10px] font-black text-purple-600 uppercase tracking-wider flex items-center gap-0.5">
+                  <span className="text-[9px] font-black text-purple-600 uppercase tracking-wider flex items-center gap-0.5">
                     <Infinity className="w-3 h-3" /> Permanent
                   </span>
                 </label>
               </div>
-              <div className="text-[10px] text-slate-400 flex items-center gap-1.5 min-h-[1.5rem]">
-                {editPermanent ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span>Staff can edit entries at any time.</span>
-                  </>
-                ) : (
-                  <>
-                    <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span>Staff can only edit entries within {editWindow || 5} minute(s) of creation.</span>
-                  </>
-                )}
-              </div>
             </div>
 
             {/* Delete Window */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <label className="block text-[10px] text-slate-400 uppercase font-bold">Delete Window (Minutes)</label>
               <div className="flex items-center gap-3">
                 <input
@@ -506,7 +520,7 @@ export default function AdministrationTab({
                   value={deleteWindow}
                   onChange={e => setDeleteWindow(e.target.value)}
                   disabled={deletePermanent}
-                  className="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                   placeholder="e.g. 5"
                 />
                 <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -516,23 +530,10 @@ export default function AdministrationTab({
                     onChange={e => setDeletePermanent(e.target.checked)}
                     className="w-4 h-4 rounded text-red-500 border-slate-300 dark:border-slate-700 cursor-pointer"
                   />
-                  <span className="text-[10px] font-black text-red-500 uppercase tracking-wider flex items-center gap-0.5">
+                  <span className="text-[9px] font-black text-red-500 uppercase tracking-wider flex items-center gap-0.5">
                     <Infinity className="w-3 h-3" /> Permanent
                   </span>
                 </label>
-              </div>
-              <div className="text-[10px] text-slate-400 flex items-center gap-1.5 min-h-[1.5rem]">
-                {deletePermanent ? (
-                  <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span>Staff can delete entries at any time.</span>
-                  </>
-                ) : (
-                  <>
-                    <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span>Staff can only delete entries within {deleteWindow || 5} minute(s) of creation.</span>
-                  </>
-                )}
               </div>
             </div>
           </div>
@@ -540,10 +541,48 @@ export default function AdministrationTab({
           <button
             onClick={handleSaveWindowSettings}
             disabled={savingWindows}
-            className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow-md shadow-purple-200 dark:shadow-none transition-all active:scale-[0.98] disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-[0.98] disabled:opacity-60"
           >
             <Save className="w-4 h-4" />
             {savingWindows ? "Saving..." : "Save Window Settings"}
+          </button>
+        </div>
+
+        {/* Opening Cash in Hand / Old Balance Settings Card */}
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-5">
+          <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <Globe className="w-5 h-5 text-emerald-600" />
+            <div>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Opening Cash (Old Balance)</h3>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Define opening cash balance for the "Net Cash in Hand" indicator.</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="block text-[10px] text-slate-400 uppercase font-bold">Opening Balance (₹)</label>
+              <input
+                type="number"
+                value={openingCashInHand}
+                onChange={e => setOpeningCashInHand(e.target.value)}
+                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none"
+                placeholder="e.g. 50000"
+              />
+            </div>
+            
+            <div className="text-[10px] text-slate-400 flex items-center gap-1.5 min-h-[1.5rem]">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <span>Currently set: <strong className="text-slate-700 dark:text-slate-350">₹{Number(openingCashInHand || 0).toLocaleString()}</strong></span>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSaveOpeningCash}
+            disabled={savingOpeningCash}
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-[0.98] disabled:opacity-60"
+          >
+            <Save className="w-4 h-4" />
+            {savingOpeningCash ? "Saving..." : "Save Opening Balance"}
           </button>
         </div>
 

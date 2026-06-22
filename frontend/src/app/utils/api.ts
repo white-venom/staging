@@ -7,7 +7,7 @@ const getApiBaseUrl = () => {
   
   if (typeof window !== "undefined") {
     // Production VPS domains
-    if (window.location.hostname === "app.crediiflow.in") {
+    if (window.location.hostname.endsWith("crediiflow.in")) {
       return "https://api.crediiflow.in";
     }
     

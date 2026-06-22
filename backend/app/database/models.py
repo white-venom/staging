@@ -171,8 +171,10 @@ class BusinessSettings(Base):
     # Staff entry edit/delete window in minutes. -1 = permanent (no time restriction).
     edit_window_minutes: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
     delete_window_minutes: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
+    opening_cash_in_hand: Mapped[float] = mapped_column(Float, default=0.0, server_default="0.0")
 
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 
 
 class Collection(Base):

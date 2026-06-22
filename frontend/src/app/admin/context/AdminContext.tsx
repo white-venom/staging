@@ -13,6 +13,7 @@ interface AdminContextType {
   portalDirectory: any[];
   userDirectory: any[];
   staffComplianceLogs: any[];
+  businessSettings: any;
   fetchData: (showLoading?: boolean) => Promise<void>;
   showToastNotification: (msg: string) => void;
   toastMessage: string;
@@ -37,6 +38,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [portalDirectory, setPortalDirectory] = useState<any[]>([]);
   const [userDirectory, setUserDirectory] = useState<any[]>([]);
   const [staffComplianceLogs, setStaffComplianceLogs] = useState<any[]>([]);
+  const [businessSettings, setBusinessSettings] = useState<any>(null);
   
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
@@ -56,13 +58,14 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     if (showLoading) setIsLoading(true);
     try {
-      const [cols, deps, rets, fetchedUsers, pGroups, attendanceLogs] = await Promise.all([
+      const [cols, deps, rets, fetchedUsers, pGroups, attendanceLogs, settings] = await Promise.all([
         api.getCollections().catch((e) => { console.error("Cols err:", e); return []; }),
         api.getDeposits().catch((e) => { console.error("Deps err:", e); return []; }),
         api.getRetailers().catch((e) => { console.error("Rets err:", e); return []; }),
         api.getUsers().catch((e) => { console.error("Users err:", e); return []; }),
         api.getPortalGroups().catch((e) => { console.error("Portals err:", e); return []; }),
-        api.getTodayAttendance().catch((e) => { console.error("Att err:", e); return []; })
+        api.getTodayAttendance().catch((e) => { console.error("Att err:", e); return []; }),
+        api.getAdminSettings().catch((e) => { console.error("Settings err:", e); return null; })
       ]);
       
       const mappedCols = cols.map((c: any) => {
@@ -181,6 +184,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setRetailerDirectory(mappedRets);
       setUserDirectory(fetchedUsers);
       setPortalDirectory(mappedGroups);
+      setBusinessSettings(settings);
       const uniqueAttendanceLogs = Array.from(new Map(attendanceLogs.map((log: any) => [log.id, log])).values());
       
       setStaffComplianceLogs(uniqueAttendanceLogs.map((log: any) => ({
@@ -227,6 +231,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       portalDirectory,
       userDirectory,
       staffComplianceLogs,
+      businessSettings,
       fetchData,
       showToastNotification,
       toastMessage,
