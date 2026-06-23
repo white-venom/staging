@@ -53,6 +53,11 @@ def get_tenant_session(tenant_subdomain: str) -> Session:
         from app.database.master_models import Tenant
         tenant = master_db.query(Tenant).filter(Tenant.subdomain == tenant_subdomain).first()
         if not tenant:
+            # Fallback/compatibility check: try to fall back between do-it and do-it-services
+            fallback_subdomain = "do-it-services" if tenant_subdomain == "do-it" else ("do-it" if tenant_subdomain == "do-it-services" else None)
+            if fallback_subdomain:
+                tenant = master_db.query(Tenant).filter(Tenant.subdomain == fallback_subdomain).first()
+        if not tenant:
             raise ValueError(f"Tenant '{tenant_subdomain}' not found")
         if tenant.status != "active":
             raise ValueError(f"Tenant '{tenant_subdomain}' is not active")

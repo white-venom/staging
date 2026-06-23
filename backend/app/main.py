@@ -35,20 +35,39 @@ def startup_event():
     from app.database.master_models import Tenant, SuperAdmin
     Base.metadata.create_all(bind=master_engine)
     
-    # Proactive alter table check and seeding for default 'do-it' tenant
+    # 1. Automatically migrate 'do-it' subdomain to 'do-it-services' in master database
     try:
-        db = get_tenant_session("do-it")
+        from app.database.db import MasterSessionLocal
+        from app.database.master_models import Tenant
+        master_db = MasterSessionLocal()
+        try:
+            # Check if do-it-services already exists
+            services_tenant = master_db.query(Tenant).filter(Tenant.subdomain == "do-it-services").first()
+            if not services_tenant:
+                old_tenant = master_db.query(Tenant).filter(Tenant.subdomain == "do-it").first()
+                if old_tenant:
+                    print("[INFO] Migrating subdomain 'do-it' to 'do-it-services' in master DB during startup...")
+                    old_tenant.subdomain = "do-it-services"
+                    master_db.commit()
+        finally:
+            master_db.close()
+    except Exception as e:
+        print(f"[WARN] Failed to automatically migrate 'do-it' subdomain during startup: {e}")
+
+    # Proactive alter table check and seeding for default 'do-it-services' tenant
+    try:
+        db = get_tenant_session("do-it-services")
         from sqlalchemy import text
         tenant_engine = db.bind
         with tenant_engine.begin() as conn:
             try:
                 conn.execute(text("ALTER TABLE business_settings ADD COLUMN auto_checkout_time VARCHAR(10) DEFAULT '20:00'"))
-                print("[INFO] Column auto_checkout_time added to business_settings table successfully in do-it.")
+                print("[INFO] Column auto_checkout_time added to business_settings table successfully in do-it-services.")
             except Exception:
                 # Column probably already exists, ignore
                 pass
 
-        # Seed CMS Retailer inside do-it
+        # Seed CMS Retailer inside do-it-services
         from app.database.models import Retailer
         from sqlalchemy import select
         cms_retailer = db.scalar(select(Retailer).where(text("LOWER(retailer_name) = 'cms'")))
@@ -63,9 +82,9 @@ def startup_event():
             )
             db.add(cms_retailer)
             db.commit()
-            print("[INFO] CMS retailer seeded successfully in do-it.")
+            print("[INFO] CMS retailer seeded successfully in do-it-services.")
 
-        # Seed default admin and staff inside do-it if SEED_ACCOUNTS is enabled
+        # Seed default admin and staff inside do-it-services if SEED_ACCOUNTS is enabled
         is_dev = settings.ENVIRONMENT == "development"
         if os.getenv("SEED_ACCOUNTS", "true").lower() == "true" and is_dev:
             admin_exists = db.query(UserModel).filter(UserModel.phone == "7900671145").first()
@@ -90,7 +109,7 @@ def startup_event():
             db.commit()
         db.close()
     except Exception as e:
-        print(f"[WARN] Failed to seed default tenant database 'do-it' during startup: {e}")
+        print(f"[WARN] Failed to seed default tenant database 'do-it-services' during startup: {e}")
 
     # Correct historical ledger created_at timestamps, update schemas, and recalculate balances for all active tenants
     try:

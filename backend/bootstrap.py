@@ -35,23 +35,31 @@ def bootstrap():
     Base.metadata.create_all(bind=master_engine)
     print("Master tables initialized successfully.")
 
-    # 3. Create default tenant 'do-it' if not exists
+    # 3. Create default tenant 'do-it-services' if not exists
     master_db = MasterSessionLocal()
     try:
-        tenant = master_db.query(Tenant).filter(Tenant.subdomain == "do-it").first()
+        tenant = master_db.query(Tenant).filter(Tenant.subdomain == "do-it-services").first()
         if not tenant:
-            print("Creating default tenant 'do-it'...")
-            tenant = Tenant(
-                name="DO IT SERVICES",
-                subdomain="do-it",
-                db_name="crediiflow_doit",
-                status="active"
-            )
-            master_db.add(tenant)
-            master_db.commit()
-            print("Tenant 'do-it' registered in master DB.")
+            # Check if old 'do-it' tenant exists and rename it
+            old_tenant = master_db.query(Tenant).filter(Tenant.subdomain == "do-it").first()
+            if old_tenant:
+                print("Migrating existing 'do-it' tenant subdomain to 'do-it-services'...")
+                old_tenant.subdomain = "do-it-services"
+                master_db.commit()
+                tenant = old_tenant
+            else:
+                print("Creating default tenant 'do-it-services'...")
+                tenant = Tenant(
+                    name="DO IT SERVICES",
+                    subdomain="do-it-services",
+                    db_name="crediiflow_doit",
+                    status="active"
+                )
+                master_db.add(tenant)
+                master_db.commit()
+                print("Tenant 'do-it-services' registered in master DB.")
         else:
-            print("Tenant 'do-it' already registered.")
+            print("Tenant 'do-it-services' already registered.")
             
         # Create default Super Admin if none exists
         super_admin = master_db.query(SuperAdmin).filter(SuperAdmin.username == "superadmin").first()

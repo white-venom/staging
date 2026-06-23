@@ -1,7 +1,7 @@
 """
 Demo Seed Script
 ================
-Seeds the following data into the 'do-it' tenant:
+Seeds the following data into the 'do-it-services' tenant:
   - 2 Staff users
   - 1 Admin user
   - 2 Retailers
@@ -18,7 +18,7 @@ import uuid
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Tell the db module which tenant to connect to
-os.environ["TEST_TENANT_ID"] = "do-it"
+os.environ["TEST_TENANT_ID"] = "do-it-services"
 
 from sqlalchemy import select
 from app.database.db import get_tenant_session
@@ -27,9 +27,9 @@ from app.core.security import get_password_hash
 
 
 def seed():
-    db = get_tenant_session("do-it")
+    db = get_tenant_session("do-it-services")
     try:
-        print("\n========== SEEDING DEMO DATA (tenant: do-it) ==========\n")
+        print("\n========== SEEDING DEMO DATA (tenant: do-it-services) ==========\n")
 
         # ── STAFF USERS ──────────────────────────────────────────────────────
         staff_data = [
