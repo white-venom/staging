@@ -67,6 +67,29 @@ def get_tenant_session(tenant_subdomain: str) -> Session:
         
     return _tenant_sessionmakers[db_name]()
 
+
+class SessionLocalHelper:
+    def __call__(self) -> Session:
+        tenant_id = os.getenv("TEST_TENANT_ID")
+        if not tenant_id:
+            # Try to find the first active tenant in master db
+            master_db = MasterSessionLocal()
+            try:
+                from app.database.master_models import Tenant
+                tenant = master_db.query(Tenant).filter(Tenant.status == "active").first()
+                if tenant:
+                    tenant_id = tenant.subdomain
+            except Exception:
+                pass
+            finally:
+                master_db.close()
+        if not tenant_id:
+            tenant_id = "do-it-services"
+        return get_tenant_session(tenant_id)
+
+SessionLocal = SessionLocalHelper()
+
+
 def evict_tenant_cache(db_name: str):
     """Remove cached engine and sessionmaker for a deleted/renamed tenant DB.
     Call this after dropping the database so stale pool connections
