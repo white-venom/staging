@@ -307,7 +307,9 @@ def get_portal_ledger(
     if not portal:
         raise HTTPException(status_code=404, detail="Portal not found")
 
-    # Fetch verified bank deposits for this portal
+    from app.database.models import Store
+    
+    # Fetch verified bank deposits for this portal (portal + virtual types)
     deposits = db.scalars(
         select(BankDeposit)
         .options(joinedload(BankDeposit.retailer), joinedload(BankDeposit.denominations))
@@ -315,7 +317,7 @@ def get_portal_ledger(
             and_(
                 BankDeposit.portal_id == portal_id,
                 BankDeposit.status == "verified",
-                BankDeposit.deposit_type == "portal"
+                BankDeposit.deposit_type.in_(["portal", "virtual"])
             )
         )
     ).all()
@@ -339,29 +341,68 @@ def get_portal_ledger(
     for d in deposits:
         # Bank deposit into portal (cash deposit or online auto-route)
         retailer_name = d.retailer.retailer_name if d.retailer else None
+        
+        # For online portal deposits without retailer, try to find the matching collection
+        # to get store name (legacy data that didn't store retailer_id on the deposit)
+        store_name = None
+        fallback_remarks = d.remarks
+        if d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
+            matching_col = db.scalar(
+                select(Collection)
+                .options(joinedload(Collection.retailer), joinedload(Collection.store))
+                .where(
+                    and_(
+                        Collection.portal_id == portal_id,
+                        Collection.status == "verified",
+                        Collection.collection_date == d.deposit_date,
+                        Collection.retailer_id != None
+                    )
+                )
+            )
+            if matching_col:
+                retailer_name = matching_col.retailer.retailer_name if matching_col.retailer else None
+                store_name = matching_col.store.store_name if matching_col.store else None
+                if not fallback_remarks:
+                    fallback_remarks = matching_col.remarks
+        elif d.retailer:
+            # If retailer is available, look up store from matching collection
+            matching_col = db.scalar(
+                select(Collection)
+                .options(joinedload(Collection.store))
+                .where(
+                    and_(
+                        Collection.portal_id == portal_id,
+                        Collection.retailer_id == d.retailer_id,
+                        Collection.collection_date == d.deposit_date,
+                        Collection.status == "verified"
+                    )
+                )
+            )
+            if matching_col and matching_col.store:
+                store_name = matching_col.store.store_name
+        
+        tx_store_name = store_name or retailer_name
+
         if d.deposit_type == "portal":
             tx_type = "credit" # You Got
             amount = float(d.amount)
-            desc_text = "Cash Deposit" if d.payment_mode == "cash" else "Online Payment"
-            if retailer_name:
-                desc_text += f" from {retailer_name}"
-            if d.remarks:
-                desc_text += f" ({d.remarks})"
+            if d.payment_mode == "online":
+                desc_text = f"Online Payment from {tx_store_name}" if tx_store_name else "Online Payment"
+            else:
+                desc_text = f"Cash Deposit from {tx_store_name}" if tx_store_name else "Cash Deposit"
+            if fallback_remarks:
+                desc_text += f" ({fallback_remarks})"
         elif d.deposit_type == "virtual":
             if d.payment_mode == "refund":
                 tx_type = "credit" # You Got
                 amount = float(d.amount)
-                desc_text = "Virtual Refund"
-                if retailer_name:
-                    desc_text += f" from {retailer_name}"
+                desc_text = f"Virtual Refund from {tx_store_name}" if tx_store_name else "Virtual Refund"
             else:
                 tx_type = "debit" # You Gave
                 amount = float(d.amount)
-                desc_text = "Virtual Transfer"
-                if retailer_name:
-                    desc_text += f" to {retailer_name}"
-            if d.remarks:
-                desc_text += f" ({d.remarks})"
+                desc_text = f"Virtual Transfer to {tx_store_name}" if tx_store_name else "Virtual Transfer"
+            if fallback_remarks:
+                desc_text += f" ({fallback_remarks})"
         else:
             continue
             
@@ -386,7 +427,7 @@ def get_portal_ledger(
             "description": desc_text,
             "collection_id": None,
             "deposit_id": str(d.id),
-            "remarks": d.remarks,
+            "remarks": fallback_remarks,
             "reference_no": d.reference_no,
             "deposit_type": d.deposit_type,
             "payment_mode": d.payment_mode,
@@ -394,6 +435,7 @@ def get_portal_ledger(
             "to_office": d.to_office,
             "retailer_id": str(d.retailer_id) if d.retailer_id else None,
             "store_id": None,
+            "store_name": tx_store_name,
             "portal_id": str(d.portal_id) if d.portal_id else None,
             "denominations": denom_dict
         })
@@ -429,6 +471,7 @@ def get_portal_ledger(
             "to_office": c.from_office,
             "retailer_id": str(c.retailer_id) if c.retailer_id else None,
             "store_id": str(c.store_id) if c.store_id else None,
+            "store_name": c.store.store_name if (c.store and c.store.store_name) else (c.retailer.retailer_name if c.retailer else None),
             "portal_id": str(c.portal_id) if c.portal_id else None,
             "denominations": denom_dict
         })
@@ -463,6 +506,7 @@ def get_portal_ledger(
             "to_office": tx["to_office"],
             "retailer_id": tx["retailer_id"],
             "store_id": tx["store_id"],
+            "store_name": tx.get("store_name"),
             "portal_id": tx["portal_id"],
             "denominations": tx["denominations"]
         })
@@ -530,34 +574,75 @@ def get_portal_group_ledger(
         )
     ).all()
     
+    from app.database.models import Store
+    
     tx_list = []
     
     for d in deposits:
         retailer_name = d.retailer.retailer_name if d.retailer else None
         p_name = d.portal.portal_name if d.portal else "Account"
+        
+        # For online portal deposits without retailer, try to find the matching collection
+        # to get store name (legacy data that didn't store retailer_id on the deposit)
+        store_name = None
+        fallback_remarks = d.remarks
+        if d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
+            matching_col = db.scalar(
+                select(Collection)
+                .options(joinedload(Collection.retailer), joinedload(Collection.store))
+                .where(
+                    and_(
+                        Collection.portal_id == d.portal_id,
+                        Collection.status == "verified",
+                        Collection.collection_date == d.deposit_date,
+                        Collection.retailer_id != None
+                    )
+                )
+            )
+            if matching_col:
+                retailer_name = matching_col.retailer.retailer_name if matching_col.retailer else None
+                store_name = matching_col.store.store_name if matching_col.store else None
+                if not fallback_remarks:
+                    fallback_remarks = matching_col.remarks
+        elif d.retailer:
+            # If retailer is available, look up store from matching collection
+            matching_col = db.scalar(
+                select(Collection)
+                .options(joinedload(Collection.store))
+                .where(
+                    and_(
+                        Collection.portal_id == d.portal_id,
+                        Collection.retailer_id == d.retailer_id,
+                        Collection.collection_date == d.deposit_date,
+                        Collection.status == "verified"
+                    )
+                )
+            )
+            if matching_col and matching_col.store:
+                store_name = matching_col.store.store_name
+        
+        tx_store_name = store_name or retailer_name
+
         if d.deposit_type == "portal":
             tx_type = "credit"
             amount = float(d.amount)
-            desc_text = f"[{p_name}] Cash Deposit" if d.payment_mode == "cash" else f"[{p_name}] Online Payment"
-            if retailer_name:
-                desc_text += f" from {retailer_name}"
-            if d.remarks:
-                desc_text += f" ({d.remarks})"
+            if d.payment_mode == "online":
+                desc_text = f"[{p_name}] Online Payment from {tx_store_name}" if tx_store_name else f"[{p_name}] Online Payment"
+            else:
+                desc_text = f"[{p_name}] Cash Deposit from {tx_store_name}" if tx_store_name else f"[{p_name}] Cash Deposit"
+            if fallback_remarks:
+                desc_text += f" ({fallback_remarks})"
         elif d.deposit_type == "virtual":
             if d.payment_mode == "refund":
                 tx_type = "credit"
                 amount = float(d.amount)
-                desc_text = f"[{p_name}] Virtual Refund"
-                if retailer_name:
-                    desc_text += f" from {retailer_name}"
+                desc_text = f"[{p_name}] Virtual Refund from {tx_store_name}" if tx_store_name else f"[{p_name}] Virtual Refund"
             else:
                 tx_type = "debit"
                 amount = float(d.amount)
-                desc_text = f"[{p_name}] Virtual Transfer"
-                if retailer_name:
-                    desc_text += f" to {retailer_name}"
-            if d.remarks:
-                desc_text += f" ({d.remarks})"
+                desc_text = f"[{p_name}] Virtual Transfer to {tx_store_name}" if tx_store_name else f"[{p_name}] Virtual Transfer"
+            if fallback_remarks:
+                desc_text += f" ({fallback_remarks})"
         else:
             continue
             
@@ -582,7 +667,7 @@ def get_portal_group_ledger(
             "description": desc_text,
             "collection_id": None,
             "deposit_id": str(d.id),
-            "remarks": d.remarks,
+            "remarks": fallback_remarks,
             "reference_no": d.reference_no,
             "deposit_type": d.deposit_type,
             "payment_mode": d.payment_mode,
@@ -590,6 +675,7 @@ def get_portal_group_ledger(
             "to_office": d.to_office,
             "retailer_id": str(d.retailer_id) if d.retailer_id else None,
             "store_id": None,
+            "store_name": tx_store_name,
             "portal_id": str(d.portal_id) if d.portal_id else None,
             "denominations": denom_dict
         })
@@ -624,6 +710,7 @@ def get_portal_group_ledger(
             "to_office": c.from_office,
             "retailer_id": str(c.retailer_id) if c.retailer_id else None,
             "store_id": str(c.store_id) if c.store_id else None,
+            "store_name": c.store.store_name if (c.store and c.store.store_name) else (c.retailer.retailer_name if c.retailer else None),
             "portal_id": str(c.portal_id) if c.portal_id else None,
             "denominations": denom_dict
         })
@@ -656,6 +743,7 @@ def get_portal_group_ledger(
             "to_office": tx["to_office"],
             "retailer_id": tx["retailer_id"],
             "store_id": tx["store_id"],
+            "store_name": tx.get("store_name"),
             "portal_id": tx["portal_id"],
             "denominations": tx["denominations"]
         })

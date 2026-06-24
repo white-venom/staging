@@ -138,11 +138,13 @@ def submit_collection(
                     staff_id=current_user.id,
                     deposit_type="portal",
                     portal_id=payload.portal_id,
+                    retailer_id=payload.retailer_id,
                     recipient_staff_id=None,
                     to_office=False,
                     payment_mode="online",
                     amount=d.online_amount,
                     deposit_date=db_collection.collection_date,
+                    remarks=payload.remarks,
                     status="verified",
                     balance_snapshot=Decimal("0.00")
                 )
