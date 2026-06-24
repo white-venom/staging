@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
-# Build Trigger: v1.0.1
+# Build Trigger: v1.0.2
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.database.db import get_db, Base, master_engine, get_tenant_session
@@ -176,6 +176,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Global catch-all exception handler to ensure ALL errors return CORS-compatible
+# JSON responses. Without this, unhandled exceptions return plain-text 500 responses
+# that bypass CORS headers, causing browsers to show "Failed to fetch" errors.
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    print(f"[ERROR] Unhandled exception: {exc}")
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"}
+    )
 
 # Register Router Modules
 app.include_router(auth_router)

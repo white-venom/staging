@@ -123,42 +123,41 @@ def process_virtual_transfer(
     current_user=Depends(require_admin)
 ):
     """Atomically transfers virtual balance from Portal to Retailer or Staff."""
-    import pytz
-    from datetime import datetime, time
-    ist = pytz.timezone('Asia/Kolkata')
-    today_ist = payload.transfer_date or datetime.now(ist).date()
-    current_time_ist = datetime.now(ist).time()
-    
-    if payload.transfer_date:
-        transfer_datetime_ist = datetime.combine(payload.transfer_date, current_time_ist)
-        # Convert to UTC to store in created_at (since database stores created_at in UTC)
-        transfer_datetime_utc = ist.localize(transfer_datetime_ist).astimezone(pytz.utc).replace(tzinfo=None)
-    else:
-        transfer_datetime_utc = datetime.utcnow()
-
-    # 1. Fetch Source Portal (locked)
-    portal = db.scalar(
-        select(Portal)
-        .options(joinedload(Portal.group))
-        .where(Portal.id == payload.portal_id)
-        .with_for_update()
-    )
-    if not portal:
-        raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
+    try:
+        import pytz
+        from datetime import datetime, time
+        ist = pytz.timezone('Asia/Kolkata')
+        today_ist = payload.transfer_date or datetime.now(ist).date()
+        current_time_ist = datetime.now(ist).time()
         
-    # Lock the associated PortalGroup to prevent race conditions on group balance
-    if portal.group_id:
-        from app.database.models import PortalGroup
-        db.scalar(
-            select(PortalGroup)
-            .where(PortalGroup.id == portal.group_id)
+        if payload.transfer_date:
+            transfer_datetime_ist = datetime.combine(payload.transfer_date, current_time_ist)
+            # Convert to UTC to store in created_at (since database stores created_at in UTC)
+            transfer_datetime_utc = ist.localize(transfer_datetime_ist).astimezone(pytz.utc).replace(tzinfo=None)
+        else:
+            transfer_datetime_utc = datetime.utcnow()
+
+        # 1. Fetch Source Portal (locked)
+        portal = db.scalar(
+            select(Portal)
+            .options(joinedload(Portal.group))
+            .where(Portal.id == payload.portal_id)
             .with_for_update()
         )
-        
-    if not payload.retailer_id and not payload.staff_id:
-        raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
-        
-    try:
+        if not portal:
+            raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
+            
+        # Lock the associated PortalGroup to prevent race conditions on group balance
+        if portal.group_id:
+            from app.database.models import PortalGroup
+            db.scalar(
+                select(PortalGroup)
+                .where(PortalGroup.id == portal.group_id)
+                .with_for_update()
+            )
+            
+        if not payload.retailer_id and not payload.staff_id:
+            raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
         # Step A: Adjust Portal Balance
         if payload.direction == "refund":
             portal.balance += payload.amount
