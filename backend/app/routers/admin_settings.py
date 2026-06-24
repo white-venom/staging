@@ -3,7 +3,7 @@ from typing import List, Optional
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, update, desc
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from app.database.db import get_db
@@ -141,9 +141,10 @@ def process_virtual_transfer(
             raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
 
         # 1. Fetch Source Portal (locked)
+        # NOTE: Do NOT use joinedload(Portal.group) here — PostgreSQL forbids
+        # FOR UPDATE on the nullable side of an outer join.
         portal = db.scalar(
             select(Portal)
-            .options(joinedload(Portal.group))
             .where(Portal.id == payload.portal_id)
             .with_for_update()
         )
