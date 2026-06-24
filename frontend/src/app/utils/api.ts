@@ -94,11 +94,42 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
     ...options.headers,
   };
 
-  const response = await fetch(fullUrl, {
-    ...options,
-    headers,
-    credentials: "include", // ensure cookies are sent for refresh
-  });
+  let response: Response;
+  try {
+    response = await fetch(fullUrl, {
+      ...options,
+      headers,
+      credentials: "include", // ensure cookies are sent for refresh
+    });
+  } catch (networkError: any) {
+    // fetch() itself threw — this is a network-level error (DNS, connection refused,
+    // CORS preflight failure, timeout, or device is offline). Retry once after a short delay.
+    if (retry) {
+      console.warn(`[API] Network error on ${endpoint}, retrying in 1s...`, networkError.message);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      try {
+        response = await fetch(fullUrl, {
+          ...options,
+          headers,
+          credentials: "include",
+        });
+      } catch (retryError: any) {
+        console.error(`[API] Retry also failed for ${endpoint}:`, retryError.message);
+        throw new Error(
+          navigator.onLine === false
+            ? "You are offline. Please check your internet connection."
+            : `Unable to reach server. Please try again. (${retryError.message})`
+        );
+      }
+    } else {
+      throw new Error(
+        navigator.onLine === false
+          ? "You are offline. Please check your internet connection."
+          : `Unable to reach server. Please try again. (${networkError.message})`
+      );
+    }
+  }
+
 
   const isAuthEndpoint = endpoint.includes("/auth/login") || endpoint.includes("/auth/refresh");
 
@@ -292,7 +323,7 @@ export const api = {
     method: "POST",
     body: JSON.stringify({ attendance_id: attendanceId, approve }),
   }),
-  virtualTransfer: (data: { portal_id: string; retailer_id?: string; staff_id?: string; amount: number; remarks?: string; direction?: string }) => request<any>("/admin-settings/virtual-transfer", {
+  virtualTransfer: (data: { portal_id: string; retailer_id?: string; staff_id?: string; amount: number; remarks?: string; direction?: string; transfer_date?: string }) => request<any>("/admin-settings/virtual-transfer", {
     method: "POST",
     body: JSON.stringify(data),
   }),

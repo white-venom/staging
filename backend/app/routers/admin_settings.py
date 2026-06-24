@@ -125,17 +125,20 @@ def process_virtual_transfer(
     """Atomically transfers virtual balance from Portal to Retailer or Staff."""
     try:
         import pytz
-        from datetime import datetime, time
+        from datetime import datetime, time as dt_time, timezone
         ist = pytz.timezone('Asia/Kolkata')
         today_ist = payload.transfer_date or datetime.now(ist).date()
         current_time_ist = datetime.now(ist).time()
         
         if payload.transfer_date:
             transfer_datetime_ist = datetime.combine(payload.transfer_date, current_time_ist)
-            # Convert to UTC to store in created_at (since database stores created_at in UTC)
             transfer_datetime_utc = ist.localize(transfer_datetime_ist).astimezone(pytz.utc).replace(tzinfo=None)
         else:
-            transfer_datetime_utc = datetime.utcnow()
+            transfer_datetime_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+
+        # Validate inputs early
+        if not payload.retailer_id and not payload.staff_id:
+            raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
 
         # 1. Fetch Source Portal (locked)
         portal = db.scalar(
@@ -148,25 +151,24 @@ def process_virtual_transfer(
             raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
             
         # Lock the associated PortalGroup to prevent race conditions on group balance
+        portal_group = None
         if portal.group_id:
             from app.database.models import PortalGroup
-            db.scalar(
+            portal_group = db.scalar(
                 select(PortalGroup)
                 .where(PortalGroup.id == portal.group_id)
                 .with_for_update()
             )
-            
-        if not payload.retailer_id and not payload.staff_id:
-            raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
+
         # Step A: Adjust Portal Balance
         if payload.direction == "refund":
-            portal.balance += payload.amount
-            if portal.group:
-                portal.group.balance += payload.amount
+            portal.balance = Decimal(str(portal.balance or 0)) + payload.amount
+            if portal_group:
+                portal_group.balance = Decimal(str(portal_group.balance or 0)) + payload.amount
         else:
-            portal.balance -= payload.amount
-            if portal.group:
-                portal.group.balance -= payload.amount
+            portal.balance = Decimal(str(portal.balance or 0)) - payload.amount
+            if portal_group:
+                portal_group.balance = Decimal(str(portal_group.balance or 0)) - payload.amount
             
         if payload.retailer_id:
             # Transfer to/from Retailer
@@ -174,33 +176,20 @@ def process_virtual_transfer(
             if not retailer:
                 raise HTTPException(status_code=404, detail="Destination retailer not found.")
                 
-            from app.database.models import Ledger
-            from sqlalchemy import desc
-            from datetime import date
-            
-            # Fetch latest ledger entry to calculate new running balance
-            latest_ledger = db.scalar(
-                select(Ledger)
-                .where(Ledger.retailer_id == payload.retailer_id)
-                .order_by(desc(Ledger.created_at), desc(Ledger.id))
-                .limit(1)
-            )
-            
-            if latest_ledger:
-                prev_balance = latest_ledger.balance
-            else:
-                prev_balance = Decimal(str(retailer.opening_to_take or 0))
-                
             if payload.direction == "refund":
-                new_balance = prev_balance - payload.amount
                 desc_text = "move to distributor"
                 transaction_type = "credit"
             else:
-                new_balance = prev_balance + payload.amount
-                desc_text = portal.group.name if (portal and portal.group) else (portal.portal_name if portal else "virtual transfer")
+                # Safely get description text
+                if portal_group:
+                    desc_text = portal_group.name or "virtual transfer"
+                elif portal:
+                    desc_text = portal.portal_name or "virtual transfer"
+                else:
+                    desc_text = "virtual transfer"
                 transaction_type = "debit"
             
-            # Log in bank deposits to keep audit trail
+            # Create the bank deposit audit record first with a placeholder balance
             db_deposit = BankDeposit(
                 staff_id=current_user.id,
                 deposit_type="virtual",
@@ -211,58 +200,65 @@ def process_virtual_transfer(
                 deposit_date=today_ist,
                 created_at=transfer_datetime_utc,
                 status="verified",
-                balance_snapshot=new_balance,
+                balance_snapshot=Decimal("0"),
                 remarks=payload.remarks
             )
             db.add(db_deposit)
-            db.flush() # flush to get db_deposit.id
+            db.flush()
             
-            # Log entry in Retailer's Ledger
+            # Create the ledger entry with a placeholder balance
             ledger_entry = Ledger(
                 retailer_id=payload.retailer_id,
                 transaction_type=transaction_type,
                 amount=payload.amount,
-                balance=new_balance,
+                balance=Decimal("0"),
                 description=desc_text,
                 deposit_id=db_deposit.id,
                 created_at=transfer_datetime_utc
             )
             db.add(ledger_entry)
+            db.flush()
             
-            retailer.balance = new_balance
-            
-            # Recalculate ledger balances to ensure absolute consistency
+            # Recalculate all ledger balances from scratch — this is the single
+            # source of truth and fixes any intermediate calculation errors
             from app.logic.ledger import recalculate_balances
             recalculate_balances(payload.retailer_id, db)
+            db.flush()
             
-            # Sync balance snapshot with recalculated balance
-            ledger_entry = db.scalar(
+            # After recalculation, re-read the final balance from the retailer
+            db.refresh(retailer)
+            final_balance = retailer.balance
+            
+            # Sync the bank deposit's balance_snapshot with the recalculated value
+            recalculated_ledger = db.scalar(
                 select(Ledger).where(Ledger.deposit_id == db_deposit.id)
             )
-            if ledger_entry:
-                db_deposit.balance_snapshot = ledger_entry.balance
+            if recalculated_ledger:
+                db_deposit.balance_snapshot = recalculated_ledger.balance
+            else:
+                db_deposit.balance_snapshot = final_balance
             
             db.commit()
-            db.refresh(retailer)
+            
             return {
                 "message": "Virtual transfer processed successfully",
                 "portal_name": portal.portal_name,
                 "target_name": retailer.retailer_name,
                 "new_portal_balance": float(portal.balance),
-                "new_target_balance": float(retailer.balance)
+                "new_target_balance": float(final_balance)
             }
         else:
             # Transfer to Staff
             staff = db.scalar(select(User).where(User.id == payload.staff_id).with_for_update())
             if not staff:
                 raise HTTPException(status_code=404, detail="Destination staff member not found.")
-                
-            if payload.direction == "refund":
-                staff.virtual_balance -= payload.amount
-            else:
-                staff.virtual_balance += payload.amount
             
-            # Record in bank deposits to keep log details
+            current_virtual_balance = Decimal(str(staff.virtual_balance or 0))
+            if payload.direction == "refund":
+                staff.virtual_balance = current_virtual_balance - payload.amount
+            else:
+                staff.virtual_balance = current_virtual_balance + payload.amount
+            
             db_deposit = BankDeposit(
                 staff_id=current_user.id,
                 deposit_type="virtual",
@@ -287,11 +283,23 @@ def process_virtual_transfer(
                 "new_target_balance": float(staff.virtual_balance)
             }
             
+    except HTTPException:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        raise
     except Exception as e:
-        db.rollback()
-        print(f"Error in virtual transfer: {e}")
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        import traceback
+        traceback.print_exc()
+        print(f"[ERROR] Virtual transfer failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An internal error occurred during the virtual transfer."
+            detail=f"Virtual transfer failed: {str(e)}"
         )
+
 
