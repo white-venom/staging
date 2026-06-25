@@ -1118,7 +1118,7 @@ export default function LedgerTab({
                         options={[
                           { value: "", label: "Select Portal Bank Account" },
                             ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
-                              return { value: String(p.id), label: group.name || p.portal_name };
+                              return { value: String(p.id), label: (group.name || p.portal_name).split(' - ')[0].trim() };
                             }))
                         ]}
                         placeholder="Select Portal Bank Account"
@@ -1182,7 +1182,7 @@ export default function LedgerTab({
                           options={[
                             { value: "", label: "Select Portal Bank Account" },
                             ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
-                              return { value: String(p.id), label: group.name || p.portal_name };
+                              return { value: String(p.id), label: (group.name || p.portal_name).split(' - ')[0].trim() };
                             }))
                           ]}
                           placeholder="Select Portal Bank Account"
