@@ -517,8 +517,16 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
           {/* 4. Net Balance Card */}
           <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
+            {outstandingBalance !== undefined && (
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <span className="text-xs font-black text-slate-900 uppercase">Current Outstanding</span>
+                <span className={`text-base font-black ${outstandingBalance < 0 ? "text-emerald-600" : outstandingBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
+                  {outstandingBalance < 0 ? "-" : ""}₹ {Math.abs(outstandingBalance).toLocaleString("en-IN")}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">Net Balance</span>
+              <span className="text-xs font-bold text-slate-500">Net Balance (Period)</span>
               <span className={`text-base font-extrabold ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
                 ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
               </span>

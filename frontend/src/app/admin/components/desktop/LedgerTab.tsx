@@ -747,8 +747,8 @@ export default function LedgerTab({
               {allTransactions.length === 0 ? (
                 <tr><td colSpan={5} className="p-20 text-center text-slate-400 italic font-bold">No entries match your filters.</td></tr>
               ) : allTransactions.map((tx) => {
-                const txNew = tx.balance_snapshot !== undefined ? tx.balance_snapshot : (snapshots.get(tx.id)?.new || 0);
-                const txOld = tx.balance_snapshot !== undefined 
+                const txNew = tx.balance_snapshot !== undefined && tx.balance_snapshot !== null ? tx.balance_snapshot : (snapshots.get(tx.id)?.new || 0);
+                const txOld = tx.balance_snapshot !== undefined && tx.balance_snapshot !== null
                     ? (tx.type === 'collection' ? Number(txNew) + Number(tx.credit) : Number(txNew) - Number(tx.debit)) 
                     : (snapshots.get(tx.id)?.old || 0);
 

@@ -335,6 +335,27 @@ def get_portal_ledger(
         )
     ).all()
 
+    # Fetch all verified collections for this portal to load store/retailer name in memory
+    all_portal_cols = db.scalars(
+        select(Collection)
+        .options(joinedload(Collection.retailer), joinedload(Collection.store))
+        .where(
+            and_(
+                Collection.portal_id == portal_id,
+                Collection.status == "verified"
+            )
+        )
+    ).all()
+
+    # Group collections by (date, retailer_id) and date for fast lookup
+    col_by_date_retailer = {}
+    col_by_date = {}
+    for col in all_portal_cols:
+        col_date = col.collection_date
+        if col.retailer_id:
+            col_by_date_retailer[(col_date, col.retailer_id)] = col
+        col_by_date[col_date] = col
+
     # Merge and sort chronologically
     tx_list = []
     
@@ -347,18 +368,7 @@ def get_portal_ledger(
         store_name = None
         fallback_remarks = d.remarks
         if d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
-            matching_col = db.scalar(
-                select(Collection)
-                .options(joinedload(Collection.retailer), joinedload(Collection.store))
-                .where(
-                    and_(
-                        Collection.portal_id == portal_id,
-                        Collection.status == "verified",
-                        Collection.collection_date == d.deposit_date,
-                        Collection.retailer_id != None
-                    )
-                )
-            )
+            matching_col = col_by_date.get(d.deposit_date)
             if matching_col:
                 retailer_name = matching_col.retailer.retailer_name if matching_col.retailer else None
                 store_name = matching_col.store.store_name if matching_col.store else None
@@ -366,18 +376,7 @@ def get_portal_ledger(
                     fallback_remarks = matching_col.remarks
         elif d.retailer:
             # If retailer is available, look up store from matching collection
-            matching_col = db.scalar(
-                select(Collection)
-                .options(joinedload(Collection.store))
-                .where(
-                    and_(
-                        Collection.portal_id == portal_id,
-                        Collection.retailer_id == d.retailer_id,
-                        Collection.collection_date == d.deposit_date,
-                        Collection.status == "verified"
-                    )
-                )
-            )
+            matching_col = col_by_date_retailer.get((d.deposit_date, d.retailer_id))
             if matching_col and matching_col.store:
                 store_name = matching_col.store.store_name
         
@@ -479,8 +478,10 @@ def get_portal_ledger(
     # Sort transactions by created_at ascending to calculate running balance
     tx_list.sort(key=lambda x: x["created_at"])
 
-    # Calculate running balance
-    running_balance = float(portal.opening_to_take - portal.opening_to_give)
+    # Calculate running balance safely handling None values
+    opening_take = portal.opening_to_take or Decimal("0.00")
+    opening_give = portal.opening_to_give or Decimal("0.00")
+    running_balance = float(opening_take - opening_give)
     formatted_txs = []
     
     for tx in tx_list:
@@ -517,7 +518,7 @@ def get_portal_ledger(
         "bank_name": portal.bank_name,
         "bank_account_no": portal.bank_account_no,
         "ifsc_code": portal.ifsc_code,
-        "outstanding_balance": float(portal.balance),
+        "outstanding_balance": float(portal.balance or Decimal("0.00")),
         "statement_history": formatted_txs
     }
 
@@ -576,6 +577,28 @@ def get_portal_group_ledger(
     
     from app.database.models import Store
     
+    # Fetch all verified collections for these portals
+    all_portal_cols = db.scalars(
+        select(Collection)
+        .options(joinedload(Collection.retailer), joinedload(Collection.store))
+        .where(
+            and_(
+                Collection.portal_id.in_(portal_ids),
+                Collection.status == "verified"
+            )
+        )
+    ).all()
+    
+    # Group collections by (portal_id, date, retailer_id) and (portal_id, date)
+    col_by_portal_date_retailer = {}
+    col_by_portal_date = {}
+    for col in all_portal_cols:
+        k_triple = (col.portal_id, col.collection_date, col.retailer_id)
+        k_pair = (col.portal_id, col.collection_date)
+        if col.retailer_id:
+            col_by_portal_date_retailer[k_triple] = col
+        col_by_portal_date[k_pair] = col
+
     tx_list = []
     
     for d in deposits:
@@ -587,18 +610,7 @@ def get_portal_group_ledger(
         store_name = None
         fallback_remarks = d.remarks
         if d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
-            matching_col = db.scalar(
-                select(Collection)
-                .options(joinedload(Collection.retailer), joinedload(Collection.store))
-                .where(
-                    and_(
-                        Collection.portal_id == d.portal_id,
-                        Collection.status == "verified",
-                        Collection.collection_date == d.deposit_date,
-                        Collection.retailer_id != None
-                    )
-                )
-            )
+            matching_col = col_by_portal_date.get((d.portal_id, d.deposit_date))
             if matching_col:
                 retailer_name = matching_col.retailer.retailer_name if matching_col.retailer else None
                 store_name = matching_col.store.store_name if matching_col.store else None
@@ -606,18 +618,7 @@ def get_portal_group_ledger(
                     fallback_remarks = matching_col.remarks
         elif d.retailer:
             # If retailer is available, look up store from matching collection
-            matching_col = db.scalar(
-                select(Collection)
-                .options(joinedload(Collection.store))
-                .where(
-                    and_(
-                        Collection.portal_id == d.portal_id,
-                        Collection.retailer_id == d.retailer_id,
-                        Collection.collection_date == d.deposit_date,
-                        Collection.status == "verified"
-                    )
-                )
-            )
+            matching_col = col_by_portal_date_retailer.get((d.portal_id, d.deposit_date, d.retailer_id))
             if matching_col and matching_col.store:
                 store_name = matching_col.store.store_name
         
@@ -717,7 +718,10 @@ def get_portal_group_ledger(
         
     tx_list.sort(key=lambda x: x["created_at"])
     
-    running_balance = float(group.opening_to_take - group.opening_to_give)
+    # Calculate running balance safely handling None values
+    opening_take = group.opening_to_take or Decimal("0.00")
+    opening_give = group.opening_to_give or Decimal("0.00")
+    running_balance = float(opening_take - opening_give)
     formatted_txs = []
     
     for tx in tx_list:
@@ -750,6 +754,6 @@ def get_portal_group_ledger(
         
     return {
         "group_name": group.name,
-        "outstanding_balance": float(group.balance),
+        "outstanding_balance": float(group.balance or Decimal("0.00")),
         "statement_history": formatted_txs
     }
