@@ -1082,13 +1082,7 @@ export default function MobileRetailers({
                           .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
                           .filter((p: any) => p.show_in_online_payment)
                           .map((p: any) => {
-                            const pNameLower = p.portal_name.toLowerCase();
-                            const bNameLower = (p.bank_name || "").toLowerCase();
-                            const isBankNameRedundant = bNameLower && (pNameLower.includes(bNameLower) || bNameLower.includes(pNameLower));
-                            const displayName = p.groupName && p.groupName.toLowerCase() !== pNameLower
-                              ? `${p.groupName} - ${p.portal_name}`
-                              : p.portal_name;
-                            return { value: String(p.id), label: displayName };
+                            return { value: String(p.id), label: p.groupName || p.portal_name };
                           })
                       ]}
                       placeholder="Select Portal Bank Account"
@@ -1139,13 +1133,7 @@ export default function MobileRetailers({
                           options={[
                             { value: "", label: "Select Portal Bank Account" },
                             ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
-                              const pNameLower = p.portal_name.toLowerCase();
-                              const bNameLower = (p.bank_name || "").toLowerCase();
-                              const isBankNameRedundant = bNameLower && (pNameLower.includes(bNameLower) || bNameLower.includes(pNameLower));
-                              const displayName = group.name && group.name.toLowerCase() !== pNameLower
-                                ? `${group.name} - ${p.portal_name}`
-                                : p.portal_name;
-                              return { value: String(p.id), label: displayName };
+                              return { value: String(p.id), label: group.name || p.portal_name };
                             }))
                           ]}
                           placeholder="Select Portal Bank Account"
@@ -1208,13 +1196,7 @@ export default function MobileRetailers({
                             options={[
                               { value: "", label: "Select Portal Bank Account" },
                               ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
-                                const pNameLower = p.portal_name.toLowerCase();
-                                const bNameLower = (p.bank_name || "").toLowerCase();
-                                const isBankNameRedundant = bNameLower && (pNameLower.includes(bNameLower) || bNameLower.includes(pNameLower));
-                                const displayName = group.name && group.name.toLowerCase() !== pNameLower
-                                  ? `${group.name} - ${p.portal_name}`
-                                  : p.portal_name;
-                                return { value: String(p.id), label: displayName };
+                                return { value: String(p.id), label: group.name || p.portal_name };
                               }))
                             ]}
                             placeholder="Select Portal Bank Account"

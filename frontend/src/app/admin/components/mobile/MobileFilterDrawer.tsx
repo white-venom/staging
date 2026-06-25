@@ -162,7 +162,7 @@ export default function MobileFilterDrawer({
                 options={[
                   { value: "all", label: "All Bank Accounts" },
                   ...availableFilterBanks.map((p: any) => {
-                    const displayName = p.portal_name + (p.bank_name ? ` (${p.bank_name})` : "");
+                    const displayName = p.groupName || p.portal_name;
                     return { value: String(p.id), label: displayName };
                   })
                 ]}
