@@ -637,11 +637,11 @@ def get_portal_group_ledger(
             if d.payment_mode == "refund":
                 tx_type = "credit"
                 amount = float(d.amount)
-                desc_text = f"[{p_name}] Virtual Refund from {tx_store_name}" if tx_store_name else f"[{p_name}] Virtual Refund"
+                desc_text = f"Virtual Refund from {tx_store_name}" if tx_store_name else "Virtual Refund"
             else:
                 tx_type = "debit"
                 amount = float(d.amount)
-                desc_text = f"[{p_name}] Virtual Transfer to {tx_store_name}" if tx_store_name else f"[{p_name}] Virtual Transfer"
+                desc_text = f"Virtual Transfer to {tx_store_name}" if tx_store_name else "Virtual Transfer"
             if fallback_remarks:
                 desc_text += f" ({fallback_remarks})"
         else:
