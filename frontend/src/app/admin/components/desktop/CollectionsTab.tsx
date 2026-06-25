@@ -610,7 +610,7 @@ export default function CollectionsTab({
                           const displayName = p.groupName && p.groupName.toLowerCase() !== pNameLower
                             ? `${p.groupName} - ${p.portal_name}`
                             : p.portal_name;
-                          return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                          return { value: String(p.id), label: displayName };
                         })
                     ]}
                     placeholder="None / Cash"

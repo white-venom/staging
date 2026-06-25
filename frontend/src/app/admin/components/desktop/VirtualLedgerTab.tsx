@@ -1019,7 +1019,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                             const displayName = p.groupName && p.groupName.toLowerCase() !== pNameLower
                               ? `${p.groupName} - ${p.portal_name}`
                               : p.portal_name;
-                            return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                            return { value: String(p.id), label: displayName };
                           })
                       ]}
                       placeholder="None / Cash"
@@ -1157,7 +1157,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                               const displayName = group.name && group.name.toLowerCase() !== pNameLower
                                 ? `${group.name} - ${p.portal_name}`
                                 : p.portal_name;
-                              return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                              return { value: String(p.id), label: displayName };
                             }))
                         ]}
                         placeholder="Select Portal Bank Account"
@@ -1228,7 +1228,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                               const displayName = group.name && group.name.toLowerCase() !== pNameLower
                                 ? `${group.name} - ${p.portal_name}`
                                 : p.portal_name;
-                              return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                              return { value: String(p.id), label: displayName };
                             }))
                           ]}
                           placeholder="Select Portal Bank Account"

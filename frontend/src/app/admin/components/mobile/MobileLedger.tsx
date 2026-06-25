@@ -712,7 +712,7 @@ export default function MobileLedger() {
                             const displayName = p.groupName && p.groupName.toLowerCase() !== pNameLower
                               ? `${p.groupName} - ${p.portal_name}`
                               : p.portal_name;
-                            return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                            return { value: String(p.id), label: displayName };
                           })
                       ]}
                       placeholder="None / Cash"
@@ -855,7 +855,7 @@ export default function MobileLedger() {
                               const displayName = group.name && group.name.toLowerCase() !== pNameLower
                                 ? `${group.name} - ${p.portal_name}`
                                 : p.portal_name;
-                              return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                              return { value: String(p.id), label: displayName };
                             }))
                         ]}
                         placeholder="Select Portal Bank Account"
@@ -924,7 +924,7 @@ export default function MobileLedger() {
                               const displayName = group.name && group.name.toLowerCase() !== pNameLower
                                 ? `${group.name} - ${p.portal_name}`
                                 : p.portal_name;
-                              return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                              return { value: String(p.id), label: displayName };
                             }))
                           ]}
                           placeholder="Select Portal Bank Account"
