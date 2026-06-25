@@ -105,6 +105,7 @@ interface LedgerReportViewProps {
   phone?: string;
   onEditEntry?: (entry: any) => void;
   onDeleteEntry?: (entry: any) => void;
+  hidePortalBankNames?: boolean;
 }
 
 export default function LedgerReportView({
@@ -120,7 +121,8 @@ export default function LedgerReportView({
   onManageStores,
   phone,
   onEditEntry,
-  onDeleteEntry
+  onDeleteEntry,
+  hidePortalBankNames = false
 }: LedgerReportViewProps) {
   const [selectedEntryForDetails, setSelectedEntryForDetails] = useState<LedgerTransaction | null>(null);
   const [startDate, setStartDate] = useState("");
@@ -583,7 +585,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                               ? `Retailer - ${tx.portal_name}`
                               : tx.deposit_type === "staff"
                               ? `Staff - ${tx.portal_name}`
-                              : tx.portal_name}
+                              : (hidePortalBankNames ? null : tx.portal_name)}
                           </div>
                         )}
                         {tx.remarks && (
@@ -719,7 +721,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               )}
 
               {/* Cash Out (Deposit/Payout) Details */}
-              {selectedEntryForDetails.transaction_type === "debit" && (selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_bank_name) && (
+              {selectedEntryForDetails.transaction_type === "debit" && 
+               (selectedEntryForDetails.deposit_type === "retailer" || selectedEntryForDetails.deposit_type === "staff" || !hidePortalBankNames) && 
+               (selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_bank_name) && (
                 <div className="bg-indigo-50/50 dark:bg-indigo-950/15 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/30 space-y-2 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
                   <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target</span>
                   {selectedEntryForDetails.portal_name && (

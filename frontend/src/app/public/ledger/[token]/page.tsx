@@ -74,6 +74,7 @@ export default function PublicRetailerLedgerPage() {
       outstandingBalance={data.outstanding_balance}
       isPublic={true}
       publicLink={publicLink}
+      hidePortalBankNames={true}
     />
   );
 }

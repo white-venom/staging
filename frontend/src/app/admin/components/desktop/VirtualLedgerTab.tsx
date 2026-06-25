@@ -1013,10 +1013,13 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
                           .filter((p: any) => p.show_in_online_payment)
                           .map((p: any) => {
-                            const displayName = p.groupName && p.groupName.toLowerCase() !== p.portal_name.toLowerCase()
+                            const pNameLower = p.portal_name.toLowerCase();
+                            const bNameLower = (p.bank_name || "").toLowerCase();
+                            const isBankNameRedundant = bNameLower && (pNameLower.includes(bNameLower) || bNameLower.includes(pNameLower));
+                            const displayName = p.groupName && p.groupName.toLowerCase() !== pNameLower
                               ? `${p.groupName} - ${p.portal_name}`
                               : p.portal_name;
-                            return { value: String(p.id), label: `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                            return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
                           })
                       ]}
                       placeholder="None / Cash"
@@ -1147,7 +1150,15 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                         onChange={setSelectedNewPortalId}
                         options={[
                           { value: "", label: "Select Portal Bank Account" },
-                          ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                            ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
+                              const pNameLower = p.portal_name.toLowerCase();
+                              const bNameLower = (p.bank_name || "").toLowerCase();
+                              const isBankNameRedundant = bNameLower && (pNameLower.includes(bNameLower) || bNameLower.includes(pNameLower));
+                              const displayName = group.name && group.name.toLowerCase() !== pNameLower
+                                ? `${group.name} - ${p.portal_name}`
+                                : p.portal_name;
+                              return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                            }))
                         ]}
                         placeholder="Select Portal Bank Account"
                       />
@@ -1210,7 +1221,15 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           onChange={setSelectedNewPortalId}
                           options={[
                             { value: "", label: "Select Portal Bank Account" },
-                            ...portalDirectory.flatMap((group: any) => group.portals || []).map((p: any) => ({ value: String(p.id), label: `${p.portal_name} (${p.bank_name})` }))
+                            ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
+                              const pNameLower = p.portal_name.toLowerCase();
+                              const bNameLower = (p.bank_name || "").toLowerCase();
+                              const isBankNameRedundant = bNameLower && (pNameLower.includes(bNameLower) || bNameLower.includes(pNameLower));
+                              const displayName = group.name && group.name.toLowerCase() !== pNameLower
+                                ? `${group.name} - ${p.portal_name}`
+                                : p.portal_name;
+                              return { value: String(p.id), label: isBankNameRedundant ? displayName : `${displayName}${p.bank_name ? ` (${p.bank_name})` : ""}` };
+                            }))
                           ]}
                           placeholder="Select Portal Bank Account"
                         />
