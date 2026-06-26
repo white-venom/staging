@@ -811,7 +811,7 @@ export default function MobileRetailers({
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Opening Balance Adjustment</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[8px] font-bold text-amber-500 uppercase mb-0.5">To Take (₹) <span className="normal-case text-slate-400">they owe us</span></label>
+                      <label className="block text-[8px] font-bold text-amber-500 uppercase mb-0.5">To Take (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"
@@ -824,7 +824,7 @@ export default function MobileRetailers({
                       />
                     </div>
                     <div>
-                      <label className="block text-[8px] font-bold text-blue-500 uppercase mb-0.5">To Give (₹) <span className="normal-case text-slate-400">we owe them</span></label>
+                      <label className="block text-[8px] font-bold text-blue-500 uppercase mb-0.5">To Give (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"

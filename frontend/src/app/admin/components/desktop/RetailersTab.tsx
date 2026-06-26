@@ -604,7 +604,7 @@ export default function RetailersTab({
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Opening Balance Adjustment</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[9px] font-bold text-amber-500 uppercase mb-1">To Take (₹) <span className="normal-case text-slate-400">they owe us</span></label>
+                      <label className="block text-[9px] font-bold text-amber-500 uppercase mb-1">To Take (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"
@@ -617,7 +617,7 @@ export default function RetailersTab({
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-bold text-blue-500 uppercase mb-1">To Give (₹) <span className="normal-case text-slate-400">we owe them</span></label>
+                      <label className="block text-[9px] font-bold text-blue-500 uppercase mb-1">To Give (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"
