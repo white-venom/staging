@@ -10,6 +10,9 @@ def recalculate_balances(retailer_id, db: Session):
     """
     from app.database.models import Retailer
     
+    # Flush any pending changes to the database first (since autoflush is False)
+    db.flush()
+
     # Get the retailer to access opening balances
     retailer = db.scalar(select(Retailer).where(Retailer.id == retailer_id))
     if not retailer:
