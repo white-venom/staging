@@ -63,6 +63,8 @@ export default function RetailersTab({
   const [editRetArea, setEditRetArea] = useState("");
   const [editRetEmail, setEditRetEmail] = useState("");
   const [editRetCategory, setEditRetCategory] = useState("");
+  const [editRetToTake, setEditRetToTake] = useState("");
+  const [editRetToGive, setEditRetToGive] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   // (opening_to_take / to_give are set only at create time — not editable from list)
 
@@ -317,6 +319,8 @@ export default function RetailersTab({
     setEditRetArea(retailer.area);
     setEditRetEmail(retailer.email || "");
     setEditRetCategory(retailer.category || "");
+    setEditRetToTake(String(retailer.opening_to_take ?? 0));
+    setEditRetToGive(String(retailer.opening_to_give ?? 0));
 
     setIsEditRetailerModalOpen(true);
   };
@@ -325,13 +329,24 @@ export default function RetailersTab({
     e.preventDefault();
     if (!editingRetailer) return;
     try {
-      await api.updateRetailer(editingRetailer.id, {
+      const newToTake = parseFloat(editRetToTake || "0") || 0;
+      const newToGive = parseFloat(editRetToGive || "0") || 0;
+      const currentToTake = parseFloat(String(editingRetailer.opening_to_take ?? 0)) || 0;
+      const currentToGive = parseFloat(String(editingRetailer.opening_to_give ?? 0)) || 0;
+      const deltaToTake = newToTake - currentToTake;
+      const deltaToGive = newToGive - currentToGive;
+
+      const payload: any = {
         retailer_name: editRetName,
         phone: editRetPhone,
         address: editRetArea,
         email: editRetEmail,
         category: editRetCategory || null
-      });
+      };
+      if (deltaToTake !== 0) payload.opening_to_take = deltaToTake;
+      if (deltaToGive !== 0) payload.opening_to_give = deltaToGive;
+
+      await api.updateRetailer(editingRetailer.id, payload);
       showToastNotification(`Retailer "${editRetName}" updated.`);
       setIsEditRetailerModalOpen(false);
       fetchData();
@@ -583,6 +598,37 @@ export default function RetailersTab({
                     <span className={`font-black ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
                       ₹{Math.abs(editingRetailer.balance || 0).toLocaleString()}
                     </span>
+                  </div>
+                </div>
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Opening Balance Adjustment</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[9px] font-bold text-amber-500 uppercase mb-1">To Take (₹) <span className="normal-case text-slate-400">they owe us</span></label>
+                      <input
+                        autoComplete="one-time-code"
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={editRetToTake}
+                        onChange={(e) => setEditRetToTake(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg text-xs font-bold focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold text-blue-500 uppercase mb-1">To Give (₹) <span className="normal-case text-slate-400">we owe them</span></label>
+                      <input
+                        autoComplete="one-time-code"
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={editRetToGive}
+                        onChange={(e) => setEditRetToGive(e.target.value)}
+                        placeholder="0.00"
+                        className="w-full px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-lg text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
