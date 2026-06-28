@@ -202,6 +202,7 @@ ${dateFormatted}`;
       // Also update Zustand store
       const store = useAppStore.getState();
       store.setDeposits(store.deposits.filter(d => d.id !== id));
+      await fetchDeposits();
     } catch (err: any) {
       alert("Failed to delete: " + (err.response?.data?.detail || err.message));
     }
@@ -293,6 +294,7 @@ ${dateFormatted}`;
       store.setDeposits(store.deposits.map(d => d.id === editingItem.id ? mappedUpdated : d));
 
       setEditingItem(null);
+      await fetchDeposits();
     } catch (err: any) {
       alert("Failed to update: " + (err.response?.data?.detail || err.message));
     } finally {

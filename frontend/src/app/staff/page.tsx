@@ -203,96 +203,97 @@ export default function StaffDashboard() {
   }, [currentUser, router, collections, deposits, mounted]);
 
   // Sync Zustand store with backend data on mount or online status change
-  useEffect(() => {
+  const syncWithAPI = useCallback(async () => {
     if (!mounted || !currentUser || !isOnline) return;
-    const syncWithAPI = async () => {
-      try {
-        const [apiCols, apiDeps, settings] = await Promise.all([
-          api.getCollections(),
-          api.getDeposits(),
-          api.getAdminSettings().catch(() => ({ edit_window_minutes: 5, delete_window_minutes: 5 }))
-        ]);
-        
-        const ew = settings.edit_window_minutes ?? 5;
-        const dw = settings.delete_window_minutes ?? 5;
-        setEditWindow(ew);
-        setDeleteWindow(dw);
-        
-        // Map collections
-        const mappedCollections = apiCols.map((c: any) => ({
-          id: c.id,
-          retailer_id: c.retailer_id,
-          store_id: c.store_id,
-          store_name: c.store_name,
-          retailerName: c.retailer_name || "Unknown Retailer",
-          portalName: c.portal_name || "Cash",
-          staffName: c.staff_name,
-          totalAmount: Number(c.total_amount),
-          denominations: {
-            note_500: Number(c.denominations?.note_500 || 0),
-            note_200: Number(c.denominations?.note_200 || 0),
-            note_100: Number(c.denominations?.note_100 || 0),
-            note_50: Number(c.denominations?.note_50 || 0),
-            note_20: Number(c.denominations?.note_20 || 0),
-            note_10: Number(c.denominations?.note_10 || 0),
-            coins: Number(c.denominations?.coins || 0),
-            online_amount: Number(c.denominations?.online_amount || 0),
-            online_portal_id: c.denominations?.online_portal_id,
-          },
-          status: c.status,
-          remarks: c.remarks,
-          date: getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
-          retailer_ledger_token: c.retailer_ledger_token,
-          created_at: c.created_at,
-        }));
+    try {
+      const [apiCols, apiDeps, settings] = await Promise.all([
+        api.getCollections(),
+        api.getDeposits(),
+        api.getAdminSettings().catch(() => ({ edit_window_minutes: 5, delete_window_minutes: 5 }))
+      ]);
+      
+      const ew = settings.edit_window_minutes ?? 5;
+      const dw = settings.delete_window_minutes ?? 5;
+      setEditWindow(ew);
+      setDeleteWindow(dw);
+      
+      // Map collections
+      const mappedCollections = apiCols.map((c: any) => ({
+        id: c.id,
+        retailer_id: c.retailer_id,
+        store_id: c.store_id,
+        store_name: c.store_name,
+        retailerName: c.retailer_name || "Unknown Retailer",
+        portalName: c.portal_name || "Cash",
+        staffName: c.staff_name,
+        totalAmount: Number(c.total_amount),
+        denominations: {
+          note_500: Number(c.denominations?.note_500 || 0),
+          note_200: Number(c.denominations?.note_200 || 0),
+          note_100: Number(c.denominations?.note_100 || 0),
+          note_50: Number(c.denominations?.note_50 || 0),
+          note_20: Number(c.denominations?.note_20 || 0),
+          note_10: Number(c.denominations?.note_10 || 0),
+          coins: Number(c.denominations?.coins || 0),
+          online_amount: Number(c.denominations?.online_amount || 0),
+          online_portal_id: c.denominations?.online_portal_id,
+        },
+        status: c.status,
+        remarks: c.remarks,
+        date: getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        retailer_ledger_token: c.retailer_ledger_token,
+        created_at: c.created_at,
+      }));
 
-        // Map deposits (filtering out received handovers to avoid duplication with collections if a matching collection exists)
-        const mappedDeposits = apiDeps
-          .filter((d: any) => {
-            if (d.recipient_staff_id === currentUser.id && d.deposit_type === "staff") {
-              const hasMatchingCollection = apiCols.some((c: any) => 
-                c.from_staff_id === d.staff_id && 
-                Number(c.total_amount) === Number(d.amount)
-              );
-              return !hasMatchingCollection;
-            }
-            return true;
-          })
-          .map((d: any) => ({
-          id: d.id,
-          portal_id: d.portal_id,
-          retailer_id: d.retailer_id,
-          recipient_staff_id: d.recipient_staff_id,
-          depositType: d.deposit_type,
-          targetName: (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : (d.target_name || "Super Distributor"),
-          amount: Number(d.amount),
-          paymentMode: (d.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
-          denominations: d.denominations ? {
-            note_500: Number(d.denominations.note_500 || 0),
-            note_200: Number(d.denominations.note_200 || 0),
-            note_100: Number(d.denominations.note_100 || 0),
-            note_50: Number(d.denominations.note_50 || 0),
-            note_20: Number(d.denominations.note_20 || 0),
-            note_10: Number(d.denominations.note_10 || 0),
-            coins: Number(d.denominations.coins || 0),
-            online_amount: Number(d.denominations.online_amount || 0),
-            online_portal_id: d.denominations.online_portal_id,
-          } : undefined,
-          status: d.status,
-          date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
-          retailer_ledger_token: d.retailer_ledger_token,
-          created_at: d.created_at,
-        }));
+      // Map deposits (filtering out received handovers to avoid duplication with collections if a matching collection exists)
+      const mappedDeposits = apiDeps
+        .filter((d: any) => {
+          if (d.recipient_staff_id === currentUser.id && d.deposit_type === "staff") {
+            const hasMatchingCollection = apiCols.some((c: any) => 
+              c.from_staff_id === d.staff_id && 
+              Number(c.total_amount) === Number(d.amount)
+            );
+            return !hasMatchingCollection;
+          }
+          return true;
+        })
+        .map((d: any) => ({
+        id: d.id,
+        portal_id: d.portal_id,
+        retailer_id: d.retailer_id,
+        recipient_staff_id: d.recipient_staff_id,
+        depositType: d.deposit_type,
+        targetName: (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : (d.target_name || "Super Distributor"),
+        amount: Number(d.amount),
+        paymentMode: (d.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
+        denominations: d.denominations ? {
+          note_500: Number(d.denominations.note_500 || 0),
+          note_200: Number(d.denominations.note_200 || 0),
+          note_100: Number(d.denominations.note_100 || 0),
+          note_50: Number(d.denominations.note_50 || 0),
+          note_20: Number(d.denominations.note_20 || 0),
+          note_10: Number(d.denominations.note_10 || 0),
+          coins: Number(d.denominations.coins || 0),
+          online_amount: Number(d.denominations.online_amount || 0),
+          online_portal_id: d.denominations.online_portal_id,
+        } : undefined,
+        status: d.status,
+        date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        retailer_ledger_token: d.retailer_ledger_token,
+        created_at: d.created_at,
+      }));
 
-        const { setCollections, setDeposits } = useAppStore.getState();
-        setCollections(mappedCollections);
-        setDeposits(mappedDeposits);
-      } catch (err) {
-        console.error("Failed to sync store with API:", err);
-      }
-    };
-    syncWithAPI();
+      const { setCollections, setDeposits } = useAppStore.getState();
+      setCollections(mappedCollections);
+      setDeposits(mappedDeposits);
+    } catch (err) {
+      console.error("Failed to sync store with API:", err);
+    }
   }, [mounted, currentUser, isOnline]);
+
+  useEffect(() => {
+    syncWithAPI();
+  }, [syncWithAPI]);
 
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -412,6 +413,7 @@ export default function StaffDashboard() {
         store.setDeposits(store.deposits.map(dep => dep.id === editingItem.id ? mappedUpdated : dep));
       }
       setEditingItem(null);
+      await syncWithAPI();
     } catch (err: any) {
       alert("Failed to update: " + (err.response?.data?.detail || err.message));
     } finally {
@@ -1024,8 +1026,8 @@ export default function StaffDashboard() {
                              {c.type === 'collection'
                                ? ((c.retailerName || c.targetName)?.toLowerCase().startsWith("cms")
                                    ? `${c.retailerName || c.targetName} - ${c.store_name || "Cash"}`
-                                   : (c.retailerName || c.targetName))
-                               : c.targetName}
+                                   : `${c.retailerName || c.targetName}${c.store_name && c.store_name !== "Cash" ? ` (${c.store_name})` : ''}`)
+                               : `${c.targetName || 'Deposit'}${c.store_name && c.store_name !== "Cash" ? ` (${c.store_name})` : ''}`}
                            </span>
                            {c.type === 'collection' && (c.retailerName || c.targetName)?.toLowerCase().startsWith("cms") && (
                              <button
@@ -1080,15 +1082,15 @@ export default function StaffDashboard() {
                        <div className="mb-1.5">
                          <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
                          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-300">
-                           {Number(den.note_500) > 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
-                           {Number(den.note_200) > 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
-                           {Number(den.note_100) > 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
-                           {Number(den.note_50) > 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
-                           {Number(den.note_20) > 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
-                           {Number(den.note_10) > 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
-                           {Number(den.coins) > 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
-                           {Number(den.online_amount) > 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
-                           {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && <span className="text-slate-400 italic text-[8px]">No breakdown</span>}
+                           {Number(den.note_500 || 0) !== 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
+                           {Number(den.note_200 || 0) !== 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
+                           {Number(den.note_100 || 0) !== 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
+                           {Number(den.note_50 || 0) !== 0 && <span>₹50 × {den.note_50} = ₹{(Number(den.note_50)*50).toLocaleString()}</span>}
+                           {Number(den.note_20 || 0) !== 0 && <span>₹20 × {den.note_20} = ₹{(Number(den.note_20)*20).toLocaleString()}</span>}
+                           {Number(den.note_10 || 0) !== 0 && <span>₹10 × {den.note_10} = ₹{(Number(den.note_10)*10).toLocaleString()}</span>}
+                           {Number(den.coins || 0) !== 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
+                           {Number(den.online_amount || 0) !== 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
+                           {!Number(den.note_500) && !Number(den.note_200) && !Number(den.note_100) && !Number(den.note_50) && !Number(den.note_20) && !Number(den.note_10) && !Number(den.coins) && !Number(den.online_amount) && <span className="text-slate-400 italic text-[8px]">No breakdown</span>}
                          </div>
                          <div className="mt-1 text-[9px] font-bold text-slate-500 italic">{numberToWordsIndian(txAmount)} Rupees</div>
                        </div>
@@ -1233,10 +1235,9 @@ export default function StaffDashboard() {
                             setEditDenoms((prev: any) => ({ ...prev, [note.key]: isNaN(v) ? 0 : v }));
                           }}
                           className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
-                          placeholder={isCol ? "0" : undefined}
-                          min={isCol ? undefined : "0"}
+                          placeholder="0"
                         />
-                        <span className={`w-14 text-right font-bold ${isCol && (editDenoms[note.key] || 0) < 0 ? 'text-red-500' : 'text-slate-500'}`}>
+                        <span className={`w-14 text-right font-bold ${(editDenoms[note.key] || 0) < 0 ? 'text-red-500' : 'text-slate-500'}`}>
                           ₹{((editDenoms[note.key] || 0) * note.val).toLocaleString()}
                         </span>
                       </div>
@@ -1252,11 +1253,9 @@ export default function StaffDashboard() {
                         value={editDenoms.coins || ""}
                         onChange={(e) => {
                           let v = e.target.value === "" ? 0 : parseFloat(e.target.value);
-                          if (!isCol && v < 0) v = 0;
                           setEditDenoms((prev: any) => ({ ...prev, coins: isNaN(v) ? 0 : v }));
                         }}
                         className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200/80 rounded text-xs font-bold"
-                        min={isCol ? undefined : "0"}
                       />
                       <span className="w-14 text-right text-slate-500 font-bold">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
                     </div>

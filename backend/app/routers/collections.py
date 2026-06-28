@@ -309,7 +309,8 @@ def list_collections(
         joinedload(Collection.staff),
         joinedload(Collection.from_staff),
         joinedload(Collection.portal),
-        joinedload(Collection.denominations)
+        joinedload(Collection.denominations),
+        joinedload(Collection.ledgers)
     )
     collections = db.scalars(query.order_by(desc(Collection.created_at))).all()
     
@@ -329,6 +330,10 @@ def list_collections(
         col.store_name = col.store.store_name if col.store else "Cash"
         col.staff_name = col.staff.name if col.staff else "Unknown Staff"
         col.portal_name = col.portal.portal_name if col.portal else None
+        
+        linked_ledger = next((le for le in col.ledgers if le is not None), None)
+        if linked_ledger:
+            col.balance_snapshot = linked_ledger.balance
         
     return collections
 

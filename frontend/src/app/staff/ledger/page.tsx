@@ -114,7 +114,8 @@ export default function StaffLedgerPage() {
         displayName = `Staff - ${nameOnly}`;
       } else if (c.retailer_id) {
         const nameOnly = c.retailer_name?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "");
-        displayName = `Retailer - ${nameOnly || "Retailer"}`;
+        const storeStr = c.store_name && c.store_name !== "Cash" ? ` (${c.store_name})` : "";
+        displayName = `Retailer - ${nameOnly || "Retailer"}${storeStr}`;
       } else if (c.retailer_name?.toLowerCase().startsWith("cms")) {
         displayName = `${c.retailer_name} - ${c.store_name || "Cash"}`;
       }
@@ -447,15 +448,15 @@ export default function StaffLedgerPage() {
                           <div>
                             <span className="text-[10px] uppercase font-black text-slate-400 block mb-0.5">Cash Breakdown:</span>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-slate-700 dark:text-slate-355">
-                              {Number(den.note_500 || 0) > 0 && <div>₹500 Notes: <span className="font-black">{Number(den.note_500)}</span></div>}
-                              {Number(den.note_200 || 0) > 0 && <div>₹200 Notes: <span className="font-black">{Number(den.note_200)}</span></div>}
-                              {Number(den.note_100 || 0) > 0 && <div>₹100 Notes: <span className="font-black">{Number(den.note_100)}</span></div>}
-                              {Number(den.note_50 || 0) > 0 && <div>₹50 Notes: <span className="font-black">{Number(den.note_50)}</span></div>}
-                              {Number(den.note_20 || 0) > 0 && <div>₹20 Notes: <span className="font-black">{Number(den.note_20)}</span></div>}
-                              {Number(den.note_10 || 0) > 0 && <div>₹10 Notes: <span className="font-black">{Number(den.note_10)}</span></div>}
-                              {Number(den.coins || 0) > 0 && <div>Coins: <span className="font-black">₹{Number(den.coins).toFixed(2)}</span></div>}
-                              {Number(den.online_amount || 0) > 0 && <div>UPI Online: <span className="font-black">₹{Number(den.online_amount).toLocaleString("en-IN")}</span></div>}
-                              {!den.note_500 && !den.note_200 && !den.note_100 && !den.note_50 && !den.note_20 && !den.note_10 && !den.coins && !den.online_amount && (
+                              {Number(den.note_500 || 0) !== 0 && <div>₹500 Notes: <span className="font-black">{Number(den.note_500)}</span></div>}
+                              {Number(den.note_200 || 0) !== 0 && <div>₹200 Notes: <span className="font-black">{Number(den.note_200)}</span></div>}
+                              {Number(den.note_100 || 0) !== 0 && <div>₹100 Notes: <span className="font-black">{Number(den.note_100)}</span></div>}
+                              {Number(den.note_50 || 0) !== 0 && <div>₹50 Notes: <span className="font-black">{Number(den.note_50)}</span></div>}
+                              {Number(den.note_20 || 0) !== 0 && <div>₹20 Notes: <span className="font-black">{Number(den.note_20)}</span></div>}
+                              {Number(den.note_10 || 0) !== 0 && <div>₹10 Notes: <span className="font-black">{Number(den.note_10)}</span></div>}
+                              {Number(den.coins || 0) !== 0 && <div>Coins: <span className="font-black">₹{Number(den.coins).toFixed(2)}</span></div>}
+                              {Number(den.online_amount || 0) !== 0 && <div>UPI Online: <span className="font-black">₹{Number(den.online_amount).toLocaleString("en-IN")}</span></div>}
+                              {!Number(den.note_500) && !Number(den.note_200) && !Number(den.note_100) && !Number(den.note_50) && !Number(den.note_20) && !Number(den.note_10) && !Number(den.coins) && !Number(den.online_amount) && (
                                 <div className="text-slate-400 italic text-xs">No breakdown provided</div>
                               )}
                             </div>

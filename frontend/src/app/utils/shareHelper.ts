@@ -113,15 +113,15 @@ export const shareCollectionEntry = async (entry: {
   const lines: string[] = [];
   let totalNotesCount = 0;
   notes.forEach(note => {
-    if (note.count > 0) {
+    if (note.count !== 0) {
       lines.push(`${note.value} × ${note.count} = ${(note.value * note.count).toLocaleString("en-IN")}`);
       totalNotesCount += note.count;
     }
   });
-  if (Number(den.coins || 0) > 0) {
+  if (Number(den.coins || 0) !== 0) {
     lines.push(`Coins = ${Number(den.coins).toLocaleString("en-IN")}`);
   }
-  if (Number(den.online_amount || 0) > 0) {
+  if (Number(den.online_amount || 0) !== 0) {
     lines.push(`UPI/Online = ${Number(den.online_amount).toLocaleString("en-IN")}`);
   }
 

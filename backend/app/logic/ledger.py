@@ -1,12 +1,12 @@
 from decimal import Decimal
 from sqlalchemy import select, desc
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.database.models import Ledger
 
 def recalculate_balances(retailer_id, db: Session):
     """
     Recalculates all balances for a retailer's ledger from scratch to ensure consistency.
-    Also robustly manages and synchronizes the "Opening Balance" ledger entry.
+    Also robustly manages and synchronizes the "Opening Balance" ledger entry and updates linked balance snapshots.
     """
     from app.database.models import Retailer
     
@@ -21,23 +21,28 @@ def recalculate_balances(retailer_id, db: Session):
     # Calculate net opening balance
     net_opening_balance = (retailer.opening_to_take or Decimal("0.00")) - (retailer.opening_to_give or Decimal("0.00"))
 
-    # Sync "Opening Balance" ledger entry
-    opening_ledger = db.scalar(
+    # Sync "Opening Balance" ledger entry, cleaning up any duplicate entries if present
+    opening_ledgers = db.scalars(
         select(Ledger)
         .where(Ledger.retailer_id == retailer_id, Ledger.description == "Opening Balance")
-    )
+        .order_by(Ledger.created_at, Ledger.id)
+    ).all()
 
     if net_opening_balance == 0:
-        if opening_ledger:
-            db.delete(opening_ledger)
-            db.flush()
+        for ol in opening_ledgers:
+            db.delete(ol)
+        db.flush()
     else:
-        if opening_ledger:
-            opening_ledger.transaction_type = "debit" if net_opening_balance > 0 else "credit"
-            opening_ledger.amount = abs(net_opening_balance)
-            opening_ledger.created_at = retailer.created_at
+        if opening_ledgers:
+            primary_ledger = opening_ledgers[0]
+            primary_ledger.transaction_type = "debit" if net_opening_balance > 0 else "credit"
+            primary_ledger.amount = abs(net_opening_balance)
+            primary_ledger.created_at = retailer.created_at
+            # Delete any extra duplicate Opening Balance entries
+            for extra_ledger in opening_ledgers[1:]:
+                db.delete(extra_ledger)
         else:
-            opening_ledger = Ledger(
+            primary_ledger = Ledger(
                 retailer_id=retailer_id,
                 transaction_type="debit" if net_opening_balance > 0 else "credit",
                 amount=abs(net_opening_balance),
@@ -45,12 +50,13 @@ def recalculate_balances(retailer_id, db: Session):
                 description="Opening Balance",
                 created_at=retailer.created_at
             )
-            db.add(opening_ledger)
+            db.add(primary_ledger)
         db.flush()
 
     # Get all ledger entries for this retailer ordered by creation time and ID for deterministic sorting
     entries = db.scalars(
         select(Ledger)
+        .options(joinedload(Ledger.collection), joinedload(Ledger.deposit))
         .where(Ledger.retailer_id == retailer_id)
         .order_by(Ledger.created_at, Ledger.id)
     ).all()
@@ -66,6 +72,10 @@ def recalculate_balances(retailer_id, db: Session):
             current_balance += entry.amount
         
         entry.balance = current_balance
+        if entry.collection:
+            entry.collection.balance_snapshot = current_balance
+        if entry.deposit:
+            entry.deposit.balance_snapshot = current_balance
     
     # Update the retailer's main balance field to match the latest ledger balance
     retailer.balance = current_balance

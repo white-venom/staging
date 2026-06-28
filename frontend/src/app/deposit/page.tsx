@@ -69,9 +69,8 @@ function NewDepositContent() {
       return;
     }
     let val = value === "" ? 0 : parseFloat(value);
-    if (isNaN(val) || val < 0) {
-      val = 0;
-    }
+    if (isNaN(val)) val = 0;
+    if (key === "online_amount" && val < 0) val = 0;
     setDenominations(prev => ({
       ...prev,
       [key]: val
@@ -502,9 +501,7 @@ function NewDepositContent() {
                     placeholder="0"
                     value={denominations[n.key as keyof DenominationCounts] || ""}
                     onChange={(e) => handleDenomChange(n.key as keyof DenominationCounts, e.target.value)}
-                    onKeyDown={(e) => handleNoNegativeKeyDown(e, n.key === "coins")}
                     className="w-12 px-1 py-0.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 focus:outline-none rounded text-center text-[10px] text-slate-800 dark:text-slate-200 font-black"
-                    min="0"
                   />
                   <span className="text-slate-300 dark:text-slate-655 text-[9px] font-bold">＝</span>
 

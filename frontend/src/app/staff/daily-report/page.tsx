@@ -162,25 +162,44 @@ export default function DailyReportPage() {
 
     notesConfig.forEach(n => {
       const val = Number(denoms[n.key] || 0);
-      if (val > 0) {
+      if (val !== 0) {
         noteCountSum += val;
-        lines.push(`${n.label}x${prefix}${val}=${prefix}${val * Number(n.label)}`);
+        let countStr = "";
+        let totalStr = "";
+        if (val < 0) {
+          countStr = `${val}`;
+          totalStr = `${val * Number(n.label)}`;
+        } else {
+          countStr = `${prefix}${val}`;
+          totalStr = `${prefix}${val * Number(n.label)}`;
+        }
+        lines.push(`${n.label}x${countStr}=${totalStr}`);
       }
     });
 
     const coinsVal = Number(denoms.coins || 0);
-    if (coinsVal > 0) {
+    if (coinsVal !== 0) {
       noteCountSum += coinsVal; // coins count towards notes in screenshot total count
-      lines.push(`01x${prefix}${Math.floor(coinsVal)}=${prefix}${coinsVal.toFixed(0)}`);
+      let countStr = "";
+      let totalStr = "";
+      if (coinsVal < 0) {
+        countStr = `${Math.ceil(coinsVal)}`;
+        totalStr = `${coinsVal.toFixed(0)}`;
+      } else {
+        countStr = `${prefix}${Math.floor(coinsVal)}`;
+        totalStr = `${prefix}${coinsVal.toFixed(0)}`;
+      }
+      lines.push(`01x${countStr}=${totalStr}`);
     }
 
     const onlineVal = Number(denoms.online_amount || 0);
-    if (onlineVal > 0) {
-      lines.push(`[+${prefix}${onlineVal}]`);
+    if (onlineVal !== 0) {
+      lines.push(`[+${onlineVal < 0 ? onlineVal : prefix + onlineVal}]`);
     }
 
     // Append total note line
-    lines.push(`Total_${prefix}${noteCountSum}_Note`);
+    const totalNoteStr = noteCountSum < 0 ? `${noteCountSum}` : `${prefix}${noteCountSum}`;
+    lines.push(`Total_${totalNoteStr}_Note`);
 
     return (
       <div className="text-[10px] leading-tight font-semibold text-slate-700 dark:text-slate-300 text-right whitespace-pre-line font-mono">
@@ -398,18 +417,20 @@ export default function DailyReportPage() {
                         let destination = "";
                         if (isCol) {
                           const isCms = item.retailer_name?.toLowerCase().startsWith("cms");
+                          const storeStr = item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "";
                           const retDispName = isCms 
                             ? `${item.retailer_name} - ${item.store_name || "Cash"}` 
-                            : (item.from_staff_name || item.retailer_name || "Retailer");
+                            : (item.from_staff_name ? `Staff: ${item.from_staff_name}` : `${item.retailer_name || "Retailer"}${storeStr}`);
                           source = item.from_office
                             ? "Super Distributor"
                             : retDispName;
                           destination = staffName;
                         } else {
                           source = staffName;
+                          const storeStr = item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "";
                           destination = item.to_office
                             ? "Super Distributor"
-                            : (item.target_name || "Recipient");
+                            : `${item.target_name || "Recipient"}${storeStr}`;
                         }
                         const narration = `From ${source} to ${destination}`;
 

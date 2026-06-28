@@ -202,6 +202,7 @@ ${dateFormatted}`;
       // Also update Zustand store
       const store = useAppStore.getState();
       store.setCollections(store.collections.filter(c => c.id !== id));
+      await fetchCollections();
     } catch (err: any) {
       alert("Failed to delete: " + (err.response?.data?.detail || err.message));
     }
@@ -291,6 +292,7 @@ ${dateFormatted}`;
       store.setCollections(store.collections.map(c => c.id === editingItem.id ? mappedUpdated : c));
 
       setEditingItem(null);
+      await fetchCollections();
     } catch (err: any) {
       alert("Failed to update: " + (err.response?.data?.detail || err.message));
     } finally {
@@ -424,7 +426,7 @@ ${dateFormatted}`;
                             <h3 className="text-[13px] font-black text-slate-800 dark:text-slate-200">
                               {c.retailer_name?.toLowerCase().startsWith("cms")
                                 ? `${c.retailer_name} - ${c.store_name || "Cash"}`
-                                : c.retailer_name}
+                                : `${c.retailer_name}${c.store_name && c.store_name !== "Cash" ? ` (${c.store_name})` : ''}`}
                             </h3>
                             {c.retailer_name?.toLowerCase().startsWith("cms") && (
                               <button
