@@ -216,7 +216,22 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     fetchData(true);
     const intervalId = setInterval(() => fetchData(false), 5000);
-    return () => clearInterval(intervalId);
+
+    // Mobile browsers throttle/suspend setInterval while the tab/app is backgrounded
+    // (screen off, app switched away). Without this, a page left open since the
+    // morning shows stale data all day until manually reloaded. Force an immediate
+    // refetch as soon as the tab/app becomes visible again.
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") fetchData(false);
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleVisibility);
+
+    return () => {
+      clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleVisibility);
+    };
   }, [fetchData]);
 
   const { collections: storeCols, deposits: storeDeps } = useAppStore();
