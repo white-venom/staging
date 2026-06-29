@@ -5,6 +5,7 @@ import { History, Calendar, Search, Share2, FileDown, ArrowUpDown, Edit, Trash2,
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
 import InlineSelect from "../../../components/InlineSelect";
+import { getISTDateString } from "../../../utils/dateHelpers";
 
 export default function VirtualLedgerTab() {
   const adminContext = useAdmin();
@@ -275,7 +276,7 @@ export default function VirtualLedgerTab() {
       setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
     } else {
       setSelectedNewAmount(Number(raw.total_amount || raw.amount || 0));
-      setSelectedNewDate((raw.date || "").split(" ")[0] || new Date().toISOString().split("T")[0]);
+      setSelectedNewDate((raw.date || "").split(" ")[0] || getISTDateString());
       setSelectedNewRefNo(raw.reference_no || raw.referenceNo || "");
       setSelectedNewPaymentMode(raw.payment_mode || raw.paymentMode || "cash");
     }
@@ -316,7 +317,7 @@ export default function VirtualLedgerTab() {
           to_office: toOffice,
           payment_mode: selectedNewPaymentMode,
           amount: Number(selectedNewAmount),
-          deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          deposit_date: selectedNewDate || getISTDateString(),
           reference_no: selectedNewRefNo || null,
           remarks: selectedNewRemarks || "",
           denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null

@@ -347,28 +347,41 @@ def get_portal_ledger(
         )
     ).all()
 
-    # Group collections by (date, retailer_id) and date for fast lookup
+    # Group collections by (date, retailer_id) and date for fast lookup. Multiple
+    # collections can share the same (portal, date) with no retailer_id, so keep all
+    # of them per date instead of letting one silently overwrite the rest.
     col_by_date_retailer = {}
     col_by_date = {}
-    for col in all_portal_cols:
+    for col in sorted(all_portal_cols, key=lambda c: c.created_at):
         col_date = col.collection_date
         if col.retailer_id:
             col_by_date_retailer[(col_date, col.retailer_id)] = col
-        col_by_date[col_date] = col
+        col_by_date.setdefault(col_date, []).append(col)
+
+    def _best_date_match(col_date, deposit_amount):
+        candidates = col_by_date.get(col_date) or []
+        if not candidates:
+            return None
+        for c in candidates:
+            online_amt = c.denominations.online_amount if c.denominations else None
+            if online_amt is not None and Decimal(str(online_amt)) == Decimal(str(deposit_amount)):
+                return c
+        # No unambiguous amount match — only safe to guess when there's exactly one candidate.
+        return candidates[0] if len(candidates) == 1 else None
 
     # Merge and sort chronologically
     tx_list = []
-    
+
     for d in deposits:
         # Bank deposit into portal (cash deposit or online auto-route)
         retailer_name = d.retailer.retailer_name if d.retailer else None
-        
+
         # For online portal deposits without retailer, try to find the matching collection
         # to get store name (legacy data that didn't store retailer_id on the deposit)
         store_name = None
         fallback_remarks = d.remarks
         if d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
-            matching_col = col_by_date.get(d.deposit_date)
+            matching_col = _best_date_match(d.deposit_date, d.amount)
             if matching_col:
                 retailer_name = matching_col.retailer.retailer_name if matching_col.retailer else None
                 store_name = matching_col.store.store_name if matching_col.store else None
@@ -589,28 +602,41 @@ def get_portal_group_ledger(
         )
     ).all()
     
-    # Group collections by (portal_id, date, retailer_id) and (portal_id, date)
+    # Group collections by (portal_id, date, retailer_id) and (portal_id, date). Multiple
+    # collections can share the same (portal, date) with no retailer_id, so keep all of
+    # them per key instead of letting one silently overwrite the rest.
     col_by_portal_date_retailer = {}
     col_by_portal_date = {}
-    for col in all_portal_cols:
+    for col in sorted(all_portal_cols, key=lambda c: c.created_at):
         k_triple = (col.portal_id, col.collection_date, col.retailer_id)
         k_pair = (col.portal_id, col.collection_date)
         if col.retailer_id:
             col_by_portal_date_retailer[k_triple] = col
-        col_by_portal_date[k_pair] = col
+        col_by_portal_date.setdefault(k_pair, []).append(col)
+
+    def _best_portal_date_match(portal_id, col_date, deposit_amount):
+        candidates = col_by_portal_date.get((portal_id, col_date)) or []
+        if not candidates:
+            return None
+        for c in candidates:
+            online_amt = c.denominations.online_amount if c.denominations else None
+            if online_amt is not None and Decimal(str(online_amt)) == Decimal(str(deposit_amount)):
+                return c
+        # No unambiguous amount match — only safe to guess when there's exactly one candidate.
+        return candidates[0] if len(candidates) == 1 else None
 
     tx_list = []
-    
+
     for d in deposits:
         retailer_name = d.retailer.retailer_name if d.retailer else None
         p_name = d.portal.portal_name if d.portal else "Account"
-        
+
         # For online portal deposits without retailer, try to find the matching collection
         # to get store name (legacy data that didn't store retailer_id on the deposit)
         store_name = None
         fallback_remarks = d.remarks
         if d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
-            matching_col = col_by_portal_date.get((d.portal_id, d.deposit_date))
+            matching_col = _best_portal_date_match(d.portal_id, d.deposit_date, d.amount)
             if matching_col:
                 retailer_name = matching_col.retailer.retailer_name if matching_col.retailer else None
                 store_name = matching_col.store.store_name if matching_col.store else None

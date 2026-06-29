@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.database.db import get_db
 from app.database.models import Retailer, Ledger, Collection, BankDeposit, Attendance, Denomination
 from app.dependencies import require_admin, require_staff, require_any_user
+from app.core.timezone import ist_today, ist_day_bounds_utc
 
 router = APIRouter(tags=["Reports & Public Statements"])
 
@@ -140,16 +141,15 @@ def get_admin_summary(
     current_user=Depends(require_admin)
 ):
     """Admin dashboard summary: metrics for Today's Collections, Active Staff, and pending queues."""
-    import pytz
-    from datetime import datetime
-    ist = pytz.timezone('Asia/Kolkata')
-    today = datetime.now(ist).date()
+    today = ist_today()
+    today_start_utc, today_end_utc = ist_day_bounds_utc(today)
 
     # 1. Today's collections sum
     collections_today = db.scalar(
         select(func.sum(Collection.total_amount))
         .where(and_(
-            func.date(Collection.created_at) == today,
+            Collection.created_at >= today_start_utc,
+            Collection.created_at < today_end_utc,
             Collection.status == "verified"
         ))
     ) or Decimal("0.00")
@@ -307,12 +307,14 @@ def get_staff_daily_summary(
     else:
         target_staff_id = uuid.UUID(staff_id) if staff_id else current_user.id
 
+    selected_day_start_utc, selected_day_end_utc = ist_day_bounds_utc(selected_date)
+
     # 1. Total Collections (In) before the selected date
     collections_before = db.scalar(
         select(func.sum(Collection.total_amount))
         .where(and_(
             Collection.staff_id == target_staff_id,
-            func.date(Collection.created_at) < selected_date
+            Collection.created_at < selected_day_start_utc
         ))
     ) or Decimal("0.00")
 
@@ -321,7 +323,7 @@ def get_staff_daily_summary(
         select(func.sum(BankDeposit.amount))
         .where(and_(
             BankDeposit.staff_id == target_staff_id,
-            func.date(BankDeposit.created_at) < selected_date
+            BankDeposit.created_at < selected_day_start_utc
         ))
     ) or Decimal("0.00")
 
@@ -332,7 +334,8 @@ def get_staff_daily_summary(
         select(func.sum(Collection.total_amount))
         .where(and_(
             Collection.staff_id == target_staff_id,
-            func.date(Collection.created_at) == selected_date
+            Collection.created_at >= selected_day_start_utc,
+            Collection.created_at < selected_day_end_utc
         ))
     ) or Decimal("0.00")
 
@@ -341,7 +344,8 @@ def get_staff_daily_summary(
         select(func.sum(BankDeposit.amount))
         .where(and_(
             BankDeposit.staff_id == target_staff_id,
-            func.date(BankDeposit.created_at) == selected_date
+            BankDeposit.created_at >= selected_day_start_utc,
+            BankDeposit.created_at < selected_day_end_utc
         ))
     ) or Decimal("0.00")
 

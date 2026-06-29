@@ -18,6 +18,7 @@ import {
   X
 } from "lucide-react";
 import Script from "next/script";
+import { getISTDateString } from "../utils/dateHelpers";
 
 const cleanDescription = (desc: string): string => {
   if (!desc) return "";
@@ -36,9 +37,9 @@ const renderDenominations = (denom: any) => {
     { label: "50", count: denom.note_50 },
     { label: "20", count: denom.note_20 },
     { label: "10", count: denom.note_10 },
-  ].filter(n => n && typeof n.count === 'number' && n.count > 0);
-  
-  const hasCoins = !!(denom.coins && parseFloat(denom.coins.toString()) > 0);
+  ].filter(n => n && typeof n.count === 'number' && n.count !== 0);
+
+  const hasCoins = !!(denom.coins && parseFloat(denom.coins.toString()) !== 0);
   
   if (notes.length === 0 && !hasCoins) return null;
   
@@ -141,7 +142,7 @@ export default function LedgerReportView({
       setStartDate(dates[0]);
       setEndDate(dates[dates.length - 1]);
     } else {
-      const today = new Date().toISOString().substring(0, 10);
+      const today = getISTDateString();
       setStartDate(today);
       setEndDate(today);
     }

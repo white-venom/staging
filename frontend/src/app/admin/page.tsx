@@ -22,13 +22,16 @@ export default function AdminPage() {
   const todayDeposited = (deposits || []).filter(d => d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual').reduce((s, d) => s + (d.amount || 0), 0);
   const todayCount = (collections || []).filter(c => c.date?.startsWith(todayStr)).length;
 
-  const totalToTake = 
-    (retailerDirectory || []).reduce((s, r) => s + (r.opening_to_take || 0), 0) +
-    (portalDirectory || []).reduce((s, p) => s + (p.opening_to_take || 0), 0);
+  // Live "Due" totals derived from each entity's current running balance
+  // (balance > 0 => they owe us / to-take, balance < 0 => we owe them / to-give),
+  // matching the sign convention used for the per-row Due display in OverviewTab.
+  const totalToTake =
+    (retailerDirectory || []).reduce((s, r) => s + (r.balance > 0 ? r.balance : 0), 0) +
+    (portalDirectory || []).reduce((s, p) => s + (p.balance > 0 ? p.balance : 0), 0);
 
-  const totalToGive = 
-    (retailerDirectory || []).reduce((s, r) => s + (r.opening_to_give || 0), 0) +
-    (portalDirectory || []).reduce((s, p) => s + (p.opening_to_give || 0), 0);
+  const totalToGive =
+    (retailerDirectory || []).reduce((s, r) => s + (r.balance < 0 ? -r.balance : 0), 0) +
+    (portalDirectory || []).reduce((s, p) => s + (p.balance < 0 ? -p.balance : 0), 0);
 
   if (isMobile) {
     return (

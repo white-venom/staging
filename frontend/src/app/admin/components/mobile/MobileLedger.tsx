@@ -24,6 +24,7 @@ import { format } from "date-fns";
 import MobileFilterDrawer from "./MobileFilterDrawer";
 import { api } from "../../../utils/api";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
+import { getISTDateString } from "../../../utils/dateHelpers";
 import InlineSelect from "@/app/components/InlineSelect";
 
 export default function MobileLedger() {
@@ -163,7 +164,7 @@ export default function MobileLedger() {
           to_office: toOffice,
           payment_mode: selectedNewPaymentMode,
           amount: Number(selectedNewAmount),
-          deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          deposit_date: selectedNewDate || getISTDateString(),
           reference_no: selectedNewRefNo || null,
           remarks: selectedNewRemarks || "",
           denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null

@@ -5,6 +5,7 @@ from typing import Optional
 from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.collection import DenominationSchema
+from app.core.timezone import ist_today
 
 
 class DepositCreate(BaseModel):
@@ -16,7 +17,7 @@ class DepositCreate(BaseModel):
     
     payment_mode: str = Field("cash", examples=["cash", "online"])
     amount: Decimal = Field(..., gt=0)
-    deposit_date: date = Field(default_factory=date.today)
+    deposit_date: date = Field(default_factory=ist_today)
     reference_no: Optional[str] = Field(None, max_length=100)
     remarks: Optional[str] = Field(None, max_length=255)
     denominations: Optional[DenominationSchema] = None

@@ -480,13 +480,13 @@ ${dateFormatted}`;
                           <div>
                             <span className="text-[8px] uppercase font-black text-slate-400 block mb-0.5">Cash Breakdown:</span>
                             <div className="grid grid-cols-2 gap-1 text-slate-700 dark:text-slate-300">
-                              {denoms.note_500 > 0 && <div>₹500 Notes: <span className="font-extrabold">{denoms.note_500}</span></div>}
-                              {denoms.note_200 > 0 && <div>₹200 Notes: <span className="font-extrabold">{denoms.note_200}</span></div>}
-                              {denoms.note_100 > 0 && <div>₹100 Notes: <span className="font-extrabold">{denoms.note_100}</span></div>}
-                              {denoms.note_50 > 0 && <div>₹50 Notes: <span className="font-extrabold">{denoms.note_50}</span></div>}
-                              {denoms.note_20 > 0 && <div>₹20 Notes: <span className="font-extrabold">{denoms.note_20}</span></div>}
-                              {denoms.note_10 > 0 && <div>₹10 Notes: <span className="font-extrabold">{denoms.note_10}</span></div>}
-                              {Number(denoms.coins) > 0 && <div>Coins: <span className="font-extrabold">₹{Number(denoms.coins).toFixed(2)}</span></div>}
+                              {denoms.note_500 !== 0 && <div>₹500 Notes: <span className="font-extrabold">{denoms.note_500}</span></div>}
+                              {denoms.note_200 !== 0 && <div>₹200 Notes: <span className="font-extrabold">{denoms.note_200}</span></div>}
+                              {denoms.note_100 !== 0 && <div>₹100 Notes: <span className="font-extrabold">{denoms.note_100}</span></div>}
+                              {denoms.note_50 !== 0 && <div>₹50 Notes: <span className="font-extrabold">{denoms.note_50}</span></div>}
+                              {denoms.note_20 !== 0 && <div>₹20 Notes: <span className="font-extrabold">{denoms.note_20}</span></div>}
+                              {denoms.note_10 !== 0 && <div>₹10 Notes: <span className="font-extrabold">{denoms.note_10}</span></div>}
+                              {Number(denoms.coins) !== 0 && <div>Coins: <span className="font-extrabold">₹{Number(denoms.coins).toFixed(2)}</span></div>}
                               {Number(denoms.online_amount) > 0 && <div>UPI Online: <span className="font-extrabold">₹{Number(denoms.online_amount).toLocaleString()}</span></div>}
                             </div>
                           </div>

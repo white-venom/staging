@@ -15,6 +15,7 @@ import {
 import { api } from "@/app/utils/api";
 import Link from "next/link";
 import { useAdmin } from "../../context/AdminContext";
+import { getISTDateString } from "../../../utils/dateHelpers";
 import LedgerReportView from "../../../components/LedgerReportView";
 import InlineSelect from "@/app/components/InlineSelect";
 
@@ -282,7 +283,7 @@ export default function MobileRetailers({
           to_office: toOffice,
           payment_mode: selectedNewPaymentMode,
           amount: Number(selectedNewAmount),
-          deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          deposit_date: selectedNewDate || getISTDateString(),
           reference_no: selectedNewRefNo || null,
           remarks: selectedNewRemarks || null,
           denominations: payloadDenoms
@@ -293,7 +294,7 @@ export default function MobileRetailers({
           portal_id: selectedNewPaymentMode === "online" ? selectedNewPortalId : null,
           store_id: selectedNewStoreId || null,
           total_amount: selectedNewAmount,
-          collection_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          collection_date: selectedNewDate || getISTDateString(),
           remarks: selectedNewRemarks || "",
           denominations: payloadDenoms
         });

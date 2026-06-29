@@ -12,6 +12,7 @@ import {
   FileText
 } from "lucide-react";
 import Script from "next/script";
+import { getISTDateString } from "../../utils/dateHelpers";
 
 const getUtcDate = (dateStr: any) => {
   if (!dateStr) return new Date();
@@ -28,7 +29,7 @@ export default function DailyReportPage() {
   const [collections, setCollections] = useState<any[]>([]);
   const [deposits, setDeposits] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().substring(0, 10)); // "YYYY-MM-DD"
+  const [selectedDate, setSelectedDate] = useState(getISTDateString()); // "YYYY-MM-DD" in IST
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
@@ -82,12 +83,12 @@ export default function DailyReportPage() {
 
   // Filter lists based on the selected date
   const filteredCollections = collections.filter(c => {
-    const localDateStr = getUtcDate(c.created_at).toISOString().substring(0, 10);
+    const localDateStr = getISTDateString(getUtcDate(c.created_at));
     return localDateStr === selectedDate;
   });
 
   const filteredDeposits = deposits.filter(d => {
-    const localDateStr = getUtcDate(d.created_at).toISOString().substring(0, 10);
+    const localDateStr = getISTDateString(getUtcDate(d.created_at));
     return localDateStr === selectedDate;
   });
 
@@ -115,7 +116,7 @@ export default function DailyReportPage() {
   // Calculate Running Balances
   const totalInBefore = collections
     .filter(c => {
-      const localDateStr = getUtcDate(c.created_at).toISOString().substring(0, 10);
+      const localDateStr = getISTDateString(getUtcDate(c.created_at));
       return localDateStr < selectedDate;
     })
     .reduce((sum, c) => sum + Number(c.total_amount), 0) +
@@ -123,7 +124,7 @@ export default function DailyReportPage() {
     .filter(d => {
       const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
       if (!isRecipient) return false;
-      const localDateStr = getUtcDate(d.created_at).toISOString().substring(0, 10);
+      const localDateStr = getISTDateString(getUtcDate(d.created_at));
       return localDateStr < selectedDate;
     })
     .reduce((sum, d) => sum + Number(d.amount), 0);
@@ -132,7 +133,7 @@ export default function DailyReportPage() {
     .filter(d => {
       const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
       if (isRecipient) return false;
-      const localDateStr = getUtcDate(d.created_at).toISOString().substring(0, 10);
+      const localDateStr = getISTDateString(getUtcDate(d.created_at));
       return localDateStr < selectedDate;
     })
     .reduce((sum, d) => sum + Number(d.amount), 0);

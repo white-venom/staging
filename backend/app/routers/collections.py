@@ -10,7 +10,7 @@ from app.database.db import get_db
 from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, Portal, BankDeposit, BusinessSettings
 from app.schemas.collection import CollectionCreate, CollectionResponse
 from app.dependencies import require_staff, require_admin, require_any_user
-from app.logic.ledger import recalculate_balances
+from app.logic.ledger import recalculate_balances, lock_portal_group
 
 router = APIRouter(prefix="/collections", tags=["Collections Control"])
 
@@ -67,7 +67,7 @@ def submit_collection(
 
     # Perform within a database transaction
     try:
-        from datetime import date
+        from app.core.timezone import ist_today
         db_collection = Collection(
             retailer_id=payload.retailer_id,
             staff_id=current_user.id,
@@ -77,7 +77,7 @@ def submit_collection(
             portal_id=payload.portal_id,
             total_amount=payload.total_amount,
             remarks=payload.remarks,
-            collection_date=payload.collection_date or date.today(),
+            collection_date=payload.collection_date or ist_today(),
             status="verified"
         )
         db.add(db_collection)
@@ -165,14 +165,16 @@ def submit_collection(
                 db.add(db_deposit_denom)
                 
                 if portal_obj:
+                    lock_portal_group(db, portal_obj)
                     portal_obj.balance += d.online_amount
                     db_deposit.balance_snapshot = portal_obj.balance
                     if portal_obj.group:
                         portal_obj.group.balance += d.online_amount
-            
+
         elif payload.portal_id:
             portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
             if portal:
+                lock_portal_group(db, portal)
                 portal.balance -= Decimal(str(payload.total_amount))
                 db_collection.balance_snapshot = portal.balance
                 if portal.group:
@@ -458,7 +460,11 @@ def delete_collection(
                 raise HTTPException(status_code=403, detail=f"Can only delete collections within {delete_window} minutes of creation")
     
     retailer_id = collection.retailer_id
-    
+    if retailer_id:
+        # Lock the retailer up front so the later recalculate_balances() call never
+        # races with a concurrent request touching the same retailer's ledger.
+        db.scalar(select(Retailer).where(Retailer.id == retailer_id).with_for_update())
+
     # Delete associated ledger entries (cascade is set to SET NULL in model, so we find and delete manually)
     from sqlalchemy import delete
     db.execute(delete(Ledger).where(Ledger.collection_id == collection_id))
@@ -467,6 +473,7 @@ def delete_collection(
     if collection.portal_id and not collection.retailer_id:
         portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
         if portal:
+            lock_portal_group(db, portal)
             portal.balance += Decimal(str(collection.total_amount))
             if portal.group:
                 portal.group.balance += Decimal(str(collection.total_amount))
@@ -487,6 +494,7 @@ def delete_collection(
         if portal_dep:
             portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
             if portal:
+                lock_portal_group(db, portal)
                 portal.balance -= portal_dep.amount
                 if portal.group:
                     portal.group.balance -= portal_dep.amount
@@ -543,6 +551,14 @@ def update_collection(
     new_amount = payload.total_amount
     old_retailer_id = collection.retailer_id
     new_retailer_id = payload.retailer_id
+
+    # Lock affected retailers up front so the later recalculate_balances() calls
+    # never race with a concurrent request touching the same retailer's ledger.
+    if old_retailer_id:
+        db.scalar(select(Retailer).where(Retailer.id == old_retailer_id).with_for_update())
+    if new_retailer_id and new_retailer_id != old_retailer_id:
+        db.scalar(select(Retailer).where(Retailer.id == new_retailer_id).with_for_update())
+
     old_portal_id = collection.portal_id
     new_portal_id = payload.portal_id
     old_from_staff_id = collection.from_staff_id
@@ -568,6 +584,7 @@ def update_collection(
             if old_portal_id:
                 old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
                 if old_portal:
+                    lock_portal_group(db, old_portal)
                     old_portal.balance += Decimal(str(old_amount))
                     if old_portal.group:
                         old_portal.group.balance += Decimal(str(old_amount))
@@ -575,6 +592,7 @@ def update_collection(
             if new_portal_id:
                 new_portal = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
                 if new_portal:
+                    lock_portal_group(db, new_portal)
                     new_portal.balance -= Decimal(str(new_amount))
                     if new_portal.group:
                         new_portal.group.balance -= Decimal(str(new_amount))
@@ -583,6 +601,7 @@ def update_collection(
             diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
             portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
             if portal:
+                lock_portal_group(db, portal)
                 portal.balance -= diff
                 if portal.group:
                     portal.group.balance -= diff
@@ -597,14 +616,16 @@ def update_collection(
         if not old_retailer_id and old_portal_id:
             old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
             if old_portal:
+                lock_portal_group(db, old_portal)
                 old_portal.balance += Decimal(str(old_amount))
                 if old_portal.group:
                     old_portal.group.balance += Decimal(str(old_amount))
-    
+
         # Transitioning: Apply direct portal balance decrement if it is now a CMS collection (new_retailer_id is None)
         if not new_retailer_id and new_portal_id:
             new_portal = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
             if new_portal:
+                lock_portal_group(db, new_portal)
                 new_portal.balance -= Decimal(str(new_amount))
                 if new_portal.group:
                     new_portal.group.balance -= Decimal(str(new_amount))
@@ -643,15 +664,16 @@ def update_collection(
             if existing_dep.portal_id:
                 old_port = db.scalar(select(Portal).where(Portal.id == existing_dep.portal_id).with_for_update())
                 if old_port:
+                    lock_portal_group(db, old_port)
                     old_port.balance -= existing_dep.amount
                     if old_port.group:
                         old_port.group.balance -= existing_dep.amount
-            
+
             # Update existing deposit in-place
             existing_dep.portal_id = new_portal_id
             existing_dep.amount = new_online_amount
             existing_dep.deposit_date = new_collection_date
-            
+
             if existing_dep.denominations:
                 existing_dep.denominations.online_amount = new_online_amount
             else:
@@ -662,10 +684,11 @@ def update_collection(
                     online_amount=new_online_amount
                 )
                 db.add(db_denom)
-            
+
             # Apply new portal balance changes
             new_port = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
             if new_port:
+                lock_portal_group(db, new_port)
                 new_port.balance += new_online_amount
                 existing_dep.balance_snapshot = new_port.balance
                 if new_port.group:
@@ -697,6 +720,7 @@ def update_collection(
             db.add(db_denom)
             
             if new_port:
+                lock_portal_group(db, new_port)
                 new_port.balance += new_online_amount
                 db_deposit.balance_snapshot = new_port.balance
                 if new_port.group:
@@ -707,6 +731,7 @@ def update_collection(
             if existing_dep.portal_id:
                 old_port = db.scalar(select(Portal).where(Portal.id == existing_dep.portal_id).with_for_update())
                 if old_port:
+                    lock_portal_group(db, old_port)
                     old_port.balance -= existing_dep.amount
                     if old_port.group:
                         old_port.group.balance -= existing_dep.amount

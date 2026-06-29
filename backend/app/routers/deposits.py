@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database.db import get_db
 from app.database.models import BankDeposit, Denomination, Portal, PortalGroup, Retailer, User, Ledger, BusinessSettings
-from app.logic.ledger import recalculate_balances
+from app.logic.ledger import recalculate_balances, lock_portal_group
 from sqlalchemy import update, delete
 from decimal import Decimal
 from app.schemas.deposit import DepositCreate, DepositResponse
@@ -125,16 +125,17 @@ def submit_deposit(
             # Actually, PortalGroup.balance = Assets - Liabilities.
             # Depositing money to them increases the balance (closer to zero if negative).
             if portal:
+                lock_portal_group(db, portal)
                 # Update individual portal balance
                 portal.balance += Decimal(str(payload.amount))
                 db_deposit.balance_snapshot = portal.balance
-                
+
                 # Also update group balance
                 if portal.group:
                     portal.group.balance += Decimal(str(payload.amount))
         elif dt == "virtual":
             # Admin does not have a virtual balance limit to validate/decrement.
-            pass
+            lock_portal_group(db, portal)
 
             # Step A: Adjust Portal Balance
             if payload.payment_mode == "refund":
@@ -392,7 +393,11 @@ def delete_deposit(
                 raise HTTPException(status_code=403, detail=f"Can only delete deposits within {delete_window} minutes of creation")
     
     retailer_id = deposit.retailer_id
-    
+    if retailer_id:
+        # Lock the retailer up front so the later recalculate_balances() call never
+        # races with a concurrent request touching the same retailer's ledger.
+        db.scalar(select(Retailer).where(Retailer.id == retailer_id).with_for_update())
+
     # Delete associated ledger entries
     db.execute(delete(Ledger).where(Ledger.deposit_id == deposit_id))
     
@@ -400,6 +405,7 @@ def delete_deposit(
     if deposit.portal_id:
         portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
         if portal:
+            lock_portal_group(db, portal)
             if deposit.deposit_type == "portal":
                 # Deleting portal deposit: reduce portal balance since cash was never deposited
                 portal.balance -= Decimal(str(deposit.amount))
@@ -482,6 +488,7 @@ def update_deposit(
     if deposit.portal_id:
         portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
         if portal:
+            lock_portal_group(db, portal)
             if deposit.deposit_type == "portal":
                 portal.balance -= Decimal(str(deposit.amount))
                 if portal.group:
@@ -513,7 +520,14 @@ def update_deposit(
                     creator.virtual_balance += Decimal(str(deposit.amount))
     
     old_retailer_id = deposit.retailer_id
-    
+
+    # Lock affected retailers up front so the later recalculate_balances() calls
+    # never race with a concurrent request touching the same retailer's ledger.
+    if old_retailer_id:
+        db.scalar(select(Retailer).where(Retailer.id == old_retailer_id).with_for_update())
+    if payload.retailer_id and payload.retailer_id != old_retailer_id:
+        db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
+
     for field, value in payload.model_dump(exclude_unset=True, exclude={"denominations"}).items():
         setattr(deposit, field, value)
 
@@ -547,12 +561,14 @@ def update_deposit(
     if dt == "portal":
         portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
         if portal:
+            lock_portal_group(db, portal)
             portal.balance += Decimal(str(deposit.amount))
             if portal.group:
                 portal.group.balance += Decimal(str(deposit.amount))
     elif dt == "virtual":
         portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
         if portal:
+            lock_portal_group(db, portal)
             if deposit.payment_mode == "refund":
                 portal.balance += Decimal(str(deposit.amount))
                 if portal.group:

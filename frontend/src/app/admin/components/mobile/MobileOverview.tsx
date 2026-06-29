@@ -25,6 +25,7 @@ import Link from "next/link";
 import { useAdmin } from "../../context/AdminContext";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
 import { api } from "../../../utils/api";
+import { getISTDateString } from "../../../utils/dateHelpers";
 import InlineSelect from "@/app/components/InlineSelect";
 
 interface VisitedStore {
@@ -312,7 +313,7 @@ export default function MobileOverview({
       setSelectedNewDepositType(item.deposit_type || "virtual");
       setSelectedNewPaymentMode(item.paymentMode || item.payment_mode || "online");
       setSelectedNewAmount(Number(item.amount || 0));
-      setSelectedNewDate(item.date ? item.date.split(" ")[0] : new Date().toISOString().split("T")[0]);
+      setSelectedNewDate(item.date ? item.date.split(" ")[0] : getISTDateString());
       setSelectedNewRefNo(item.reference_no || "");
       setSelectedNewRecipientStaffId(item.recipient_staff_id || "");
       setSelectedNewToOffice(item.to_office === true);
@@ -355,7 +356,7 @@ export default function MobileOverview({
           to_office: toOffice,
           payment_mode: selectedNewPaymentMode,
           amount: Number(selectedNewAmount),
-          deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          deposit_date: selectedNewDate || getISTDateString(),
           reference_no: selectedNewRefNo || null,
           remarks: selectedNewRemarks || "",
           denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null

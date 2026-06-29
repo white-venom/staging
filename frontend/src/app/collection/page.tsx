@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore, DenominationCounts } from "../utils/store";
 import { db, seedOfflineRetailers, CachedRetailer } from "../utils/db";
+import { getISTDateString } from "../utils/dateHelpers";
 import InlineSelect from "../components/InlineSelect";
 import { 
   ArrowLeft, 
@@ -34,7 +35,7 @@ function NewCollectionContent() {
 
   // Collection Date Selector
   const [collectionDate, setCollectionDate] = useState<string>(() => {
-    return new Date().toISOString().substring(0, 10);
+    return getISTDateString();
   });
 
   // Search & Selector State

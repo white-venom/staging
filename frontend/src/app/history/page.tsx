@@ -237,13 +237,13 @@ ${dateFormatted}`;
                         <div>
                           <span className="text-[8px] uppercase font-bold text-slate-400 block mb-0.5">Cash Breakdown:</span>
                           <div className="grid grid-cols-2 gap-1 text-slate-700 dark:text-slate-300">
-                            {c.denominations.note_500 > 0 && <div>₹500 Notes: <span className="font-extrabold">{c.denominations.note_500}</span></div>}
-                            {c.denominations.note_200 > 0 && <div>₹200 Notes: <span className="font-extrabold">{c.denominations.note_200}</span></div>}
-                            {c.denominations.note_100 > 0 && <div>₹100 Notes: <span className="font-extrabold">{c.denominations.note_100}</span></div>}
-                            {c.denominations.note_50 > 0 && <div>₹50 Notes: <span className="font-extrabold">{c.denominations.note_50}</span></div>}
-                            {c.denominations.note_20 > 0 && <div>₹20 Notes: <span className="font-extrabold">{c.denominations.note_20}</span></div>}
-                            {c.denominations.note_10 > 0 && <div>₹10 Notes: <span className="font-extrabold">{c.denominations.note_10}</span></div>}
-                            {c.denominations.coins > 0 && <div>Coins Sum: <span className="font-extrabold">₹{c.denominations.coins.toFixed(2)}</span></div>}
+                            {c.denominations.note_500 !== 0 && <div>₹500 Notes: <span className="font-extrabold">{c.denominations.note_500}</span></div>}
+                            {c.denominations.note_200 !== 0 && <div>₹200 Notes: <span className="font-extrabold">{c.denominations.note_200}</span></div>}
+                            {c.denominations.note_100 !== 0 && <div>₹100 Notes: <span className="font-extrabold">{c.denominations.note_100}</span></div>}
+                            {c.denominations.note_50 !== 0 && <div>₹50 Notes: <span className="font-extrabold">{c.denominations.note_50}</span></div>}
+                            {c.denominations.note_20 !== 0 && <div>₹20 Notes: <span className="font-extrabold">{c.denominations.note_20}</span></div>}
+                            {c.denominations.note_10 !== 0 && <div>₹10 Notes: <span className="font-extrabold">{c.denominations.note_10}</span></div>}
+                            {c.denominations.coins !== 0 && <div>Coins Sum: <span className="font-extrabold">₹{c.denominations.coins.toFixed(2)}</span></div>}
                             {c.denominations.online_amount > 0 && <div>UPI Online: <span className="font-extrabold">₹{c.denominations.online_amount.toLocaleString()}</span></div>}
                           </div>
                         </div>

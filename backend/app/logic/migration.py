@@ -2,7 +2,7 @@ from decimal import Decimal
 from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
-from app.database.models import Ledger
+from app.database.models import Ledger, Retailer
 from app.logic.ledger import recalculate_balances
 
 def fix_historical_ledger_dates(db: Session):
@@ -34,6 +34,9 @@ def fix_historical_ledger_dates(db: Session):
         if updated_retailers:
             for r_id in updated_retailers:
                 print(f"[INFO] Recalculating balances for Retailer {r_id}...")
+                # Lock the retailer row before recalculating so this never races with a
+                # concurrent request mutating the same retailer's ledger.
+                db.scalar(select(Retailer).where(Retailer.id == r_id).with_for_update())
                 recalculate_balances(r_id, db)
             db.commit()
             print(f"[INFO] Successfully fixed and recalculated ledger balances for {len(updated_retailers)} retailer(s).")

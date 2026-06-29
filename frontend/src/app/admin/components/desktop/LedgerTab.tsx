@@ -6,6 +6,7 @@ import { Edit2, X, Save, Trash2, ChevronDown, Share2 } from "lucide-react";
 import { api } from "../../../utils/api";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
 import InlineSelect from "../../../components/InlineSelect";
+import { getISTDateString } from "../../../utils/dateHelpers";
 
 function getExportFilename() {
   return `Ledger_${Date.now()}.csv`;
@@ -184,7 +185,7 @@ export default function LedgerTab({
           to_office: toOffice,
           payment_mode: selectedNewPaymentMode,
           amount: Number(selectedNewAmount),
-          deposit_date: selectedNewDate || new Date().toISOString().split("T")[0],
+          deposit_date: selectedNewDate || getISTDateString(),
           reference_no: selectedNewRefNo || null,
           remarks: selectedNewRemarks || null,
           denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null

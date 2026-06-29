@@ -31,7 +31,7 @@ def create_retailer(
             raise HTTPException(status_code=400, detail="Assigned staff member not found")
 
     # Check if retailer phone number already exists
-    existing_retailer = db.scalar(select(Retailer).where(Retailer.phone == retailer_data.phone))
+    existing_retailer = db.scalar(select(Retailer).where(Retailer.phone == retailer_data.phone).with_for_update())
     if existing_retailer:
         if not existing_retailer.is_active:
             # Re-activate and update the existing soft-deleted retailer
@@ -96,7 +96,7 @@ def update_retailer(
     current_user=Depends(require_admin)
 ):
     """Admin-only endpoint to update retailer information and staff assignments."""
-    retailer = db.scalar(select(Retailer).where(Retailer.id == retailer_id))
+    retailer = db.scalar(select(Retailer).where(Retailer.id == retailer_id).with_for_update())
     if not retailer:
         raise HTTPException(status_code=404, detail="Retailer not found")
 
@@ -227,12 +227,14 @@ def update_store(
     if new_ret_id and new_ret_id != store.retailer_id:
         if not is_cms:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Retailer can only be changed for stores belonging to CMS retailer."
             )
-        
-        # Verify new retailer exists
-        new_retailer = db.scalar(select(Retailer).where(Retailer.id == new_ret_id))
+
+        # Lock both retailers before mutating their ledgers, to match the locking
+        # pattern used everywhere else recalculate_balances() is called.
+        db.scalar(select(Retailer).where(Retailer.id == store.retailer_id).with_for_update())
+        new_retailer = db.scalar(select(Retailer).where(Retailer.id == new_ret_id).with_for_update())
         if not new_retailer:
             raise HTTPException(status_code=404, detail="New parent retailer not found")
 
