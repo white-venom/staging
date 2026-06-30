@@ -167,6 +167,15 @@ function NewDepositContent() {
         }
         setPortalsList(onlinePortals);
         
+        // Auto default to last used online portal if not editing
+        if (!editId && typeof window !== "undefined") {
+          const lastUsedPortalId = localStorage.getItem("last_used_online_portal_id");
+          if (lastUsedPortalId && onlinePortals.some(p => p.id === lastUsedPortalId)) {
+            setDenominations(prev => ({ ...prev, online_portal_id: lastUsedPortalId }));
+            setShowOnlinePortal(true);
+          }
+        }
+        
         if (mappedGroups.length > 0) setSelectedGroupId(mappedGroups[0].id);
         // Do not auto-select the first retailer on mount, keep it empty for search selection
         setSelectedRetailerId("");
@@ -565,7 +574,12 @@ function NewDepositContent() {
                     <div className="mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
                       <InlineSelect
                         value={denominations.online_portal_id || ""}
-                        onChange={(val) => handleDenomChange("online_portal_id", val)}
+                        onChange={(val) => {
+                          handleDenomChange("online_portal_id", val);
+                          if (val && typeof window !== "undefined") {
+                            localStorage.setItem("last_used_online_portal_id", val);
+                          }
+                        }}
                         options={[
                           { value: "", label: "Select Portal Account..." },
                           ...portalsList.map(p => ({ value: p.id, label: p.name }))

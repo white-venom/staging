@@ -201,6 +201,15 @@ function NewCollectionContent() {
           }
         }
         setPortals(onlinePortals);
+        
+        // Auto default to last used online portal if not editing
+        if (!editId && typeof window !== "undefined") {
+          const lastUsedPortalId = localStorage.getItem("last_used_online_portal_id");
+          if (lastUsedPortalId && onlinePortals.some(p => p.id === lastUsedPortalId)) {
+            setDenominations(prev => ({ ...prev, online_portal_id: lastUsedPortalId }));
+            setShowOnlinePortal(true);
+          }
+        }
       } catch (err) {
         console.warn("Failed to fetch staff members or portals", err);
       }
@@ -621,7 +630,12 @@ function NewCollectionContent() {
                     <div className="mt-0.5 animate-in fade-in slide-in-from-top-2 duration-300">
                       <InlineSelect
                         value={denominations.online_portal_id || ""}
-                        onChange={(val) => handleDenomChange("online_portal_id", val)}
+                        onChange={(val) => {
+                          handleDenomChange("online_portal_id", val);
+                          if (val && typeof window !== "undefined") {
+                            localStorage.setItem("last_used_online_portal_id", val);
+                          }
+                        }}
                         options={[
                           { value: "", label: "Select Portal Account..." },
                           ...portals.map(p => ({ value: p.id, label: p.name }))
