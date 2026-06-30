@@ -103,10 +103,14 @@ def update_portal_group(
     if not db_group:
         raise HTTPException(status_code=404, detail="Portal Group not found")
     
-    if group_data.opening_to_give is not None and group_data.opening_to_give < 0:
-        raise HTTPException(status_code=400, detail="To Give cannot be negative")
-    if group_data.opening_to_take is not None and group_data.opening_to_take < 0:
-        raise HTTPException(status_code=400, detail="To Take cannot be negative")
+    if group_data.opening_to_give is not None:
+        new_give = (db_group.opening_to_give or Decimal("0.00")) + Decimal(str(group_data.opening_to_give))
+        if new_give < 0:
+            raise HTTPException(status_code=400, detail="To Give cannot be negative")
+    if group_data.opening_to_take is not None:
+        new_take = (db_group.opening_to_take or Decimal("0.00")) + Decimal(str(group_data.opening_to_take))
+        if new_take < 0:
+            raise HTTPException(status_code=400, detail="To Take cannot be negative")
 
     from decimal import Decimal
     
@@ -223,10 +227,14 @@ def update_portal(
     if not db_portal:
         raise HTTPException(status_code=404, detail="Portal not found")
         
-    if portal_data.opening_to_give is not None and portal_data.opening_to_give < 0:
-        raise HTTPException(status_code=400, detail="To Give cannot be negative")
-    if portal_data.opening_to_take is not None and portal_data.opening_to_take < 0:
-        raise HTTPException(status_code=400, detail="To Take cannot be negative")
+    if portal_data.opening_to_give is not None:
+        new_give = (db_portal.opening_to_give or Decimal("0.00")) + Decimal(str(portal_data.opening_to_give))
+        if new_give < 0:
+            raise HTTPException(status_code=400, detail="To Give cannot be negative")
+    if portal_data.opening_to_take is not None:
+        new_take = (db_portal.opening_to_take or Decimal("0.00")) + Decimal(str(portal_data.opening_to_take))
+        if new_take < 0:
+            raise HTTPException(status_code=400, detail="To Take cannot be negative")
 
     # Update fields safely
     for field, value in portal_data.model_dump(exclude_unset=True).items():

@@ -17,7 +17,8 @@ import {
   Settings,
   BarChart2,
   User,
-  ClipboardList
+  ClipboardList,
+  CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -25,11 +26,13 @@ import { useAppStore } from "@/app/utils/store";
 import { api } from "@/app/utils/api";
 import { usePWAInstall } from "@/app/hooks/usePWAInstall";
 import PWAInstallModal from "@/app/components/PWAInstallModal";
+import { useAdmin } from "../../context/AdminContext";
 
 export default function AdminMobileLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, resetStore, setCurrentUser } = useAppStore();
+  const { showToast, toastMessage, setShowToast } = useAdmin();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Profile Edit States
@@ -318,6 +321,26 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
 
       {/* iOS PWA Install Instructions Modal */}
       {showIOSModal && <PWAInstallModal onClose={() => setShowIOSModal(false)} />}
+
+      {/* Global Toast */}
+      {showToast && (
+        <div className="fixed top-4 left-4 right-4 z-[100] animate-slide-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-2xl flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-8 h-8 bg-green-500/10 text-green-600 rounded-lg flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-4.5 h-4.5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">System Notification</p>
+                <p className="text-[10px] font-bold text-slate-800 dark:text-white mt-0.5 break-words">{toastMessage}</p>
+              </div>
+            </div>
+            <button onClick={() => setShowToast(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md text-slate-400 shrink-0">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -100,10 +100,15 @@ def update_retailer(
     if not retailer:
         raise HTTPException(status_code=404, detail="Retailer not found")
 
-    if retailer_data.opening_to_give is not None and retailer_data.opening_to_give < 0:
-        raise HTTPException(status_code=400, detail="To Give cannot be negative")
-    if retailer_data.opening_to_take is not None and retailer_data.opening_to_take < 0:
-        raise HTTPException(status_code=400, detail="To Take cannot be negative")
+    from decimal import Decimal
+    if retailer_data.opening_to_give is not None:
+        new_give = (retailer.opening_to_give or Decimal("0.00")) + Decimal(str(retailer_data.opening_to_give))
+        if new_give < 0:
+            raise HTTPException(status_code=400, detail="To Give cannot be negative")
+    if retailer_data.opening_to_take is not None:
+        new_take = (retailer.opening_to_take or Decimal("0.00")) + Decimal(str(retailer_data.opening_to_take))
+        if new_take < 0:
+            raise HTTPException(status_code=400, detail="To Take cannot be negative")
 
     # Check for duplicate phone collision
     if retailer_data.phone is not None and retailer.phone != retailer_data.phone:
