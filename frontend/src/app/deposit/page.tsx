@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore, DenominationCounts } from "../utils/store";
+import { db } from "../utils/db";
 import InlineSelect from "../components/InlineSelect";
 import { 
   ArrowLeft, 
@@ -256,8 +257,36 @@ function NewDepositContent() {
         router.push("/staff");
       } catch (err: any) {
         console.error("Backend deposit failed:", err);
-        addDeposit(localDepData);
-        alert("Note: Deposit recorded locally. (Backend sync failed: " + (err.message || "Unlinked") + ")");
+
+        // Previously this silently faked success by saving to local-only state with
+        // a non-UUID id (e.g. "dep-<timestamp>") that the backend can never
+        // recognize — the entry looked saved but never reached the server, and
+        // editing it later crashed with a UUID parse error. Don't pretend it
+        // succeeded: tell the user and let them retry instead.
+        if (editId) {
+          alert("Could not save changes: " + (err.message || "Unknown error") + ". Please check your connection and try again.");
+          return;
+        }
+
+        // Queue it for the existing background sync to retry automatically,
+        // instead of losing it or faking success.
+        await db.deposits.add({
+          portal_id: backendPayload.portal_id,
+          retailer_id: backendPayload.retailer_id,
+          recipient_staff_id: backendPayload.recipient_staff_id,
+          depositType,
+          targetName,
+          amount: totalAmount,
+          paymentMode: depositType === "virtual" ? "online" : "cash",
+          denominations,
+          date: new Date().toISOString().replace("T", " ").substring(0, 16),
+          synced: 0
+        });
+
+        const { syncOfflineData } = await import("../utils/sync");
+        syncOfflineData().catch(() => {});
+
+        alert("Could not reach the server right now. Saved to the local queue — it will sync automatically.");
         router.push("/staff");
       }
     };

@@ -331,27 +331,43 @@ function NewCollectionContent() {
       router.push("/staff");
     } catch (err: any) {
       console.error("Backend submission failed:", err);
-      
-      // FALLBACK for local testing: if backend is not linked or IDs are invalid
-      // We still update the local store so it shows up in the Admin Panel
-      const onlinePortalName = denominations.online_amount > 0 && denominations.online_portal_id
-        ? portals.find(p => p.id === denominations.online_portal_id)?.name || "Online"
-        : (selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash");
 
-      addCollection({
-        retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
-        store_id: selectedStoreId || undefined,
-        store_name: sourceType === "retailer" && selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : undefined,
-        retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
-        portalName: onlinePortalName,
-        totalAmount: totalCollectionAmount,
-        denominations,
-        remarks: remarks || "Logged locally (Backend failed/unlinked)"
-      });
-      
-      const detail = err.message || "Unlinked";
-      alert("Note: Entry saved to local state. (Backend sync failed: " + detail + ")");
-      router.push("/staff");
+      // Previously this silently faked success by saving to local-only state with a
+      // non-UUID id (e.g. "col-<timestamp>") that the backend can never recognize —
+      // the entry looked saved but never reached the server, and editing it later
+      // crashed with a UUID parse error. Don't pretend it succeeded: tell the user
+      // and let them retry (the form stays filled in). Genuine offline submissions
+      // are already handled safely above via the local sync queue.
+      if (editId) {
+        alert("Could not save changes: " + (err.message || "Unknown error") + ". Please check your connection and try again.");
+      } else if (sourceType === "retailer" && selectedRetailer) {
+        // Queue it the same way the explicit offline path does, so it's retried
+        // automatically by the existing background sync instead of being lost.
+        const onlinePortalName = denominations.online_amount > 0 && denominations.online_portal_id
+          ? portals.find(p => p.id === denominations.online_portal_id)?.name || "Online"
+          : (selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash");
+
+        await db.collections.add({
+          retailer_id: selectedRetailer.id,
+          store_id: selectedStoreId || undefined,
+          portal_id: denominations.online_portal_id || undefined,
+          retailerName: selectedRetailer.name || "Unknown",
+          portalName: onlinePortalName,
+          totalAmount: totalCollectionAmount,
+          denominations,
+          remarks: remarks || "Queued (online submission failed)",
+          date: new Date().toISOString().replace("T", " ").substring(0, 16),
+          synced: 0
+        });
+
+        const { syncOfflineData } = await import("../utils/sync");
+        syncOfflineData().catch(() => {});
+
+        alert("Could not reach the server right now. Saved to the local queue — it will sync automatically.");
+        router.push("/staff");
+      } else {
+        alert("Could not save entry: " + (err.message || "Unknown error") + ". Please check your connection and try again.");
+      }
     }
   };
 
