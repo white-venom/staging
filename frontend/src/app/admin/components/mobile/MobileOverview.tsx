@@ -1423,6 +1423,24 @@ export default function MobileOverview({
                 </div>
               )}
 
+              <div className="flex gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsEditCollectionModalOpen(false)}
+                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-705 dark:text-slate-200 rounded-md text-[10px] font-black transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingCollection}
+                  className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3 h-3" />
+                  {isSavingCollection ? "Saving..." : "Save Entry"}
+                </button>
+              </div>
+
             </form>
           </div>
         </div>
