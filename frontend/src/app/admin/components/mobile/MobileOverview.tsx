@@ -1119,65 +1119,60 @@ export default function MobileOverview({
                     />
                   </div>
 
-                  {/* Denominations editor for Collection */}
-                  <div className="border border-slate-100 dark:border-slate-800 rounded-lg p-2 bg-slate-50/50 dark:bg-slate-950/50 space-y-1">
-                    <span className="text-[8px] text-slate-400 font-black uppercase block">Denominations</span>
-                    <div className="grid grid-cols-2 gap-1.5 text-[9px]">
+                  {/* Denominations editor for Collection – staff-style full-row layout */}
+                  <div className="border border-slate-100 dark:border-slate-800 rounded-lg p-3 bg-slate-50/50 dark:bg-slate-950/50 space-y-1">
+                    <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">Counting Details (Notes)</span>
+                    <div className="space-y-1">
                       {[
                         { label: "₹500 Notes", key: "note_500", factor: 500 },
                         { label: "₹200 Notes", key: "note_200", factor: 200 },
                         { label: "₹100 Notes", key: "note_100", factor: 100 },
-                        { label: "₹50 Notes", key: "note_50", factor: 50 },
-                        { label: "₹20 Notes", key: "note_20", factor: 20 },
-                        { label: "₹10 Notes", key: "note_10", factor: 10 },
+                        { label: "₹50 Notes",  key: "note_50",  factor: 50  },
+                        { label: "₹20 Notes",  key: "note_20",  factor: 20  },
+                        { label: "₹10 Notes",  key: "note_10",  factor: 10  },
+                        { label: "Coins / ₹1", key: "coins",    factor: 1   },
                       ].map(item => (
-                        <div key={item.key} className="flex flex-col gap-0.5">
-                          <label className="text-[8px] font-bold text-slate-400">{item.label}</label>
+                        <div key={item.key} className="flex items-center gap-2 justify-between py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                          <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">{item.label}</span>
+                          <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">&times;</span>
                           <input autoComplete="one-time-code"
                             type="number"
-                            value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0}
+                            value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || ""}
                             onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
+                              const val = item.key === "coins" ? (parseFloat(e.target.value) || 0) : (parseInt(e.target.value) || 0);
                               setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
                             }}
-                            className="px-1.5 py-0.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-black"
+                            className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-center text-xs font-black outline-none focus:border-slate-400"
                           />
+                          <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
+                          <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0">
+                            ₹{(Number(selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0) * item.factor).toLocaleString()}
+                          </span>
                         </div>
                       ))}
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-[8px] font-bold text-slate-400">Coins Sum</label>
+                      {/* UPI / Online Amount row */}
+                      <div className="flex items-center gap-2 justify-between pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">UPI / Online</span>
+                        <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">+</span>
                         <input autoComplete="one-time-code"
                           type="number"
-                          step="0.01"
-                          value={selectedNewDenoms.coins}
+                          value={selectedNewDenoms.online_amount || ""}
                           onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setSelectedNewDenoms(prev => ({ ...prev, coins: val }));
-                          }}
-                          className="px-1.5 py-0.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-black"
-                        />
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-[8px] font-bold text-slate-400">UPI / Online Amount</label>
-                        <input autoComplete="one-time-code"
-                          type="number"
-                          value={selectedNewDenoms.online_amount}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
+                            const val = Math.max(0, parseFloat(e.target.value) || 0);
                             setSelectedNewDenoms(prev => ({ ...prev, online_amount: val }));
                           }}
-                          className="px-1.5 py-0.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-[10px] font-black"
+                          className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-center text-xs font-black outline-none focus:border-slate-400"
                         />
+                        <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
+                        <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0">
+                          ₹{Number(selectedNewDenoms.online_amount || 0).toLocaleString()}
+                        </span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Calculated total amount */}
-                  <div className="space-y-0.5">
-                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Total Amount (Calculated)</label>
-                    <input autoComplete="one-time-code"
-                      type="text"
-                      value={`₹${(
+                    {/* Live total */}
+                    <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                      <span className="text-[8px] uppercase font-black tracking-wider text-slate-400">Total Amount</span>
+                      <span className="text-sm font-black text-slate-800 dark:text-white">₹{(
                         selectedNewDenoms.note_500 * 500 +
                         selectedNewDenoms.note_200 * 200 +
                         selectedNewDenoms.note_100 * 100 +
@@ -1186,10 +1181,8 @@ export default function MobileOverview({
                         selectedNewDenoms.note_10 * 10 +
                         selectedNewDenoms.coins +
                         selectedNewDenoms.online_amount
-                      ).toLocaleString()}`}
-                      className="w-full px-2 py-1.5 bg-slate-100 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black text-slate-800 dark:text-slate-100"
-                      readOnly
-                    />
+                      ).toLocaleString()}</span>
+                    </div>
                   </div>
 
                   {/* Remarks */}
