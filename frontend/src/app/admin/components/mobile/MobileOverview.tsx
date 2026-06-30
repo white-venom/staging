@@ -87,7 +87,8 @@ export default function MobileOverview({
 }: MobileOverviewProps) {
   const { retailerDirectory, portalDirectory, showToastNotification } = useAdmin();
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
-  const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = useState(true);
+  const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = useState(false);
+  const [isRecentLedgerExpanded, setIsRecentLedgerExpanded] = useState(false);
 
   // Date range modal state
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
@@ -802,7 +803,10 @@ export default function MobileOverview({
 
       {/* Recent Ledger Activity */}
       <section className="space-y-2 pb-4">
-        <div className="flex items-center justify-between px-1.5">
+        <div 
+          onClick={() => setIsRecentLedgerExpanded(!isRecentLedgerExpanded)}
+          className="flex items-center justify-between px-1.5 cursor-pointer group select-none"
+        >
           <div className="flex items-center gap-1.5 flex-wrap">
             <h3 className="font-black text-slate-900 dark:text-white uppercase tracking-wider text-[10px] flex items-center gap-1.5">
               <History className="w-3.5 h-3.5" /> Recent Ledger
@@ -810,6 +814,7 @@ export default function MobileOverview({
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
+              onClick={(e) => e.stopPropagation()}
               className="bg-transparent border-none text-[8px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider focus:outline-none cursor-pointer"
             >
               <option value="date-desc">LATEST FIRST</option>
@@ -818,10 +823,14 @@ export default function MobileOverview({
               <option value="amount-asc">AMOUNT: LOW-HIGH</option>
             </select>
           </div>
-          <Link href="/admin/ledger" className="text-[8px] font-black text-blue-600 uppercase">View All</Link>
+          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <Link href="/admin/ledger" className="text-[8px] font-black text-blue-600 uppercase">View All</Link>
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 ${isRecentLedgerExpanded ? 'rotate-180' : ''}`} />
+          </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 shadow-xs mb-4">
+        {isRecentLedgerExpanded && (
+          <div className="bg-white dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 shadow-xs mb-4 animate-in fade-in duration-200">
           {recentActivity.length === 0 ? (
             <div className="p-4 text-center text-slate-400 text-[9px] font-black uppercase tracking-widest">
               No recent activity
@@ -955,6 +964,7 @@ export default function MobileOverview({
             })
           )}
         </div>
+        )}
       </section>
 
       {/* Stores Visited Mobile Sliding Overlay Modal */}

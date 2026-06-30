@@ -116,7 +116,8 @@ export default function OverviewTab({
   const [expandedDepositId, setExpandedDepositId] = React.useState<string | null>(null);
   const [expandedLedgerRowId, setExpandedLedgerRowId] = React.useState<string | null>(null);
   const [sortBy, setSortBy] = React.useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
-  const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = React.useState(true);
+  const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = React.useState(false);
+  const [isRecentLedgerExpanded, setIsRecentLedgerExpanded] = React.useState(false);
 
   // Date range modal state
   const [isRangeModalOpen, setIsRangeModalOpen] = React.useState(false);
@@ -1004,12 +1005,15 @@ export default function OverviewTab({
 
         return (
           <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-3">
+            <div 
+              onClick={() => setIsRecentLedgerExpanded(!isRecentLedgerExpanded)}
+              className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-3 cursor-pointer group select-none"
+            >
               <div className="flex items-center gap-2">
                 <BarChart2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <h2 className="text-xs font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-wide">Recent Ledger Activity</h2>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
@@ -1023,10 +1027,12 @@ export default function OverviewTab({
                 <span className="text-[9px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded-full font-bold border border-blue-200/60 dark:border-blue-900/40">
                   Latest 10 Entries
                 </span>
+                <ChevronDown className={`w-4 h-4 text-slate-400 transform transition-transform duration-200 ${isRecentLedgerExpanded ? 'rotate-180' : ''}`} />
               </div>
             </div>
 
-            <div className="overflow-x-auto">
+            {isRecentLedgerExpanded && (
+              <div className="overflow-x-auto animate-in fade-in duration-200">
               <table className="w-full text-left text-[11px] border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-950 text-[9px] font-black uppercase tracking-tight text-slate-400 border-b border-slate-200 dark:border-slate-850">
@@ -1191,6 +1197,7 @@ export default function OverviewTab({
                 </tbody>
               </table>
             </div>
+            )}
           </div>
         );
       })()}
