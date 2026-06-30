@@ -117,7 +117,7 @@ export default function OverviewTab({
   const [expandedLedgerRowId, setExpandedLedgerRowId] = React.useState<string | null>(null);
   const [sortBy, setSortBy] = React.useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = React.useState(false);
-  const [isRecentLedgerExpanded, setIsRecentLedgerExpanded] = React.useState(false);
+  const [isRecentLedgerExpanded, setIsRecentLedgerExpanded] = React.useState(true);
 
   // Date range modal state
   const [isRangeModalOpen, setIsRangeModalOpen] = React.useState(false);

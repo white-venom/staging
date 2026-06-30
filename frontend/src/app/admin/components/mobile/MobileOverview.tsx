@@ -88,7 +88,7 @@ export default function MobileOverview({
   const { retailerDirectory, portalDirectory, showToastNotification } = useAdmin();
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = useState(false);
-  const [isRecentLedgerExpanded, setIsRecentLedgerExpanded] = useState(false);
+  const [isRecentLedgerExpanded, setIsRecentLedgerExpanded] = useState(true);
 
   // Date range modal state
   const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
