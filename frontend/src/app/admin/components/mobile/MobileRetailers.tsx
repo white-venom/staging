@@ -1049,7 +1049,7 @@ export default function MobileRetailers({
       {/* EDIT TRANSACTION ENTRY MODAL */}
       {isEditEntryModalOpen && editingEntry && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 select-none animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-6 animate-slide-up shadow-2xl">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto p-6 space-y-6 animate-slide-up shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
                 {editingIsDeposit ? "Edit Cash Out Entry" : "Edit Cash In Entry"}
