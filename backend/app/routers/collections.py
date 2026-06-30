@@ -4,7 +4,7 @@ from typing import List, Optional
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy import select, and_, desc, update
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database.db import get_db
 from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, Portal, BankDeposit, BusinessSettings
@@ -306,13 +306,13 @@ def list_collections(
         query = query.where(and_(*filters))
 
     query = query.options(
-        joinedload(Collection.retailer), 
-        joinedload(Collection.store), 
+        joinedload(Collection.retailer),
+        joinedload(Collection.store),
         joinedload(Collection.staff),
         joinedload(Collection.from_staff),
         joinedload(Collection.portal),
         joinedload(Collection.denominations),
-        joinedload(Collection.ledgers)
+        selectinload(Collection.ledgers)
     )
     collections = db.scalars(query.order_by(desc(Collection.created_at))).all()
     
