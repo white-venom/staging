@@ -658,13 +658,14 @@ def get_portal_group_ledger(
         
         tx_store_name = store_name or retailer_name
 
+        prefix = f"[{p_name}] " if p_name.lower().strip() != "primary account" else ""
         if d.deposit_type == "portal":
             tx_type = "credit"
             amount = float(d.amount)
             if d.payment_mode == "online":
-                desc_text = f"[{p_name}] Online Payment from {tx_store_name}" if tx_store_name else f"[{p_name}] Online Payment"
+                desc_text = f"{prefix}Online Payment from {tx_store_name}" if tx_store_name else f"{prefix}Online Payment"
             else:
-                desc_text = f"[{p_name}] Cash Deposit from {tx_store_name}" if tx_store_name else f"[{p_name}] Cash Deposit"
+                desc_text = f"{prefix}Cash Deposit from {tx_store_name}" if tx_store_name else f"{prefix}Cash Deposit"
             if fallback_remarks:
                 desc_text += f" ({fallback_remarks})"
         elif d.deposit_type == "virtual":
@@ -729,12 +730,13 @@ def get_portal_group_ledger(
                 "coins": float(c.denominations.coins or 0.0),
                 "online_amount": float(c.denominations.online_amount or 0.0)
             }
+        prefix = f"[{p_name}] " if p_name.lower().strip() != "primary account" else ""
         tx_list.append({
             "id": str(c.id),
             "created_at": c.created_at,
             "transaction_type": "debit",
             "amount": float(c.total_amount),
-            "description": f"[{p_name}] Collection from {c.retailer.retailer_name if c.retailer else 'Retailer'}" + (f" ({c.remarks})" if c.remarks else ""),
+            "description": f"{prefix}Collection from {c.retailer.retailer_name if c.retailer else 'Retailer'}" + (f" ({c.remarks})" if c.remarks else ""),
             "collection_id": str(c.id),
             "deposit_id": None,
             "remarks": c.remarks,
