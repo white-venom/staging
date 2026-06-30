@@ -1336,55 +1336,56 @@ export default function MobileRetailers({
                   />
                 </div>
 
-                {/* AMOUNT FIELD (Always visible) */}
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
-                  <input 
-                    type="number" 
-                    value={selectedNewAmount} 
-                    onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))} 
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold disabled:opacity-75 disabled:bg-slate-100" 
-                    required 
-                    disabled={selectedNewPaymentMode === "cash"}
-                  />
-                </div>
+                {/* AMOUNT FIELD – only shown for online mode */}
+                {selectedNewPaymentMode !== "cash" && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
+                    <input 
+                      type="number" 
+                      value={selectedNewAmount} 
+                      onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))} 
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold" 
+                      required 
+                    />
+                  </div>
+                )}
 
-                {/* DENOMINATIONS (for Cash Mode) */}
+                {/* DENOMINATIONS (for Cash Mode) – staff-style full-row layout */}
                 {selectedNewPaymentMode === "cash" && (
-                  <div className="bg-slate-50 dark:bg-slate-955 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2 select-none">
-                    <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400">Cash Denominations</label>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs font-bold">
+                  <div className="bg-slate-50 dark:bg-slate-955 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 select-none">
+                    <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-2">Counting Details (Notes)</label>
+                    <div className="space-y-1">
                       {[
-                        { label: "500", key: "note_500" },
-                        { label: "200", key: "note_200" },
-                        { label: "100", key: "note_100" },
-                        { label: "50", key: "note_50" },
-                        { label: "20", key: "note_20" },
-                        { label: "10", key: "note_10" },
+                        { label: "₹500 Notes", key: "note_500", multiplier: 500 },
+                        { label: "₹200 Notes", key: "note_200", multiplier: 200 },
+                        { label: "₹100 Notes", key: "note_100", multiplier: 100 },
+                        { label: "₹50 Notes",  key: "note_50",  multiplier: 50  },
+                        { label: "₹20 Notes",  key: "note_20",  multiplier: 20  },
+                        { label: "₹10 Notes",  key: "note_10",  multiplier: 10  },
+                        { label: "Coins / ₹1", key: "coins",    multiplier: 1   },
                       ].map((n) => (
-                        <div key={n.key} className="flex items-center gap-1.5 justify-between">
-                          <span className="text-slate-500 w-8">₹{n.label}</span>
+                        <div key={n.key} className="flex items-center gap-2 justify-between py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                          <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">{n.label}</span>
+                          <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">&times;</span>
                           <input
                             type="number"
                             placeholder="0"
                             min="0"
                             value={selectedNewDenoms[n.key as keyof typeof selectedNewDenoms] || ""}
                             onChange={(e) => handleDenomValChange(n.key, e.target.value)}
-                            className="w-16 px-1.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-center text-xs outline-none focus:border-indigo-500"
+                            className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-center text-xs outline-none focus:border-slate-400"
                           />
+                          <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
+                          <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0">
+                            ₹{(Number(selectedNewDenoms[n.key as keyof typeof selectedNewDenoms] || 0) * n.multiplier).toLocaleString()}
+                          </span>
                         </div>
                       ))}
-                      <div className="col-span-2 flex items-center gap-1.5 justify-between pt-1 border-t border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-500">Coins / ₹1</span>
-                        <input
-                          type="number"
-                          placeholder="0"
-                          min="0"
-                          value={selectedNewDenoms.coins || ""}
-                          onChange={(e) => handleDenomValChange("coins", e.target.value)}
-                          className="w-16 px-1.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-center text-xs outline-none focus:border-indigo-500"
-                        />
-                      </div>
+                    </div>
+                    {/* Live total summary */}
+                    <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                      <span className="text-[9px] uppercase font-black tracking-wider text-slate-400">Total (Cash)</span>
+                      <span className="text-sm font-black text-slate-800 dark:text-white">₹{selectedNewAmount.toLocaleString()}</span>
                     </div>
                   </div>
                 )}
