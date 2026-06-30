@@ -1114,18 +1114,10 @@ export default function StaffDashboard() {
                                <button
                                  onClick={(e) => {
                                    e.stopPropagation();
-                                   setEditingItem(c);
-                                   setEditDenoms({
-                                     note_500: Number(c.denominations?.note_500 || 0),
-                                     note_200: Number(c.denominations?.note_200 || 0),
-                                     note_100: Number(c.denominations?.note_100 || 0),
-                                     note_50: Number(c.denominations?.note_50 || 0),
-                                     note_20: Number(c.denominations?.note_20 || 0),
-                                     note_10: Number(c.denominations?.note_10 || 0),
-                                     coins: Number(c.denominations?.coins || 0),
-                                     online_amount: Number(c.denominations?.online_amount || 0),
-                                   });
-                                   setEditRemarks(c.remarks || "");
+                                   // Edit uses the same full entry form as creating a new one
+                                   // (with retailer, date, etc.) instead of the old quick-edit
+                                   // popup, so the two windows match.
+                                   router.push(c.type === "collection" ? `/collection?editId=${c.id}` : `/deposit?editId=${c.id}`);
                                  }}
                                  className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-955/20 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
                                >
