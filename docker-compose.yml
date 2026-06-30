@@ -95,6 +95,25 @@ services:
     depends_on:
       - backend
 
+  landing-page:
+    build:
+      context: ./landing-page
+      dockerfile: Dockerfile
+    container_name: doit_landing_page
+    restart: always
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - HOSTNAME=0.0.0.0
+    networks:
+      - doit_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/ || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 3
+
   nginx:
     image: nginx:alpine
     container_name: doit_nginx
@@ -110,5 +129,6 @@ services:
       - frontend
       - backend
       - superadmin-frontend
+      - landing-page
     networks:
       - doit_network
