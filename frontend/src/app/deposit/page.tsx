@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore, DenominationCounts } from "../utils/store";
 import { db } from "../utils/db";
-import { getISTDateString } from "../utils/dateHelpers";
 import InlineSelect from "../components/InlineSelect";
 import { 
   ArrowLeft, 
@@ -39,10 +38,6 @@ function NewDepositContent() {
   const [toOffice, setToOffice] = useState(false);
   const [portalsList, setPortalsList] = useState<any[]>([]);
   const [showOnlinePortal, setShowOnlinePortal] = useState(false);
-
-  const [remarks, setRemarks] = useState("");
-  const [referenceNo, setReferenceNo] = useState("");
-  const [depositDate, setDepositDate] = useState<string>(() => getISTDateString());
 
   const [denominations, setDenominations] = useState<DenominationCounts>({
     note_500: 0,
@@ -108,20 +103,8 @@ function NewDepositContent() {
             if (target.deposit_type === "retailer" || target.deposit_type === "virtual") {
               setSelectedRetailerId(target.retailer_id);
             }
-            if (target.deposit_type === "staff") {
-              setToOffice(target.to_office);
-              if (target.recipient_staff_id) {
-                setSelectedStaffId(target.recipient_staff_id);
-              }
-            }
-            if (target.remarks) {
-              setRemarks(target.remarks);
-            }
-            if (target.reference_no) {
-              setReferenceNo(target.reference_no);
-            }
-            if (target.deposit_date) {
-              setDepositDate(target.deposit_date.substring(0, 10));
+            if (target.deposit_type === "staff" && target.recipient_staff_id) {
+              setSelectedStaffId(target.recipient_staff_id);
             }
             if (target.denominations) {
               setDenominations({
@@ -234,12 +217,7 @@ function NewDepositContent() {
       const retailerName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer";
       targetName = `Virtual: ${portalName} → ${retailerName}`;
     } else {
-      if (toOffice) {
-        targetName = "Super Distributor";
-      } else {
-        const staffName = staffUsers.find(u => u.id === selectedStaffId)?.name || "Staff Member";
-        targetName = `Staff: ${staffName}`;
-      }
+      targetName = "Super Distributor";
     }
 
     // Build proper backend payload with UUIDs
@@ -248,15 +226,11 @@ function NewDepositContent() {
       payment_mode: depositType === "virtual" ? "online" : "unified",
       amount: totalAmount,
       denominations: denominations,
-      remarks: remarks || null,
-      reference_no: referenceNo || null,
-      deposit_date: depositDate,
     };
     if (depositType === "portal" || depositType === "virtual") backendPayload.portal_id = selectedPortalId;
     if (depositType === "retailer" || depositType === "virtual") backendPayload.retailer_id = selectedRetailerId;
     if (depositType === "staff") {
-      backendPayload.to_office = toOffice;
-      backendPayload.recipient_staff_id = toOffice ? null : (selectedStaffId || null);
+      backendPayload.to_office = true;
     }
 
     // Local store payload (uses camelCase display fields)
@@ -268,11 +242,7 @@ function NewDepositContent() {
       denominations: denominations,
       portal_id: (depositType === "portal" || depositType === "virtual") ? selectedPortalId : undefined,
       retailer_id: (depositType === "retailer" || depositType === "virtual") ? selectedRetailerId : undefined,
-      recipient_staff_id: (depositType === "staff" && !toOffice) ? selectedStaffId : undefined,
-      to_office: toOffice,
-      remarks: remarks || "",
-      reference_no: referenceNo || "",
-      deposit_date: depositDate,
+      recipient_staff_id: depositType === "staff" ? selectedStaffId : undefined,
     };
 
     const submitOnline = async () => {
@@ -388,46 +358,6 @@ function NewDepositContent() {
           </div>
 
           {/* Context details options selector */}
-          {depositType === "staff" && (
-            <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-              <div className="flex items-center gap-2 py-1">
-                <input
-                  type="checkbox"
-                  id="toOfficeCheckbox"
-                  checked={toOffice}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setToOffice(checked);
-                    if (checked) {
-                      setSelectedStaffId("");
-                    } else if (staffUsers.length > 0) {
-                      setSelectedStaffId(staffUsers[0].id);
-                    }
-                  }}
-                  className="w-4 h-4 rounded text-indigo-650 border-slate-350 dark:border-slate-800 focus:ring-0 focus:outline-none"
-                />
-                <label htmlFor="toOfficeCheckbox" className="text-[10px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Handover to Cashier
-                </label>
-              </div>
-              
-              {!toOffice && (
-                <div className="animate-in fade-in duration-200">
-                  <label className="block text-[8px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500 mb-1">
-                    Select Recipient Staff Member
-                  </label>
-                  <InlineSelect
-                    value={selectedStaffId}
-                    onChange={(val) => setSelectedStaffId(val)}
-                    options={staffUsers.map(u => ({ value: u.id, label: u.name }))}
-                    placeholder={staffUsers.length === 0 ? "Loading staff members..." : "Select Staff"}
-                    icon={<User className="w-3.5 h-3.5" />}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-
           {depositType !== "staff" && (
             <div className="p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
               {depositType === "virtual" && (
@@ -649,47 +579,6 @@ function NewDepositContent() {
             </div>
           </div>
         )}
-
-          {/* Deposit Date Selector */}
-          <div className="space-y-1">
-            <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 px-1">
-              Deposit Date
-            </label>
-            <input autoComplete="one-time-code"
-              type="date"
-              value={depositDate}
-              onChange={(e) => setDepositDate(e.target.value)}
-              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
-            />
-          </div>
-
-          {/* Reference No */}
-          <div className="space-y-1">
-            <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 px-1">
-              Reference No
-            </label>
-            <input autoComplete="one-time-code"
-              type="text"
-              placeholder="Type reference no (optional)..."
-              value={referenceNo}
-              onChange={(e) => setReferenceNo(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold"
-            />
-          </div>
-
-          {/* Remarks */}
-          <div className="space-y-1">
-            <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 px-1">
-              Remarks
-            </label>
-            <input autoComplete="one-time-code"
-              type="text"
-              placeholder="Type remarks (optional)..."
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold"
-            />
-          </div>
 
           {/* Computed summary box */}
           <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
