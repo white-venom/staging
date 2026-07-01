@@ -166,9 +166,6 @@ export default function CashInLedgerPage() {
     if (entry.portal_group_name && entry.portal_group_name !== "Cash" && entry.portal_group_name !== "N/A") {
       headerLines.push(`Portal: ${entry.portal_group_name}`);
     }
-    if (entry.portal_name && entry.portal_name !== "Cash" && entry.portal_name !== "N/A" && entry.portal_name !== entry.portal_group_name) {
-      headerLines.push(`Bank: ${entry.portal_name}`);
-    }
     const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
     const text = `${headerText}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄

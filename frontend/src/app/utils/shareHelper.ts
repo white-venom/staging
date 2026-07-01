@@ -147,9 +147,6 @@ export const shareCollectionEntry = async (entry: {
   if (portal_group_name && portal_group_name !== "Cash" && portal_group_name !== "N/A") {
     headerLines.push(`Portal: ${portal_group_name}`);
   }
-  if (portal_name && portal_name !== "Cash" && portal_name !== "N/A" && portal_name !== portal_group_name) {
-    headerLines.push(`Bank: ${portal_name}`);
-  }
   if (remarks) {
     headerLines.push(`Remark: ${remarks}`);
   }

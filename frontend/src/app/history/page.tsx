@@ -72,9 +72,14 @@ export default function HistoryPage() {
         headerLines.push(`Retailer: ${entry.retailerName}`);
       }
     }
-    if (entry.portalName && entry.portalName !== "Cash" && entry.portalName !== "N/A") {
-      headerLines.push(`Store: ${entry.portalName}`);
+    if (entry.store_name) {
+      headerLines.push(`Store: ${entry.store_name}`);
     }
+    const pGroupName = entry.portalGroupName || entry.portal_group_name;
+    if (pGroupName && pGroupName !== "Cash" && pGroupName !== "N/A") {
+      headerLines.push(`Portal: ${pGroupName}`);
+    }
+
     const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
     const text = `${headerText}${lines.join("\n")}
 ┄┄┄┄┄┄┄┄┄┄┄┄┄┄
