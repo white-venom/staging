@@ -84,6 +84,7 @@ function NewCollectionContent() {
 
   const [mounted, setMounted] = useState(false);
   const [staffCanChangeCashInDate, setStaffCanChangeCashInDate] = useState(false);
+  const [portalGroups, setPortalGroups] = useState<any[]>([]);
 
   // Pre-fill if editing
   useEffect(() => {
@@ -192,6 +193,7 @@ function NewCollectionContent() {
         if (settings) setStaffCanChangeCashInDate(settings.staff_can_change_collection_date ?? false);
 
         const groups = await api.getPortalGroups();
+        setPortalGroups(groups);
         // Flatten: only individual portal accounts marked show_in_online_payment=true
         const onlinePortals: { id: string; name: string }[] = [];
         for (const g of groups) {
@@ -281,18 +283,34 @@ function NewCollectionContent() {
       return;
     }
 
+    // Resolve portal name (Bank) and portal group name (Portal)
+    let computedPortalName = "Cash";
+    let computedPortalGroupName = "";
+    if (denominations.online_amount > 0 && denominations.online_portal_id) {
+      for (const g of portalGroups) {
+        const foundP = (g.portals || []).find((p: any) => p.id === denominations.online_portal_id);
+        if (foundP) {
+          computedPortalName = foundP.portal_name;
+          computedPortalGroupName = g.name;
+          break;
+        }
+      }
+    } else if (selectedStoreId) {
+      const storeObj = retailerStores.find(s => s.id === selectedStoreId);
+      if (storeObj) {
+        computedPortalName = storeObj.store_name;
+      }
+    }
+
     // INTERCEPT OFFLINE SUBMISSIONS:
     if (!isOnline) {
-      const onlinePortalName = denominations.online_amount > 0 && denominations.online_portal_id
-        ? portals.find(p => p.id === denominations.online_portal_id)?.name || "Online"
-        : (selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash");
-
       await db.collections.add({
         retailer_id: selectedRetailer!.id,
         store_id: selectedStoreId || undefined,
         portal_id: denominations.online_portal_id || undefined,
         retailerName: selectedRetailer?.name || "Unknown",
-        portalName: onlinePortalName,
+        portalName: computedPortalName,
+        portalGroupName: computedPortalGroupName || undefined,
         totalAmount: totalCollectionAmount,
         denominations,
         remarks: remarks || "Offline transaction logs",
@@ -325,16 +343,13 @@ function NewCollectionContent() {
       } else {
         await api.createCollection(payload);
         // If successful create, update Zustand
-        const onlinePortalName = denominations.online_amount > 0 && denominations.online_portal_id
-          ? portals.find(p => p.id === denominations.online_portal_id)?.name || "Online"
-          : (selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash");
-          
         addCollection({
           retailer_id: sourceType === "retailer" ? selectedRetailer!.id : "office",
           store_id: selectedStoreId || undefined,
           store_name: sourceType === "retailer" && selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : undefined,
           retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
-          portalName: onlinePortalName,
+          portalName: computedPortalName,
+          portalGroupName: computedPortalGroupName || undefined,
           totalAmount: totalCollectionAmount,
           denominations,
           remarks: remarks || ""

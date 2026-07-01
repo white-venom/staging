@@ -78,6 +78,8 @@ export const shareCollectionEntry = async (entry: {
   retailerName?: string;
   portal_name?: string;
   portalName?: string;
+  portal_group_name?: string;
+  portalGroupName?: string;
   store_name?: string;
   storeName?: string;
   total_amount?: number;
@@ -141,8 +143,12 @@ export const shareCollectionEntry = async (entry: {
   if (store_name) {
     headerLines.push(`Store: ${store_name}`);
   }
-  if (portal_name && portal_name !== "Cash" && portal_name !== "N/A") {
-    headerLines.push(`Portal: ${portal_name}`);
+  const portal_group_name = entry.portal_group_name || entry.portalGroupName;
+  if (portal_group_name && portal_group_name !== "Cash" && portal_group_name !== "N/A") {
+    headerLines.push(`Portal: ${portal_group_name}`);
+  }
+  if (portal_name && portal_name !== "Cash" && portal_name !== "N/A" && portal_name !== portal_group_name) {
+    headerLines.push(`Bank: ${portal_name}`);
   }
   if (remarks) {
     headerLines.push(`Remark: ${remarks}`);

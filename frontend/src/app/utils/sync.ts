@@ -74,6 +74,7 @@ export async function syncOfflineData(): Promise<number> {
             store_id: col.store_id,
             retailerName: col.retailerName,
             portalName: col.portalName,
+            portalGroupName: col.portalGroupName,
             totalAmount: col.totalAmount,
             denominations: col.denominations,
             remarks: col.remarks

@@ -35,6 +35,7 @@ export interface CollectionItem {
   store_name?: string;
   retailerName: string;
   portalName: string;
+  portalGroupName?: string;
   staffName?: string;
   totalAmount: number;
   denominations: DenominationCounts;

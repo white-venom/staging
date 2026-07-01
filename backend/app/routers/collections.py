@@ -240,8 +240,10 @@ def submit_collection(
         
         # Portal name for response
         if db_collection.portal_id:
-            portal_obj = db.scalar(select(Portal).where(Portal.id == db_collection.portal_id))
-            db_collection.portal_name = portal_obj.portal_name if portal_obj else None
+            portal_obj = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == db_collection.portal_id))
+            if portal_obj:
+                db_collection.portal_name = portal_obj.portal_name
+                db_collection.portal_group_name = portal_obj.group.name if portal_obj.group else None
 
         # 3. Simulate Email Alert (Task 110: Auto-Verify)
         if retailer and retailer.email:
@@ -310,7 +312,7 @@ def list_collections(
         joinedload(Collection.store),
         joinedload(Collection.staff),
         joinedload(Collection.from_staff),
-        joinedload(Collection.portal),
+        joinedload(Collection.portal).joinedload(Portal.group),
         joinedload(Collection.denominations),
         selectinload(Collection.ledgers)
     )
@@ -332,6 +334,7 @@ def list_collections(
         col.store_name = col.store.store_name if col.store else "Cash"
         col.staff_name = col.staff.name if col.staff else "Unknown Staff"
         col.portal_name = col.portal.portal_name if col.portal else None
+        col.portal_group_name = col.portal.group.name if (col.portal and col.portal.group) else None
         
         linked_ledger = next((le for le in col.ledgers if le is not None), None)
         if linked_ledger:
@@ -433,6 +436,14 @@ def verify_collection(
             )
         except Exception as whatsapp_err:
             print(f"Error queueing WhatsApp message for collection verification: {whatsapp_err}")
+
+    # Populate virtual fields
+    collection.retailer_name = collection.retailer.retailer_name if collection.retailer else "Unknown"
+    collection.retailer_ledger_token = collection.retailer.ledger_token if collection.retailer else None
+    collection.store_name = collection.store.store_name if collection.store else "Cash"
+    collection.staff_name = collection.staff.name if collection.staff else "Unknown"
+    collection.portal_name = collection.portal.portal_name if collection.portal else None
+    collection.portal_group_name = collection.portal.group.name if (collection.portal and collection.portal.group) else None
 
     return collection
 
@@ -901,5 +912,6 @@ def update_collection(
     collection.store_name = collection.store.store_name if collection.store else "Cash"
     collection.staff_name = collection.staff.name if collection.staff else "Unknown"
     collection.portal_name = collection.portal.portal_name if collection.portal else None
+    collection.portal_group_name = collection.portal.group.name if (collection.portal and collection.portal.group) else None
     
     return collection

@@ -225,6 +225,7 @@ export default function StaffDashboard() {
         store_name: c.store_name,
         retailerName: c.retailer_name || "Unknown Retailer",
         portalName: c.portal_name || "Cash",
+        portalGroupName: c.portal_group_name || undefined,
         staffName: c.staff_name,
         totalAmount: Number(c.total_amount),
         denominations: {
@@ -350,6 +351,7 @@ export default function StaffDashboard() {
           store_id: updated.store_id,
           retailerName: updated.retailer_name || "Unknown Retailer",
           portalName: updated.portal_name || "Cash",
+          portalGroupName: updated.portal_group_name || undefined,
           staffName: updated.staff_name,
           totalAmount: Number(updated.total_amount),
           denominations: {
@@ -1099,7 +1101,7 @@ export default function StaffDashboard() {
                          <button
                            onClick={() => {
                              if (c.type === 'collection') {
-                               shareCollectionEntry({ retailer_name: c.retailerName, portal_name: c.portalName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name);
+                               shareCollectionEntry({ retailer_name: c.retailerName, portal_name: c.portalName, portal_group_name: c.portalGroupName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name);
                              } else {
                                shareDepositEntry({ deposit_type: c.depositType, target_name: c.targetName, amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name, currentUser.id);
                              }
@@ -1142,7 +1144,7 @@ export default function StaffDashboard() {
                                      // Refresh data
                                      const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
                                      const { setCollections, setDeposits } = useAppStore.getState();
-                                     setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
+                                     setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', portalGroupName: col.portal_group_name || undefined, staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
                                      setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
                                      setExpandedHomeId(null);
                                    } catch (err: any) {

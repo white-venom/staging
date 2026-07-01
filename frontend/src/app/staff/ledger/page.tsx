@@ -484,8 +484,9 @@ export default function StaffLedgerPage() {
                                 if (item.type === "collection") {
                                   shareCollectionEntry(
                                     {
-                                      retailer_name: item.retailer_name,
-                                      portal_name: item.portal_name,
+                                      retailer_name: item.retailerName || item.retailer_name,
+                                      portal_name: item.portalName || item.portal_name,
+                                      portal_group_name: item.portalGroupName || item.portal_group_name,
                                       store_name: item.store_name,
                                       total_amount: item.totalAmount,
                                       denominations: item.denominations,
