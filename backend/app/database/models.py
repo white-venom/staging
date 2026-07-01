@@ -109,7 +109,7 @@ class Portal(Base):
 
     # Relationships
     group: Mapped[PortalGroup] = relationship("PortalGroup", back_populates="portals")
-    deposits: Mapped[List["BankDeposit"]] = relationship("BankDeposit", back_populates="portal")
+    deposits: Mapped[List["BankDeposit"]] = relationship("BankDeposit", foreign_keys="[BankDeposit.portal_id]", back_populates="portal")
 
     @property
     def group_name(self) -> Optional[str]:
