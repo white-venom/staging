@@ -553,10 +553,12 @@ export default function WalletTransferTab() {
                 : "Move to Distributor"}
           </button>
         </form>
-        </> {/* end virtual tab */}
-        )} {/* end ternary */}
-          {/* RECENT ENTRIES VIEW */}
+        </>
+        )}
+      </div>
+      {/* RECENT ENTRIES VIEW */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4 col-span-1">
+
         <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
           <History className="w-5 h-5 text-blue-650" />
           <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
@@ -631,7 +633,6 @@ export default function WalletTransferTab() {
           )}
         </div>
       </div>
-    </div>
 
       {/* Audit Drawer/Modal */}
       {selectedDepositId && currentSelection && (

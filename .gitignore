@@ -23,3 +23,14 @@ Thumbs.db
 
 # Nested duplicates / backups
 do-it-services/
+
+# Local custom/large files & folders
+cf.zip
+cf/
+documents/
+scratch/
+*.zip
+*.pdf
+*.jpeg
+*.jpg
+*.png
