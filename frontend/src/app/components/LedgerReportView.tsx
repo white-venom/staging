@@ -78,6 +78,7 @@ interface LedgerTransaction {
   store_name?: string | null;
   portal_name?: string | null;
   portal_bank_name?: string | null;
+  portal_group_name?: string | null;
   portal_bank_account?: string | null;
   deposit_type?: string | null;
   denominations?: {
@@ -588,13 +589,15 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                             Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
                           </div>
                         )}
-                        {isDebit && tx.portal_name && (
+                        {isDebit && (tx.portal_name || tx.portal_group_name) && (
                           <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
                             {tx.deposit_type === "retailer"
                               ? `Retailer - ${tx.portal_name}`
                               : tx.deposit_type === "staff"
                               ? `Staff - ${tx.portal_name}`
-                              : (hidePortalBankNames ? null : tx.portal_name)}
+                              : hidePortalBankNames
+                              ? (tx.portal_group_name || "Portal")
+                              : (tx.portal_group_name ? `${tx.portal_group_name}${tx.portal_name ? ` (${tx.portal_name})` : ""}` : tx.portal_name)}
                           </div>
                         )}
                         {tx.remarks && (
@@ -712,11 +715,15 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               {selectedEntryForDetails.transaction_type === "credit" && (
                 <>
                   {/* Show Online Portal Name if payment was online */}
-                  {selectedEntryForDetails.portal_name && (
+                  {(selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_group_name) && (
                     <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-3.5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex justify-between items-center text-xs">
                       <span className="font-bold text-emerald-700 dark:text-emerald-400">Online Portal</span>
                       <span className="font-extrabold text-emerald-650 dark:text-emerald-400 uppercase tracking-wider">
-                        {selectedEntryForDetails.portal_name}
+                        {hidePortalBankNames
+                          ? (selectedEntryForDetails.portal_group_name || "Portal")
+                          : (selectedEntryForDetails.portal_group_name
+                            ? `${selectedEntryForDetails.portal_group_name}${selectedEntryForDetails.portal_name ? ` (${selectedEntryForDetails.portal_name})` : ""}`
+                            : selectedEntryForDetails.portal_name)}
                         {selectedEntryForDetails.denominations?.online_amount ? ` (₹${selectedEntryForDetails.denominations.online_amount})` : ""}
                       </span>
                     </div>
@@ -731,28 +738,32 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
               {/* Cash Out (Deposit/Payout) Details */}
               {selectedEntryForDetails.transaction_type === "debit" && 
-               (selectedEntryForDetails.deposit_type === "retailer" || selectedEntryForDetails.deposit_type === "staff" || !hidePortalBankNames) && 
-               (selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_bank_name) && (
-                <div className="bg-indigo-50/50 dark:bg-indigo-950/15 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/30 space-y-2 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
-                  <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target</span>
-                  {selectedEntryForDetails.portal_name && (
-                    <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
-                      <span className="font-extrabold uppercase tracking-wide">
-                        {selectedEntryForDetails.deposit_type === "retailer"
-                          ? `Retailer - ${selectedEntryForDetails.portal_name}`
-                          : selectedEntryForDetails.deposit_type === "staff"
-                          ? `Staff - ${selectedEntryForDetails.portal_name}`
-                          : selectedEntryForDetails.portal_name}
-                      </span>
-                    </div>
-                  )}
-                  {selectedEntryForDetails.portal_bank_name && (
-                    <div className="flex justify-between pb-0.5">
-                      <span>Bank Name</span>
-                      <span className="font-extrabold">{selectedEntryForDetails.portal_bank_name}</span>
-                    </div>
-                  )}
-                </div>
+               (selectedEntryForDetails.deposit_type === "retailer" || selectedEntryForDetails.deposit_type === "staff" || !hidePortalBankNames || selectedEntryForDetails.portal_group_name) && 
+               (selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_group_name || selectedEntryForDetails.portal_bank_name) && (
+                 <div className="bg-indigo-50/50 dark:bg-indigo-950/15 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/30 space-y-2 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
+                   <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target</span>
+                   {(selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_group_name) && (
+                     <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
+                       <span className="font-extrabold uppercase tracking-wide">
+                         {selectedEntryForDetails.deposit_type === "retailer"
+                           ? `Retailer - ${selectedEntryForDetails.portal_name}`
+                           : selectedEntryForDetails.deposit_type === "staff"
+                           ? `Staff - ${selectedEntryForDetails.portal_name}`
+                           : hidePortalBankNames
+                           ? (selectedEntryForDetails.portal_group_name || "Portal")
+                           : (selectedEntryForDetails.portal_group_name
+                             ? `${selectedEntryForDetails.portal_group_name}${selectedEntryForDetails.portal_name ? ` (${selectedEntryForDetails.portal_name})` : ""}`
+                             : selectedEntryForDetails.portal_name)}
+                       </span>
+                     </div>
+                   )}
+                   {selectedEntryForDetails.portal_bank_name && !hidePortalBankNames && (
+                     <div className="flex justify-between pb-0.5">
+                       <span>Bank Name</span>
+                       <span className="font-extrabold">{selectedEntryForDetails.portal_bank_name}</span>
+                     </div>
+                   )}
+                 </div>
               )}
 
               {selectedEntryForDetails.remarks && (

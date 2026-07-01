@@ -103,12 +103,13 @@ export default function DailyReportPage() {
     })),
     ...filteredDeposits.map(d => {
       const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+      const targetDisp = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : (d.target_name || "Super Distributor");
       return {
         ...d,
         itemType: isRecipient ? "collection" : "deposit",
         inAmount: isRecipient ? d.amount : null,
         outAmount: isRecipient ? null : d.amount,
-        detailsText: isRecipient ? `Received from ${d.staff_name}` : (d.target_name || "Super Distributor")
+        detailsText: isRecipient ? `Received from ${d.staff_name}` : targetDisp
       };
     })
   ].sort((a, b) => getUtcDate(a.created_at).getTime() - getUtcDate(b.created_at).getTime());
@@ -429,9 +430,10 @@ export default function DailyReportPage() {
                         } else {
                           source = staffName;
                           const storeStr = item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "";
+                          const destName = (item.deposit_type === "portal" && item.portal_group_name) ? item.portal_group_name : (item.target_name || "Recipient");
                           destination = item.to_office
                             ? "Super Distributor"
-                            : `${item.target_name || "Recipient"}${storeStr}`;
+                            : `${destName}${storeStr}`;
                         }
                         const narration = `From ${source} to ${destination}`;
 

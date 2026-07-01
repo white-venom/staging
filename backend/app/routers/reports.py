@@ -32,9 +32,9 @@ def get_public_ledger(
         .options(
             joinedload(Ledger.collection).joinedload(Collection.denominations),
             joinedload(Ledger.collection).joinedload(Collection.store),
-            joinedload(Ledger.collection).joinedload(Collection.portal),
+            joinedload(Ledger.collection).joinedload(Collection.portal).joinedload(Portal.group),
             joinedload(Ledger.deposit).joinedload(BankDeposit.denominations),
-            joinedload(Ledger.deposit).joinedload(BankDeposit.portal),
+            joinedload(Ledger.deposit).joinedload(BankDeposit.portal).joinedload(Portal.group),
             joinedload(Ledger.deposit).joinedload(BankDeposit.retailer),
             joinedload(Ledger.deposit).joinedload(BankDeposit.recipient_staff)
         )
@@ -63,16 +63,21 @@ def get_public_ledger(
         store_name = None
         portal_name = None
         portal_bank_name = None
+        portal_group_name = None
         if tx.collection:
             if tx.collection.store:
                 store_name = tx.collection.store.store_name
             if tx.collection.portal:
                 portal_name = tx.collection.portal.portal_name
                 portal_bank_name = tx.collection.portal.bank_name
+                if tx.collection.portal.group:
+                    portal_group_name = tx.collection.portal.group.name
         elif tx.deposit:
             if tx.deposit.portal:
                 portal_name = tx.deposit.portal.portal_name
                 portal_bank_name = tx.deposit.portal.bank_name
+                if tx.deposit.portal.group:
+                    portal_group_name = tx.deposit.portal.group.name
             elif tx.deposit.deposit_type == "retailer" and tx.deposit.retailer:
                 portal_name = tx.deposit.retailer.retailer_name
             elif tx.deposit.deposit_type == "staff":
@@ -84,6 +89,8 @@ def get_public_ledger(
                 if tx.deposit.portal:
                     portal_name = tx.deposit.portal.portal_name
                     portal_bank_name = tx.deposit.portal.bank_name
+                    if tx.deposit.portal.group:
+                        portal_group_name = tx.deposit.portal.group.name
                 else:
                     portal_name = "Virtual Transfer"
 
@@ -121,6 +128,7 @@ def get_public_ledger(
             "store_name": store_name,
             "portal_name": portal_name,
             "portal_bank_name": portal_bank_name,
+            "portal_group_name": portal_group_name,
             "deposit_type": tx.deposit.deposit_type if tx.deposit else None,
             "denominations": denom_dict
         })
@@ -408,7 +416,7 @@ def get_staff_ledger(
     deposits_made = db.scalars(
         select(BankDeposit)
         .options(
-            joinedload(BankDeposit.portal),
+            joinedload(BankDeposit.portal).joinedload(Portal.group),
             joinedload(BankDeposit.retailer),
             joinedload(BankDeposit.recipient_staff)
         )
@@ -459,9 +467,8 @@ def get_staff_ledger(
     # Format Deposits / Handovers Made (Outflows)
     for d in deposits_made:
         if d.deposit_type == "portal":
-            portal_name = d.portal.portal_name if d.portal else "Portal"
-            bank_name = f" ({d.portal.bank_name})" if (d.portal and d.portal.bank_name) else ""
-            desc = f"Deposit to {portal_name}{bank_name}"
+            portal_group = d.portal.group.name if (d.portal and d.portal.group) else (d.portal.portal_name if d.portal else "Portal")
+            desc = f"Deposit to {portal_group}"
         elif d.deposit_type == "retailer":
             retailer_name = d.retailer.retailer_name if d.retailer else "Retailer"
             desc = f"Deposit to Retailer: {retailer_name}"
