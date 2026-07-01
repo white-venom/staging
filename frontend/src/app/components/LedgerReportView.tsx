@@ -149,6 +149,22 @@ export default function LedgerReportView({
     }
   }, [data]);
 
+  // Intercept phone hardware back button: push a fake state so pressing back
+  // closes the ledger view instead of leaving the admin page entirely.
+  useEffect(() => {
+    if (!onBack) return;
+    // Push a sentinel entry so there's something to go "back" from
+    window.history.pushState({ ledgerOpen: true }, "");
+    const handlePopState = (e: PopStateEvent) => {
+      // If we pop back to the sentinel-less state, close the ledger
+      onBack();
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [onBack]);
+
   const handleCopyLink = async () => {
     if (!publicLink) return;
     try {
