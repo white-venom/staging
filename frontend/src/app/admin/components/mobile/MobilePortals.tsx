@@ -923,12 +923,11 @@ export default function MobilePortals({
                       options={[
                         { value: "", label: "Select Portal Bank Account" },
                         ...portalDirectory
-                          .map((group: any) => {
+                          .flatMap((group: any) => {
                             const firstOnlinePortal = (group.portals || []).find((p: any) => p.show_in_online_payment);
-                            if (!firstOnlinePortal) return null;
-                            return { value: String(firstOnlinePortal.id), label: group.name };
+                            if (!firstOnlinePortal) return [];
+                            return [{ value: String(firstOnlinePortal.id), label: group.name }];
                           })
-                          .filter(Boolean)
                       ]}
                       placeholder="Select Portal Bank Account"
                     />
@@ -978,12 +977,11 @@ export default function MobilePortals({
                           options={[
                             { value: "", label: "Select Portal Bank Account" },
                             ...portalDirectory
-                              .map((group: any) => {
+                              .flatMap((group: any) => {
                                 const firstPortal = (group.portals || [])[0];
-                                if (!firstPortal) return null;
-                                return { value: String(firstPortal.id), label: group.name };
+                                if (!firstPortal) return [];
+                                return [{ value: String(firstPortal.id), label: group.name }];
                               })
-                              .filter(Boolean)
                           ]}
                           placeholder="Select Portal Bank Account"
                         />
@@ -1045,12 +1043,11 @@ export default function MobilePortals({
                             options={[
                               { value: "", label: "Select Portal Bank Account" },
                               ...portalDirectory
-                                .map((group: any) => {
+                                .flatMap((group: any) => {
                                   const firstPortal = (group.portals || [])[0];
-                                  if (!firstPortal) return null;
-                                  return { value: String(firstPortal.id), label: group.name };
+                                  if (!firstPortal) return [];
+                                  return [{ value: String(firstPortal.id), label: group.name }];
                                 })
-                                .filter(Boolean)
                             ]}
                             placeholder="Select Portal Bank Account"
                           />
