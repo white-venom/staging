@@ -744,6 +744,8 @@ def update_collection(
     # Update main fields safely
     for field, value in payload.model_dump(exclude_unset=True, exclude={"denominations"}).items():
         setattr(collection, field, value)
+    # Always apply the resolved collection date (respects staff permission logic)
+    collection.collection_date = new_collection_date
         
     # Update denominations
     if collection.denominations:

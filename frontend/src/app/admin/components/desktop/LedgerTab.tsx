@@ -131,7 +131,7 @@ export default function LedgerTab({
       const hasStaff = !!(raw.recipient_staff_id || raw.recipientStaffId);
       setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
     } else {
-      setSelectedNewDate(raw.collection_date ? raw.collection_date : (raw.date || "").split(" ")[0] || getISTDateString());
+      setSelectedNewDate(raw.collection_date || (raw.date || "").split(" ")[0] || getISTDateString());
     }
     
     const den = raw.denominations || {};

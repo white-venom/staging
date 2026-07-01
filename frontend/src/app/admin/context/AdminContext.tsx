@@ -69,18 +69,19 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       ]);
       
       const mappedCols = cols.map((c: any) => {
+        // Build display date: use collection_date for date part + created_at for time part
         let dtStr = "N/A";
         if (c.created_at) {
           const cleanCreatedAt = c.created_at.replace(" ", "T");
           const d = new Date(cleanCreatedAt + (cleanCreatedAt.includes("Z") ? "" : "Z"));
-          dtStr = new Intl.DateTimeFormat('en-GB', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
+          const timePart = new Intl.DateTimeFormat('en-GB', {
             hour: '2-digit', minute: '2-digit', hour12: false,
             timeZone: 'Asia/Kolkata'
-          }).format(d).replace(',', '').replace(/\//g, '-');
-          const [date, time] = dtStr.split(' ');
-          const [day, month, year] = date.split('-');
-          dtStr = `${year}-${month}-${day} ${time}`;
+          }).format(d);
+          const datePart = c.collection_date || new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Kolkata'
+          }).format(d);
+          dtStr = `${datePart} ${timePart}`;
         }
         return {
           id: c.id,
@@ -99,6 +100,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           remarks: c.remarks,
           status: c.status,
           date: dtStr,
+          collection_date: c.collection_date,
           created_at: c.created_at
         };
       });

@@ -321,7 +321,7 @@ export default function MobileOverview({
       const hasStaff = !!(item.recipient_staff_id || item.recipientStaffId);
       setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
     } else {
-      setSelectedNewDate(item.date ? item.date.split(" ")[0] : getISTDateString());
+      setSelectedNewDate(item.collection_date || (item.date ? item.date.split(" ")[0] : getISTDateString()));
     }
     
     const den = item.denominations || {};
