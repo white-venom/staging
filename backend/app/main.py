@@ -179,11 +179,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
 # Global catch-all exception handler to ensure ALL errors return CORS-compatible
 # JSON responses. Without this, unhandled exceptions return plain-text 500 responses
 # that bypass CORS headers, causing browsers to show "Failed to fetch" errors.
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    if isinstance(exc, StarletteHTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail},
+            headers=getattr(exc, "headers", None)
+        )
+    if isinstance(exc, RequestValidationError):
+        return JSONResponse(
+            status_code=422,
+            content={"detail": exc.errors()}
+        )
+
     import traceback
     print(f"[ERROR] Unhandled exception: {exc}")
     traceback.print_exc()

@@ -6,7 +6,7 @@ from sqlalchemy import select, func, and_
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
-from app.database.models import Retailer, Ledger, Collection, BankDeposit, Attendance, Denomination
+from app.database.models import Retailer, Ledger, Collection, BankDeposit, Attendance, Denomination, Portal
 from app.dependencies import require_admin, require_staff, require_any_user
 from app.core.timezone import ist_today, ist_day_bounds_utc
 
