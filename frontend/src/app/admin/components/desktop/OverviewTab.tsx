@@ -228,11 +228,7 @@ export default function OverviewTab({
           if (editingCollection && (editingCollection.retailer_id === selectedNewRetailerId || editingCollection.retailerId === selectedNewRetailerId)) {
             setSelectedNewStoreId(editingCollection.store_id || editingCollection.storeId || "");
           } else {
-            if (stores && stores.length > 0) {
-              setSelectedNewStoreId(String(stores[stores.length - 1].id));
-            } else {
-              setSelectedNewStoreId("");
-            }
+            setSelectedNewStoreId("");
           }
         } catch (err) {
           console.error("Failed to fetch stores in edit modal:", err);
@@ -1459,18 +1455,31 @@ export default function OverviewTab({
                     />
                   </div>
 
-                  {availableStores.length > 0 && (
+                  {(availableStores.length > 0 || editingCollection?.store_name) && (
                     <div className="space-y-1 animate-in fade-in duration-200">
-                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Parent Store (Shop/Branch)</label>
-                      <InlineSelect
-                        value={selectedNewStoreId}
-                        onChange={setSelectedNewStoreId}
-                        options={[
-                          { value: "", label: "None / Cash" },
-                          ...availableStores.map((s: any) => ({ value: String(s.id), label: s.store_name }))
-                        ]}
-                        placeholder="None / Cash"
-                      />
+                      <div className="flex justify-between items-center px-1">
+                        <label className="text-[10px] text-slate-400 font-bold uppercase block">Parent Store (Shop/Branch)</label>
+                        {editingCollection?.store_name && (
+                          <span className="text-[9px] text-amber-500 font-bold">
+                            (Original: {editingCollection.store_name})
+                          </span>
+                        )}
+                      </div>
+                      {availableStores.length > 0 ? (
+                        <InlineSelect
+                          value={selectedNewStoreId}
+                          onChange={setSelectedNewStoreId}
+                          options={[
+                            { value: "", label: "None / Cash" },
+                            ...availableStores.map((s: any) => ({ value: String(s.id), label: s.store_name }))
+                          ]}
+                          placeholder="None / Cash"
+                        />
+                      ) : (
+                        <div className="text-[11px] text-slate-400 italic px-3 py-2 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
+                          No stores available for this retailer
+                        </div>
+                      )}
                     </div>
                   )}
 
