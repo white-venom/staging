@@ -57,6 +57,7 @@ class DepositResponse(BaseModel):
     staff_id: uuid.UUID
     deposit_type: str
     portal_id: Optional[uuid.UUID]
+    from_portal_id: Optional[uuid.UUID] = None
     retailer_id: Optional[uuid.UUID]
     recipient_staff_id: Optional[uuid.UUID]
     to_office: bool
