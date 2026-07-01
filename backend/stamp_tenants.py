@@ -12,6 +12,8 @@ from app.database.db import MasterSessionLocal, get_tenant_connection_string
 from app.database.master_models import Tenant
 
 def stamp_tenant(tenant_subdomain: str, revision: str = "head"):
+    # Set the environment variable to prevent env.py from overwriting the URL with the master DB
+    os.environ["RUNNING_TENANT_MIGRATIONS"] = "true"
     print(f"🚀 Stamping Tenant Database '{tenant_subdomain}' to revision '{revision}'...")
     
     session = MasterSessionLocal()
