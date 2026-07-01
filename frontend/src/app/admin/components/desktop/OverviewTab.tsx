@@ -228,7 +228,11 @@ export default function OverviewTab({
           if (editingCollection && (editingCollection.retailer_id === selectedNewRetailerId || editingCollection.retailerId === selectedNewRetailerId)) {
             setSelectedNewStoreId(editingCollection.store_id || editingCollection.storeId || "");
           } else {
-            setSelectedNewStoreId("");
+            if (stores && stores.length > 0) {
+              setSelectedNewStoreId(String(stores[stores.length - 1].id));
+            } else {
+              setSelectedNewStoreId("");
+            }
           }
         } catch (err) {
           console.error("Failed to fetch stores in edit modal:", err);

@@ -84,7 +84,11 @@ export default function PortalsTab({
           if (editingEntry && (editingEntry.retailer_id === selectedNewRetailerId || editingEntry.retailerId === selectedNewRetailerId)) {
             setSelectedNewStoreId(editingEntry.store_id || editingEntry.storeId || "");
           } else {
-            setSelectedNewStoreId("");
+            if (stores && stores.length > 0) {
+              setSelectedNewStoreId(String(stores[stores.length - 1].id));
+            } else {
+              setSelectedNewStoreId("");
+            }
           }
         } catch (err) {
           console.error("Failed to fetch stores in edit modal:", err);
