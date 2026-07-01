@@ -534,9 +534,11 @@ export default function DepositsTab({
                       onChange={setSelectedNewPortalId}
                       options={[
                         { value: "", label: "Select Portal Bank Account" },
-                        ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
-                          return { value: String(p.id), label: (group.name || p.portal_name).split(' - ')[0].trim() };
-                        }))
+                        ...portalDirectory.flatMap((group: any) => {
+                          const firstPortal = (group.portals || [])[0];
+                          if (!firstPortal) return [];
+                          return [{ value: String(firstPortal.id), label: group.name }];
+                        })
                       ]}
                       placeholder="Select Portal Bank Account"
                     />
@@ -598,9 +600,11 @@ export default function DepositsTab({
                         onChange={setSelectedNewPortalId}
                         options={[
                           { value: "", label: "Select Portal Bank Account" },
-                          ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
-                            return { value: String(p.id), label: (group.name || p.portal_name).split(' - ')[0].trim() };
-                          }))
+                          ...portalDirectory.flatMap((group: any) => {
+                            const firstPortal = (group.portals || [])[0];
+                            if (!firstPortal) return [];
+                            return [{ value: String(firstPortal.id), label: group.name }];
+                          })
                         ]}
                         placeholder="Select Portal Bank Account"
                       />

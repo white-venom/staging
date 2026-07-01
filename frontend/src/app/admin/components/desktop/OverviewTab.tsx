@@ -1479,10 +1479,10 @@ export default function OverviewTab({
                       options={[
                         { value: "", label: "None / Cash" },
                         ...portalDirectory
-                          .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
-                          .filter((p: any) => p.show_in_online_payment)
-                          .map((p: any) => {
-                            return { value: String(p.id), label: p.groupName || p.portal_name };
+                          .flatMap((group: any) => {
+                            const firstOnlinePortal = (group.portals || []).find((p: any) => p.show_in_online_payment);
+                            if (!firstOnlinePortal) return [];
+                            return [{ value: String(firstOnlinePortal.id), label: group.name }];
                           })
                       ]}
                       placeholder="None / Cash"
@@ -1630,9 +1630,12 @@ export default function OverviewTab({
                         onChange={setSelectedNewPortalId}
                         options={[
                           { value: "", label: "Select Portal Bank Account" },
-                            ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
-                              return { value: String(p.id), label: (group.name || p.portal_name).split(' - ')[0].trim() };
-                            }))
+                          ...portalDirectory
+                            .flatMap((group: any) => {
+                              const firstPortal = (group.portals || [])[0];
+                              if (!firstPortal) return [];
+                              return [{ value: String(firstPortal.id), label: group.name }];
+                            })
                         ]}
                         placeholder="Select Portal Bank Account"
                       />
@@ -1695,9 +1698,11 @@ export default function OverviewTab({
                           onChange={setSelectedNewPortalId}
                           options={[
                             { value: "", label: "Select Portal Bank Account" },
-                            ...portalDirectory.flatMap((group: any) => (group.portals || []).map((p: any) => {
-                              return { value: String(p.id), label: (group.name || p.portal_name).split(' - ')[0].trim() };
-                            }))
+                            ...portalDirectory.flatMap((group: any) => {
+                              const firstPortal = (group.portals || [])[0];
+                              if (!firstPortal) return [];
+                              return [{ value: String(firstPortal.id), label: group.name }];
+                            })
                           ]}
                           placeholder="Select Portal Bank Account"
                         />

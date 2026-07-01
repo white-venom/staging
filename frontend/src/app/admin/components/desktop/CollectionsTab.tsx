@@ -601,10 +601,10 @@ export default function CollectionsTab({
                     options={[
                       { value: "", label: "None / Cash" },
                       ...portalDirectory
-                        .flatMap((group: any) => (group.portals || []).map((p: any) => ({ ...p, groupName: group.name })))
-                        .filter((p: any) => p.show_in_online_payment)
-                        .map((p: any) => {
-                          return { value: String(p.id), label: p.groupName || p.portal_name };
+                        .flatMap((group: any) => {
+                          const firstOnlinePortal = (group.portals || []).find((p: any) => p.show_in_online_payment);
+                          if (!firstOnlinePortal) return [];
+                          return [{ value: String(firstOnlinePortal.id), label: group.name }];
                         })
                     ]}
                     placeholder="None / Cash"
