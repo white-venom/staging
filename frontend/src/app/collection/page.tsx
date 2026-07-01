@@ -83,6 +83,7 @@ function NewCollectionContent() {
   });
 
   const [mounted, setMounted] = useState(false);
+  const [staffCanChangeCashInDate, setStaffCanChangeCashInDate] = useState(false);
 
   // Pre-fill if editing
   useEffect(() => {
@@ -187,6 +188,9 @@ function NewCollectionContent() {
         const staffList = await api.getStaffList();
         setStaffMembers(staffList);
         
+        const settings = await api.getAdminSettings().catch(() => null);
+        if (settings) setStaffCanChangeCashInDate(settings.staff_can_change_collection_date ?? false);
+
         const groups = await api.getPortalGroups();
         // Flatten: only individual portal accounts marked show_in_online_payment=true
         const onlinePortals: { id: string; name: string }[] = [];
@@ -671,18 +675,20 @@ function NewCollectionContent() {
               </div>
           </div>
 
-          {/* Collection Date Selector */}
-          <div className="space-y-1">
-            <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 px-1">
-              Collection Date
-            </label>
-            <input autoComplete="one-time-code"
-              type="date"
-              value={collectionDate}
-              onChange={(e) => setCollectionDate(e.target.value)}
-              className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
-            />
-          </div>
+          {/* Collection Date Selector — only shown if admin has enabled date change for staff */}
+          {staffCanChangeCashInDate && (
+            <div className="space-y-1">
+              <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 px-1">
+                Collection Date
+              </label>
+              <input autoComplete="one-time-code"
+                type="date"
+                value={collectionDate}
+                onChange={(e) => setCollectionDate(e.target.value)}
+                className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 font-bold cursor-pointer"
+              />
+            </div>
+          )}
 
           {/* REMARKS COMPONENT */}
           <div className="space-y-1">

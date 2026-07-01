@@ -172,6 +172,7 @@ class BusinessSettings(Base):
     edit_window_minutes: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
     delete_window_minutes: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
     opening_cash_in_hand: Mapped[float] = mapped_column(Float, default=0.0, server_default="0.0")
+    staff_can_change_collection_date: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

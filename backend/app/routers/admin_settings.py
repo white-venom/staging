@@ -20,6 +20,7 @@ class SettingsUpdate(BaseModel):
     edit_window_minutes: int = 5   # -1 = permanent
     delete_window_minutes: int = 5 # -1 = permanent
     opening_cash_in_hand: float = 0.0
+    staff_can_change_collection_date: bool = False
 
 class PenaltyApproval(BaseModel):
     attendance_id: uuid.UUID
@@ -44,7 +45,8 @@ def get_business_settings(db: Session = Depends(get_db), current_user=Depends(re
             "auto_checkout_time": "20:00",
             "edit_window_minutes": 5,
             "delete_window_minutes": 5,
-            "opening_cash_in_hand": 0.0
+            "opening_cash_in_hand": 0.0,
+            "staff_can_change_collection_date": False,
         }
     return {
         "late_threshold": settings.late_threshold,
@@ -53,6 +55,7 @@ def get_business_settings(db: Session = Depends(get_db), current_user=Depends(re
         "edit_window_minutes": getattr(settings, 'edit_window_minutes', 5),
         "delete_window_minutes": getattr(settings, 'delete_window_minutes', 5),
         "opening_cash_in_hand": getattr(settings, 'opening_cash_in_hand', 0.0),
+        "staff_can_change_collection_date": getattr(settings, 'staff_can_change_collection_date', False),
     }
 
 @router.put("/business")
@@ -67,6 +70,7 @@ def update_business_settings(data: SettingsUpdate, db: Session = Depends(get_db)
             edit_window_minutes=data.edit_window_minutes,
             delete_window_minutes=data.delete_window_minutes,
             opening_cash_in_hand=data.opening_cash_in_hand,
+            staff_can_change_collection_date=data.staff_can_change_collection_date,
         )
         db.add(settings)
     else:
@@ -76,6 +80,7 @@ def update_business_settings(data: SettingsUpdate, db: Session = Depends(get_db)
         settings.edit_window_minutes = data.edit_window_minutes
         settings.delete_window_minutes = data.delete_window_minutes
         settings.opening_cash_in_hand = data.opening_cash_in_hand
+        settings.staff_can_change_collection_date = data.staff_can_change_collection_date
     db.commit()
     return {"message": "Settings updated successfully"}
 

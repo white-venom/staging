@@ -66,6 +66,7 @@ export default function AdministrationTab({
   const [deleteWindow, setDeleteWindow] = useState<string>("5");
   const [editPermanent, setEditPermanent] = useState(false);
   const [deletePermanent, setDeletePermanent] = useState(false);
+  const [staffCanChangeCashInDate, setStaffCanChangeCashInDate] = useState(false);
   const [savingWindows, setSavingWindows] = useState(false);
   const [openingCashInHand, setOpeningCashInHand] = useState("0");
   const [savingOpeningCash, setSavingOpeningCash] = useState(false);
@@ -95,6 +96,7 @@ export default function AdministrationTab({
       setEditWindow(em === -1 ? "5" : String(em));
       setDeleteWindow(dm === -1 ? "5" : String(dm));
       setOpeningCashInHand(String(och));
+      setStaffCanChangeCashInDate(s.staff_can_change_collection_date ?? false);
     } catch (err) {
       console.error(err);
     }
@@ -111,6 +113,7 @@ export default function AdministrationTab({
         edit_window_minutes: editPermanent ? -1 : (parseInt(editWindow) || 5),
         delete_window_minutes: deletePermanent ? -1 : (parseInt(deleteWindow) || 5),
         opening_cash_in_hand: current.opening_cash_in_hand ?? 0,
+        staff_can_change_collection_date: staffCanChangeCashInDate,
       });
       showToastNotification("Entry window settings saved!");
       fetchData();
@@ -536,6 +539,22 @@ export default function AdministrationTab({
                 </label>
               </div>
             </div>
+          </div>
+
+          {/* Staff Cash-In Date Permission */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <label className="flex items-center justify-between gap-3 cursor-pointer select-none group">
+              <div>
+                <span className="block text-[10px] text-slate-700 dark:text-slate-200 uppercase font-black">Staff Can Change Cash-In Date</span>
+                <span className="block text-[9px] text-slate-400 font-medium mt-0.5">Allow staff to change the collection date when editing a cash-in entry.</span>
+              </div>
+              <div
+                onClick={() => setStaffCanChangeCashInDate(v => !v)}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer shrink-0 ${staffCanChangeCashInDate ? 'bg-purple-600' : 'bg-slate-200 dark:bg-slate-700'}`}
+              >
+                <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${staffCanChangeCashInDate ? 'translate-x-4' : 'translate-x-1'}`} />
+              </div>
+            </label>
           </div>
 
           <button

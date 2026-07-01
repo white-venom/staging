@@ -263,6 +263,8 @@ export default function OverviewTab({
       setSelectedNewToOffice(item.to_office === true);
       const hasStaff = !!(item.recipient_staff_id || item.recipientStaffId);
       setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
+    } else {
+      setSelectedNewDate(item.date ? item.date.split(" ")[0] : getISTDateString());
     }
     
     const den = item.denominations || {};
@@ -322,6 +324,7 @@ export default function OverviewTab({
           portal_id: selectedNewPortalId || null,
           store_id: selectedNewStoreId || null,
           total_amount: computedCollectionTotal,
+          collection_date: selectedNewDate || getISTDateString(),
           remarks: selectedNewRemarks || "",
           denominations: selectedNewDenoms
         });
@@ -1556,6 +1559,18 @@ export default function OverviewTab({
                       ).toLocaleString()}`}
                       className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-black text-slate-800 dark:text-slate-100"
                       readOnly
+                    />
+                  </div>
+
+                  {/* Date */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Collection Date</label>
+                    <input autoComplete="one-time-code"
+                      type="date"
+                      value={selectedNewDate}
+                      onChange={(e) => setSelectedNewDate(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      required
                     />
                   </div>
 

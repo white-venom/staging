@@ -535,8 +535,6 @@ def update_collection(
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
         
-    new_collection_date = payload.collection_date or collection.collection_date
-        
     if current_user.role != "admin":
         if collection.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this collection")
@@ -546,6 +544,11 @@ def update_collection(
         if edit_window != -1:
             if datetime.utcnow() - collection.created_at > timedelta(minutes=edit_window):
                 raise HTTPException(status_code=403, detail=f"Can only update collections within {edit_window} minutes of creation")
+        # Staff can only change date if admin has allowed it
+        staff_can_change_date = getattr(settings, 'staff_can_change_collection_date', False) if settings else False
+        new_collection_date = (payload.collection_date if staff_can_change_date else None) or collection.collection_date
+    else:
+        new_collection_date = payload.collection_date or collection.collection_date
     
     old_amount = collection.total_amount
     new_amount = payload.total_amount

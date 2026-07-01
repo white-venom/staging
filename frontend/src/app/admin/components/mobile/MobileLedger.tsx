@@ -109,6 +109,8 @@ export default function MobileLedger() {
       setSelectedNewToOffice(item.to_office === true);
       const hasStaff = !!(item.recipient_staff_id || item.recipientStaffId);
       setSelectedNewVirtualTargetType(hasStaff ? "staff" : "retailer");
+    } else {
+      setSelectedNewDate(item.collection_date ? item.collection_date : (item.date || "").split(" ")[0] || getISTDateString());
     }
     
     const den = item.denominations || {};
@@ -186,6 +188,7 @@ export default function MobileLedger() {
           portal_id: selectedNewPortalId || null,
           store_id: selectedNewStoreId || null,
           total_amount: computedCollectionTotal,
+          collection_date: selectedNewDate || getISTDateString(),
           remarks: selectedNewRemarks || "",
           denominations: selectedNewDenoms
         });
@@ -778,6 +781,18 @@ export default function MobileLedger() {
                         selectedNewDenoms.online_amount
                       ).toLocaleString()}</span>
                     </div>
+                  </div>
+
+                  {/* Collection Date */}
+                  <div className="space-y-0.5">
+                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Collection Date</label>
+                    <input autoComplete="one-time-code"
+                      type="date"
+                      value={selectedNewDate}
+                      onChange={(e) => setSelectedNewDate(e.target.value)}
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      required
+                    />
                   </div>
 
                   {/* Remarks */}
