@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { CreditCard, History, Edit, Trash2, X, Save } from "lucide-react";
+import { CreditCard, History, Edit, Trash2, X, Save, ArrowLeftRight } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
 import InlineSelect from "../../../components/InlineSelect";
@@ -160,12 +160,70 @@ export default function WalletTransferTab() {
   });
   const [isTransferring, setIsTransferring] = useState(false);
 
+  // Portal-to-Portal Transfer state
+  const todayIST = () => {
+    const d = new Date();
+    const tzString = d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
+    const parts = new Date(tzString);
+    const y = parts.getFullYear();
+    const m = String(parts.getMonth() + 1).padStart(2, "0");
+    const day = String(parts.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+  const [activeTab, setActiveTab] = useState<"virtual" | "portal_to_portal">("virtual");
+  const [ptpFromPortalId, setPtpFromPortalId] = useState("");
+  const [ptpToPortalId, setPtpToPortalId] = useState("");
+  const [ptpAmount, setPtpAmount] = useState("");
+  const [ptpRemarks, setPtpRemarks] = useState("");
+  const [ptpDate, setPtpDate] = useState(todayIST);
+  const [isPortalTransferring, setIsPortalTransferring] = useState(false);
+
   const allPortals = (portalDirectory || []).flatMap((g: any) => 
     (g.portals || []).map((p: any) => ({
       ...p,
       groupName: g.name
     }))
   );
+
+  const handlePortalToPortalTransfer = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!ptpFromPortalId || !ptpToPortalId) {
+      alert("Please select both source and destination portals.");
+      return;
+    }
+    if (ptpFromPortalId === ptpToPortalId) {
+      alert("Source and destination portals must be different.");
+      return;
+    }
+    const amt = parseFloat(ptpAmount);
+    if (isNaN(amt) || amt <= 0) {
+      alert("Please enter a valid transfer amount.");
+      return;
+    }
+    setIsPortalTransferring(true);
+    try {
+      await api.portalTransfer({
+        from_portal_id: ptpFromPortalId,
+        portal_id: ptpToPortalId,
+        amount: amt,
+        remarks: ptpRemarks || undefined,
+        deposit_date: ptpDate,
+      });
+      if (showToastNotification) {
+        showToastNotification(`Portal Transfer of ₹${amt.toLocaleString("en-IN")} done successfully!`);
+      }
+      setPtpFromPortalId("");
+      setPtpToPortalId("");
+      setPtpAmount("");
+      setPtpRemarks("");
+      setPtpDate(todayIST());
+      if (fetchData) fetchData();
+    } catch (err: any) {
+      alert("Transfer Error: " + err.message);
+    } finally {
+      setIsPortalTransferring(false);
+    }
+  };
 
   const handleVirtualTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -282,6 +340,120 @@ export default function WalletTransferTab() {
   return (
     <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6">
+        {/* Tab switcher */}
+        <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setActiveTab("virtual")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-black uppercase tracking-wide rounded-lg transition-all ${
+              activeTab === "virtual"
+                ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            }`}
+          >
+            <CreditCard className="w-3.5 h-3.5" />
+            Virtual Transfer
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("portal_to_portal")}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-black uppercase tracking-wide rounded-lg transition-all ${
+              activeTab === "portal_to_portal"
+                ? "bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            }`}
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            Portal to Portal
+          </button>
+        </div>
+
+        {activeTab === "portal_to_portal" ? (
+          /* ---- PORTAL TO PORTAL TRANSFER FORM ---- */
+          <>
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+              <ArrowLeftRight className="w-5 h-5 text-violet-600" />
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
+                Portal to Portal Transfer
+              </h3>
+            </div>
+            <form onSubmit={handlePortalToPortalTransfer} className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Portal (From)</label>
+                <InlineSelect
+                  value={ptpFromPortalId}
+                  onChange={(val) => setPtpFromPortalId(val)}
+                  options={(portalDirectory || []).flatMap((g: any) =>
+                    (g.portals || []).map((p: any) => ({
+                      value: p.id,
+                      label: `${g.name}${g.portals.length > 1 ? ` / ${p.portal_name}` : ""} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`
+                    }))
+                  )}
+                  placeholder="Select Source Portal"
+                />
+              </div>
+              <div className="flex items-center justify-center">
+                <ArrowLeftRight className="w-4 h-4 text-violet-400" />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Portal (To)</label>
+                <InlineSelect
+                  value={ptpToPortalId}
+                  onChange={(val) => setPtpToPortalId(val)}
+                  options={(portalDirectory || []).flatMap((g: any) =>
+                    (g.portals || []).map((p: any) => ({
+                      value: p.id,
+                      label: `${g.name}${g.portals.length > 1 ? ` / ${p.portal_name}` : ""} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`,
+                      disabled: p.id === ptpFromPortalId
+                    }))
+                  )}
+                  placeholder="Select Destination Portal"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Transfer Date</label>
+                <input autoComplete="one-time-code"
+                  type="date"
+                  value={ptpDate}
+                  onChange={e => setPtpDate(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200 cursor-pointer"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Amount (₹)</label>
+                <input autoComplete="one-time-code"
+                  type="number"
+                  value={ptpAmount}
+                  onChange={e => setPtpAmount(e.target.value)}
+                  placeholder="e.g. 50000"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
+                  min="1"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Remarks (Optional)</label>
+                <input autoComplete="one-time-code"
+                  type="text"
+                  value={ptpRemarks}
+                  onChange={e => setPtpRemarks(e.target.value)}
+                  placeholder="e.g. Monthly settlement"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isPortalTransferring}
+                className="w-full py-3 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-600"
+              >
+                {isPortalTransferring ? "Processing Transfer..." : "Transfer Between Portals"}
+              </button>
+            </form>
+          </>
+        ) : (
+          /* ---- VIRTUAL MONEY TRANSFER FORM ---- */
+          <>
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">
             <CreditCard className="w-5 h-5 text-emerald-600" />
@@ -381,6 +553,8 @@ export default function WalletTransferTab() {
                 : "Move to Distributor"}
           </button>
         </form>
+        </> {/* end virtual tab */}
+        )} {/* end ternary */}
           {/* RECENT ENTRIES VIEW */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4 col-span-1">
         <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">

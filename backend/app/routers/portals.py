@@ -2,7 +2,7 @@ import uuid
 from decimal import Decimal
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
@@ -317,15 +317,23 @@ def get_portal_ledger(
 
     from app.database.models import Store
     
-    # Fetch verified bank deposits for this portal (portal + virtual types)
+    # Fetch verified bank deposits for this portal (portal + virtual + portal_transfer types)
     deposits = db.scalars(
         select(BankDeposit)
-        .options(joinedload(BankDeposit.retailer), joinedload(BankDeposit.denominations))
+        .options(
+            joinedload(BankDeposit.retailer),
+            joinedload(BankDeposit.denominations),
+            joinedload(BankDeposit.from_portal).joinedload(Portal.group),
+            joinedload(BankDeposit.portal).joinedload(Portal.group)
+        )
         .where(
             and_(
-                BankDeposit.portal_id == portal_id,
                 BankDeposit.status == "verified",
-                BankDeposit.deposit_type.in_(["portal", "virtual"])
+                BankDeposit.deposit_type.in_(["portal", "virtual", "portal_transfer"]),
+                or_(
+                    BankDeposit.portal_id == portal_id,
+                    BankDeposit.from_portal_id == portal_id
+                )
             )
         )
     ).all()
@@ -421,6 +429,21 @@ def get_portal_ledger(
                 tx_type = "debit" # You Gave
                 amount = float(d.amount)
                 desc_text = f"Virtual Transfer to {tx_store_name}" if tx_store_name else "Virtual Transfer"
+            if fallback_remarks:
+                desc_text += f" ({fallback_remarks})"
+        elif d.deposit_type == "portal_transfer":
+            # For portal_transfer: credit if this portal is destination, debit if this portal is source
+            if str(d.portal_id) == str(portal_id):
+                # This portal is the destination: it received money (credit)
+                tx_type = "credit"
+                src_name = d.from_portal.group.name if (d.from_portal and d.from_portal.group) else (d.from_portal.portal_name if d.from_portal else "Source Portal")
+                desc_text = f"Transfer received from {src_name}"
+            else:
+                # This portal is the source: it sent money (debit)
+                tx_type = "debit"
+                dst_name = d.portal.group.name if (d.portal and d.portal.group) else (d.portal.portal_name if d.portal else "Destination Portal")
+                desc_text = f"Transfer sent to {dst_name}"
+            amount = float(d.amount)
             if fallback_remarks:
                 desc_text += f" ({fallback_remarks})"
         else:

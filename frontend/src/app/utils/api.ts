@@ -327,6 +327,10 @@ export const api = {
     method: "POST",
     body: JSON.stringify(data),
   }),
+  portalTransfer: (data: { from_portal_id: string; portal_id: string; amount: number; remarks?: string; deposit_date: string }) => request<any>("/bank-deposits", {
+    method: "POST",
+    body: JSON.stringify({ ...data, deposit_type: "portal_transfer", payment_mode: "online", status: "verified" }),
+  }),
 
 
   // Attendance

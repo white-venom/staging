@@ -239,10 +239,11 @@ class BankDeposit(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     staff_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     
-    # Triple structure: 'portal' (Option A), 'retailer' (Option B), 'staff' (Option C: handovers to staff or physical office)
-    deposit_type: Mapped[str] = mapped_column(String(20), nullable=False)  # 'portal', 'retailer', 'staff'
+    # deposit_type: 'portal', 'retailer', 'staff', 'virtual', 'portal_transfer'
+    deposit_type: Mapped[str] = mapped_column(String(20), nullable=False)
     
     portal_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("portals.id", ondelete="SET NULL"), nullable=True)
+    from_portal_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("portals.id", ondelete="SET NULL"), nullable=True)  # Source portal for portal_transfer type
     retailer_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("retailers.id", ondelete="SET NULL"), nullable=True)
     recipient_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
@@ -264,7 +265,8 @@ class BankDeposit(Base):
     staff: Mapped[User] = relationship("User", foreign_keys=[staff_id], back_populates="bank_deposits")
     recipient_staff: Mapped[Optional[User]] = relationship("User", foreign_keys=[recipient_staff_id], back_populates="received_handovers")
     verifier: Mapped[Optional[User]] = relationship("User", foreign_keys=[verified_by], back_populates="verified_deposits")
-    portal: Mapped[Optional[Portal]] = relationship("Portal", back_populates="deposits")
+    portal: Mapped[Optional[Portal]] = relationship("Portal", foreign_keys=[portal_id], back_populates="deposits")
+    from_portal: Mapped[Optional[Portal]] = relationship("Portal", foreign_keys=[from_portal_id])
     retailer: Mapped[Optional[Retailer]] = relationship("Retailer", back_populates="deposits")
     denominations: Mapped[Optional[Denomination]] = relationship(
         "Denomination", back_populates="deposit", uselist=False, cascade="all, delete-orphan"
