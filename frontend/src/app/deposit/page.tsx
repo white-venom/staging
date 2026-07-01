@@ -39,6 +39,11 @@ function NewDepositContent() {
   const [portalsList, setPortalsList] = useState<any[]>([]);
   const [showOnlinePortal, setShowOnlinePortal] = useState(false);
 
+  // Difference Calculator State
+  const [isCalcOpen, setIsCalcOpen] = useState(false);
+  const [calcTarget, setCalcTarget] = useState<number | "">("");
+  const [calcPaid, setCalcPaid] = useState<number | "">("");
+
   const [denominations, setDenominations] = useState<DenominationCounts>({
     note_500: 0,
     note_200: 0,
@@ -619,6 +624,72 @@ function NewDepositContent() {
             </div>
           </div>
         )}
+
+        {/* Difference Calculator Card */}
+        <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+          <button
+            type="button"
+            onClick={() => setIsCalcOpen(!isCalcOpen)}
+            className="w-full flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs">🧮</span>
+              <span>Difference Calculator</span>
+            </div>
+            <span className="text-xs transition-transform duration-200" style={{ transform: isCalcOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+              ▼
+            </span>
+          </button>
+
+          {isCalcOpen && (
+            <div className="space-y-2 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-0.5">
+                  <label className="text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500">
+                    Target Amount
+                  </label>
+                  <input autoComplete="one-time-code"
+                    type="number"
+                    placeholder="e.g. 26000"
+                    value={calcTarget}
+                    onChange={(e) => setCalcTarget(e.target.value === "" ? "" : parseFloat(e.target.value))}
+                    className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-800 dark:text-slate-200 font-extrabold"
+                  />
+                </div>
+                <div className="space-y-0.5">
+                  <label className="text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500">
+                    Already Paid
+                  </label>
+                  <input autoComplete="one-time-code"
+                    type="number"
+                    placeholder="e.g. 24000"
+                    value={calcPaid === "" ? totalAmount : calcPaid}
+                    onChange={(e) => setCalcPaid(e.target.value === "" ? "" : parseFloat(e.target.value))}
+                    className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-800 dark:text-slate-200 font-extrabold"
+                  />
+                </div>
+              </div>
+
+              <div className="p-2 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+                <span className="text-[9px] font-black text-slate-500 uppercase">
+                  Remaining to Pay
+                </span>
+                {(() => {
+                  const currentPaid = calcPaid === "" ? totalAmount : Number(calcPaid);
+                  const remaining = calcTarget && calcTarget !== 0 ? calcTarget - currentPaid : 0;
+                  const isNegative = remaining < 0;
+                  return (
+                    <span className={`text-sm font-black ${isNegative ? 'text-red-500' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                      {isNegative 
+                        ? `-₹${Math.abs(remaining).toLocaleString("en-IN")}` 
+                        : `₹${remaining.toLocaleString("en-IN")}`}
+                    </span>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+        </div>
 
           {/* Computed summary box */}
           <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
