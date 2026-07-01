@@ -136,6 +136,17 @@ function NewDepositContent() {
     setMounted(true);
     // Load dynamic options from backend
     const loadOptions = async () => {
+      // Load cached retailers from Dexie database as fallback first
+      try {
+        const cached = await db.retailers.toArray();
+        if (cached && cached.length > 0) {
+          const validRetailers = cached.filter(r => !r.id.startsWith("ret-")).map(r => ({ id: r.id, name: r.name }));
+          setRetailers(validRetailers);
+        }
+      } catch (cacheErr) {
+        console.warn("Failed to load retailers from cache:", cacheErr);
+      }
+
       try {
         const { api } = await import("../utils/api");
         const [groups, r, s] = await Promise.all([api.getPortalGroups(), api.getRetailers(), api.getStaffList()]);
@@ -153,6 +164,21 @@ function NewDepositContent() {
         setPortalGroups(mappedGroups);
         setRetailers(mappedRetailers);
         setStaffUsers(mappedStaff);
+
+        // Update IndexedDB cache for retailers
+        if (r && r.length > 0) {
+          await db.retailers.clear();
+          await db.retailers.bulkPut(r.map((x: any) => ({
+            id: x.id,
+            name: x.retailer_name || x.name,
+            phone: x.phone || "",
+            portalName: "Standard",
+            opening_to_give: parseFloat(x.opening_to_give || 0),
+            opening_to_take: parseFloat(x.opening_to_take || 0),
+            net_balance: parseFloat(x.balance || 0)
+          })));
+        }
+
         // Flatten: only individual portal accounts marked show_in_online_payment=true
         const onlinePortals: { id: string; name: string }[] = [];
         for (const g of groups) {
