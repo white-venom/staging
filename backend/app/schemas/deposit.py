@@ -76,6 +76,7 @@ class DepositResponse(BaseModel):
     portal_name: Optional[str] = None
     portal_group_name: Optional[str] = None
     portal_group_id: Optional[uuid.UUID] = None
+    bank_name: Optional[str] = None
     from_portal_name: Optional[str] = None  # Source portal name for portal_transfer type
     from_portal_group_name: Optional[str] = None  # Source portal group name for portal_transfer type
     staff_name: Optional[str] = None

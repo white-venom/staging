@@ -281,6 +281,7 @@ export default function StaffDashboard() {
         status: d.status,
         remarks: d.remarks,
         portalName: d.portal_name || undefined,
+        bankName: d.bank_name || undefined,
         date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
         retailer_ledger_token: d.retailer_ledger_token,
         created_at: d.created_at,
@@ -413,6 +414,7 @@ export default function StaffDashboard() {
           status: updated.status,
           remarks: updated.remarks,
           portalName: updated.portal_name || undefined,
+          bankName: updated.bank_name || undefined,
           date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
           created_at: updated.created_at,
         };
@@ -1292,7 +1294,7 @@ export default function StaffDashboard() {
                                      const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
                                      const { setCollections, setDeposits } = useAppStore.getState();
                                      setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', portalGroupName: col.portal_group_name || undefined, staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
-                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, remarks: d.remarks, portalName: d.portal_name || undefined, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
+                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, remarks: d.remarks, portalName: d.portal_name || undefined, bankName: d.bank_name || undefined, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
                                      setExpandedHomeId(null);
                                    } catch (err: any) {
                                      alert('Delete failed: ' + err.message);

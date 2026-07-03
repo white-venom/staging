@@ -427,15 +427,17 @@ export default function DailyReportPage() {
                             ? "Super Distributor"
                             : retDispName;
                           destination = item.portal_group_name
-                             ? `${item.portal_group_name}${item.portal_name ? ` (${item.portal_name})` : ""}`
+                             ? `${item.portal_group_name}${item.bank_name ? ` (${item.bank_name})` : (item.portal_name ? ` (${item.portal_name})` : "")}`
                              : staffName;
                         } else {
                           source = staffName;
-                          const storeStr = item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "";
+                          const bankSuffix = (item.deposit_type === "portal" && item.bank_name)
+                            ? ` (${item.bank_name})`
+                            : (item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "");
                           const destName = (item.deposit_type === "portal" && item.portal_group_name) ? item.portal_group_name : (item.target_name || "Recipient");
                           destination = item.to_office
                             ? "Super Distributor"
-                            : `${destName}${storeStr}`;
+                            : `${destName}${bankSuffix}`;
                         }
                         const narration = `From ${source} to ${destination}`;
 

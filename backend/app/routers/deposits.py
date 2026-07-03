@@ -339,6 +339,7 @@ def list_deposits(
         if dep.deposit_type == "portal":
             dep.target_name = dep.portal.portal_name if dep.portal else "Portal Bank"
             dep.portal_name = dep.portal.portal_name if dep.portal else None
+            dep.bank_name = dep.portal.bank_name if dep.portal else None
             if dep.portal and dep.portal.group:
                 dep.portal_group_name = dep.portal.group.name
                 dep.portal_group_id = dep.portal.group.id
@@ -729,6 +730,7 @@ def update_deposit(
     if deposit.portal and deposit.portal.group:
         deposit.portal_group_name = deposit.portal.group.name
         deposit.portal_group_id = deposit.portal.group.id
+    deposit.bank_name = deposit.portal.bank_name if deposit.portal else None
     deposit.is_refund = (deposit.payment_mode == "refund")
     
     if deposit.retailer_id and deposit.retailer:

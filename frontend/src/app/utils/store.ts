@@ -59,6 +59,7 @@ export interface DepositItem {
   status: "pending" | "verified";
   remarks?: string;
   portalName?: string;
+  bankName?: string;
   date: string;
   retailer_ledger_token?: string;
   created_at?: string;
