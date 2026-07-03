@@ -301,6 +301,11 @@ export default function MobileLedger() {
         }
         
         let party = d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
+        if (d.depositType === "portal") {
+          party = d.portalGroupName
+            ? `${d.portalGroupName} (${d.bankName || d.targetName})`
+            : `${d.targetName}${d.bankName ? ` (${d.bankName})` : ""}`;
+        }
         if (isVirtual && d.retailer_id) {
           const ret = (retailerDirectory || []).find((r: any) => r.id === d.retailer_id);
           party = ret?.name || d.targetName;

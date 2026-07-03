@@ -278,6 +278,11 @@ export default function LedgerTab({
       // so balance calculations and filtering work correctly
       let partyId = d.portal_id || d.retailer_id;
       let party = d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
+      if (d.depositType === "portal") {
+        party = d.portalGroupName
+          ? `${d.portalGroupName} (${d.bankName || d.targetName})`
+          : `${d.targetName}${d.bankName ? ` (${d.bankName})` : ""}`;
+      }
       
       if (isVirtual && d.retailer_id) {
         partyId = d.retailer_id;
