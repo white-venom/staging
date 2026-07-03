@@ -187,6 +187,8 @@ export const shareDepositEntry = async (entry: {
   recipientStaffId?: string;
   retailer_ledger_token?: string;
   retailerLedgerToken?: string;
+  portal_name?: string;
+  portalName?: string;
 }, staffName: string, currentUserId?: string) => {
   const deposit_type = entry.deposit_type || entry.depositType;
   const target_name = entry.target_name || entry.targetName;
@@ -235,7 +237,8 @@ export const shareDepositEntry = async (entry: {
   if (deposit_type === "staff") {
     headerLines.push(isRecipient ? `Received from: ${staff_name_val}` : `Staff Handover: ${target_name}`);
   } else if (deposit_type === "portal") {
-    headerLines.push(`Store/Portal: ${portal_group_name || target_name}`);
+    const portalSuffix = entry.portal_name || entry.portalName ? `  (${entry.portal_name || entry.portalName})` : "";
+    headerLines.push(`Store/Portal: ${portal_group_name || target_name}${portalSuffix}`);
   } else if (deposit_type === "retailer") {
     headerLines.push(`Retailer Payout: ${target_name}`);
   } else if (deposit_type === "virtual") {

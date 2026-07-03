@@ -280,6 +280,7 @@ export default function StaffDashboard() {
         } : undefined,
         status: d.status,
         remarks: d.remarks,
+        portalName: d.portal_name || undefined,
         date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
         retailer_ledger_token: d.retailer_ledger_token,
         created_at: d.created_at,
@@ -411,6 +412,7 @@ export default function StaffDashboard() {
           } : undefined,
           status: updated.status,
           remarks: updated.remarks,
+          portalName: updated.portal_name || undefined,
           date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
           created_at: updated.created_at,
         };
@@ -1248,7 +1250,7 @@ export default function StaffDashboard() {
                              if (c.type === 'collection') {
                                shareCollectionEntry({ retailer_name: c.retailerName, portal_name: c.portalName, portal_group_name: c.portalGroupName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name);
                              } else {
-                               shareDepositEntry({ deposit_type: c.depositType, target_name: c.targetName, amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name, currentUser.id);
+                               shareDepositEntry({ deposit_type: c.depositType, target_name: c.targetName, portal_name: c.portalName, amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name, currentUser.id);
                              }
                            }}
                            className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 active:scale-95 transition-transform"
@@ -1290,7 +1292,7 @@ export default function StaffDashboard() {
                                      const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
                                      const { setCollections, setDeposits } = useAppStore.getState();
                                      setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', portalGroupName: col.portal_group_name || undefined, staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
-                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, remarks: d.remarks, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
+                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, remarks: d.remarks, portalName: d.portal_name || undefined, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
                                      setExpandedHomeId(null);
                                    } catch (err: any) {
                                      alert('Delete failed: ' + err.message);

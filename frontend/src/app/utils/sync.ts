@@ -114,7 +114,8 @@ export async function syncOfflineData(): Promise<number> {
           amount: dep.amount,
           paymentMode: dep.paymentMode,
           denominations: dep.denominations,
-          remarks: dep.remarks
+          remarks: dep.remarks,
+          portalName: dep.portalName
         });
       }
     } catch (err) {

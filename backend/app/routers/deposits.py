@@ -338,6 +338,7 @@ def list_deposits(
     for dep in deposits:
         if dep.deposit_type == "portal":
             dep.target_name = dep.portal.portal_name if dep.portal else "Portal Bank"
+            dep.portal_name = dep.portal.portal_name if dep.portal else None
             if dep.portal and dep.portal.group:
                 dep.portal_group_name = dep.portal.group.name
                 dep.portal_group_id = dep.portal.group.id
