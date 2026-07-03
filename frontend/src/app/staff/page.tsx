@@ -480,14 +480,6 @@ export default function StaffDashboard() {
     }
   });
 
-  prevHandoversRcvd.forEach((d) => {
-    // Since handovers received are staff-type deposits where this user is recipient,
-    // they act as collections (adds cash and online). We need to retrieve denominations.
-    const parentDeposit = deposits.find(dep => dep.id === d); // d is already the full object in deposits.forEach
-  });
-  // Wait, prevHandoversRcvd is already filtered list of full objects because of deposits.filter.reduce?
-  // Let's check: prevHandoversRcvd is a number because of .reduce((s, d) => s + d.amount, 0).
-  // So we filter the objects directly:
   const prevHandoversRcvdObjects = deposits.filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && !d.date?.startsWith(todayIST));
   prevHandoversRcvdObjects.forEach((d) => {
     if (d.denominations) {
