@@ -484,9 +484,6 @@ export default function StaffDashboard() {
   const totalOnline = collections.reduce((s, c) => s + Number(c.denominations?.online_amount || 0), 0) +
                       deposits
                         .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
-                        .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0) - 
-                      deposits
-                        .filter(d => d.depositType !== "virtual" && !(d.recipient_staff_id === currentUser.id && d.depositType === "staff"))
                         .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
   
   const totalCashNotes = netPortfolio - totalOnline;
