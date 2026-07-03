@@ -697,6 +697,8 @@ function NewDepositContent() {
               </div>
             </div>
           )}
+        </div>
+
         {/* REMARKS COMPONENT */}
         <div className="space-y-1">
           <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 px-1">
