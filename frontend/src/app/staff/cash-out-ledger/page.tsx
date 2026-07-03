@@ -499,7 +499,10 @@ ${dateFormatted}`;
                               <div className="border-t border-slate-200/40 dark:border-slate-800/40 pt-2 flex items-center justify-end gap-1.5">
                                 {canEdit && (
                                   <button
-                                    onClick={(e) => handleEdit(d, e)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      router.push(`/deposit?editId=${d.id}`);
+                                    }}
                                     className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-[9px] font-bold"
                                   >
                                     <Edit2 className="w-3 h-3" />

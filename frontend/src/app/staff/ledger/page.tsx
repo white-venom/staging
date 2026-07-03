@@ -522,10 +522,9 @@ export default function StaffLedgerPage() {
                               {canEdit ? (
                                 <button
                                   onClick={() => {
-                                    const path = item.type === "collection" ? "/staff/cash-in-ledger" : "/staff/cash-out-ledger";
-                                    router.push(`${path}?edit=${item.id}`);
+                                    router.push(item.type === "collection" ? `/collection?editId=${item.id}` : `/deposit?editId=${item.id}`);
                                   }}
-                                  className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
+                                  className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-955/20 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
                                 >
                                   <Edit2 className="w-2.5 h-2.5" /> Edit
                                 </button>
