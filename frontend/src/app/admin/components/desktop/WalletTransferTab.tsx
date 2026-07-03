@@ -574,7 +574,7 @@ export default function WalletTransferTab() {
           ) : (
             <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[480px] overflow-y-auto pr-1 custom-scrollbar">
               {recentVirtualTransfers.map((tx: any) => {
-                const formatted = formatIST(tx.date);
+                const formatted = formatIST(tx.created_at || tx.date);
                 const isRefund = tx.isRefund === true;
                 const portalName = tx.portalGroupName || tx.portalName || "Portal";
                 const retailer = (retailerDirectory || []).find((r: any) => r.id === tx.retailer_id);

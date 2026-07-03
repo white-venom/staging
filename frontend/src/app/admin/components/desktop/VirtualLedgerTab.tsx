@@ -642,7 +642,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
             ) : (
               <div className="divide-y divide-slate-100 dark:divide-slate-850">
                 {paginatedTransfers.map((tx: any) => {
-                  const formatted = formatIST(tx.date);
+                  const formatted = formatIST(tx.rawRecord?.created_at || tx.date);
                   const isGot = tx.type === "cash-in" || tx.type === "move-to-dist";
                   
                   let badgeLabel = "";
@@ -843,7 +843,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
 
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100">
               {filteredTransfers.map((tx: any) => {
-                const formatted = formatIST(tx.date);
+                const formatted = formatIST(tx.rawRecord?.created_at || tx.date);
                 const isGot = tx.type === "cash-in" || tx.type === "move-to-dist";
                 
                 return (
