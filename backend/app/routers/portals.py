@@ -115,14 +115,31 @@ def update_portal_group(
     from decimal import Decimal
     
     db_group.name = group_data.name
+    
+    # Propagate delta changes to the primary portal under this group so the ledger reflects it
+    primary_portal = db.scalar(
+        select(Portal)
+        .where(Portal.group_id == group_id)
+        .order_by(Portal.created_at.asc())
+        .limit(1)
+    )
+    
     if group_data.opening_to_give is not None:
         delta_give = Decimal(str(group_data.opening_to_give))
         db_group.opening_to_give = (db_group.opening_to_give or Decimal("0.00")) + delta_give
         db_group.balance = (db_group.balance or Decimal("0.00")) - delta_give
+        if primary_portal:
+            primary_portal.opening_to_give = (primary_portal.opening_to_give or Decimal("0.00")) + delta_give
+            primary_portal.balance = (primary_portal.balance or Decimal("0.00")) - delta_give
+            
     if group_data.opening_to_take is not None:
         delta_take = Decimal(str(group_data.opening_to_take))
         db_group.opening_to_take = (db_group.opening_to_take or Decimal("0.00")) + delta_take
         db_group.balance = (db_group.balance or Decimal("0.00")) + delta_take
+        if primary_portal:
+            primary_portal.opening_to_take = (primary_portal.opening_to_take or Decimal("0.00")) + delta_take
+            primary_portal.balance = (primary_portal.balance or Decimal("0.00")) + delta_take
+            
     if group_data.show_in_online_payment is not None:
         for portal in db_group.portals:
             portal.show_in_online_payment = group_data.show_in_online_payment
