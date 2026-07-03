@@ -455,6 +455,8 @@ export default function MobileOverview({
       const allCols = [...staffColsToday, ...staffColsPrev];
       const allDeps = [...staffDepsToday, ...staffDepsPrev];
       const allReceived = [...receivedDepsToday, ...receivedDepsPrev];
+      let onlineIn = 0;
+      let onlineOut = 0;
       const netDen = { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online: 0 };
       allCols.forEach(c => {
         netDen.note_500 += Number(c.denominations?.note_500 || 0);
@@ -464,7 +466,7 @@ export default function MobileOverview({
         netDen.note_20  += Number(c.denominations?.note_20  || 0);
         netDen.note_10  += Number(c.denominations?.note_10  || 0);
         netDen.coins    += Number(c.denominations?.coins     || 0);
-        netDen.online   += Number(c.denominations?.online_amount || 0);
+        onlineIn        += Number(c.denominations?.online_amount || 0);
       });
       allReceived.forEach(r => {
         netDen.note_500 += Number(r.denominations?.note_500 || 0);
@@ -474,7 +476,7 @@ export default function MobileOverview({
         netDen.note_20  += Number(r.denominations?.note_20  || 0);
         netDen.note_10  += Number(r.denominations?.note_10  || 0);
         netDen.coins    += Number(r.denominations?.coins     || 0);
-        netDen.online   += Number(r.denominations?.online_amount || 0);
+        onlineIn        += Number(r.denominations?.online_amount || 0);
       });
       allDeps.forEach(d => {
         netDen.note_500 -= Number(d.denominations?.note_500 || 0);
@@ -484,8 +486,9 @@ export default function MobileOverview({
         netDen.note_20  -= Number(d.denominations?.note_20  || 0);
         netDen.note_10  -= Number(d.denominations?.note_10  || 0);
         netDen.coins    -= Number(d.denominations?.coins     || 0);
-        netDen.online   -= Number(d.denominations?.online_amount || 0);
+        onlineOut       += Number(d.denominations?.online_amount || 0);
       });
+      netDen.online = Math.max(0, onlineIn - onlineOut);
 
       // Visited stores today
       const visitedStores = staffColsToday.map((c) => ({
