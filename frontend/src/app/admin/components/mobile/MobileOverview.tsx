@@ -451,14 +451,102 @@ export default function MobileOverview({
       const netBalance = oldBalance + collectedToday - depositedToday;
       const remainingToday = collectedToday - depositedToday;
 
-      // Net denomination breakdown (all collections + received handovers minus all deposits)
-      const allCols = [...staffColsToday, ...staffColsPrev];
-      const allDeps = [...staffDepsToday, ...staffDepsPrev];
-      const allReceived = [...receivedDepsToday, ...receivedDepsPrev];
-      let onlineIn = 0;
-      let onlineOut = 0;
-      const netDen = { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online: 0 };
-      allCols.forEach(c => {
+      // 1. Calculate previous days' raw denominations
+      const prevDen = { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0 };
+      let prevOnlineIn = 0;
+      let prevOnlineOut = 0;
+      
+      staffColsPrev.forEach(c => {
+        prevDen.note_500 += Number(c.denominations?.note_500 || 0);
+        prevDen.note_200 += Number(c.denominations?.note_200 || 0);
+        prevDen.note_100 += Number(c.denominations?.note_100 || 0);
+        prevDen.note_50  += Number(c.denominations?.note_50  || 0);
+        prevDen.note_20  += Number(c.denominations?.note_20  || 0);
+        prevDen.note_10  += Number(c.denominations?.note_10  || 0);
+        prevDen.coins    += Number(c.denominations?.coins     || 0);
+        prevOnlineIn     += Number(c.denominations?.online_amount || 0);
+      });
+      receivedDepsPrev.forEach(r => {
+        prevDen.note_500 += Number(r.denominations?.note_500 || 0);
+        prevDen.note_200 += Number(r.denominations?.note_200 || 0);
+        prevDen.note_100 += Number(r.denominations?.note_100 || 0);
+        prevDen.note_50  += Number(r.denominations?.note_50  || 0);
+        prevDen.note_20  += Number(r.denominations?.note_20  || 0);
+        prevDen.note_10  += Number(r.denominations?.note_10  || 0);
+        prevDen.coins    += Number(r.denominations?.coins     || 0);
+        prevOnlineIn     += Number(r.denominations?.online_amount || 0);
+      });
+      staffDepsPrev.forEach(d => {
+        prevDen.note_500 -= Number(d.denominations?.note_500 || 0);
+        prevDen.note_200 -= Number(d.denominations?.note_200 || 0);
+        prevDen.note_100 -= Number(d.denominations?.note_100 || 0);
+        prevDen.note_50  -= Number(d.denominations?.note_50  || 0);
+        prevDen.note_20  -= Number(d.denominations?.note_20  || 0);
+        prevDen.note_10  -= Number(d.denominations?.note_10  || 0);
+        prevDen.coins    -= Number(d.denominations?.coins     || 0);
+        prevOnlineOut    += Number(d.denominations?.online_amount || 0);
+      });
+      
+      const prevOnline = Math.max(0, prevOnlineIn - prevOnlineOut);
+      const prevCashNotes = oldBalance - prevOnline;
+      
+      // 2. Reconcile previous days' denominations greedily
+      const prevNotesSum = 
+        prevDen.note_500 * 500 +
+        prevDen.note_200 * 200 +
+        prevDen.note_100 * 100 +
+        prevDen.note_50 * 50 +
+        prevDen.note_20 * 20 +
+        prevDen.note_10 * 10 +
+        prevDen.coins;
+      
+      let prevMismatch = prevNotesSum - prevCashNotes;
+      if (prevMismatch > 0) {
+        const deduct500 = Math.min(prevDen.note_500, Math.floor(prevMismatch / 500));
+        prevDen.note_500 -= deduct500;
+        prevMismatch -= deduct500 * 500;
+        
+        const deduct200 = Math.min(prevDen.note_200, Math.floor(prevMismatch / 200));
+        prevDen.note_200 -= deduct200;
+        prevMismatch -= deduct200 * 200;
+        
+        const deduct100 = Math.min(prevDen.note_100, Math.floor(prevMismatch / 100));
+        prevDen.note_100 -= deduct100;
+        prevMismatch -= deduct100 * 100;
+        
+        const deduct50 = Math.min(prevDen.note_50, Math.floor(prevMismatch / 50));
+        prevDen.note_50 -= deduct50;
+        prevMismatch -= deduct50 * 50;
+        
+        const deduct20 = Math.min(prevDen.note_20, Math.floor(prevMismatch / 20));
+        prevDen.note_20 -= deduct20;
+        prevMismatch -= deduct20 * 20;
+        
+        const deduct10 = Math.min(prevDen.note_10, Math.floor(prevMismatch / 10));
+        prevDen.note_10 -= deduct10;
+        prevMismatch -= deduct10 * 10;
+        
+        if (prevMismatch > 0) {
+          prevDen.coins = Math.max(0, prevDen.coins - prevMismatch);
+        }
+      }
+      
+      // 3. Build netDen by starting from reconciled previous day's denoms and adding today's transactions
+      const netDen = {
+        note_500: prevDen.note_500,
+        note_200: prevDen.note_200,
+        note_100: prevDen.note_100,
+        note_50: prevDen.note_50,
+        note_20: prevDen.note_20,
+        note_10: prevDen.note_10,
+        coins: prevDen.coins,
+        online: 0
+      };
+      
+      let todayOnlineIn = 0;
+      let todayOnlineOut = 0;
+      
+      staffColsToday.forEach(c => {
         netDen.note_500 += Number(c.denominations?.note_500 || 0);
         netDen.note_200 += Number(c.denominations?.note_200 || 0);
         netDen.note_100 += Number(c.denominations?.note_100 || 0);
@@ -466,9 +554,9 @@ export default function MobileOverview({
         netDen.note_20  += Number(c.denominations?.note_20  || 0);
         netDen.note_10  += Number(c.denominations?.note_10  || 0);
         netDen.coins    += Number(c.denominations?.coins     || 0);
-        onlineIn        += Number(c.denominations?.online_amount || 0);
+        todayOnlineIn   += Number(c.denominations?.online_amount || 0);
       });
-      allReceived.forEach(r => {
+      receivedDepsToday.forEach(r => {
         netDen.note_500 += Number(r.denominations?.note_500 || 0);
         netDen.note_200 += Number(r.denominations?.note_200 || 0);
         netDen.note_100 += Number(r.denominations?.note_100 || 0);
@@ -476,9 +564,9 @@ export default function MobileOverview({
         netDen.note_20  += Number(r.denominations?.note_20  || 0);
         netDen.note_10  += Number(r.denominations?.note_10  || 0);
         netDen.coins    += Number(r.denominations?.coins     || 0);
-        onlineIn        += Number(r.denominations?.online_amount || 0);
+        todayOnlineIn   += Number(r.denominations?.online_amount || 0);
       });
-      allDeps.forEach(d => {
+      staffDepsToday.forEach(d => {
         netDen.note_500 -= Number(d.denominations?.note_500 || 0);
         netDen.note_200 -= Number(d.denominations?.note_200 || 0);
         netDen.note_100 -= Number(d.denominations?.note_100 || 0);
@@ -486,51 +574,10 @@ export default function MobileOverview({
         netDen.note_20  -= Number(d.denominations?.note_20  || 0);
         netDen.note_10  -= Number(d.denominations?.note_10  || 0);
         netDen.coins    -= Number(d.denominations?.coins     || 0);
-        onlineOut       += Number(d.denominations?.online_amount || 0);
+        todayOnlineOut  += Number(d.denominations?.online_amount || 0);
       });
-      netDen.online = Math.max(0, onlineIn - onlineOut);
-
-      // Reconcile physical cash denominations greedily to match Cash Notes in Hand (netBalance - online)
-      const targetCashNotes = netBalance - netDen.online;
-      const rawNotesSum = 
-        netDen.note_500 * 500 +
-        netDen.note_200 * 200 +
-        netDen.note_100 * 100 +
-        netDen.note_50 * 50 +
-        netDen.note_20 * 20 +
-        netDen.note_10 * 10 +
-        netDen.coins;
       
-      let mismatch = rawNotesSum - targetCashNotes;
-      if (mismatch > 0) {
-        const deduct500 = Math.min(netDen.note_500, Math.floor(mismatch / 500));
-        netDen.note_500 -= deduct500;
-        mismatch -= deduct500 * 500;
-        
-        const deduct200 = Math.min(netDen.note_200, Math.floor(mismatch / 200));
-        netDen.note_200 -= deduct200;
-        mismatch -= deduct200 * 200;
-        
-        const deduct100 = Math.min(netDen.note_100, Math.floor(mismatch / 100));
-        netDen.note_100 -= deduct100;
-        mismatch -= deduct100 * 100;
-        
-        const deduct50 = Math.min(netDen.note_50, Math.floor(mismatch / 50));
-        netDen.note_50 -= deduct50;
-        mismatch -= deduct50 * 50;
-        
-        const deduct20 = Math.min(netDen.note_20, Math.floor(mismatch / 20));
-        netDen.note_20 -= deduct20;
-        mismatch -= deduct20 * 20;
-        
-        const deduct10 = Math.min(netDen.note_10, Math.floor(mismatch / 10));
-        netDen.note_10 -= deduct10;
-        mismatch -= deduct10 * 10;
-        
-        if (mismatch > 0) {
-          netDen.coins = Math.max(0, netDen.coins - mismatch);
-        }
-      }
+      netDen.online = Math.max(0, prevOnline + todayOnlineIn - todayOnlineOut);
 
       // Visited stores today
       const visitedStores = staffColsToday.map((c) => ({
