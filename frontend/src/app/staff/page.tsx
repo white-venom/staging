@@ -425,72 +425,6 @@ export default function StaffDashboard() {
 
   if (!mounted || !currentUser) return null;
 
-  // Calculators
-  let note500 = 0;
-  let note200 = 0;
-  let note100 = 0;
-  let note50 = 0;
-  let note20 = 0;
-  let note10 = 0;
-  let coins = 0;
-
-  collections.forEach((c) => {
-    if (c.denominations) {
-      note500 += Number(c.denominations.note_500) || 0;
-      note200 += Number(c.denominations.note_200) || 0;
-      note100 += Number(c.denominations.note_100) || 0;
-      note50 += Number(c.denominations.note_50) || 0;
-      note20 += Number(c.denominations.note_20) || 0;
-      note10 += Number(c.denominations.note_10) || 0;
-      coins += Number(c.denominations.coins) || 0;
-    }
-  });
-
-  deposits.forEach((d) => {
-    if (d.denominations) {
-      const isRecipient = d.recipient_staff_id === currentUser.id && d.depositType === "staff";
-      if (isRecipient) {
-        note500 += Number(d.denominations.note_500) || 0;
-        note200 += Number(d.denominations.note_200) || 0;
-        note100 += Number(d.denominations.note_100) || 0;
-        note50 += Number(d.denominations.note_50) || 0;
-        note20 += Number(d.denominations.note_20) || 0;
-        note10 += Number(d.denominations.note_10) || 0;
-        coins += Number(d.denominations.coins) || 0;
-      } else {
-        note500 -= Number(d.denominations.note_500) || 0;
-        note200 -= Number(d.denominations.note_200) || 0;
-        note100 -= Number(d.denominations.note_100) || 0;
-        note50 -= Number(d.denominations.note_50) || 0;
-        note20 -= Number(d.denominations.note_20) || 0;
-        note10 -= Number(d.denominations.note_10) || 0;
-        coins -= Number(d.denominations.coins) || 0;
-      }
-    }
-  });
-
-  const totalHandoversReceived = deposits
-    .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
-    .reduce((s, d) => s + (d.amount || 0), 0);
-
-  const totalCollected = collections.reduce((s, c) => s + (c.totalAmount || 0), 0) + totalHandoversReceived;
-  
-  const totalDeposited = deposits
-    .filter(d => d.depositType !== "virtual" && !(d.recipient_staff_id === currentUser.id && d.depositType === "staff"))
-    .reduce((s, d) => s + (d.amount || 0), 0);
-  
-  const netPortfolio = totalCollected - totalDeposited;
-
-  const totalOnline = collections.reduce((s, c) => s + Number(c.denominations?.online_amount || 0), 0) +
-                      deposits
-                        .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
-                        .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0) - 
-                      deposits
-                        .filter(d => d.depositType !== "virtual" && !(d.recipient_staff_id === currentUser.id && d.depositType === "staff"))
-                        .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
-  
-  const totalCashNotes = netPortfolio - totalOnline;
- 
   // ─── Today vs Previous Day split (IST) ───────────────────────────────────
   const todayIST = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
 
@@ -510,9 +444,9 @@ export default function StaffDashboard() {
   );
 
   // Handovers received split
-  const todayHandoversRcvd = deposits
-    .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && d.date?.startsWith(todayIST))
-    .reduce((s, d) => s + (d.amount || 0), 0);
+  const todayHandoversRcvdList = deposits
+    .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && d.date?.startsWith(todayIST));
+  const todayHandoversRcvd = todayHandoversRcvdList.reduce((s, d) => s + (d.amount || 0), 0);
   const prevHandoversRcvd = deposits
     .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && !d.date?.startsWith(todayIST))
     .reduce((s, d) => s + (d.amount || 0), 0);
@@ -521,6 +455,45 @@ export default function StaffDashboard() {
   const todayOut = todayOutDeposits.reduce((s, d) => s + (d.amount || 0), 0);
   const oldBalance = prevCollections.reduce((s, c) => s + (c.totalAmount || 0), 0) + prevHandoversRcvd - prevOutDeposits.reduce((s, d) => s + (d.amount || 0), 0);
   const netBalance = oldBalance + todayIn - todayOut;
+
+  // Calculators (Strictly for Today's Collections & Received Handovers)
+  let note500 = 0;
+  let note200 = 0;
+  let note100 = 0;
+  let note50 = 0;
+  let note20 = 0;
+  let note10 = 0;
+  let coins = 0;
+  let todayOnlineAmount = 0;
+
+  todayCollections.forEach((c) => {
+    if (c.denominations) {
+      note500 += Number(c.denominations.note_500) || 0;
+      note200 += Number(c.denominations.note_200) || 0;
+      note100 += Number(c.denominations.note_100) || 0;
+      note50 += Number(c.denominations.note_50) || 0;
+      note20 += Number(c.denominations.note_20) || 0;
+      note10 += Number(c.denominations.note_10) || 0;
+      coins += Number(c.denominations.coins) || 0;
+      todayOnlineAmount += Number(c.denominations.online_amount) || 0;
+    }
+  });
+
+  todayHandoversRcvdList.forEach((d) => {
+    if (d.denominations) {
+      note500 += Number(d.denominations.note_500) || 0;
+      note200 += Number(d.denominations.note_200) || 0;
+      note100 += Number(d.denominations.note_100) || 0;
+      note50 += Number(d.denominations.note_50) || 0;
+      note20 += Number(d.denominations.note_20) || 0;
+      note10 += Number(d.denominations.note_10) || 0;
+      coins += Number(d.denominations.coins) || 0;
+      todayOnlineAmount += Number(d.denominations.online_amount) || 0;
+    }
+  });
+
+  const totalOnline = todayOnlineAmount;
+  const totalCashNotes = (note500 * 500) + (note200 * 200) + (note100 * 100) + (note50 * 50) + (note20 * 20) + (note10 * 10) + coins;
 
   // Net denomination breakdown (all in - all out across all time)
   const combinedLedger = [
