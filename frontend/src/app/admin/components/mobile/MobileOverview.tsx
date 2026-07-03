@@ -490,6 +490,48 @@ export default function MobileOverview({
       });
       netDen.online = Math.max(0, onlineIn - onlineOut);
 
+      // Reconcile physical cash denominations greedily to match Cash Notes in Hand (netBalance - online)
+      const targetCashNotes = netBalance - netDen.online;
+      const rawNotesSum = 
+        netDen.note_500 * 500 +
+        netDen.note_200 * 200 +
+        netDen.note_100 * 100 +
+        netDen.note_50 * 50 +
+        netDen.note_20 * 20 +
+        netDen.note_10 * 10 +
+        netDen.coins;
+      
+      let mismatch = rawNotesSum - targetCashNotes;
+      if (mismatch > 0) {
+        const deduct500 = Math.min(netDen.note_500, Math.floor(mismatch / 500));
+        netDen.note_500 -= deduct500;
+        mismatch -= deduct500 * 500;
+        
+        const deduct200 = Math.min(netDen.note_200, Math.floor(mismatch / 200));
+        netDen.note_200 -= deduct200;
+        mismatch -= deduct200 * 200;
+        
+        const deduct100 = Math.min(netDen.note_100, Math.floor(mismatch / 100));
+        netDen.note_100 -= deduct100;
+        mismatch -= deduct100 * 100;
+        
+        const deduct50 = Math.min(netDen.note_50, Math.floor(mismatch / 50));
+        netDen.note_50 -= deduct50;
+        mismatch -= deduct50 * 50;
+        
+        const deduct20 = Math.min(netDen.note_20, Math.floor(mismatch / 20));
+        netDen.note_20 -= deduct20;
+        mismatch -= deduct20 * 20;
+        
+        const deduct10 = Math.min(netDen.note_10, Math.floor(mismatch / 10));
+        netDen.note_10 -= deduct10;
+        mismatch -= deduct10 * 10;
+        
+        if (mismatch > 0) {
+          netDen.coins = Math.max(0, netDen.coins - mismatch);
+        }
+      }
+
       // Visited stores today
       const visitedStores = staffColsToday.map((c) => ({
         id: c.id,

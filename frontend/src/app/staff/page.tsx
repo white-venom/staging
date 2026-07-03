@@ -493,6 +493,47 @@ export default function StaffDashboard() {
   const totalOnline = Math.max(0, onlineIn - onlineOut);
   
   const totalCashNotes = netPortfolio - totalOnline;
+  
+  // Reconcile physical cash denominations greedily to match totalCashNotes
+  const rawNotesSum = 
+    note500 * 500 +
+    note200 * 200 +
+    note100 * 100 +
+    note50 * 50 +
+    note20 * 20 +
+    note10 * 10 +
+    coins;
+  
+  let mismatch = rawNotesSum - totalCashNotes;
+  if (mismatch > 0) {
+    const deduct500 = Math.min(note500, Math.floor(mismatch / 500));
+    note500 -= deduct500;
+    mismatch -= deduct500 * 500;
+    
+    const deduct200 = Math.min(note200, Math.floor(mismatch / 200));
+    note200 -= deduct200;
+    mismatch -= deduct200 * 200;
+    
+    const deduct100 = Math.min(note100, Math.floor(mismatch / 100));
+    note100 -= deduct100;
+    mismatch -= deduct100 * 100;
+    
+    const deduct50 = Math.min(note50, Math.floor(mismatch / 50));
+    note50 -= deduct50;
+    mismatch -= deduct50 * 50;
+    
+    const deduct20 = Math.min(note20, Math.floor(mismatch / 20));
+    note20 -= deduct20;
+    mismatch -= deduct20 * 20;
+    
+    const deduct10 = Math.min(note10, Math.floor(mismatch / 10));
+    note10 -= deduct10;
+    mismatch -= deduct10 * 10;
+    
+    if (mismatch > 0) {
+      coins = Math.max(0, coins - mismatch);
+    }
+  }
  
   // ─── Today vs Previous Day split (IST) ───────────────────────────────────
   const todayIST = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(new Date());
