@@ -20,12 +20,20 @@ import {
 import Script from "next/script";
 import { getISTDateString } from "../utils/dateHelpers";
 
-const cleanDescription = (desc: string): string => {
+const cleanDescription = (desc: string, tx?: any): string => {
   if (!desc) return "";
-  return desc
+  let cleaned = desc
     .replace(/\s*\(auto-verified\)/gi, "")
     .replace(/cash payout/gi, "cash out")
     .replace(/cash collection/gi, "cash in");
+    
+  if (cleaned.toLowerCase().startsWith("move to distributor")) {
+    const portal = tx?.portal_group_name || tx?.portal_name || "";
+    if (portal) {
+      cleaned = `move to distributor ${portal.toLowerCase()}`;
+    }
+  }
+  return cleaned;
 };
 
 const renderDenominations = (denom: any) => {
@@ -187,7 +195,7 @@ export default function LedgerReportView({
         if (endDate && txDateStr > endDate) return false;
         
         // Search filter
-        const cleanDesc = cleanDescription(tx.description);
+        const cleanDesc = cleanDescription(tx.description, tx);
         const remarkText = tx.remarks || "";
         const refNoText = tx.reference_no || "";
         const storeText = tx.store_name || "";
@@ -599,7 +607,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                       
                       {/* Middle: Description */}
                       <div className="flex-1 px-4 text-base font-semibold text-slate-700 break-words whitespace-pre-wrap">
-                        <div className="text-slate-900 font-extrabold">{cleanDescription(tx.description)}</div>
+                        <div className="text-slate-900 font-extrabold">{cleanDescription(tx.description, tx)}</div>
                         {tx.store_name && (
                           <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
                             Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
@@ -705,7 +713,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                     ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" 
                     : "bg-red-50 dark:bg-red-955/20 text-red-500 dark:text-red-400"
                 }`}>
-                  {cleanDescription(selectedEntryForDetails.description)}
+                  {cleanDescription(selectedEntryForDetails.description, selectedEntryForDetails)}
                 </span>
               </div>
 
@@ -807,7 +815,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 Date: ${formatIST(entry.date).full}
 Type: ${entry.transaction_type === "credit" ? "Cash In" : "Cash Out"}
 Amount: ₹ ${Math.round(entry.amount).toLocaleString()}
-Desc: ${entry.description}
+Desc: ${cleanDescription(entry.description, entry)}
 ${entry.store_name ? `Store: ${entry.store_name}\n` : ''}${entry.portal_name ? `Portal: ${entry.portal_name}\n` : ''}Remarks: ${entry.remarks || 'None'}`;
                   if (navigator.share) {
                     navigator.share({ title: "Transaction Receipt", text: shareText }).catch(() => {});
