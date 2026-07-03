@@ -288,6 +288,7 @@ ${dateFormatted}`;
           online_portal_id: updated.denominations.online_portal_id,
         } : undefined,
         status: updated.status,
+        remarks: updated.remarks,
         date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
         created_at: updated.created_at,
       };

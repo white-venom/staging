@@ -14,7 +14,8 @@ import {
   CreditCard,
   Sun,
   Moon,
-  ChevronDown
+  ChevronDown,
+  FileText
 } from "lucide-react";
 
 function NewDepositContent() {
@@ -38,6 +39,7 @@ function NewDepositContent() {
   const [toOffice, setToOffice] = useState(false);
   const [portalsList, setPortalsList] = useState<any[]>([]);
   const [showOnlinePortal, setShowOnlinePortal] = useState(false);
+  const [remarks, setRemarks] = useState("");
 
   // Difference Calculator State
   const [isCalcOpen, setIsCalcOpen] = useState(false);
@@ -110,6 +112,9 @@ function NewDepositContent() {
             }
             if (target.deposit_type === "staff" && target.recipient_staff_id) {
               setSelectedStaffId(target.recipient_staff_id);
+            }
+            if (target.remarks) {
+              setRemarks(target.remarks);
             }
             if (target.denominations) {
               setDenominations({
@@ -266,6 +271,7 @@ function NewDepositContent() {
       payment_mode: depositType === "virtual" ? "online" : "unified",
       amount: totalAmount,
       denominations: denominations,
+      remarks: remarks,
     };
     if (depositType === "portal" || depositType === "virtual") backendPayload.portal_id = selectedPortalId;
     if (depositType === "retailer" || depositType === "virtual") backendPayload.retailer_id = selectedRetailerId;
@@ -280,6 +286,7 @@ function NewDepositContent() {
       amount: totalAmount,
       paymentMode: depositType === "virtual" ? "online" : "cash",
       denominations: denominations,
+      remarks: remarks,
       portal_id: (depositType === "portal" || depositType === "virtual") ? selectedPortalId : undefined,
       retailer_id: (depositType === "retailer" || depositType === "virtual") ? selectedRetailerId : undefined,
       recipient_staff_id: depositType === "staff" ? selectedStaffId : undefined,
@@ -319,6 +326,7 @@ function NewDepositContent() {
           amount: totalAmount,
           paymentMode: depositType === "virtual" ? "online" : "cash",
           denominations,
+          remarks: remarks,
           date: new Date().toISOString().replace("T", " ").substring(0, 16),
           synced: 0
         });
@@ -689,10 +697,25 @@ function NewDepositContent() {
               </div>
             </div>
           )}
+        {/* REMARKS COMPONENT */}
+        <div className="space-y-1">
+          <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 px-1">
+            Remarks
+          </label>
+          <div className="relative">
+            <FileText className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+            <input autoComplete="one-time-code"
+              type="text"
+              placeholder="Type remark..."
+              value={remarks}
+              onChange={(e) => setRemarks(e.target.value)}
+              className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold"
+            />
+          </div>
         </div>
 
-          {/* Computed summary box */}
-          <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        {/* Computed summary box */}
+        <div className="p-2.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div>
               <span className="text-[8px] uppercase font-black tracking-widest text-slate-400 dark:text-slate-500">
                 Total Payout Amount

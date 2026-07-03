@@ -96,7 +96,8 @@ export async function syncOfflineData(): Promise<number> {
         recipient_staff_id: dep.recipient_staff_id,
         amount: dep.amount,
         payment_mode: dep.paymentMode,
-        denominations: dep.denominations
+        denominations: dep.denominations,
+        remarks: dep.remarks
       });
 
       if (dep.id) {
@@ -112,7 +113,8 @@ export async function syncOfflineData(): Promise<number> {
           targetName: dep.targetName,
           amount: dep.amount,
           paymentMode: dep.paymentMode,
-          denominations: dep.denominations
+          denominations: dep.denominations,
+          remarks: dep.remarks
         });
       }
     } catch (err) {

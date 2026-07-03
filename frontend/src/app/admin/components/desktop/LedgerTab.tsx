@@ -794,7 +794,7 @@ export default function LedgerTab({
                             {tx.depositType === 'virtual' && (
                               <span className="text-xs font-black px-1.5 py-0.5 rounded bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
                             )}
-                            {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms") && (
+                            {tx.rawRecord?.remarks && (
                               <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [tx.id]: !prev[tx.id] })); }}
@@ -805,10 +805,10 @@ export default function LedgerTab({
                               </button>
                             )}
                           </div>
-                          {tx.type === 'collection' && tx.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[tx.id] && (
+                          {tx.rawRecord?.remarks && cmsRemarksExpanded[tx.id] && (
                             <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-955/40 rounded border border-slate-200/50 dark:border-slate-800 text-sm font-semibold text-slate-600 dark:text-slate-400 max-w-[250px] break-words">
                               <span className="text-xs uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
-                              <span className="italic">{tx.rawRecord?.remarks || "no remark"}</span>
+                              <span className="italic">{tx.rawRecord.remarks}</span>
                             </div>
                           )}
                           <span className="text-sm font-black text-slate-450 uppercase tracking-tighter mt-0.5">By {tx.staff}</span>

@@ -57,6 +57,7 @@ export interface DepositItem {
   paymentMode: "cash" | "online";
   denominations?: DenominationCounts;
   status: "pending" | "verified";
+  remarks?: string;
   date: string;
   retailer_ledger_token?: string;
   created_at?: string;

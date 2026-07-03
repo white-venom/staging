@@ -453,7 +453,7 @@ export default function DailyReportPage() {
                             {/* Description */}
                             <td className="py-1.5 px-2 border-r border-slate-200 text-center font-semibold text-slate-800 break-words text-[9px] leading-normal whitespace-pre-line">
                               <div className="text-slate-700 font-bold">{narration}</div>
-                              {isCol && item.retailer_name?.toLowerCase().startsWith("cms") && item.remarks && (
+                              {item.remarks && (
                                 <div className="text-[8px] text-slate-500 font-medium mt-0.5 italic">
                                   Remark: {item.remarks}
                                 </div>

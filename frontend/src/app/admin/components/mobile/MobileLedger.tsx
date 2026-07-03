@@ -521,7 +521,7 @@ export default function MobileLedger() {
                            {item.store_name && !(item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")) && (
                              <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>
                            )}
-                           {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && (
+                           {item.remarks && (
                              <button
                                type="button"
                                onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] })); }}
@@ -563,10 +563,10 @@ export default function MobileLedger() {
                            <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                          </div>
                        </div>
-                       {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
-                         <div className="mt-0.5 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-400 max-w-[200px] break-words">
+                       {item.remarks && cmsRemarksExpanded[item.id] && (
+                         <div className="mt-0.5 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-955/40 rounded border border-slate-200/50 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-400 max-w-[200px] break-words">
                            <span className="text-xs uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
-                           <span className="italic">{item.remarks || "no remark"}</span>
+                           <span className="italic">{item.remarks}</span>
                          </div>
                        )}
                      </div>
