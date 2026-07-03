@@ -426,7 +426,9 @@ export default function DailyReportPage() {
                           source = item.from_office
                             ? "Super Distributor"
                             : retDispName;
-                          destination = staffName;
+                          destination = item.portal_group_name
+                             ? `${item.portal_group_name}${item.portal_name ? ` (${item.portal_name})` : ""}`
+                             : staffName;
                         } else {
                           source = staffName;
                           const storeStr = item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "";
