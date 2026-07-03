@@ -20,11 +20,14 @@ def run_report():
             if t.subdomain != "do-it-services" and t.subdomain != "do-it":
                 continue
             
-            print(f"\n========================================")
-            print(f"Tenant: '{t.subdomain}' (Database: '{t.db_name}')")
+            db_name = t.db_name
+            if db_name == 'crediiflow_doitservice':
+                db_name = 'crediiflow_do_it_services'
+            
+            print(f"Tenant: '{t.subdomain}' (Database: '{db_name}')")
             print(f"========================================")
             
-            url = get_tenant_connection_string(t.db_name)
+            url = get_tenant_connection_string(db_name)
             engine = create_engine(url)
             with engine.connect() as conn:
                 # Get all users
