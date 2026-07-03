@@ -58,7 +58,6 @@ export interface DepositItem {
   denominations?: DenominationCounts;
   status: "pending" | "verified";
   remarks?: string;
-  bankName?: string;
   date: string;
   retailer_ledger_token?: string;
   created_at?: string;

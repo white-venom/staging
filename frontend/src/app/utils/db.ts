@@ -27,7 +27,6 @@ export interface OfflineDeposit {
   paymentMode: "cash" | "online";
   denominations?: DenominationCounts;
   remarks?: string;
-  bankName?: string;
   date: string;
   synced: number; // 0 = unsynced, 1 = synced
 }
