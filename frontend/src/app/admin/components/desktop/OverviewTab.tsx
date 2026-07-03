@@ -422,43 +422,45 @@ export default function OverviewTab({
       const prevCashNotes = oldBalance - prevOnline;
       
       // 2. Reconcile previous days' denominations greedily
-      const prevNotesSum = 
-        prevDen.note_500 * 500 +
-        prevDen.note_200 * 200 +
-        prevDen.note_100 * 100 +
-        prevDen.note_50 * 50 +
-        prevDen.note_20 * 20 +
-        prevDen.note_10 * 10 +
-        prevDen.coins;
-      
-      let prevMismatch = prevNotesSum - prevCashNotes;
-      if (prevMismatch > 0) {
-        const deduct500 = Math.min(prevDen.note_500, Math.floor(prevMismatch / 500));
-        prevDen.note_500 -= deduct500;
-        prevMismatch -= deduct500 * 500;
+      if (prevCashNotes > 0) {
+        const prevNotesSum = 
+          prevDen.note_500 * 500 +
+          prevDen.note_200 * 200 +
+          prevDen.note_100 * 100 +
+          prevDen.note_50 * 50 +
+          prevDen.note_20 * 20 +
+          prevDen.note_10 * 10 +
+          prevDen.coins;
         
-        const deduct200 = Math.min(prevDen.note_200, Math.floor(prevMismatch / 200));
-        prevDen.note_200 -= deduct200;
-        prevMismatch -= deduct200 * 200;
-        
-        const deduct100 = Math.min(prevDen.note_100, Math.floor(prevMismatch / 100));
-        prevDen.note_100 -= deduct100;
-        prevMismatch -= deduct100 * 100;
-        
-        const deduct50 = Math.min(prevDen.note_50, Math.floor(prevMismatch / 50));
-        prevDen.note_50 -= deduct50;
-        prevMismatch -= deduct50 * 50;
-        
-        const deduct20 = Math.min(prevDen.note_20, Math.floor(prevMismatch / 20));
-        prevDen.note_20 -= deduct20;
-        prevMismatch -= deduct20 * 20;
-        
-        const deduct10 = Math.min(prevDen.note_10, Math.floor(prevMismatch / 10));
-        prevDen.note_10 -= deduct10;
-        prevMismatch -= deduct10 * 10;
-        
+        let prevMismatch = prevNotesSum - prevCashNotes;
         if (prevMismatch > 0) {
-          prevDen.coins = Math.max(0, prevDen.coins - prevMismatch);
+          const deduct500 = Math.min(Math.max(0, prevDen.note_500), Math.floor(prevMismatch / 500));
+          prevDen.note_500 -= deduct500;
+          prevMismatch -= deduct500 * 500;
+          
+          const deduct200 = Math.min(Math.max(0, prevDen.note_200), Math.floor(prevMismatch / 200));
+          prevDen.note_200 -= deduct200;
+          prevMismatch -= deduct200 * 200;
+          
+          const deduct100 = Math.min(Math.max(0, prevDen.note_100), Math.floor(prevMismatch / 100));
+          prevDen.note_100 -= deduct100;
+          prevMismatch -= deduct100 * 100;
+          
+          const deduct50 = Math.min(Math.max(0, prevDen.note_50), Math.floor(prevMismatch / 50));
+          prevDen.note_50 -= deduct50;
+          prevMismatch -= deduct50 * 50;
+          
+          const deduct20 = Math.min(Math.max(0, prevDen.note_20), Math.floor(prevMismatch / 20));
+          prevDen.note_20 -= deduct20;
+          prevMismatch -= deduct20 * 20;
+          
+          const deduct10 = Math.min(Math.max(0, prevDen.note_10), Math.floor(prevMismatch / 10));
+          prevDen.note_10 -= deduct10;
+          prevMismatch -= deduct10 * 10;
+          
+          if (prevMismatch > 0) {
+            prevDen.coins = Math.max(0, prevDen.coins - prevMismatch);
+          }
         }
       }
       
@@ -509,6 +511,50 @@ export default function OverviewTab({
       });
       
       netDen.online = Math.max(0, prevOnline + todayOnlineIn - todayOnlineOut);
+
+      // 4. Run final pass reconciliation to clean up any new mismatches created today
+      const finalTargetCashNotes = netBalance - netDen.online;
+      if (finalTargetCashNotes > 0) {
+        const netDenSum = 
+          netDen.note_500 * 500 +
+          netDen.note_200 * 200 +
+          netDen.note_100 * 100 +
+          netDen.note_50 * 50 +
+          netDen.note_20 * 20 +
+          netDen.note_10 * 10 +
+          netDen.coins;
+        
+        let finalMismatch = netDenSum - finalTargetCashNotes;
+        if (finalMismatch > 0) {
+          const deduct500 = Math.min(Math.max(0, netDen.note_500), Math.floor(finalMismatch / 500));
+          netDen.note_500 -= deduct500;
+          finalMismatch -= deduct500 * 500;
+          
+          const deduct200 = Math.min(Math.max(0, netDen.note_200), Math.floor(finalMismatch / 200));
+          netDen.note_200 -= deduct200;
+          finalMismatch -= deduct200 * 200;
+          
+          const deduct100 = Math.min(Math.max(0, netDen.note_100), Math.floor(finalMismatch / 100));
+          netDen.note_100 -= deduct100;
+          finalMismatch -= deduct100 * 100;
+          
+          const deduct50 = Math.min(Math.max(0, netDen.note_50), Math.floor(finalMismatch / 50));
+          netDen.note_50 -= deduct50;
+          finalMismatch -= deduct50 * 50;
+          
+          const deduct20 = Math.min(Math.max(0, netDen.note_20), Math.floor(finalMismatch / 20));
+          netDen.note_20 -= deduct20;
+          finalMismatch -= deduct20 * 20;
+          
+          const deduct10 = Math.min(Math.max(0, netDen.note_10), Math.floor(finalMismatch / 10));
+          netDen.note_10 -= deduct10;
+          finalMismatch -= deduct10 * 10;
+          
+          if (finalMismatch > 0) {
+            netDen.coins = Math.max(0, netDen.coins - finalMismatch);
+          }
+        }
+      }
 
       // Get visited stores today
       const visitedStores = staffColsToday.map((c) => ({

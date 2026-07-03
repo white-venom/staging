@@ -135,35 +135,36 @@ def run_report():
                     rec500, rec200, rec100, rec50, rec20, rec10 = note500, note200, note100, note50, note20, note10
                     reccoins = coins
                     
-                    mismatch = Decimal(str(rec500*500 + rec200*200 + rec100*100 + rec50*50 + rec20*20 + rec10*10)) + reccoins - cash_notes_in_hand
-                    if mismatch > 0:
-                        # Reconcile note counts greedily starting from ₹500 down to ₹10
-                        deduct_500 = min(rec500, int(mismatch // 500))
-                        rec500 -= deduct_500
-                        mismatch -= deduct_500 * 500
-                        
-                        deduct_200 = min(rec200, int(mismatch // 200))
-                        rec200 -= deduct_200
-                        mismatch -= deduct_200 * 200
-                        
-                        deduct_100 = min(rec100, int(mismatch // 100))
-                        rec100 -= deduct_100
-                        mismatch -= deduct_100 * 100
-                        
-                        deduct_50 = min(rec50, int(mismatch // 50))
-                        rec50 -= deduct_50
-                        mismatch -= deduct_50 * 50
-                        
-                        deduct_20 = min(rec20, int(mismatch // 20))
-                        rec20 -= deduct_20
-                        mismatch -= deduct_20 * 20
-                        
-                        deduct_10 = min(rec10, int(mismatch // 10))
-                        rec10 -= deduct_10
-                        mismatch -= deduct_10 * 10
-                        
+                    if cash_notes_in_hand > 0:
+                        mismatch = Decimal(str(rec500*500 + rec200*200 + rec100*100 + rec50*50 + rec20*20 + rec10*10)) + reccoins - cash_notes_in_hand
                         if mismatch > 0:
-                            reccoins = max(Decimal("0.0"), reccoins - mismatch)
+                            # Reconcile note counts greedily starting from ₹500 down to ₹10
+                            deduct_500 = min(max(0, rec500), int(mismatch // 500))
+                            rec500 -= deduct_500
+                            mismatch -= deduct_500 * 500
+                            
+                            deduct_200 = min(max(0, rec200), int(mismatch // 200))
+                            rec200 -= deduct_200
+                            mismatch -= deduct_200 * 200
+                            
+                            deduct_100 = min(max(0, rec100), int(mismatch // 100))
+                            rec100 -= deduct_100
+                            mismatch -= deduct_100 * 100
+                            
+                            deduct_50 = min(max(0, rec50), int(mismatch // 50))
+                            rec50 -= deduct_50
+                            mismatch -= deduct_50 * 50
+                            
+                            deduct_20 = min(max(0, rec20), int(mismatch // 20))
+                            rec20 -= deduct_20
+                            mismatch -= deduct_20 * 20
+                            
+                            deduct_10 = min(max(0, rec10), int(mismatch // 10))
+                            rec10 -= deduct_10
+                            mismatch -= deduct_10 * 10
+                            
+                            if mismatch > 0:
+                                reccoins = max(Decimal("0.0"), reccoins - mismatch)
                     
                     print(f"\nStaff: {user_name} ({user_role.upper()})")
                     print(f"  - Net Balance: ₹{net_balance:,.2f}")

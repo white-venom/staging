@@ -511,43 +511,45 @@ export default function StaffDashboard() {
   const prevCashNotes = oldBalance - prevOnline;
 
   // Reconcile previous days' denominations greedily
-  const prevNotesSum = 
-    prevNote500 * 500 +
-    prevNote200 * 200 +
-    prevNote100 * 100 +
-    prevNote50 * 50 +
-    prevNote20 * 20 +
-    prevNote10 * 10 +
-    prevCoins;
-  
-  let prevMismatch = prevNotesSum - prevCashNotes;
-  if (prevMismatch > 0) {
-    const deduct500 = Math.min(prevNote500, Math.floor(prevMismatch / 500));
-    prevNote500 -= deduct500;
-    prevMismatch -= deduct500 * 500;
+  if (prevCashNotes > 0) {
+    const prevNotesSum = 
+      prevNote500 * 500 +
+      prevNote200 * 200 +
+      prevNote100 * 100 +
+      prevNote50 * 50 +
+      prevNote20 * 20 +
+      prevNote10 * 10 +
+      prevCoins;
     
-    const deduct200 = Math.min(prevNote200, Math.floor(prevMismatch / 200));
-    prevNote200 -= deduct200;
-    prevMismatch -= deduct200 * 200;
-    
-    const deduct100 = Math.min(prevNote100, Math.floor(prevMismatch / 100));
-    prevNote100 -= deduct100;
-    prevMismatch -= deduct100 * 100;
-    
-    const deduct50 = Math.min(prevNote50, Math.floor(prevMismatch / 50));
-    prevNote50 -= deduct50;
-    prevMismatch -= deduct50 * 50;
-    
-    const deduct20 = Math.min(prevNote20, Math.floor(prevMismatch / 20));
-    prevNote20 -= deduct20;
-    prevMismatch -= deduct20 * 20;
-    
-    const deduct10 = Math.min(prevNote10, Math.floor(prevMismatch / 10));
-    prevNote10 -= deduct10;
-    prevMismatch -= deduct10 * 10;
-    
+    let prevMismatch = prevNotesSum - prevCashNotes;
     if (prevMismatch > 0) {
-      prevCoins = Math.max(0, prevCoins - prevMismatch);
+      const deduct500 = Math.min(Math.max(0, prevNote500), Math.floor(prevMismatch / 500));
+      prevNote500 -= deduct500;
+      prevMismatch -= deduct500 * 500;
+      
+      const deduct200 = Math.min(Math.max(0, prevNote200), Math.floor(prevMismatch / 200));
+      prevNote200 -= deduct200;
+      prevMismatch -= deduct200 * 200;
+      
+      const deduct100 = Math.min(Math.max(0, prevNote100), Math.floor(prevMismatch / 100));
+      prevNote100 -= deduct100;
+      prevMismatch -= deduct100 * 100;
+      
+      const deduct50 = Math.min(Math.max(0, prevNote50), Math.floor(prevMismatch / 50));
+      prevNote50 -= deduct50;
+      prevMismatch -= deduct50 * 50;
+      
+      const deduct20 = Math.min(Math.max(0, prevNote20), Math.floor(prevMismatch / 20));
+      prevNote20 -= deduct20;
+      prevMismatch -= deduct20 * 20;
+      
+      const deduct10 = Math.min(Math.max(0, prevNote10), Math.floor(prevMismatch / 10));
+      prevNote10 -= deduct10;
+      prevMismatch -= deduct10 * 10;
+      
+      if (prevMismatch > 0) {
+        prevCoins = Math.max(0, prevCoins - prevMismatch);
+      }
     }
   }
 
@@ -621,6 +623,49 @@ export default function StaffDashboard() {
   const totalOnline = Math.max(0, onlineIn - onlineOut);
   
   const totalCashNotes = netPortfolio - totalOnline;
+
+  // Run final pass reconciliation to clean up any new mismatches created today
+  if (totalCashNotes > 0) {
+    const netDenSum = 
+      note500 * 500 +
+      note200 * 200 +
+      note100 * 100 +
+      note50 * 50 +
+      note20 * 20 +
+      note10 * 10 +
+      coins;
+    
+    let finalMismatch = netDenSum - totalCashNotes;
+    if (finalMismatch > 0) {
+      const deduct500 = Math.min(Math.max(0, note500), Math.floor(finalMismatch / 500));
+      note500 -= deduct500;
+      finalMismatch -= deduct500 * 500;
+      
+      const deduct200 = Math.min(Math.max(0, note200), Math.floor(finalMismatch / 200));
+      note200 -= deduct200;
+      finalMismatch -= deduct200 * 200;
+      
+      const deduct100 = Math.min(Math.max(0, note100), Math.floor(finalMismatch / 100));
+      note100 -= deduct100;
+      finalMismatch -= deduct100 * 100;
+      
+      const deduct50 = Math.min(Math.max(0, note50), Math.floor(finalMismatch / 50));
+      note50 -= deduct50;
+      finalMismatch -= deduct50 * 50;
+      
+      const deduct20 = Math.min(Math.max(0, note20), Math.floor(finalMismatch / 20));
+      note20 -= deduct20;
+      finalMismatch -= deduct20 * 20;
+      
+      const deduct10 = Math.min(Math.max(0, note10), Math.floor(finalMismatch / 10));
+      note10 -= deduct10;
+      finalMismatch -= deduct10 * 10;
+      
+      if (finalMismatch > 0) {
+        coins = Math.max(0, coins - finalMismatch);
+      }
+    }
+  }
 
   // Net denomination breakdown (all in - all out across all time)
   const combinedLedger = [
