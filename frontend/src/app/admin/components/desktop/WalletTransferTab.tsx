@@ -632,6 +632,17 @@ export default function WalletTransferTab() {
             </div>
           )}
         </div>
+
+        {/* View All → Virtual Ledger */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+          <a
+            href="/admin/virtual-ledger"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wide text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/30 transition-all"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5" />
+            View All Virtual Transfers
+          </a>
+        </div>
       </div>
 
       {/* Audit Drawer/Modal */}
