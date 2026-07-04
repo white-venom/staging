@@ -557,6 +557,14 @@ export default function StaffDashboard() {
         prevCoins = Math.max(0, prevCoins - prevMismatch);
       }
     }
+  } else {
+    prevNote500 = 0;
+    prevNote200 = 0;
+    prevNote100 = 0;
+    prevNote50 = 0;
+    prevNote20 = 0;
+    prevNote10 = 0;
+    prevCoins = 0;
   }
 
   // Now, calculate today's final denominations by adding today's counts to the reconciled previous day counts
@@ -671,6 +679,14 @@ export default function StaffDashboard() {
         coins = Math.max(0, coins - finalMismatch);
       }
     }
+  } else {
+    note500 = 0;
+    note200 = 0;
+    note100 = 0;
+    note50 = 0;
+    note20 = 0;
+    note10 = 0;
+    coins = 0;
   }
 
   // Net denomination breakdown (all in - all out across all time)
