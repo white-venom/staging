@@ -451,140 +451,139 @@ export default function MobileOverview({
       const netBalance = oldBalance + collectedToday - depositedToday;
       const remainingToday = collectedToday - depositedToday;
 
-      // ─── Pocket Denominations Calculation (Latest-First Accumulation) ──────────
-      const staffColsAll = (collections || []).filter(c => c.staffName === name);
-      const staffDepsAll = (deposits || []).filter(d => d.staffName === name && d.depositType?.toLowerCase() !== 'virtual');
-      const receivedDepsAll = (deposits || []).filter(d => 
-        d.recipient_staff_id === user.id && 
-        d.depositType === 'staff' &&
-        !(collections || []).some(c => c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
-      );
+      // ─── Pocket Denominations Calculation ──────────────────────────────────────
+      // Step 1: Accumulate previous days' denominations
+      const prevDen = { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0 };
+      let prevOnlineIn = 0, prevOnlineOut = 0;
 
-      const totalCollected = staffColsAll.reduce((s, c) => s + (c.totalAmount || 0), 0) + receivedDepsAll.reduce((s, d) => s + (d.amount || 0), 0);
-      const totalDeposited = staffDepsAll.reduce((s, d) => s + (d.amount || 0), 0);
-      const netPortfolio = totalCollected - totalDeposited;
+      staffColsPrev.forEach(c => {
+        prevDen.note_500 += Number(c.denominations?.note_500 || 0);
+        prevDen.note_200 += Number(c.denominations?.note_200 || 0);
+        prevDen.note_100 += Number(c.denominations?.note_100 || 0);
+        prevDen.note_50  += Number(c.denominations?.note_50  || 0);
+        prevDen.note_20  += Number(c.denominations?.note_20  || 0);
+        prevDen.note_10  += Number(c.denominations?.note_10  || 0);
+        prevDen.coins    += Number(c.denominations?.coins    || 0);
+        prevOnlineIn     += Number(c.denominations?.online_amount || 0);
+      });
+      receivedDepsPrev.forEach(r => {
+        prevDen.note_500 += Number(r.denominations?.note_500 || 0);
+        prevDen.note_200 += Number(r.denominations?.note_200 || 0);
+        prevDen.note_100 += Number(r.denominations?.note_100 || 0);
+        prevDen.note_50  += Number(r.denominations?.note_50  || 0);
+        prevDen.note_20  += Number(r.denominations?.note_20  || 0);
+        prevDen.note_10  += Number(r.denominations?.note_10  || 0);
+        prevDen.coins    += Number(r.denominations?.coins    || 0);
+        prevOnlineIn     += Number(r.denominations?.online_amount || 0);
+      });
+      staffDepsPrev.forEach(d => {
+        prevDen.note_500 -= Number(d.denominations?.note_500 || 0);
+        prevDen.note_200 -= Number(d.denominations?.note_200 || 0);
+        prevDen.note_100 -= Number(d.denominations?.note_100 || 0);
+        prevDen.note_50  -= Number(d.denominations?.note_50  || 0);
+        prevDen.note_20  -= Number(d.denominations?.note_20  || 0);
+        prevDen.note_10  -= Number(d.denominations?.note_10  || 0);
+        prevDen.coins    -= Number(d.denominations?.coins    || 0);
+        prevOnlineOut    += Number(d.denominations?.online_amount || 0);
+      });
 
-      const onlineIn = staffColsAll.reduce((s, c) => s + Number(c.denominations?.online_amount || 0), 0) +
-                       receivedDepsAll.reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
-      const onlineOut = staffDepsAll.reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
-      const totalOnline = Math.max(0, onlineIn - onlineOut);
-      const totalCashNotes = Math.max(0, netPortfolio - totalOnline);
+      const prevOnline = Math.max(0, prevOnlineIn - prevOnlineOut);
+      const prevCashNotes = oldBalance - prevOnline;
 
+      // Step 2: Reconcile previous days' denominations greedily to match prevCashNotes
+      if (prevCashNotes > 0) {
+        const prevNotesSum =
+          prevDen.note_500 * 500 + prevDen.note_200 * 200 + prevDen.note_100 * 100 +
+          prevDen.note_50 * 50 + prevDen.note_20 * 20 + prevDen.note_10 * 10 + prevDen.coins;
+        let prevMismatch = prevNotesSum - prevCashNotes;
+        if (prevMismatch > 0) {
+          const d500 = Math.min(Math.max(0, prevDen.note_500), Math.floor(prevMismatch / 500));
+          prevDen.note_500 -= d500; prevMismatch -= d500 * 500;
+          const d200 = Math.min(Math.max(0, prevDen.note_200), Math.floor(prevMismatch / 200));
+          prevDen.note_200 -= d200; prevMismatch -= d200 * 200;
+          const d100 = Math.min(Math.max(0, prevDen.note_100), Math.floor(prevMismatch / 100));
+          prevDen.note_100 -= d100; prevMismatch -= d100 * 100;
+          const d50 = Math.min(Math.max(0, prevDen.note_50), Math.floor(prevMismatch / 50));
+          prevDen.note_50 -= d50; prevMismatch -= d50 * 50;
+          const d20 = Math.min(Math.max(0, prevDen.note_20), Math.floor(prevMismatch / 20));
+          prevDen.note_20 -= d20; prevMismatch -= d20 * 20;
+          const d10 = Math.min(Math.max(0, prevDen.note_10), Math.floor(prevMismatch / 10));
+          prevDen.note_10 -= d10; prevMismatch -= d10 * 10;
+          if (prevMismatch > 0) prevDen.coins = Math.max(0, prevDen.coins - prevMismatch);
+        }
+      } else {
+        prevDen.note_500 = 0; prevDen.note_200 = 0; prevDen.note_100 = 0;
+        prevDen.note_50 = 0;  prevDen.note_20 = 0;  prevDen.note_10 = 0;
+        prevDen.coins = 0;
+      }
+
+      // Step 3: Build netDen starting from reconciled prev-day denoms, then add today's
       const netDen = {
-        note_500: 0,
-        note_200: 0,
-        note_100: 0,
-        note_50: 0,
-        note_20: 0,
-        note_10: 0,
-        coins: 0,
-        online: totalOnline
+        note_500: prevDen.note_500, note_200: prevDen.note_200, note_100: prevDen.note_100,
+        note_50: prevDen.note_50,  note_20: prevDen.note_20,  note_10: prevDen.note_10,
+        coins: prevDen.coins, online: 0
       };
+      let todayOnlineIn = 0, todayOnlineOut = 0;
 
-      let targetCash = totalCashNotes;
+      staffColsToday.forEach(c => {
+        netDen.note_500 += Number(c.denominations?.note_500 || 0);
+        netDen.note_200 += Number(c.denominations?.note_200 || 0);
+        netDen.note_100 += Number(c.denominations?.note_100 || 0);
+        netDen.note_50  += Number(c.denominations?.note_50  || 0);
+        netDen.note_20  += Number(c.denominations?.note_20  || 0);
+        netDen.note_10  += Number(c.denominations?.note_10  || 0);
+        netDen.coins    += Number(c.denominations?.coins    || 0);
+        todayOnlineIn   += Number(c.denominations?.online_amount || 0);
+      });
+      receivedDepsToday.forEach(r => {
+        netDen.note_500 += Number(r.denominations?.note_500 || 0);
+        netDen.note_200 += Number(r.denominations?.note_200 || 0);
+        netDen.note_100 += Number(r.denominations?.note_100 || 0);
+        netDen.note_50  += Number(r.denominations?.note_50  || 0);
+        netDen.note_20  += Number(r.denominations?.note_20  || 0);
+        netDen.note_10  += Number(r.denominations?.note_10  || 0);
+        netDen.coins    += Number(r.denominations?.coins    || 0);
+        todayOnlineIn   += Number(r.denominations?.online_amount || 0);
+      });
+      staffDepsToday.forEach(d => {
+        netDen.note_500 = Math.max(0, netDen.note_500 - Number(d.denominations?.note_500 || 0));
+        netDen.note_200 = Math.max(0, netDen.note_200 - Number(d.denominations?.note_200 || 0));
+        netDen.note_100 = Math.max(0, netDen.note_100 - Number(d.denominations?.note_100 || 0));
+        netDen.note_50  = Math.max(0, netDen.note_50  - Number(d.denominations?.note_50  || 0));
+        netDen.note_20  = Math.max(0, netDen.note_20  - Number(d.denominations?.note_20  || 0));
+        netDen.note_10  = Math.max(0, netDen.note_10  - Number(d.denominations?.note_10  || 0));
+        netDen.coins    = Math.max(0, netDen.coins    - Number(d.denominations?.coins    || 0));
+        todayOnlineOut  += Number(d.denominations?.online_amount || 0);
+      });
 
-      // Combine all cash-in events (collections & handovers rcvd) sorted latest first
-      const cashInEvents = [
-        ...staffColsAll.map(c => ({
-          date: c.date || c.created_at || "",
-          denominations: c.denominations
-        })),
-        ...receivedDepsAll.map(d => ({
-          date: d.date || d.created_at || "",
-          denominations: d.denominations
-        }))
-      ].sort((a, b) => b.date.localeCompare(a.date));
+      netDen.online = Math.max(0, prevOnline + todayOnlineIn - todayOnlineOut);
 
-      for (const event of cashInEvents) {
-        if (targetCash <= 0) break;
-        if (!event.denominations) continue;
-
-        // Only count note denominations (not coins) to avoid picking up bad 'coins = whole balance' data
-        const eventNotesCash = 
-          (Number(event.denominations.note_500) || 0) * 500 +
-          (Number(event.denominations.note_200) || 0) * 200 +
-          (Number(event.denominations.note_100) || 0) * 100 +
-          (Number(event.denominations.note_50) || 0) * 50 +
-          (Number(event.denominations.note_20) || 0) * 20 +
-          (Number(event.denominations.note_10) || 0) * 10;
-
-        // Include coins only if notes also exist (indicates proper denomination entry)
-        const eventCoins = eventNotesCash > 0 ? (Number(event.denominations.coins) || 0) : 0;
-
-        // Take notes greedily from this event to fit within targetCash
-        const avail500 = Number(event.denominations.note_500) || 0;
-        if (avail500 > 0 && targetCash >= 500) {
-          const take500 = Math.min(avail500, Math.floor(targetCash / 500));
-          netDen.note_500 += take500;
-          targetCash -= take500 * 500;
+      // Step 4: Final pass reconciliation
+      const finalTargetCashNotes = netBalance - netDen.online;
+      if (finalTargetCashNotes > 0) {
+        const netDenSum =
+          netDen.note_500 * 500 + netDen.note_200 * 200 + netDen.note_100 * 100 +
+          netDen.note_50 * 50 + netDen.note_20 * 20 + netDen.note_10 * 10 + netDen.coins;
+        let finalMismatch = netDenSum - finalTargetCashNotes;
+        if (finalMismatch > 0) {
+          const f500 = Math.min(Math.max(0, netDen.note_500), Math.floor(finalMismatch / 500));
+          netDen.note_500 -= f500; finalMismatch -= f500 * 500;
+          const f200 = Math.min(Math.max(0, netDen.note_200), Math.floor(finalMismatch / 200));
+          netDen.note_200 -= f200; finalMismatch -= f200 * 200;
+          const f100 = Math.min(Math.max(0, netDen.note_100), Math.floor(finalMismatch / 100));
+          netDen.note_100 -= f100; finalMismatch -= f100 * 100;
+          const f50 = Math.min(Math.max(0, netDen.note_50), Math.floor(finalMismatch / 50));
+          netDen.note_50 -= f50; finalMismatch -= f50 * 50;
+          const f20 = Math.min(Math.max(0, netDen.note_20), Math.floor(finalMismatch / 20));
+          netDen.note_20 -= f20; finalMismatch -= f20 * 20;
+          const f10 = Math.min(Math.max(0, netDen.note_10), Math.floor(finalMismatch / 10));
+          netDen.note_10 -= f10; finalMismatch -= f10 * 10;
+          if (finalMismatch > 0) netDen.coins = Math.max(0, netDen.coins - finalMismatch);
         }
-
-        const avail200 = Number(event.denominations.note_200) || 0;
-        if (avail200 > 0 && targetCash >= 200) {
-          const take200 = Math.min(avail200, Math.floor(targetCash / 200));
-          netDen.note_200 += take200;
-          targetCash -= take200 * 200;
-        }
-
-        const avail100 = Number(event.denominations.note_100) || 0;
-        if (avail100 > 0 && targetCash >= 100) {
-          const take100 = Math.min(avail100, Math.floor(targetCash / 100));
-          netDen.note_100 += take100;
-          targetCash -= take100 * 100;
-        }
-
-        const avail50 = Number(event.denominations.note_50) || 0;
-        if (avail50 > 0 && targetCash >= 50) {
-          const take50 = Math.min(avail50, Math.floor(targetCash / 50));
-          netDen.note_50 += take50;
-          targetCash -= take50 * 50;
-        }
-
-        const avail20 = Number(event.denominations.note_20) || 0;
-        if (avail20 > 0 && targetCash >= 20) {
-          const take20 = Math.min(avail20, Math.floor(targetCash / 20));
-          netDen.note_20 += take20;
-          targetCash -= take20 * 20;
-        }
-
-        const avail10 = Number(event.denominations.note_10) || 0;
-        if (avail10 > 0 && targetCash >= 10) {
-          const take10 = Math.min(avail10, Math.floor(targetCash / 10));
-          netDen.note_10 += take10;
-          targetCash -= take10 * 10;
-        }
-
-        if (eventCoins > 0 && targetCash > 0) {
-          const takeCoins = Math.min(eventCoins, targetCash);
-          netDen.coins += takeCoins;
-          targetCash -= takeCoins;
-        }
-      }
-
-      // Greedy fallback for any remaining cash
-      if (targetCash > 0) {
-        netDen.note_500 += Math.floor(targetCash / 500); targetCash %= 500;
-        netDen.note_200 += Math.floor(targetCash / 200); targetCash %= 200;
-        netDen.note_100 += Math.floor(targetCash / 100); targetCash %= 100;
-        netDen.note_50  += Math.floor(targetCash / 50);  targetCash %= 50;
-        netDen.note_20  += Math.floor(targetCash / 20);  targetCash %= 20;
-        netDen.note_10  += Math.floor(targetCash / 10);  targetCash %= 10;
-        netDen.coins    += targetCash;
-      }
-
-      netDen.coins = Math.round(netDen.coins * 100) / 100;
-
-      // Redistribute any large accumulated coins into proper denominations
-      if (netDen.coins >= 10) {
-        let coinRupees = Math.floor(netDen.coins);
-        const fractionalCoins = netDen.coins - coinRupees;
-        netDen.note_500 += Math.floor(coinRupees / 500); coinRupees %= 500;
-        netDen.note_200 += Math.floor(coinRupees / 200); coinRupees %= 200;
-        netDen.note_100 += Math.floor(coinRupees / 100); coinRupees %= 100;
-        netDen.note_50  += Math.floor(coinRupees / 50);  coinRupees %= 50;
-        netDen.note_20  += Math.floor(coinRupees / 20);  coinRupees %= 20;
-        netDen.note_10  += Math.floor(coinRupees / 10);  coinRupees %= 10;
-        netDen.coins = coinRupees + fractionalCoins;
+      } else {
+        netDen.note_500 = 0; netDen.note_200 = 0; netDen.note_100 = 0;
+        netDen.note_50 = 0;  netDen.note_20 = 0;  netDen.note_10 = 0;
+        netDen.coins = 0;
       }
 
       netDen.coins = Math.round(netDen.coins * 100) / 100;
