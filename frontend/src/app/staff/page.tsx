@@ -462,42 +462,6 @@ export default function StaffDashboard() {
   const oldBalance = prevCollections.reduce((s, c) => s + (c.totalAmount || 0), 0) + prevHandoversRcvd - prevOutDeposits.reduce((s, d) => s + (d.amount || 0), 0);
   const netBalance = oldBalance + todayIn - todayOut;
 
-  // ─── Pocket Denominations Calculation ──────────────────────────────────────
-  // Honest running total: every collection / received handover adds its recorded
-  // note counts, every non-virtual deposit / sent handover subtracts them. The DB
-  // stores the exact note breakdown per transaction (see collections.py), so a
-  // plain sum is always correct. We deliberately do NOT reconcile/trim this total
-  // to match a derived cash figure — that heuristic silently overwrote real note
-  // counts (e.g. turning 9×500 + 92×200 into extra 100s) whenever an unrelated
-  // online/legacy record made the derived total disagree with the true sum.
-  let note500 = 0, note200 = 0, note100 = 0;
-  let note50 = 0, note20 = 0, note10 = 0, coins = 0;
-
-  collections.forEach((c) => {
-    if (!c.denominations) return;
-    note500 += Number(c.denominations.note_500) || 0;
-    note200 += Number(c.denominations.note_200) || 0;
-    note100 += Number(c.denominations.note_100) || 0;
-    note50  += Number(c.denominations.note_50)  || 0;
-    note20  += Number(c.denominations.note_20)  || 0;
-    note10  += Number(c.denominations.note_10)  || 0;
-    coins   += Number(c.denominations.coins)    || 0;
-  });
-
-  deposits.forEach((d) => {
-    if (!d.denominations) return;
-    const isReceivedHandover = d.recipient_staff_id === currentUser.id && d.depositType === 'staff';
-    if (!isReceivedHandover && d.depositType === 'virtual') return;
-    const sign = isReceivedHandover ? 1 : -1;
-    note500 += sign * (Number(d.denominations.note_500) || 0);
-    note200 += sign * (Number(d.denominations.note_200) || 0);
-    note100 += sign * (Number(d.denominations.note_100) || 0);
-    note50  += sign * (Number(d.denominations.note_50)  || 0);
-    note20  += sign * (Number(d.denominations.note_20)  || 0);
-    note10  += sign * (Number(d.denominations.note_10)  || 0);
-    coins   += sign * (Number(d.denominations.coins)    || 0);
-  });
-
   // Step 4: totals needed for the cash summary UI
   const totalHandoversReceived = deposits
     .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
@@ -517,13 +481,65 @@ export default function StaffDashboard() {
   const totalOnline = Math.max(0, onlineIn - onlineOut);
   const totalCashNotes = Math.max(0, netPortfolio - totalOnline);
 
-  // Clamp final note counts to >= 0 for UI presentation
-  note500 = Math.max(0, note500); note200 = Math.max(0, note200);
-  note100 = Math.max(0, note100); note50  = Math.max(0, note50);
-  note20  = Math.max(0, note20);  note10  = Math.max(0, note10);
-  coins   = Math.max(0, coins);
+  // ─── Pocket Denominations Calculation (latest-first reconstruction) ────────
+  // totalCashNotes above is derived purely from dollar totals, so it is always
+  // correct. To show a real note breakdown for that amount, walk cash-IN events
+  // (collections + received handovers) newest-first and take their *actual
+  // recorded* notes until totalCashNotes is covered — i.e. assume the most
+  // recently collected cash is what's still physically in hand, since older
+  // cash has most likely already been deposited out. This is deliberately NOT
+  // a full-lifetime sum: summing every denomination ever recorded drifts away
+  // from totalCashNotes because staff exchange/consolidate physical notes at
+  // deposit time in ways the ledger never tracks note-for-note (a deposit's
+  // denominations don't have to mirror the exact notes originally collected).
+  let note500 = 0, note200 = 0, note100 = 0;
+  let note50 = 0, note20 = 0, note10 = 0, coins = 0;
+  let remaining = totalCashNotes;
 
-  // Round coins to match presentation
+  const cashInEvents = [
+    ...collections,
+    ...deposits.filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff'),
+  ]
+    .filter(e => e.denominations)
+    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  for (const event of cashInEvents) {
+    if (remaining <= 0) break;
+    const den = event.denominations;
+    if (!den) continue;
+    const d500 = Number(den.note_500) || 0, d200 = Number(den.note_200) || 0, d100 = Number(den.note_100) || 0;
+    const d50  = Number(den.note_50)  || 0, d20  = Number(den.note_20)  || 0, d10  = Number(den.note_10)  || 0;
+    const dCoins = Number(den.coins) || 0;
+    if (d500 + d200 + d100 + d50 + d20 + d10 + dCoins <= 0) continue;
+
+    // Take whatever fits from this transaction's own notes (largest denomination
+    // first). If the transaction is fully covered, this takes all of it; if not,
+    // the uncovered remainder rolls over to the next (older) transaction instead
+    // of being discarded.
+    const take500 = Math.min(d500, Math.floor(remaining / 500)); remaining -= take500 * 500;
+    const take200 = Math.min(d200, Math.floor(remaining / 200)); remaining -= take200 * 200;
+    const take100 = Math.min(d100, Math.floor(remaining / 100)); remaining -= take100 * 100;
+    const take50  = Math.min(d50,  Math.floor(remaining / 50));  remaining -= take50  * 50;
+    const take20  = Math.min(d20,  Math.floor(remaining / 20));  remaining -= take20  * 20;
+    const take10  = Math.min(d10,  Math.floor(remaining / 10));  remaining -= take10  * 10;
+    const takeCoins = Math.min(dCoins, remaining); remaining -= takeCoins;
+
+    note500 += take500; note200 += take200; note100 += take100;
+    note50  += take50;  note20  += take20;  note10  += take10; coins += takeCoins;
+  }
+
+  // If recorded transactions don't fully cover the total (data gaps), represent
+  // the shortfall with the largest denominations so the total still adds up.
+  if (remaining > 0) {
+    note500 += Math.floor(remaining / 500); remaining %= 500;
+    note200 += Math.floor(remaining / 200); remaining %= 200;
+    note100 += Math.floor(remaining / 100); remaining %= 100;
+    note50  += Math.floor(remaining / 50);  remaining %= 50;
+    note20  += Math.floor(remaining / 20);  remaining %= 20;
+    note10  += Math.floor(remaining / 10);  remaining %= 10;
+    coins   += remaining;
+  }
+
   coins = Math.round(coins * 100) / 100;
 
   // Net denomination breakdown (all in - all out across all time)
