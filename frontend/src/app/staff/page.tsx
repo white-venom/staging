@@ -511,7 +511,7 @@ export default function StaffDashboard() {
       }))
   ].sort((a, b) => b.date.localeCompare(a.date));
 
-  // Accumulate denominations from latest to oldest (only take events that fully fit)
+  // Accumulate denominations from latest to oldest by taking notes greedily from each event
   for (const event of cashInEvents) {
     if (targetCash <= 0) break;
     if (!event.denominations) continue;
@@ -527,21 +527,55 @@ export default function StaffDashboard() {
 
     // Include coins only if notes also exist (indicates proper denomination entry)
     const eventCoins = eventNotesCash > 0 ? (Number(event.denominations.coins) || 0) : 0;
-    const eventCash = eventNotesCash + eventCoins;
 
-    if (eventCash <= 0) continue;
-    // Skip events that exceed remaining balance (prevents fractional rounding errors)
-    if (eventCash > targetCash) continue;
+    // Take notes greedily from this event to fit within targetCash
+    const avail500 = Number(event.denominations.note_500) || 0;
+    if (avail500 > 0 && targetCash >= 500) {
+      const take500 = Math.min(avail500, Math.floor(targetCash / 500));
+      note500 += take500;
+      targetCash -= take500 * 500;
+    }
 
-    note500 += Number(event.denominations.note_500) || 0;
-    note200 += Number(event.denominations.note_200) || 0;
-    note100 += Number(event.denominations.note_100) || 0;
-    note50  += Number(event.denominations.note_50)  || 0;
-    note20  += Number(event.denominations.note_20)  || 0;
-    note10  += Number(event.denominations.note_10)  || 0;
-    coins   += eventCoins;
+    const avail200 = Number(event.denominations.note_200) || 0;
+    if (avail200 > 0 && targetCash >= 200) {
+      const take200 = Math.min(avail200, Math.floor(targetCash / 200));
+      note200 += take200;
+      targetCash -= take200 * 200;
+    }
 
-    targetCash -= eventCash;
+    const avail100 = Number(event.denominations.note_100) || 0;
+    if (avail100 > 0 && targetCash >= 100) {
+      const take100 = Math.min(avail100, Math.floor(targetCash / 100));
+      note100 += take100;
+      targetCash -= take100 * 100;
+    }
+
+    const avail50 = Number(event.denominations.note_50) || 0;
+    if (avail50 > 0 && targetCash >= 50) {
+      const take50 = Math.min(avail50, Math.floor(targetCash / 50));
+      note50 += take50;
+      targetCash -= take50 * 50;
+    }
+
+    const avail20 = Number(event.denominations.note_20) || 0;
+    if (avail20 > 0 && targetCash >= 20) {
+      const take20 = Math.min(avail20, Math.floor(targetCash / 20));
+      note20 += take20;
+      targetCash -= take20 * 20;
+    }
+
+    const avail10 = Number(event.denominations.note_10) || 0;
+    if (avail10 > 0 && targetCash >= 10) {
+      const take10 = Math.min(avail10, Math.floor(targetCash / 10));
+      note10 += take10;
+      targetCash -= take10 * 10;
+    }
+
+    if (eventCoins > 0 && targetCash > 0) {
+      const takeCoins = Math.min(eventCoins, targetCash);
+      coins += takeCoins;
+      targetCash -= takeCoins;
+    }
   }
 
   // Greedy fallback for any remaining cash (covers skipped events + no-denomination entries)
@@ -553,6 +587,19 @@ export default function StaffDashboard() {
     note20  += Math.floor(targetCash / 20);  targetCash %= 20;
     note10  += Math.floor(targetCash / 10);  targetCash %= 10;
     coins   += targetCash;
+  }
+
+  // Redistribute any large accumulated coins back into proper note denominations
+  if (coins >= 10) {
+    let coinRupees = Math.floor(coins);
+    const fractionalCoins = coins - coinRupees;
+    note500 += Math.floor(coinRupees / 500); coinRupees %= 500;
+    note200 += Math.floor(coinRupees / 200); coinRupees %= 200;
+    note100 += Math.floor(coinRupees / 100); coinRupees %= 100;
+    note50  += Math.floor(coinRupees / 50);  coinRupees %= 50;
+    note20  += Math.floor(coinRupees / 20);  coinRupees %= 20;
+    note10  += Math.floor(coinRupees / 10);  coinRupees %= 10;
+    coins = coinRupees + fractionalCoins;
   }
 
   // Round coins to match presentation
