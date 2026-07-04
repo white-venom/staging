@@ -588,12 +588,6 @@ export default function StaffDashboard() {
     }
   });
 
-  // Clamp all note counts to >= 0
-  note500 = Math.max(0, note500); note200 = Math.max(0, note200);
-  note100 = Math.max(0, note100); note50  = Math.max(0, note50);
-  note20  = Math.max(0, note20);  note10  = Math.max(0, note10);
-  coins   = Math.max(0, coins);
-
   // Step 4: totals needed for the cash summary UI
   const totalHandoversReceived = deposits
     .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
@@ -618,21 +612,27 @@ export default function StaffDashboard() {
     const netDenSum = note500*500 + note200*200 + note100*100 + note50*50 + note20*20 + note10*10 + coins;
     let finalMismatch = netDenSum - totalCashNotes;
     if (finalMismatch > 0) {
-      const f500 = Math.min(note500, Math.floor(finalMismatch / 500));
+      const f500 = Math.min(Math.max(0, note500), Math.floor(finalMismatch / 500));
       note500 -= f500; finalMismatch -= f500 * 500;
-      const f200 = Math.min(note200, Math.floor(finalMismatch / 200));
+      const f200 = Math.min(Math.max(0, note200), Math.floor(finalMismatch / 200));
       note200 -= f200; finalMismatch -= f200 * 200;
-      const f100 = Math.min(note100, Math.floor(finalMismatch / 100));
+      const f100 = Math.min(Math.max(0, note100), Math.floor(finalMismatch / 100));
       note100 -= f100; finalMismatch -= f100 * 100;
-      const f50 = Math.min(note50, Math.floor(finalMismatch / 50));
+      const f50 = Math.min(Math.max(0, note50), Math.floor(finalMismatch / 50));
       note50 -= f50; finalMismatch -= f50 * 50;
-      const f20 = Math.min(note20, Math.floor(finalMismatch / 20));
+      const f20 = Math.min(Math.max(0, note20), Math.floor(finalMismatch / 20));
       note20 -= f20; finalMismatch -= f20 * 20;
-      const f10 = Math.min(note10, Math.floor(finalMismatch / 10));
+      const f10 = Math.min(Math.max(0, note10), Math.floor(finalMismatch / 10));
       note10 -= f10; finalMismatch -= f10 * 10;
       if (finalMismatch > 0) coins = Math.max(0, coins - finalMismatch);
     }
   }
+
+  // Clamp final note counts to >= 0 for UI presentation
+  note500 = Math.max(0, note500); note200 = Math.max(0, note200);
+  note100 = Math.max(0, note100); note50  = Math.max(0, note50);
+  note20  = Math.max(0, note20);  note10  = Math.max(0, note10);
+  coins   = Math.max(0, coins);
 
   // Round coins to match presentation
   coins = Math.round(coins * 100) / 100;
