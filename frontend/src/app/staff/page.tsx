@@ -516,6 +516,15 @@ export default function StaffDashboard() {
   const prevOnline = Math.max(0, prevOnlineIn - prevOnlineOut);
   const prevCashNotes = oldBalance - prevOnline;
 
+  console.log("=== DENOMINATION DEBUGGING ===");
+  console.log("prevCollections:", prevCollections.map(c => ({ id: c.id, amount: c.totalAmount, den: c.denominations, date: c.date })));
+  console.log("prevOutDeposits:", prevOutDeposits.map(d => ({ id: d.id, amount: d.amount, den: d.denominations, date: d.date })));
+  console.log("prevHandoversRcvdObjects:", prevHandoversRcvdObjects.map(d => ({ id: d.id, amount: d.amount, den: d.denominations, date: d.date })));
+  console.log("prevNotesSum:", prevNote500 * 500 + prevNote200 * 200 + prevNote100 * 100 + prevNote50 * 50 + prevNote20 * 20 + prevNote10 * 10 + prevCoins);
+  console.log("prevCashNotes:", prevCashNotes);
+  console.log("prevMismatch:", (prevNote500 * 500 + prevNote200 * 200 + prevNote100 * 100 + prevNote50 * 50 + prevNote20 * 20 + prevNote10 * 10 + prevCoins) - prevCashNotes);
+  console.log("===============================");
+
   // Reconcile previous days' denominations greedily
   if (prevCashNotes > 0) {
     const prevNotesSum = 
