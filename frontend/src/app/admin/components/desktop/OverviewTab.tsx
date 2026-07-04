@@ -444,48 +444,29 @@ export default function OverviewTab({
         const eventCash = eventNotesCash + eventCoins;
 
         if (eventCash <= 0) continue;
+        // Skip events that exceed remaining balance (prevents fractional rounding errors)
+        if (eventCash > targetCash) continue;
 
-        const take = Math.min(eventCash, targetCash);
-        const ratio = take / eventCash;
+        netDen.note_500 += Number(event.denominations.note_500) || 0;
+        netDen.note_200 += Number(event.denominations.note_200) || 0;
+        netDen.note_100 += Number(event.denominations.note_100) || 0;
+        netDen.note_50  += Number(event.denominations.note_50)  || 0;
+        netDen.note_20  += Number(event.denominations.note_20)  || 0;
+        netDen.note_10  += Number(event.denominations.note_10)  || 0;
+        netDen.coins    += eventCoins;
 
-        netDen.note_500 += Math.round((Number(event.denominations.note_500) || 0) * ratio);
-        netDen.note_200 += Math.round((Number(event.denominations.note_200) || 0) * ratio);
-        netDen.note_100 += Math.round((Number(event.denominations.note_100) || 0) * ratio);
-        netDen.note_50  += Math.round((Number(event.denominations.note_50)  || 0) * ratio);
-        netDen.note_20  += Math.round((Number(event.denominations.note_20)  || 0) * ratio);
-        netDen.note_10  += Math.round((Number(event.denominations.note_10)  || 0) * ratio);
-        netDen.coins    += eventCoins * ratio;
-
-        targetCash -= take;
+        targetCash -= eventCash;
       }
 
+      // Greedy fallback for any remaining cash
       if (targetCash > 0) {
-        netDen.note_500 += Math.floor(targetCash / 500);
-        targetCash %= 500;
-        netDen.note_200 += Math.floor(targetCash / 200);
-        targetCash %= 200;
-        netDen.note_100 += Math.floor(targetCash / 100);
-        targetCash %= 100;
-        netDen.note_50  += Math.floor(targetCash / 50);
-        targetCash %= 50;
-        netDen.note_20  += Math.floor(targetCash / 20);
-        targetCash %= 20;
-        netDen.note_10  += Math.floor(targetCash / 10);
-        targetCash %= 10;
+        netDen.note_500 += Math.floor(targetCash / 500); targetCash %= 500;
+        netDen.note_200 += Math.floor(targetCash / 200); targetCash %= 200;
+        netDen.note_100 += Math.floor(targetCash / 100); targetCash %= 100;
+        netDen.note_50  += Math.floor(targetCash / 50);  targetCash %= 50;
+        netDen.note_20  += Math.floor(targetCash / 20);  targetCash %= 20;
+        netDen.note_10  += Math.floor(targetCash / 10);  targetCash %= 10;
         netDen.coins    += targetCash;
-      }
-
-      // Redistribute any large accumulated coins into proper denominations
-      if (netDen.coins >= 10) {
-        let coinRupees = Math.floor(netDen.coins);
-        const fractionalCoins = netDen.coins - coinRupees;
-        netDen.note_500 += Math.floor(coinRupees / 500); coinRupees %= 500;
-        netDen.note_200 += Math.floor(coinRupees / 200); coinRupees %= 200;
-        netDen.note_100 += Math.floor(coinRupees / 100); coinRupees %= 100;
-        netDen.note_50  += Math.floor(coinRupees / 50);  coinRupees %= 50;
-        netDen.note_20  += Math.floor(coinRupees / 20);  coinRupees %= 20;
-        netDen.note_10  += Math.floor(coinRupees / 10);  coinRupees %= 10;
-        netDen.coins = coinRupees + fractionalCoins;
       }
 
       netDen.coins = Math.round(netDen.coins * 100) / 100;

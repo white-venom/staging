@@ -511,12 +511,12 @@ export default function StaffDashboard() {
       }))
   ].sort((a, b) => b.date.localeCompare(a.date));
 
-  // Accumulate denominations from latest to oldest
+  // Accumulate denominations from latest to oldest (only take events that fully fit)
   for (const event of cashInEvents) {
     if (targetCash <= 0) break;
     if (!event.denominations) continue;
 
-    // Only count note denominations (not coins) to avoid picking up bad old 'coins = whole balance' data
+    // Only count note denominations (not coins) to avoid picking up bad 'coins = whole balance' data
     const eventNotesCash = 
       (Number(event.denominations.note_500) || 0) * 500 +
       (Number(event.denominations.note_200) || 0) * 200 +
@@ -530,50 +530,29 @@ export default function StaffDashboard() {
     const eventCash = eventNotesCash + eventCoins;
 
     if (eventCash <= 0) continue;
+    // Skip events that exceed remaining balance (prevents fractional rounding errors)
+    if (eventCash > targetCash) continue;
 
-    const take = Math.min(eventCash, targetCash);
-    const ratio = take / eventCash;
+    note500 += Number(event.denominations.note_500) || 0;
+    note200 += Number(event.denominations.note_200) || 0;
+    note100 += Number(event.denominations.note_100) || 0;
+    note50  += Number(event.denominations.note_50)  || 0;
+    note20  += Number(event.denominations.note_20)  || 0;
+    note10  += Number(event.denominations.note_10)  || 0;
+    coins   += eventCoins;
 
-    note500 += Math.round((Number(event.denominations.note_500) || 0) * ratio);
-    note200 += Math.round((Number(event.denominations.note_200) || 0) * ratio);
-    note100 += Math.round((Number(event.denominations.note_100) || 0) * ratio);
-    note50  += Math.round((Number(event.denominations.note_50)  || 0) * ratio);
-    note20  += Math.round((Number(event.denominations.note_20)  || 0) * ratio);
-    note10  += Math.round((Number(event.denominations.note_10)  || 0) * ratio);
-    coins   += eventCoins * ratio;
-
-    targetCash -= take;
+    targetCash -= eventCash;
   }
 
-  // Fallback greedy reconciliation if targetCash remains positive
+  // Greedy fallback for any remaining cash (covers skipped events + no-denomination entries)
   if (targetCash > 0) {
-    note500 += Math.floor(targetCash / 500);
-    targetCash %= 500;
-    note200 += Math.floor(targetCash / 200);
-    targetCash %= 200;
-    note100 += Math.floor(targetCash / 100);
-    targetCash %= 100;
-    note50 += Math.floor(targetCash / 50);
-    targetCash %= 50;
-    note20 += Math.floor(targetCash / 20);
-    targetCash %= 20;
-    note10 += Math.floor(targetCash / 10);
-    targetCash %= 10;
-    coins += targetCash;
-  }
-
-  // Redistribute any large accumulated coins back into proper note denominations
-  // (handles old DB records that stored entire balance as 'coins')
-  if (coins >= 10) {
-    let coinRupees = Math.floor(coins);
-    const fractionalCoins = coins - coinRupees;
-    note500 += Math.floor(coinRupees / 500); coinRupees %= 500;
-    note200 += Math.floor(coinRupees / 200); coinRupees %= 200;
-    note100 += Math.floor(coinRupees / 100); coinRupees %= 100;
-    note50  += Math.floor(coinRupees / 50);  coinRupees %= 50;
-    note20  += Math.floor(coinRupees / 20);  coinRupees %= 20;
-    note10  += Math.floor(coinRupees / 10);  coinRupees %= 10;
-    coins = coinRupees + fractionalCoins;
+    note500 += Math.floor(targetCash / 500); targetCash %= 500;
+    note200 += Math.floor(targetCash / 200); targetCash %= 200;
+    note100 += Math.floor(targetCash / 100); targetCash %= 100;
+    note50  += Math.floor(targetCash / 50);  targetCash %= 50;
+    note20  += Math.floor(targetCash / 20);  targetCash %= 20;
+    note10  += Math.floor(targetCash / 10);  targetCash %= 10;
+    coins   += targetCash;
   }
 
   // Round coins to match presentation
