@@ -502,13 +502,13 @@ export default function StaffDashboard() {
 
   prevOutDeposits.forEach((d) => {
     if (d.denominations) {
-      prevNote500 -= Number(d.denominations.note_500) || 0;
-      prevNote200 -= Number(d.denominations.note_200) || 0;
-      prevNote100 -= Number(d.denominations.note_100) || 0;
-      prevNote50 -= Number(d.denominations.note_50) || 0;
-      prevNote20 -= Number(d.denominations.note_20) || 0;
-      prevNote10 -= Number(d.denominations.note_10) || 0;
-      prevCoins -= Number(d.denominations.coins) || 0;
+      prevNote500 = Math.max(0, prevNote500 - (Number(d.denominations.note_500) || 0));
+      prevNote200 = Math.max(0, prevNote200 - (Number(d.denominations.note_200) || 0));
+      prevNote100 = Math.max(0, prevNote100 - (Number(d.denominations.note_100) || 0));
+      prevNote50 = Math.max(0, prevNote50 - (Number(d.denominations.note_50) || 0));
+      prevNote20 = Math.max(0, prevNote20 - (Number(d.denominations.note_20) || 0));
+      prevNote10 = Math.max(0, prevNote10 - (Number(d.denominations.note_10) || 0));
+      prevCoins = Math.max(0, prevCoins - (Number(d.denominations.coins) || 0));
       prevOnlineOut += Number(d.denominations.online_amount) || 0;
     }
   });
@@ -603,13 +603,13 @@ export default function StaffDashboard() {
 
   todayOutDeposits.forEach((d) => {
     if (d.denominations) {
-      note500 -= Number(d.denominations.note_500) || 0;
-      note200 -= Number(d.denominations.note_200) || 0;
-      note100 -= Number(d.denominations.note_100) || 0;
-      note50 -= Number(d.denominations.note_50) || 0;
-      note20 -= Number(d.denominations.note_20) || 0;
-      note10 -= Number(d.denominations.note_10) || 0;
-      coins -= Number(d.denominations.coins) || 0;
+      note500 = Math.max(0, note500 - (Number(d.denominations.note_500) || 0));
+      note200 = Math.max(0, note200 - (Number(d.denominations.note_200) || 0));
+      note100 = Math.max(0, note100 - (Number(d.denominations.note_100) || 0));
+      note50 = Math.max(0, note50 - (Number(d.denominations.note_50) || 0));
+      note20 = Math.max(0, note20 - (Number(d.denominations.note_20) || 0));
+      note10 = Math.max(0, note10 - (Number(d.denominations.note_10) || 0));
+      coins = Math.max(0, coins - (Number(d.denominations.coins) || 0));
     }
   });
 

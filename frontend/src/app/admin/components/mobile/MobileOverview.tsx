@@ -477,13 +477,13 @@ export default function MobileOverview({
         prevOnlineIn     += Number(r.denominations?.online_amount || 0);
       });
       staffDepsPrev.forEach(d => {
-        prevDen.note_500 -= Number(d.denominations?.note_500 || 0);
-        prevDen.note_200 -= Number(d.denominations?.note_200 || 0);
-        prevDen.note_100 -= Number(d.denominations?.note_100 || 0);
-        prevDen.note_50  -= Number(d.denominations?.note_50  || 0);
-        prevDen.note_20  -= Number(d.denominations?.note_20  || 0);
-        prevDen.note_10  -= Number(d.denominations?.note_10  || 0);
-        prevDen.coins    -= Number(d.denominations?.coins     || 0);
+        prevDen.note_500 = Math.max(0, prevDen.note_500 - (Number(d.denominations?.note_500 || 0)));
+        prevDen.note_200 = Math.max(0, prevDen.note_200 - (Number(d.denominations?.note_200 || 0)));
+        prevDen.note_100 = Math.max(0, prevDen.note_100 - (Number(d.denominations?.note_100 || 0)));
+        prevDen.note_50  = Math.max(0, prevDen.note_50  - (Number(d.denominations?.note_50  || 0)));
+        prevDen.note_20  = Math.max(0, prevDen.note_20  - (Number(d.denominations?.note_20  || 0)));
+        prevDen.note_10  = Math.max(0, prevDen.note_10  - (Number(d.denominations?.note_10  || 0)));
+        prevDen.coins    = Math.max(0, prevDen.coins    - (Number(d.denominations?.coins     || 0)));
         prevOnlineOut    += Number(d.denominations?.online_amount || 0);
       });
       
@@ -577,13 +577,13 @@ export default function MobileOverview({
         todayOnlineIn   += Number(r.denominations?.online_amount || 0);
       });
       staffDepsToday.forEach(d => {
-        netDen.note_500 -= Number(d.denominations?.note_500 || 0);
-        netDen.note_200 -= Number(d.denominations?.note_200 || 0);
-        netDen.note_100 -= Number(d.denominations?.note_100 || 0);
-        netDen.note_50  -= Number(d.denominations?.note_50  || 0);
-        netDen.note_20  -= Number(d.denominations?.note_20  || 0);
-        netDen.note_10  -= Number(d.denominations?.note_10  || 0);
-        netDen.coins    -= Number(d.denominations?.coins     || 0);
+        netDen.note_500 = Math.max(0, netDen.note_500 - (Number(d.denominations?.note_500 || 0)));
+        netDen.note_200 = Math.max(0, netDen.note_200 - (Number(d.denominations?.note_200 || 0)));
+        netDen.note_100 = Math.max(0, netDen.note_100 - (Number(d.denominations?.note_100 || 0)));
+        netDen.note_50  = Math.max(0, netDen.note_50  - (Number(d.denominations?.note_50  || 0)));
+        netDen.note_20  = Math.max(0, netDen.note_20  - (Number(d.denominations?.note_20  || 0)));
+        netDen.note_10  = Math.max(0, netDen.note_10  - (Number(d.denominations?.note_10  || 0)));
+        netDen.coins    = Math.max(0, netDen.coins    - (Number(d.denominations?.coins     || 0)));
         todayOnlineOut  += Number(d.denominations?.online_amount || 0);
       });
       
