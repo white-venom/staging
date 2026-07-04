@@ -532,7 +532,12 @@ export default function MobileOverview({
         netDen.coins    += remaining;
       }
 
-      netDen.coins = Math.round(netDen.coins * 100) / 100;
+      // Safety clamp for display — a stray negative correction record should
+      // never render as a negative note count
+      netDen.note_500 = Math.max(0, netDen.note_500); netDen.note_200 = Math.max(0, netDen.note_200);
+      netDen.note_100 = Math.max(0, netDen.note_100); netDen.note_50  = Math.max(0, netDen.note_50);
+      netDen.note_20  = Math.max(0, netDen.note_20);  netDen.note_10  = Math.max(0, netDen.note_10);
+      netDen.coins = Math.round(Math.max(0, netDen.coins) * 100) / 100;
 
       // Visited stores today
       const visitedStores = staffColsToday.map((c) => ({

@@ -559,7 +559,12 @@ export default function StaffDashboard() {
     coins   += remaining;
   }
 
-  coins = Math.round(coins * 100) / 100;
+  // Safety clamp for display — a stray negative correction record should never
+  // render as a negative note count
+  note500 = Math.max(0, note500); note200 = Math.max(0, note200);
+  note100 = Math.max(0, note100); note50  = Math.max(0, note50);
+  note20  = Math.max(0, note20);  note10  = Math.max(0, note10);
+  coins   = Math.round(Math.max(0, coins) * 100) / 100;
 
   // Net denomination breakdown (all in - all out across all time)
   const combinedLedger = [
