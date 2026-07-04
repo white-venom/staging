@@ -335,6 +335,7 @@ def list_collections(
         col.staff_name = col.staff.name if col.staff else "Unknown Staff"
         col.portal_name = col.portal.portal_name if col.portal else None
         col.portal_group_name = col.portal.group.name if (col.portal and col.portal.group) else None
+        col.bank_name = col.portal.bank_name if col.portal else None
         
         linked_ledger = next((le for le in col.ledgers if le is not None), None)
         if linked_ledger:

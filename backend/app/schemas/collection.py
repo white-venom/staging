@@ -56,6 +56,7 @@ class CollectionResponse(BaseModel):
     from_staff_name: Optional[str] = None
     portal_name: Optional[str] = None
     portal_group_name: Optional[str] = None
+    bank_name: Optional[str] = None
 
     class Config:
         from_attributes = True
