@@ -462,6 +462,14 @@ export default function OverviewTab({
             prevDen.coins = Math.max(0, prevDen.coins - prevMismatch);
           }
         }
+      } else {
+        prevDen.note_500 = 0;
+        prevDen.note_200 = 0;
+        prevDen.note_100 = 0;
+        prevDen.note_50 = 0;
+        prevDen.note_20 = 0;
+        prevDen.note_10 = 0;
+        prevDen.coins = 0;
       }
       
       // 3. Build netDen by starting from reconciled previous day's denoms and adding today's transactions
@@ -554,6 +562,14 @@ export default function OverviewTab({
             netDen.coins = Math.max(0, netDen.coins - finalMismatch);
           }
         }
+      } else {
+        netDen.note_500 = 0;
+        netDen.note_200 = 0;
+        netDen.note_100 = 0;
+        netDen.note_50 = 0;
+        netDen.note_20 = 0;
+        netDen.note_10 = 0;
+        netDen.coins = 0;
       }
 
       // Get visited stores today
