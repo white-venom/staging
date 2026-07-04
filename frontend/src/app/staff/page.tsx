@@ -462,166 +462,7 @@ export default function StaffDashboard() {
   const oldBalance = prevCollections.reduce((s, c) => s + (c.totalAmount || 0), 0) + prevHandoversRcvd - prevOutDeposits.reduce((s, d) => s + (d.amount || 0), 0);
   const netBalance = oldBalance + todayIn - todayOut;
 
-  // Calculators
-  let prevNote500 = 0;
-  let prevNote200 = 0;
-  let prevNote100 = 0;
-  let prevNote50 = 0;
-  let prevNote20 = 0;
-  let prevNote10 = 0;
-  let prevCoins = 0;
-  let prevOnlineIn = 0;
-  let prevOnlineOut = 0;
-
-  prevCollections.forEach((c) => {
-    if (c.denominations) {
-      prevNote500 += Number(c.denominations.note_500) || 0;
-      prevNote200 += Number(c.denominations.note_200) || 0;
-      prevNote100 += Number(c.denominations.note_100) || 0;
-      prevNote50 += Number(c.denominations.note_50) || 0;
-      prevNote20 += Number(c.denominations.note_20) || 0;
-      prevNote10 += Number(c.denominations.note_10) || 0;
-      prevCoins += Number(c.denominations.coins) || 0;
-      prevOnlineIn += Number(c.denominations.online_amount) || 0;
-    }
-  });
-
-  const prevHandoversRcvdObjects = deposits.filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && !d.date?.startsWith(todayIST));
-  prevHandoversRcvdObjects.forEach((d) => {
-    if (d.denominations) {
-      prevNote500 += Number(d.denominations.note_500) || 0;
-      prevNote200 += Number(d.denominations.note_200) || 0;
-      prevNote100 += Number(d.denominations.note_100) || 0;
-      prevNote50 += Number(d.denominations.note_50) || 0;
-      prevNote20 += Number(d.denominations.note_20) || 0;
-      prevNote10 += Number(d.denominations.note_10) || 0;
-      prevCoins += Number(d.denominations.coins) || 0;
-      prevOnlineIn += Number(d.denominations.online_amount) || 0;
-    }
-  });
-
-  prevOutDeposits.forEach((d) => {
-    if (d.denominations) {
-      prevNote500 = Math.max(0, prevNote500 - (Number(d.denominations.note_500) || 0));
-      prevNote200 = Math.max(0, prevNote200 - (Number(d.denominations.note_200) || 0));
-      prevNote100 = Math.max(0, prevNote100 - (Number(d.denominations.note_100) || 0));
-      prevNote50 = Math.max(0, prevNote50 - (Number(d.denominations.note_50) || 0));
-      prevNote20 = Math.max(0, prevNote20 - (Number(d.denominations.note_20) || 0));
-      prevNote10 = Math.max(0, prevNote10 - (Number(d.denominations.note_10) || 0));
-      prevCoins = Math.max(0, prevCoins - (Number(d.denominations.coins) || 0));
-      prevOnlineOut += Number(d.denominations.online_amount) || 0;
-    }
-  });
-
-  const prevOnline = Math.max(0, prevOnlineIn - prevOnlineOut);
-  const prevCashNotes = oldBalance - prevOnline;
-
-  console.log("=== DENOMINATION DEBUGGING ===");
-  console.log("prevCollections:", prevCollections.map(c => ({ id: c.id, amount: c.totalAmount, den: c.denominations, date: c.date })));
-  console.log("prevOutDeposits:", prevOutDeposits.map(d => ({ id: d.id, amount: d.amount, den: d.denominations, date: d.date })));
-  console.log("prevHandoversRcvdObjects:", prevHandoversRcvdObjects.map(d => ({ id: d.id, amount: d.amount, den: d.denominations, date: d.date })));
-  console.log("prevNotesSum:", prevNote500 * 500 + prevNote200 * 200 + prevNote100 * 100 + prevNote50 * 50 + prevNote20 * 20 + prevNote10 * 10 + prevCoins);
-  console.log("prevCashNotes:", prevCashNotes);
-  console.log("prevMismatch:", (prevNote500 * 500 + prevNote200 * 200 + prevNote100 * 100 + prevNote50 * 50 + prevNote20 * 20 + prevNote10 * 10 + prevCoins) - prevCashNotes);
-  console.log("===============================");
-
-  // Reconcile previous days' denominations greedily
-  if (prevCashNotes > 0) {
-    const prevNotesSum = 
-      prevNote500 * 500 +
-      prevNote200 * 200 +
-      prevNote100 * 100 +
-      prevNote50 * 50 +
-      prevNote20 * 20 +
-      prevNote10 * 10 +
-      prevCoins;
-    
-    let prevMismatch = prevNotesSum - prevCashNotes;
-    if (prevMismatch > 0) {
-      const deduct500 = Math.min(Math.max(0, prevNote500), Math.floor(prevMismatch / 500));
-      prevNote500 -= deduct500;
-      prevMismatch -= deduct500 * 500;
-      
-      const deduct200 = Math.min(Math.max(0, prevNote200), Math.floor(prevMismatch / 200));
-      prevNote200 -= deduct200;
-      prevMismatch -= deduct200 * 200;
-      
-      const deduct100 = Math.min(Math.max(0, prevNote100), Math.floor(prevMismatch / 100));
-      prevNote100 -= deduct100;
-      prevMismatch -= deduct100 * 100;
-      
-      const deduct50 = Math.min(Math.max(0, prevNote50), Math.floor(prevMismatch / 50));
-      prevNote50 -= deduct50;
-      prevMismatch -= deduct50 * 50;
-      
-      const deduct20 = Math.min(Math.max(0, prevNote20), Math.floor(prevMismatch / 20));
-      prevNote20 -= deduct20;
-      prevMismatch -= deduct20 * 20;
-      
-      const deduct10 = Math.min(Math.max(0, prevNote10), Math.floor(prevMismatch / 10));
-      prevNote10 -= deduct10;
-      prevMismatch -= deduct10 * 10;
-      
-      if (prevMismatch > 0) {
-        prevCoins = Math.max(0, prevCoins - prevMismatch);
-      }
-    }
-  } else {
-    prevNote500 = 0;
-    prevNote200 = 0;
-    prevNote100 = 0;
-    prevNote50 = 0;
-    prevNote20 = 0;
-    prevNote10 = 0;
-    prevCoins = 0;
-  }
-
-  // Now, calculate today's final denominations by adding today's counts to the reconciled previous day counts
-  let note500 = prevNote500;
-  let note200 = prevNote200;
-  let note100 = prevNote100;
-  let note50 = prevNote50;
-  let note20 = prevNote20;
-  let note10 = prevNote10;
-  let coins = prevCoins;
-
-  todayCollections.forEach((c) => {
-    if (c.denominations) {
-      note500 += Number(c.denominations.note_500) || 0;
-      note200 += Number(c.denominations.note_200) || 0;
-      note100 += Number(c.denominations.note_100) || 0;
-      note50 += Number(c.denominations.note_50) || 0;
-      note20 += Number(c.denominations.note_20) || 0;
-      note10 += Number(c.denominations.note_10) || 0;
-      coins += Number(c.denominations.coins) || 0;
-    }
-  });
-
-  const todayHandoversRcvdObjects = deposits.filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && d.date?.startsWith(todayIST));
-  todayHandoversRcvdObjects.forEach((d) => {
-    if (d.denominations) {
-      note500 += Number(d.denominations.note_500) || 0;
-      note200 += Number(d.denominations.note_200) || 0;
-      note100 += Number(d.denominations.note_100) || 0;
-      note50 += Number(d.denominations.note_50) || 0;
-      note20 += Number(d.denominations.note_20) || 0;
-      note10 += Number(d.denominations.note_10) || 0;
-      coins += Number(d.denominations.coins) || 0;
-    }
-  });
-
-  todayOutDeposits.forEach((d) => {
-    if (d.denominations) {
-      note500 = Math.max(0, note500 - (Number(d.denominations.note_500) || 0));
-      note200 = Math.max(0, note200 - (Number(d.denominations.note_200) || 0));
-      note100 = Math.max(0, note100 - (Number(d.denominations.note_100) || 0));
-      note50 = Math.max(0, note50 - (Number(d.denominations.note_50) || 0));
-      note20 = Math.max(0, note20 - (Number(d.denominations.note_20) || 0));
-      note10 = Math.max(0, note10 - (Number(d.denominations.note_10) || 0));
-      coins = Math.max(0, coins - (Number(d.denominations.coins) || 0));
-    }
-  });
-
+  // ─── Pocket Denominations Calculation (Latest-First Accumulation) ──────────
   const totalHandoversReceived = deposits
     .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
     .reduce((s, d) => s + (d.amount || 0), 0);
@@ -644,59 +485,81 @@ export default function StaffDashboard() {
                       .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
 
   const totalOnline = Math.max(0, onlineIn - onlineOut);
-  
-  const totalCashNotes = netPortfolio - totalOnline;
+  const totalCashNotes = Math.max(0, netPortfolio - totalOnline);
 
-  // Run final pass reconciliation to clean up any new mismatches created today
-  if (totalCashNotes > 0) {
-    const netDenSum = 
-      note500 * 500 +
-      note200 * 200 +
-      note100 * 100 +
-      note50 * 50 +
-      note20 * 20 +
-      note10 * 10 +
-      coins;
-    
-    let finalMismatch = netDenSum - totalCashNotes;
-    if (finalMismatch > 0) {
-      const deduct500 = Math.min(Math.max(0, note500), Math.floor(finalMismatch / 500));
-      note500 -= deduct500;
-      finalMismatch -= deduct500 * 500;
-      
-      const deduct200 = Math.min(Math.max(0, note200), Math.floor(finalMismatch / 200));
-      note200 -= deduct200;
-      finalMismatch -= deduct200 * 200;
-      
-      const deduct100 = Math.min(Math.max(0, note100), Math.floor(finalMismatch / 100));
-      note100 -= deduct100;
-      finalMismatch -= deduct100 * 100;
-      
-      const deduct50 = Math.min(Math.max(0, note50), Math.floor(finalMismatch / 50));
-      note50 -= deduct50;
-      finalMismatch -= deduct50 * 50;
-      
-      const deduct20 = Math.min(Math.max(0, note20), Math.floor(finalMismatch / 20));
-      note20 -= deduct20;
-      finalMismatch -= deduct20 * 20;
-      
-      const deduct10 = Math.min(Math.max(0, note10), Math.floor(finalMismatch / 10));
-      note10 -= deduct10;
-      finalMismatch -= deduct10 * 10;
-      
-      if (finalMismatch > 0) {
-        coins = Math.max(0, coins - finalMismatch);
-      }
-    }
-  } else {
-    note500 = 0;
-    note200 = 0;
-    note100 = 0;
-    note50 = 0;
-    note20 = 0;
-    note10 = 0;
-    coins = 0;
+  // Initialize target cash and final counts
+  let targetCash = totalCashNotes;
+  let note500 = 0;
+  let note200 = 0;
+  let note100 = 0;
+  let note50 = 0;
+  let note20 = 0;
+  let note10 = 0;
+  let coins = 0;
+
+  // Combine all cash-in events (collections & handovers rcvd) sorted latest first
+  const cashInEvents = [
+    ...collections.map(c => ({
+      date: c.date || c.created_at || "",
+      denominations: c.denominations
+    })),
+    ...deposits
+      .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
+      .map(d => ({
+        date: d.date || d.created_at || "",
+        denominations: d.denominations
+      }))
+  ].sort((a, b) => b.date.localeCompare(a.date));
+
+  // Accumulate denominations from latest to oldest
+  for (const event of cashInEvents) {
+    if (targetCash <= 0) break;
+    if (!event.denominations) continue;
+
+    const eventCash = 
+      (Number(event.denominations.note_500) || 0) * 500 +
+      (Number(event.denominations.note_200) || 0) * 200 +
+      (Number(event.denominations.note_100) || 0) * 100 +
+      (Number(event.denominations.note_50) || 0) * 50 +
+      (Number(event.denominations.note_20) || 0) * 20 +
+      (Number(event.denominations.note_10) || 0) * 10 +
+      (Number(event.denominations.coins) || 0);
+
+    if (eventCash <= 0) continue;
+
+    const take = Math.min(eventCash, targetCash);
+    const ratio = take / eventCash;
+
+    note500 += Math.round((Number(event.denominations.note_500) || 0) * ratio);
+    note200 += Math.round((Number(event.denominations.note_200) || 0) * ratio);
+    note100 += Math.round((Number(event.denominations.note_100) || 0) * ratio);
+    note50 += Math.round((Number(event.denominations.note_50) || 0) * ratio);
+    note20 += Math.round((Number(event.denominations.note_20) || 0) * ratio);
+    note10 += Math.round((Number(event.denominations.note_10) || 0) * ratio);
+    coins += (Number(event.denominations.coins) || 0) * ratio;
+
+    targetCash -= take;
   }
+
+  // Fallback greedy reconciliation if targetCash remains positive
+  if (targetCash > 0) {
+    note500 += Math.floor(targetCash / 500);
+    targetCash %= 500;
+    note200 += Math.floor(targetCash / 200);
+    targetCash %= 200;
+    note100 += Math.floor(targetCash / 100);
+    targetCash %= 100;
+    note50 += Math.floor(targetCash / 50);
+    targetCash %= 50;
+    note20 += Math.floor(targetCash / 20);
+    targetCash %= 20;
+    note10 += Math.floor(targetCash / 10);
+    targetCash %= 10;
+    coins += targetCash;
+  }
+
+  // Round coins to match presentation
+  coins = Math.round(coins * 100) / 100;
 
   // Net denomination breakdown (all in - all out across all time)
   const combinedLedger = [
