@@ -516,14 +516,18 @@ export default function StaffDashboard() {
     if (targetCash <= 0) break;
     if (!event.denominations) continue;
 
-    const eventCash = 
+    // Only count note denominations (not coins) to avoid picking up bad old 'coins = whole balance' data
+    const eventNotesCash = 
       (Number(event.denominations.note_500) || 0) * 500 +
       (Number(event.denominations.note_200) || 0) * 200 +
       (Number(event.denominations.note_100) || 0) * 100 +
       (Number(event.denominations.note_50) || 0) * 50 +
       (Number(event.denominations.note_20) || 0) * 20 +
-      (Number(event.denominations.note_10) || 0) * 10 +
-      (Number(event.denominations.coins) || 0);
+      (Number(event.denominations.note_10) || 0) * 10;
+
+    // Include coins only if notes also exist (indicates proper denomination entry)
+    const eventCoins = eventNotesCash > 0 ? (Number(event.denominations.coins) || 0) : 0;
+    const eventCash = eventNotesCash + eventCoins;
 
     if (eventCash <= 0) continue;
 
@@ -533,10 +537,10 @@ export default function StaffDashboard() {
     note500 += Math.round((Number(event.denominations.note_500) || 0) * ratio);
     note200 += Math.round((Number(event.denominations.note_200) || 0) * ratio);
     note100 += Math.round((Number(event.denominations.note_100) || 0) * ratio);
-    note50 += Math.round((Number(event.denominations.note_50) || 0) * ratio);
-    note20 += Math.round((Number(event.denominations.note_20) || 0) * ratio);
-    note10 += Math.round((Number(event.denominations.note_10) || 0) * ratio);
-    coins += (Number(event.denominations.coins) || 0) * ratio;
+    note50  += Math.round((Number(event.denominations.note_50)  || 0) * ratio);
+    note20  += Math.round((Number(event.denominations.note_20)  || 0) * ratio);
+    note10  += Math.round((Number(event.denominations.note_10)  || 0) * ratio);
+    coins   += eventCoins * ratio;
 
     targetCash -= take;
   }
@@ -556,6 +560,20 @@ export default function StaffDashboard() {
     note10 += Math.floor(targetCash / 10);
     targetCash %= 10;
     coins += targetCash;
+  }
+
+  // Redistribute any large accumulated coins back into proper note denominations
+  // (handles old DB records that stored entire balance as 'coins')
+  if (coins >= 10) {
+    let coinRupees = Math.floor(coins);
+    const fractionalCoins = coins - coinRupees;
+    note500 += Math.floor(coinRupees / 500); coinRupees %= 500;
+    note200 += Math.floor(coinRupees / 200); coinRupees %= 200;
+    note100 += Math.floor(coinRupees / 100); coinRupees %= 100;
+    note50  += Math.floor(coinRupees / 50);  coinRupees %= 50;
+    note20  += Math.floor(coinRupees / 20);  coinRupees %= 20;
+    note10  += Math.floor(coinRupees / 10);  coinRupees %= 10;
+    coins = coinRupees + fractionalCoins;
   }
 
   // Round coins to match presentation

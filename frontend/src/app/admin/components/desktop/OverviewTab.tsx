@@ -430,14 +430,18 @@ export default function OverviewTab({
         if (targetCash <= 0) break;
         if (!event.denominations) continue;
 
-        const eventCash = 
+        // Only count note denominations (not coins) to avoid picking up bad 'coins = whole balance' data
+        const eventNotesCash = 
           (Number(event.denominations.note_500) || 0) * 500 +
           (Number(event.denominations.note_200) || 0) * 200 +
           (Number(event.denominations.note_100) || 0) * 100 +
           (Number(event.denominations.note_50) || 0) * 50 +
           (Number(event.denominations.note_20) || 0) * 20 +
-          (Number(event.denominations.note_10) || 0) * 10 +
-          (Number(event.denominations.coins) || 0);
+          (Number(event.denominations.note_10) || 0) * 10;
+
+        // Include coins only if notes also exist (indicates proper denomination entry)
+        const eventCoins = eventNotesCash > 0 ? (Number(event.denominations.coins) || 0) : 0;
+        const eventCash = eventNotesCash + eventCoins;
 
         if (eventCash <= 0) continue;
 
@@ -450,7 +454,7 @@ export default function OverviewTab({
         netDen.note_50  += Math.round((Number(event.denominations.note_50)  || 0) * ratio);
         netDen.note_20  += Math.round((Number(event.denominations.note_20)  || 0) * ratio);
         netDen.note_10  += Math.round((Number(event.denominations.note_10)  || 0) * ratio);
-        netDen.coins    += (Number(event.denominations.coins) || 0) * ratio;
+        netDen.coins    += eventCoins * ratio;
 
         targetCash -= take;
       }
@@ -469,6 +473,19 @@ export default function OverviewTab({
         netDen.note_10  += Math.floor(targetCash / 10);
         targetCash %= 10;
         netDen.coins    += targetCash;
+      }
+
+      // Redistribute any large accumulated coins into proper denominations
+      if (netDen.coins >= 10) {
+        let coinRupees = Math.floor(netDen.coins);
+        const fractionalCoins = netDen.coins - coinRupees;
+        netDen.note_500 += Math.floor(coinRupees / 500); coinRupees %= 500;
+        netDen.note_200 += Math.floor(coinRupees / 200); coinRupees %= 200;
+        netDen.note_100 += Math.floor(coinRupees / 100); coinRupees %= 100;
+        netDen.note_50  += Math.floor(coinRupees / 50);  coinRupees %= 50;
+        netDen.note_20  += Math.floor(coinRupees / 20);  coinRupees %= 20;
+        netDen.note_10  += Math.floor(coinRupees / 10);  coinRupees %= 10;
+        netDen.coins = coinRupees + fractionalCoins;
       }
 
       netDen.coins = Math.round(netDen.coins * 100) / 100;
