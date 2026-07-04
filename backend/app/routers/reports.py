@@ -218,15 +218,13 @@ def get_staff_cash_in_hand(
         .where(BankDeposit.staff_id == current_user.id)
     ).all()
 
-    # 3. Summarize all handovers received by this staff member from other staff
     received_denoms = db.scalars(
         select(Denomination)
         .join(BankDeposit, Denomination.deposit_id == BankDeposit.id)
         .where(
             and_(
                 BankDeposit.recipient_staff_id == current_user.id,
-                BankDeposit.deposit_type == "staff",
-                BankDeposit.status == "verified"
+                BankDeposit.deposit_type == "staff"
             )
         )
     ).all()
@@ -399,15 +397,13 @@ def get_staff_ledger(
         )
     ).all()
 
-    # Fetch verified staff-to-staff handovers received by this staff
     received_handovers = db.scalars(
         select(BankDeposit)
         .options(joinedload(BankDeposit.staff))
         .where(
             and_(
                 BankDeposit.recipient_staff_id == staff_id,
-                BankDeposit.deposit_type == "staff",
-                BankDeposit.status == "verified"
+                BankDeposit.deposit_type == "staff"
             )
         )
     ).all()
