@@ -1,6 +1,7 @@
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import select, func, and_, desc
@@ -524,5 +525,89 @@ def get_staff_ledger(
         "outstanding_balance": running_balance,
         "statement_history": formatted_txs
     }
+
+
+class DenominationBaselineIn(BaseModel):
+    staff_id: uuid.UUID
+    note_500: int = 0
+    note_200: int = 0
+    note_100: int = 0
+    note_50: int = 0
+    note_20: int = 0
+    note_10: int = 0
+    coins: Decimal = Decimal("0.00")
+    as_of: Optional[datetime] = None  # defaults to now (UTC) if omitted
+
+
+def _serialize_baseline(baseline: "DenominationBaseline") -> dict:
+    return {
+        "id": str(baseline.id),
+        "staff_id": str(baseline.staff_id),
+        "note_500": baseline.note_500,
+        "note_200": baseline.note_200,
+        "note_100": baseline.note_100,
+        "note_50": baseline.note_50,
+        "note_20": baseline.note_20,
+        "note_10": baseline.note_10,
+        "coins": float(baseline.coins),
+        "as_of": baseline.as_of.isoformat(),
+        "set_by": str(baseline.set_by) if baseline.set_by else None,
+        "created_at": baseline.created_at.isoformat(),
+    }
+
+
+@router.post("/staff/denomination-baseline")
+def set_denomination_baseline(
+    payload: DenominationBaselineIn,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin)
+):
+    """Records a verified physical cash count for a staff member as of a point in
+    time. Pocket denomination calculations use the most recent baseline (plus
+    transactions after it) instead of replaying the staff's entire history."""
+    staff = db.get(User, payload.staff_id)
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found.")
+
+    baseline = DenominationBaseline(
+        staff_id=payload.staff_id,
+        note_500=payload.note_500,
+        note_200=payload.note_200,
+        note_100=payload.note_100,
+        note_50=payload.note_50,
+        note_20=payload.note_20,
+        note_10=payload.note_10,
+        coins=payload.coins,
+        as_of=payload.as_of or datetime.utcnow(),
+        set_by=current_user.id,
+    )
+    db.add(baseline)
+    db.commit()
+    db.refresh(baseline)
+
+    return _serialize_baseline(baseline)
+
+
+@router.get("/staff/denomination-baseline")
+def get_denomination_baseline(
+    staff_id: Optional[uuid.UUID] = None,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_any_user)
+):
+    """Returns the most recent verified cash-count baseline for a staff member,
+    or null if none has been set yet (in which case callers should fall back to
+    the full-history reconstruction)."""
+    target_id = staff_id if (current_user.role == "admin" and staff_id) else current_user.id
+
+    baseline = db.scalar(
+        select(DenominationBaseline)
+        .where(DenominationBaseline.staff_id == target_id)
+        .order_by(desc(DenominationBaseline.as_of))
+        .limit(1)
+    )
+    if not baseline:
+        return None
+
+    return _serialize_baseline(baseline)
 
 

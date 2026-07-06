@@ -67,6 +67,37 @@ export default function DashboardPage() {
   // Global Toast
   const [toastMessage, setToastMessage] = useState("");
 
+  // SSL Certificate States
+  const [sslStatus, setSslStatus] = useState<any>(null);
+  const [loadingSSL, setLoadingSSL] = useState(false);
+  const [renewingSSL, setRenewingSSL] = useState(false);
+
+  const fetchSSLStatus = async () => {
+    try {
+      setLoadingSSL(true);
+      const data = await superAdminApi.getSSLStatus();
+      setSslStatus(data);
+    } catch (err: any) {
+      console.error("Failed to fetch SSL status:", err);
+    } finally {
+      setLoadingSSL(false);
+    }
+  };
+
+  const handleRenewSSL = async () => {
+    if (!confirm("Are you sure you want to trigger manual SSL Certificate renewal?")) return;
+    try {
+      setRenewingSSL(true);
+      const data = await superAdminApi.renewSSL();
+      triggerToast(data.message || "SSL Renewal triggered successfully!");
+      fetchSSLStatus();
+    } catch (err: any) {
+      alert(err.message || "Failed to trigger SSL renewal.");
+    } finally {
+      setRenewingSSL(false);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("superadmin_token");
     if (!token) {
@@ -76,6 +107,7 @@ export default function DashboardPage() {
     setAdminName(localStorage.getItem("superadmin_name") || "Admin");
     setUsername(localStorage.getItem("superadmin_username") || "superadmin");
     fetchTenants();
+    fetchSSLStatus();
   }, [router]);
 
   // Simulate real-time metric fluctuations
@@ -639,7 +671,7 @@ export default function DashboardPage() {
         {/* ─── TAB 3: INFRASTRUCTURE HEALTH ─── */}
         {activeTab === "infrastructure" && (
           <div className="space-y-4 animate-fade-in">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div className="bg-white border border-slate-200/80 rounded-lg p-3 space-y-2 shadow-sm">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">Central PG Database</span>
@@ -673,6 +705,44 @@ export default function DashboardPage() {
                   <div className="flex justify-between"><span className="text-slate-450">SSL Certificates</span><span className="font-bold text-slate-850">SECURE (Let's Encrypt)</span></div>
                   <div className="flex justify-between"><span className="text-slate-450">HTTP/2 Support</span><span className="font-bold text-slate-850">ENABLED</span></div>
                   <div className="flex justify-between"><span className="text-slate-450">Config Path</span><span className="font-mono text-slate-500">/etc/nginx/nginx.conf</span></div>
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200/80 rounded-lg p-3 space-y-2 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">SSL Certificate Guard</span>
+                    <span className={`w-2 h-2 rounded-full ${
+                      sslStatus?.status === 'secure' ? 'bg-emerald-500 animate-pulse' :
+                      sslStatus?.status === 'warning' ? 'bg-amber-500 animate-pulse' :
+                      sslStatus?.status === 'expired' ? 'bg-red-500 animate-pulse' : 'bg-slate-300 animate-pulse'
+                    }`} />
+                  </div>
+                  <div className="space-y-0.5 text-[10px] text-slate-650 mt-1">
+                    <div className="flex justify-between"><span className="text-slate-450">Domain</span><span className="font-bold text-slate-850 truncate max-w-[120px]" title={sslStatus?.domain}>{sslStatus?.domain || "Loading..."}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-450">Issuer</span><span className="font-bold text-slate-850 truncate max-w-[120px]" title={sslStatus?.issuer}>{sslStatus?.issuer || "Loading..."}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-450">Expires</span><span className="font-mono text-slate-500 text-[9px]">{sslStatus?.expiry_date || "Loading..."}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-450">Remaining</span><span className={`font-bold ${sslStatus?.days_remaining <= 15 ? 'text-red-650' : 'text-slate-850'}`}>{sslStatus?.days_remaining !== undefined ? `${sslStatus.days_remaining} Days` : "Loading..."}</span></div>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-slate-50 flex items-center justify-between gap-2">
+                  <button
+                    onClick={fetchSSLStatus}
+                    disabled={loadingSSL}
+                    className="p-1 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-50 transition-colors"
+                    title="Refresh SSL Status"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 ${loadingSSL ? 'animate-spin' : ''}`}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={handleRenewSSL}
+                    disabled={renewingSSL}
+                    className="flex-1 py-0.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-650 disabled:opacity-50 text-[9px] font-black uppercase tracking-wider rounded transition-colors"
+                  >
+                    {renewingSSL ? "Renewing..." : "Renew SSL"}
+                  </button>
                 </div>
               </div>
             </div>

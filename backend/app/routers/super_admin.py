@@ -406,3 +406,66 @@ def delete_tenant(
     db.delete(tenant)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/ssl/status")
+def get_ssl_status(
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    import socket
+    import ssl
+    
+    hostname = "api.crediiflow.in"
+    context = ssl.create_default_context()
+    try:
+        with socket.create_connection((hostname, 443), timeout=5) as sock:
+            with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                cert = ssock.getpeercert()
+                
+                ssl_date_fmt = r'%b %d %H:%M:%S %Y %Z'
+                expire_str = cert.get('notAfter')
+                expire_date = datetime.strptime(expire_str, ssl_date_fmt)
+                
+                subject = dict(x[0] for x in cert.get('subject', []))
+                issuer = dict(x[0] for x in cert.get('issuer', []))
+                
+                days_left = (expire_date - datetime.utcnow()).days
+                
+                return {
+                    "domain": subject.get('commonName', hostname),
+                    "issuer": issuer.get('commonName', 'Unknown'),
+                    "expiry_date": expire_date.strftime("%Y-%m-%d %H:%M:%S UTC"),
+                    "days_remaining": days_left,
+                    "status": "secure" if days_left > 15 else "warning" if days_left > 0 else "expired"
+                }
+    except Exception as e:
+        return {
+            "domain": hostname,
+            "issuer": "N/A",
+            "expiry_date": "N/A",
+            "days_remaining": 0,
+            "status": "error",
+            "error": str(e)
+        }
+
+
+@router.post("/ssl/renew")
+def trigger_ssl_renewal(
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    trigger_dir = "/app/triggers"
+    try:
+        os.makedirs(trigger_dir, exist_ok=True)
+        trigger_file_path = os.path.join(trigger_dir, "ssl_renew.trigger")
+        with open(trigger_file_path, "w") as f:
+            f.write(datetime.utcnow().isoformat())
+        
+        return {
+            "status": "success",
+            "message": "SSL renewal triggered successfully. The host automation will execute Certbot and reload Nginx shortly."
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to write renewal trigger file: {str(e)}"
+        )

@@ -46,6 +46,8 @@ services:
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - PORT=${PORT:-8000}
+    volumes:
+      - ./triggers:/app/triggers
     depends_on:
       db:
         condition: service_healthy

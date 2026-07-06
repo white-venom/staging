@@ -60,4 +60,8 @@ export const superAdminApi = {
   deleteTenant: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}`, {
     method: "DELETE",
   }),
+  getSSLStatus: () => request<any>("/superadmin/ssl/status"),
+  renewSSL: () => request<any>("/superadmin/ssl/renew", {
+    method: "POST",
+  }),
 };
