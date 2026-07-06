@@ -6,7 +6,7 @@ from sqlalchemy import select, and_, or_, desc
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database.db import get_db
-from app.database.models import BankDeposit, Denomination, Portal, PortalGroup, Retailer, User, Ledger, BusinessSettings
+from app.database.models import BankDeposit, Denomination, Portal, PortalGroup, Retailer, User, Ledger, BusinessSettings, Collection
 from app.logic.ledger import recalculate_balances, lock_portal_group
 from sqlalchemy import update, delete
 from decimal import Decimal
@@ -452,7 +452,27 @@ def delete_deposit(
 
     # Delete associated ledger entries
     db.execute(delete(Ledger).where(Ledger.deposit_id == deposit_id))
-    
+
+    # If this is an auto-generated staff-to-staff handover payout, also delete
+    # the matching Collection on the recipient's side (and its ledger entries).
+    # Collections.py's delete_collection() already does this in reverse when the
+    # recipient deletes their side; without this, deleting the sender's side
+    # left an orphaned Collection that kept counting as received cash forever.
+    if deposit.deposit_type == "staff" and deposit.recipient_staff_id:
+        matching_collection = db.scalar(
+            select(Collection).where(
+                and_(
+                    Collection.from_staff_id == deposit.staff_id,
+                    Collection.staff_id == deposit.recipient_staff_id,
+                    Collection.total_amount == deposit.amount,
+                    Collection.collection_date == deposit.deposit_date
+                )
+            ).with_for_update()
+        )
+        if matching_collection:
+            db.execute(delete(Ledger).where(Ledger.collection_id == matching_collection.id))
+            db.delete(matching_collection)
+
     # Handle Portal and Staff balance reversals
     if deposit.portal_id:
         portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
