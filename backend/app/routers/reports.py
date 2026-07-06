@@ -611,3 +611,24 @@ def get_denomination_baseline(
     return _serialize_baseline(baseline)
 
 
+@router.get("/staff/denomination-baselines")
+def list_denomination_baselines(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin)
+):
+    """Returns the most recent verified baseline for every staff member that has
+    one, keyed by staff_id, for the admin overview dashboards."""
+    rows = db.execute(
+        select(DenominationBaseline)
+        .order_by(DenominationBaseline.staff_id, desc(DenominationBaseline.as_of))
+    ).scalars().all()
+
+    latest_by_staff: dict = {}
+    for row in rows:
+        key = str(row.staff_id)
+        if key not in latest_by_staff:
+            latest_by_staff[key] = _serialize_baseline(row)
+
+    return latest_by_staff
+
+

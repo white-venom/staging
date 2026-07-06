@@ -234,6 +234,7 @@ export const api = {
   getDenominationBaseline: (staffId?: string) => request<any>(
     staffId ? `/staff/denomination-baseline?staff_id=${staffId}` : "/staff/denomination-baseline"
   ),
+  getDenominationBaselines: () => request<Record<string, any>>("/staff/denomination-baselines"),
 
   // Deposits
   getDeposits: () => request<any[]>("/bank-deposits"),
