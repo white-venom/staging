@@ -87,10 +87,13 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
   
   console.log(`[API] Requesting: ${fullUrl} (Tenant: ${tenantId})`);
   
+  const bypass = typeof window !== "undefined" ? sessionStorage.getItem("maintenance_bypass") : null;
+
   const headers = {
     "Content-Type": "application/json",
     ...(token ? { "Authorization": `Bearer ${token}` } : {}),
     ...(tenantId ? { "X-Tenant-ID": tenantId } : {}),
+    ...(bypass === "true" ? { "X-Maintenance-Bypass": "true" } : {}),
     ...options.headers,
   };
 
@@ -226,6 +229,11 @@ export const api = {
     method: "PUT",
     body: JSON.stringify(data),
   }),
+
+  // Denomination baseline (verified physical cash-count checkpoint)
+  getDenominationBaseline: (staffId?: string) => request<any>(
+    staffId ? `/staff/denomination-baseline?staff_id=${staffId}` : "/staff/denomination-baseline"
+  ),
 
   // Deposits
   getDeposits: () => request<any[]>("/bank-deposits"),

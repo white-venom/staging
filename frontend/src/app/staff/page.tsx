@@ -80,6 +80,11 @@ export default function StaffDashboard() {
   const [isSaving, setIsSaving] = useState(false);
   const [editWindow, setEditWindow] = useState<number>(5);
   const [deleteWindow, setDeleteWindow] = useState<number>(5);
+  const [denominationBaseline, setDenominationBaseline] = useState<{
+    note_500: number; note_200: number; note_100: number;
+    note_50: number; note_20: number; note_10: number;
+    coins: number; as_of: string;
+  } | null>(null);
 
   useEffect(() => {
     if (isSidebarOpen) {
@@ -206,16 +211,18 @@ export default function StaffDashboard() {
   const syncWithAPI = useCallback(async () => {
     if (!mounted || !currentUser || !isOnline) return;
     try {
-      const [apiCols, apiDeps, settings] = await Promise.all([
+      const [apiCols, apiDeps, settings, baseline] = await Promise.all([
         api.getCollections(),
         api.getDeposits(),
-        api.getAdminSettings().catch(() => ({ edit_window_minutes: 5, delete_window_minutes: 5 }))
+        api.getAdminSettings().catch(() => ({ edit_window_minutes: 5, delete_window_minutes: 5 })),
+        api.getDenominationBaseline().catch(() => null)
       ]);
-      
+
       const ew = settings.edit_window_minutes ?? 5;
       const dw = settings.delete_window_minutes ?? 5;
       setEditWindow(ew);
       setDeleteWindow(dw);
+      setDenominationBaseline(baseline || null);
       
       // Map collections
       const mappedCollections = apiCols.map((c: any) => ({
@@ -494,64 +501,115 @@ export default function StaffDashboard() {
   // denominations don't have to mirror the exact notes originally collected).
   let note500 = 0, note200 = 0, note100 = 0;
   let note50 = 0, note20 = 0, note10 = 0, coins = 0;
-  let remaining = totalCashNotes;
 
-  const cashInEvents = [
-    ...collections,
-    ...deposits.filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff'),
-  ]
-    .filter(e => e.denominations)
-    .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (denominationBaseline) {
+    // Verified baseline available: start from the confirmed physical count and
+    // honestly add/subtract only transactions recorded at or after it. No need
+    // for latest-first reconstruction here — this window is short and every
+    // transaction in it is fully attributable, so a plain sum is exact.
+    note500 = denominationBaseline.note_500; note200 = denominationBaseline.note_200;
+    note100 = denominationBaseline.note_100; note50  = denominationBaseline.note_50;
+    note20  = denominationBaseline.note_20;  note10  = denominationBaseline.note_10;
+    coins   = Number(denominationBaseline.coins) || 0;
+    const baselineAsOf = getUtcDate(denominationBaseline.as_of).getTime();
 
-  for (const event of cashInEvents) {
-    if (remaining <= 0) break;
-    const den = event.denominations;
-    if (!den) continue;
-    const d500 = Number(den.note_500) || 0, d200 = Number(den.note_200) || 0, d100 = Number(den.note_100) || 0;
-    const d50  = Number(den.note_50)  || 0, d20  = Number(den.note_20)  || 0, d10  = Number(den.note_10)  || 0;
-    const dCoins = Number(den.coins) || 0;
-    const eventValue = d500 * 500 + d200 * 200 + d100 * 100 + d50 * 50 + d20 * 20 + d10 * 10 + dCoins;
+    collections.forEach((c) => {
+      if (!c.denominations || !c.created_at) return;
+      if (getUtcDate(c.created_at).getTime() < baselineAsOf) return;
+      note500 += Number(c.denominations.note_500) || 0;
+      note200 += Number(c.denominations.note_200) || 0;
+      note100 += Number(c.denominations.note_100) || 0;
+      note50  += Number(c.denominations.note_50)  || 0;
+      note20  += Number(c.denominations.note_20)  || 0;
+      note10  += Number(c.denominations.note_10)  || 0;
+      coins   += Number(c.denominations.coins)    || 0;
+    });
 
-    if (eventValue === 0) {
-      // Net-zero cash value with nonzero note fields (e.g. note_500: +2,
-      // note_50: -20) is a recorded note exchange, not noise — apply it in
-      // full regardless of `remaining` since it doesn't change the pocket's
-      // total value, only its composition.
-      if (d500 || d200 || d100 || d50 || d20 || d10 || dCoins) {
-        note500 += d500; note200 += d200; note100 += d100;
-        note50  += d50;  note20  += d20;  note10  += d10; coins += dCoins;
+    deposits.forEach((d) => {
+      if (!d.denominations || !d.created_at) return;
+      if (getUtcDate(d.created_at).getTime() < baselineAsOf) return;
+      const isReceivedHandover = d.recipient_staff_id === currentUser.id && d.depositType === 'staff';
+      if (!isReceivedHandover && d.depositType === 'virtual') return;
+      const sign = isReceivedHandover ? 1 : -1;
+      note500 += sign * (Number(d.denominations.note_500) || 0);
+      note200 += sign * (Number(d.denominations.note_200) || 0);
+      note100 += sign * (Number(d.denominations.note_100) || 0);
+      note50  += sign * (Number(d.denominations.note_50)  || 0);
+      note20  += sign * (Number(d.denominations.note_20)  || 0);
+      note10  += sign * (Number(d.denominations.note_10)  || 0);
+      coins   += sign * (Number(d.denominations.coins)    || 0);
+    });
+  } else {
+    // No verified baseline yet: fall back to latest-first reconstruction.
+    // totalCashNotes above is derived purely from dollar totals, so it is always
+    // correct. To show a real note breakdown for that amount, walk cash-IN events
+    // (collections + received handovers) newest-first and take their *actual
+    // recorded* notes until totalCashNotes is covered — i.e. assume the most
+    // recently collected cash is what's still physically in hand, since older
+    // cash has most likely already been deposited out. This is deliberately NOT
+    // a full-lifetime sum: summing every denomination ever recorded drifts away
+    // from totalCashNotes because staff exchange/consolidate physical notes at
+    // deposit time in ways the ledger never tracks note-for-note (a deposit's
+    // denominations don't have to mirror the exact notes originally collected).
+    let remaining = totalCashNotes;
+
+    const cashInEvents = [
+      ...collections,
+      ...deposits.filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff'),
+    ]
+      .filter(e => e.denominations)
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    for (const event of cashInEvents) {
+      if (remaining <= 0) break;
+      const den = event.denominations;
+      if (!den) continue;
+      const d500 = Number(den.note_500) || 0, d200 = Number(den.note_200) || 0, d100 = Number(den.note_100) || 0;
+      const d50  = Number(den.note_50)  || 0, d20  = Number(den.note_20)  || 0, d10  = Number(den.note_10)  || 0;
+      const dCoins = Number(den.coins) || 0;
+      const eventValue = d500 * 500 + d200 * 200 + d100 * 100 + d50 * 50 + d20 * 20 + d10 * 10 + dCoins;
+
+      if (eventValue === 0) {
+        // Net-zero cash value with nonzero note fields (e.g. note_500: +2,
+        // note_50: -20) is a recorded note exchange, not noise — apply it in
+        // full regardless of `remaining` since it doesn't change the pocket's
+        // total value, only its composition.
+        if (d500 || d200 || d100 || d50 || d20 || d10 || dCoins) {
+          note500 += d500; note200 += d200; note100 += d100;
+          note50  += d50;  note20  += d20;  note10  += d10; coins += dCoins;
+        }
+        continue;
       }
-      continue;
+      if (eventValue < 0) continue; // shouldn't happen for a cash-in event; skip defensively
+
+      // Take whatever fits from this transaction's own notes (largest denomination
+      // first, coins last). If the transaction is fully covered, this takes all of
+      // it; if not, the uncovered remainder rolls over to the next (older)
+      // transaction instead of being discarded. Coins are trusted as recorded —
+      // taking cash in coin form is normal practice here.
+      const take500 = Math.min(d500, Math.floor(remaining / 500)); remaining -= take500 * 500;
+      const take200 = Math.min(d200, Math.floor(remaining / 200)); remaining -= take200 * 200;
+      const take100 = Math.min(d100, Math.floor(remaining / 100)); remaining -= take100 * 100;
+      const take50  = Math.min(d50,  Math.floor(remaining / 50));  remaining -= take50  * 50;
+      const take20  = Math.min(d20,  Math.floor(remaining / 20));  remaining -= take20  * 20;
+      const take10  = Math.min(d10,  Math.floor(remaining / 10));  remaining -= take10  * 10;
+      const takeCoins = Math.min(dCoins, remaining); remaining -= takeCoins;
+
+      note500 += take500; note200 += take200; note100 += take100;
+      note50  += take50;  note20  += take20;  note10  += take10; coins += takeCoins;
     }
-    if (eventValue < 0) continue; // shouldn't happen for a cash-in event; skip defensively
 
-    // Take whatever fits from this transaction's own notes (largest denomination
-    // first, coins last). If the transaction is fully covered, this takes all of
-    // it; if not, the uncovered remainder rolls over to the next (older)
-    // transaction instead of being discarded. Coins are trusted as recorded —
-    // taking cash in coin form is normal practice here.
-    const take500 = Math.min(d500, Math.floor(remaining / 500)); remaining -= take500 * 500;
-    const take200 = Math.min(d200, Math.floor(remaining / 200)); remaining -= take200 * 200;
-    const take100 = Math.min(d100, Math.floor(remaining / 100)); remaining -= take100 * 100;
-    const take50  = Math.min(d50,  Math.floor(remaining / 50));  remaining -= take50  * 50;
-    const take20  = Math.min(d20,  Math.floor(remaining / 20));  remaining -= take20  * 20;
-    const take10  = Math.min(d10,  Math.floor(remaining / 10));  remaining -= take10  * 10;
-    const takeCoins = Math.min(dCoins, remaining); remaining -= takeCoins;
-
-    note500 += take500; note200 += take200; note100 += take100;
-    note50  += take50;  note20  += take20;  note10  += take10; coins += takeCoins;
-  }
-
-  // If recorded transactions don't fully cover the total (data gaps), represent
-  // the shortfall with the largest denominations so the total still adds up.
-  if (remaining > 0) {
-    note500 += Math.floor(remaining / 500); remaining %= 500;
-    note200 += Math.floor(remaining / 200); remaining %= 200;
-    note100 += Math.floor(remaining / 100); remaining %= 100;
-    note50  += Math.floor(remaining / 50);  remaining %= 50;
-    note20  += Math.floor(remaining / 20);  remaining %= 20;
-    note10  += Math.floor(remaining / 10);  remaining %= 10;
-    coins   += remaining;
+    // If recorded transactions don't fully cover the total (data gaps), represent
+    // the shortfall with the largest denominations so the total still adds up.
+    if (remaining > 0) {
+      note500 += Math.floor(remaining / 500); remaining %= 500;
+      note200 += Math.floor(remaining / 200); remaining %= 200;
+      note100 += Math.floor(remaining / 100); remaining %= 100;
+      note50  += Math.floor(remaining / 50);  remaining %= 50;
+      note20  += Math.floor(remaining / 20);  remaining %= 20;
+      note10  += Math.floor(remaining / 10);  remaining %= 10;
+      coins   += remaining;
+    }
   }
 
   // Safety clamp for display — a stray negative correction record should never
