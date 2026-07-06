@@ -492,7 +492,6 @@ export default function StaffDashboard() {
   // from totalCashNotes because staff exchange/consolidate physical notes at
   // deposit time in ways the ledger never tracks note-for-note (a deposit's
   // denominations don't have to mirror the exact notes originally collected).
-  const COIN_REALISM_CAP = 200; // rupees — real coin jars don't hold more than this
   let note500 = 0, note200 = 0, note100 = 0;
   let note50 = 0, note20 = 0, note10 = 0, coins = 0;
   let remaining = totalCashNotes;
@@ -511,40 +510,36 @@ export default function StaffDashboard() {
     const d500 = Number(den.note_500) || 0, d200 = Number(den.note_200) || 0, d100 = Number(den.note_100) || 0;
     const d50  = Number(den.note_50)  || 0, d20  = Number(den.note_20)  || 0, d10  = Number(den.note_10)  || 0;
     const dCoins = Number(den.coins) || 0;
-    if (d500 + d200 + d100 + d50 + d20 + d10 + dCoins <= 0) continue;
+    const eventValue = d500 * 500 + d200 * 200 + d100 * 100 + d50 * 50 + d20 * 20 + d10 * 10 + dCoins;
+
+    if (eventValue === 0) {
+      // Net-zero cash value with nonzero note fields (e.g. note_500: +2,
+      // note_50: -20) is a recorded note exchange, not noise — apply it in
+      // full regardless of `remaining` since it doesn't change the pocket's
+      // total value, only its composition.
+      if (d500 || d200 || d100 || d50 || d20 || d10 || dCoins) {
+        note500 += d500; note200 += d200; note100 += d100;
+        note50  += d50;  note20  += d20;  note10  += d10; coins += dCoins;
+      }
+      continue;
+    }
+    if (eventValue < 0) continue; // shouldn't happen for a cash-in event; skip defensively
 
     // Take whatever fits from this transaction's own notes (largest denomination
-    // first). If the transaction is fully covered, this takes all of it; if not,
-    // the uncovered remainder rolls over to the next (older) transaction instead
-    // of being discarded.
+    // first, coins last). If the transaction is fully covered, this takes all of
+    // it; if not, the uncovered remainder rolls over to the next (older)
+    // transaction instead of being discarded. Coins are trusted as recorded —
+    // taking cash in coin form is normal practice here.
     const take500 = Math.min(d500, Math.floor(remaining / 500)); remaining -= take500 * 500;
     const take200 = Math.min(d200, Math.floor(remaining / 200)); remaining -= take200 * 200;
     const take100 = Math.min(d100, Math.floor(remaining / 100)); remaining -= take100 * 100;
     const take50  = Math.min(d50,  Math.floor(remaining / 50));  remaining -= take50  * 50;
     const take20  = Math.min(d20,  Math.floor(remaining / 20));  remaining -= take20  * 20;
     const take10  = Math.min(d10,  Math.floor(remaining / 10));  remaining -= take10  * 10;
-    note500 += take500; note200 += take200; note100 += take100;
-    note50  += take50;  note20  += take20;  note10  += take10;
+    const takeCoins = Math.min(dCoins, remaining); remaining -= takeCoins;
 
-    // A "coins" field this large is really un-itemized cash the staff never
-    // broke into notes (real coins never run into hundreds of rupees) — treat
-    // it as generic cash and split it into notes instead of showing e.g.
-    // "₹1825 in coins".
-    const takeCoins = Math.min(dCoins, remaining);
-    if (takeCoins > COIN_REALISM_CAP) {
-      let generic = takeCoins;
-      const g500 = Math.floor(generic / 500); generic -= g500 * 500;
-      const g200 = Math.floor(generic / 200); generic -= g200 * 200;
-      const g100 = Math.floor(generic / 100); generic -= g100 * 100;
-      const g50  = Math.floor(generic / 50);  generic -= g50 * 50;
-      const g20  = Math.floor(generic / 20);  generic -= g20 * 20;
-      const g10  = Math.floor(generic / 10);  generic -= g10 * 10;
-      note500 += g500; note200 += g200; note100 += g100;
-      note50  += g50;  note20  += g20;  note10  += g10; coins += generic;
-    } else {
-      coins += takeCoins;
-    }
-    remaining -= takeCoins;
+    note500 += take500; note200 += take200; note100 += take100;
+    note50  += take50;  note20  += take20;  note10  += take10; coins += takeCoins;
   }
 
   // If recorded transactions don't fully cover the total (data gaps), represent
