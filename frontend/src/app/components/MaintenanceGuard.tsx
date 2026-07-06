@@ -201,16 +201,6 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
               We regret the inconvenience caused.
             </p>
           </div>
-
-          <div className="w-full h-[1px] bg-slate-200/60 my-2" />
-
-          {/* Subtle bypass mechanism */}
-          <div className="text-xs text-slate-500">
-            Are you a system administrator?{" "}
-            <a href="/?bypass=true" className="text-indigo-650 hover:text-indigo-700 hover:underline font-semibold transition-colors duration-150">
-              Sign In Here
-            </a>
-          </div>
         </div>
       </div>
     );

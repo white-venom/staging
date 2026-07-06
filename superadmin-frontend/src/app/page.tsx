@@ -448,16 +448,32 @@ export default function DashboardPage() {
                             </span>
                           </td>
                           <td className="px-3.5 py-2 text-center" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => handleToggleMaintenance(t.id, !t.maintenance_mode)}
-                              className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest transition-all duration-200 cursor-pointer ${
-                                t.maintenance_mode
-                                  ? "bg-amber-50 border border-amber-200/60 text-amber-600 hover:bg-amber-100"
-                                  : "bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/60"
-                              }`}
-                            >
-                              {t.maintenance_mode ? "ON (Maintenance)" : "OFF (Live)"}
-                            </button>
+                            <div className="flex items-center justify-center gap-1.5">
+                              <button
+                                onClick={() => handleToggleMaintenance(t.id, !t.maintenance_mode)}
+                                className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest transition-all duration-200 cursor-pointer ${
+                                  t.maintenance_mode
+                                    ? "bg-amber-50 border border-amber-200/60 text-amber-600 hover:bg-amber-100"
+                                    : "bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/60"
+                                }`}
+                              >
+                                {t.maintenance_mode ? "ON (Maintenance)" : "OFF (Live)"}
+                              </button>
+                              {t.maintenance_mode && (
+                                <a
+                                  href={`https://${t.subdomain}.crediiflow.in/?bypass=true`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-indigo-50 border border-indigo-200/60 text-indigo-650 hover:bg-indigo-100 transition-colors"
+                                  title="Admin Login Bypass"
+                                >
+                                  Login
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-2 h-2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
+                                  </svg>
+                                </a>
+                              )}
+                            </div>
                           </td>
                           <td className="px-3.5 py-2 text-center" onClick={(e) => e.stopPropagation()}>
                             <div className="flex items-center justify-center gap-1">

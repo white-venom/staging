@@ -232,6 +232,34 @@ class Denomination(Base):
     deposit: Mapped[Optional["BankDeposit"]] = relationship("BankDeposit", back_populates="denominations")
 
 
+class DenominationBaseline(Base):
+    """A verified snapshot of a staff's physical cash-in-hand at a point in time.
+    Pocket denomination calculations start from the most recent baseline (if any)
+    instead of replaying a staff's entire transaction history, so historical data
+    gaps (un-itemized legacy entries, note exchanges) can't drift the running count.
+    """
+    __tablename__ = "denomination_baselines"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    staff_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    note_500: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    note_200: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    note_100: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    note_50: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    note_20: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    note_10: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    coins: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0.00, nullable=False)
+
+    # Only collections/deposits at or after this instant count on top of this baseline
+    as_of: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    set_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    staff: Mapped["User"] = relationship("User", foreign_keys=[staff_id])
+    setter: Mapped[Optional["User"]] = relationship("User", foreign_keys=[set_by])
+
+
 class BankDeposit(Base):
     """Deposits & Payouts tracking staff cash handovers to Portals, Retailers, other Staff, or Office."""
     __tablename__ = "bank_deposits"
