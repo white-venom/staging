@@ -1007,6 +1007,8 @@ export default function DashboardPage() {
                       onChange={(e) => setEditAdminPhone(e.target.value)}
                       className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                       placeholder="e.g. 9876543210"
+                      autoComplete="off"
+                      name="client-admin-phone-no-autofill"
                     />
                   </div>
                   <div>
@@ -1018,6 +1020,8 @@ export default function DashboardPage() {
                         onChange={(e) => setEditAdminPassword(e.target.value)}
                         className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
                         placeholder="Leave blank to keep same"
+                        autoComplete="new-password"
+                        name="client-admin-password-no-autofill"
                       />
                       <button
                         type="button"
