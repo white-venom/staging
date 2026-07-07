@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from typing import List, Optional
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy import select, and_, desc, update
+from sqlalchemy import select, and_, desc, update, delete
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database.db import get_db
@@ -210,6 +210,7 @@ def submit_collection(
             )
             db.add(db_deposit_denom)
             db_collection.balance_snapshot = Decimal("0.00")
+            db_collection.mirror_deposit_id = db_deposit.id
         else:
             db_collection.balance_snapshot = Decimal("0.00")
 
@@ -478,7 +479,6 @@ def delete_collection(
         db.scalar(select(Retailer).where(Retailer.id == retailer_id).with_for_update())
 
     # Delete associated ledger entries (cascade is set to SET NULL in model, so we find and delete manually)
-    from sqlalchemy import delete
     db.execute(delete(Ledger).where(Ledger.collection_id == collection_id))
     
     # Restore portal balance if the collection was directly against a portal (not a retailer collection)
@@ -512,8 +512,13 @@ def delete_collection(
                     portal.group.balance -= portal_dep.amount
             db.delete(portal_dep)
 
-    # Delete corresponding staff handover deposit if this is a staff-to-staff collection
-    if collection.from_staff_id:
+    # Delete the mirrored staff handover deposit, if this collection is one.
+    # Prefer the real FK link; only fall back to matching by coincidence for
+    # legacy rows created before mirror_deposit_id existed and left unlinked.
+    if collection.mirror_deposit_id:
+        db.execute(delete(Ledger).where(Ledger.deposit_id == collection.mirror_deposit_id))
+        db.execute(delete(BankDeposit).where(BankDeposit.id == collection.mirror_deposit_id))
+    elif collection.from_staff_id:
         db.execute(
             delete(BankDeposit).where(
                 and_(
@@ -525,7 +530,7 @@ def delete_collection(
                 )
             )
         )
-                
+
     db.delete(collection)
     db.commit()
     
@@ -829,21 +834,28 @@ def update_collection(
         if ledger_entry:
             db.delete(ledger_entry)
 
-    # Sync corresponding staff handover deposit if needed
+    # Sync the mirrored staff handover deposit if needed. Prefer the real FK
+    # link (mirror_deposit_id); only fall back to matching by coincidence for
+    # legacy rows created before that link existed and left unlinked.
     if old_from_staff_id != new_from_staff_id:
-        # Delete old matching deposit if it existed
+        # Delete old mirrored deposit if it existed
         if old_from_staff_id:
-            db.execute(
-                delete(BankDeposit).where(
-                    and_(
-                        BankDeposit.deposit_type == "staff",
-                        BankDeposit.staff_id == old_from_staff_id,
-                        BankDeposit.recipient_staff_id == collection.staff_id,
-                        BankDeposit.amount == old_amount
+            if collection.mirror_deposit_id:
+                db.execute(delete(Ledger).where(Ledger.deposit_id == collection.mirror_deposit_id))
+                db.execute(delete(BankDeposit).where(BankDeposit.id == collection.mirror_deposit_id))
+                collection.mirror_deposit_id = None
+            else:
+                db.execute(
+                    delete(BankDeposit).where(
+                        and_(
+                            BankDeposit.deposit_type == "staff",
+                            BankDeposit.staff_id == old_from_staff_id,
+                            BankDeposit.recipient_staff_id == collection.staff_id,
+                            BankDeposit.amount == old_amount
+                        )
                     )
                 )
-            )
-        # Create new matching deposit if new is set
+        # Create new mirrored deposit if new is set
         if new_from_staff_id:
             db_deposit = BankDeposit(
                 staff_id=new_from_staff_id,
@@ -858,7 +870,7 @@ def update_collection(
             )
             db.add(db_deposit)
             db.flush()
-            
+
             d = payload.denominations
             db_deposit_denom = Denomination(
                 deposit_id=db_deposit.id,
@@ -872,18 +884,27 @@ def update_collection(
                 online_amount=d.online_amount
             )
             db.add(db_deposit_denom)
+            collection.mirror_deposit_id = db_deposit.id
     elif new_from_staff_id:
-        # Just update the existing matching deposit
-        matching_deposit = db.scalar(
-            select(BankDeposit).where(
-                and_(
-                    BankDeposit.deposit_type == "staff",
-                    BankDeposit.staff_id == new_from_staff_id,
-                    BankDeposit.recipient_staff_id == collection.staff_id,
-                    BankDeposit.amount == old_amount
+        # Just update the existing mirrored deposit
+        matching_deposit = None
+        if collection.mirror_deposit_id:
+            matching_deposit = db.scalar(
+                select(BankDeposit).where(BankDeposit.id == collection.mirror_deposit_id).with_for_update()
+            )
+        if not matching_deposit:
+            matching_deposit = db.scalar(
+                select(BankDeposit).where(
+                    and_(
+                        BankDeposit.deposit_type == "staff",
+                        BankDeposit.staff_id == new_from_staff_id,
+                        BankDeposit.recipient_staff_id == collection.staff_id,
+                        BankDeposit.amount == old_amount
+                    )
                 )
             )
-        )
+            if matching_deposit:
+                collection.mirror_deposit_id = matching_deposit.id
         if matching_deposit:
             matching_deposit.amount = payload.total_amount
             matching_deposit.deposit_date = new_collection_date

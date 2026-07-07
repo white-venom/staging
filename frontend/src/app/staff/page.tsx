@@ -40,7 +40,9 @@ import PWAInstallModal from "../components/PWAInstallModal";
 
 const getUtcDate = (dateStr: any) => {
   if (!dateStr) return new Date();
-  const s = String(dateStr);
+  // Backend timestamps can carry 6-digit microseconds (Python's isoformat()),
+  // which some Safari/WebKit versions fail to parse — truncate to milliseconds.
+  const s = String(dateStr).replace(" ", "T").replace(/\.(\d{3})\d+/, ".$1");
   if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
     return new Date(s + "Z");
   }
@@ -569,34 +571,31 @@ export default function StaffDashboard() {
       const dCoins = Number(den.coins) || 0;
       const eventValue = d500 * 500 + d200 * 200 + d100 * 100 + d50 * 50 + d20 * 20 + d10 * 10 + dCoins;
 
-      if (eventValue === 0) {
-        // Net-zero cash value with nonzero note fields (e.g. note_500: +2,
-        // note_50: -20) is a recorded note exchange, not noise — apply it in
-        // full regardless of `remaining` since it doesn't change the pocket's
-        // total value, only its composition.
+      if (eventValue <= 0) {
+        // Net-zero (a recorded note exchange, e.g. note_500:+2/note_50:-20) or
+        // a legitimate net-outflow collection (the schema allows a negative
+        // total_amount) — apply the real recorded deltas in full regardless
+        // of `remaining`, since neither changes how much inflow value we
+        // still need to find.
         if (d500 || d200 || d100 || d50 || d20 || d10 || dCoins) {
           note500 += d500; note200 += d200; note100 += d100;
           note50  += d50;  note20  += d20;  note10  += d10; coins += dCoins;
         }
         continue;
       }
-      if (eventValue < 0) continue; // shouldn't happen for a cash-in event; skip defensively
 
-      // Take whatever fits from this transaction's own notes (largest denomination
-      // first, coins last). If the transaction is fully covered, this takes all of
-      // it; if not, the uncovered remainder rolls over to the next (older)
-      // transaction instead of being discarded. Coins are trusted as recorded —
-      // taking cash in coin form is normal practice here.
-      const take500 = Math.min(d500, Math.floor(remaining / 500)); remaining -= take500 * 500;
-      const take200 = Math.min(d200, Math.floor(remaining / 200)); remaining -= take200 * 200;
-      const take100 = Math.min(d100, Math.floor(remaining / 100)); remaining -= take100 * 100;
-      const take50  = Math.min(d50,  Math.floor(remaining / 50));  remaining -= take50  * 50;
-      const take20  = Math.min(d20,  Math.floor(remaining / 20));  remaining -= take20  * 20;
-      const take10  = Math.min(d10,  Math.floor(remaining / 10));  remaining -= take10  * 10;
-      const takeCoins = Math.min(dCoins, remaining); remaining -= takeCoins;
-
-      note500 += take500; note200 += take200; note100 += take100;
-      note50  += take50;  note20  += take20;  note10  += take10; coins += takeCoins;
+      // Normal inflow. A negative field within it (a same-transaction note
+      // conversion) is applied directly; positive fields are taken bounded by
+      // `remaining`, largest denomination first, coins last. Any uncovered
+      // remainder rolls over to the next (older) transaction instead of being
+      // discarded.
+      if (d500 < 0) { note500 += d500; } else { const t = Math.min(d500, Math.floor(remaining / 500)); note500 += t; remaining -= t * 500; }
+      if (d200 < 0) { note200 += d200; } else { const t = Math.min(d200, Math.floor(remaining / 200)); note200 += t; remaining -= t * 200; }
+      if (d100 < 0) { note100 += d100; } else { const t = Math.min(d100, Math.floor(remaining / 100)); note100 += t; remaining -= t * 100; }
+      if (d50  < 0) { note50  += d50;  } else { const t = Math.min(d50,  Math.floor(remaining / 50));  note50  += t; remaining -= t * 50;  }
+      if (d20  < 0) { note20  += d20;  } else { const t = Math.min(d20,  Math.floor(remaining / 20));  note20  += t; remaining -= t * 20;  }
+      if (d10  < 0) { note10  += d10;  } else { const t = Math.min(d10,  Math.floor(remaining / 10));  note10  += t; remaining -= t * 10;  }
+      if (dCoins < 0) { coins += dCoins; } else { const t = Math.min(dCoins, remaining); coins += t; remaining -= t; }
     }
 
     // If recorded transactions don't fully cover the total (data gaps), represent

@@ -458,18 +458,35 @@ def delete_deposit(
     # Collections.py's delete_collection() already does this in reverse when the
     # recipient deletes their side; without this, deleting the sender's side
     # left an orphaned Collection that kept counting as received cash forever.
+    # Prefer the real FK link (Collection.mirror_deposit_id); only fall back to
+    # matching by coincidence for legacy rows created before that link existed.
     if deposit.deposit_type == "staff" and deposit.recipient_staff_id:
         matching_collection = db.scalar(
-            select(Collection).where(
-                and_(
-                    Collection.from_staff_id == deposit.staff_id,
-                    Collection.staff_id == deposit.recipient_staff_id,
-                    Collection.total_amount == deposit.amount,
-                    Collection.collection_date == deposit.deposit_date
-                )
-            ).with_for_update()
+            select(Collection).where(Collection.mirror_deposit_id == deposit.id).with_for_update()
         )
+        if not matching_collection:
+            matching_collection = db.scalar(
+                select(Collection).where(
+                    and_(
+                        Collection.from_staff_id == deposit.staff_id,
+                        Collection.staff_id == deposit.recipient_staff_id,
+                        Collection.total_amount == deposit.amount,
+                        Collection.collection_date == deposit.deposit_date
+                    )
+                ).with_for_update()
+            )
         if matching_collection:
+            # The recipient's own delete window still protects their record: a
+            # non-admin sender deleting their side must not silently bypass the
+            # protection the recipient would otherwise have on their Collection.
+            if current_user.role != "admin":
+                settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+                recipient_window = settings.delete_window_minutes if settings else 5
+                if recipient_window != -1 and datetime.utcnow() - matching_collection.created_at > timedelta(minutes=recipient_window):
+                    raise HTTPException(
+                        status_code=403,
+                        detail="This handover can no longer be deleted — the recipient's own edit window has expired."
+                    )
             db.execute(delete(Ledger).where(Ledger.collection_id == matching_collection.id))
             db.delete(matching_collection)
 

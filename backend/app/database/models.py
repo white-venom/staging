@@ -4,15 +4,16 @@ from decimal import Decimal
 from typing import List, Optional
 
 from sqlalchemy import (
-    String, 
-    Integer, 
-    Float, 
-    DateTime, 
-    ForeignKey, 
-    Boolean, 
-    Date, 
-    Numeric, 
-    Text
+    String,
+    Integer,
+    Float,
+    DateTime,
+    ForeignKey,
+    Boolean,
+    Date,
+    Numeric,
+    Text,
+    UniqueConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database.db import Base
@@ -188,6 +189,11 @@ class Collection(Base):
     from_office: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     store_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("stores.id", ondelete="CASCADE"), nullable=True)
     portal_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("portals.id", ondelete="SET NULL"), nullable=True)
+    # For a staff-to-staff handover, points at the auto-created BankDeposit that
+    # mirrors this collection on the sender's (from_staff_id's) side. A real FK
+    # instead of matching by staff_id/amount/date coincidence, so create/update/
+    # delete can always find the correct paired record with no ambiguity.
+    mirror_deposit_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bank_deposits.id", ondelete="SET NULL"), nullable=True)
     
     total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     collection_date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
@@ -239,6 +245,9 @@ class DenominationBaseline(Base):
     gaps (un-itemized legacy entries, note exchanges) can't drift the running count.
     """
     __tablename__ = "denomination_baselines"
+    __table_args__ = (
+        UniqueConstraint("staff_id", "as_of", name="uq_denomination_baseline_staff_as_of"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     staff_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
