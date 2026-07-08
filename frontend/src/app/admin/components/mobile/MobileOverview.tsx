@@ -535,12 +535,32 @@ export default function MobileOverview({
         netDen.coins    -= Number(d.denominations.coins    || 0);
       });
 
-      // Safety clamp for display — a stray negative correction record should
-      // never render as a negative note count
-      netDen.note_500 = Math.max(0, netDen.note_500); netDen.note_200 = Math.max(0, netDen.note_200);
-      netDen.note_100 = Math.max(0, netDen.note_100); netDen.note_50  = Math.max(0, netDen.note_50);
-      netDen.note_20  = Math.max(0, netDen.note_20);  netDen.note_10  = Math.max(0, netDen.note_10);
-      netDen.coins = Math.round(Math.max(0, netDen.coins) * 100) / 100;
+      // A denomination can legitimately go negative here (e.g. a deposit took more
+      // ₹500 notes out than were ever collected, because the staff physically broke
+      // smaller notes to make up a ₹500 note). The overall rupee total is still
+      // exactly right in that case — simply clamping the negative slot to 0 would
+      // silently delete that debt while leaving its offsetting surplus in smaller
+      // denominations untouched, inflating the displayed total. Instead, pay off
+      // any negative slot's debt out of the smaller denominations, largest-first,
+      // the way a cashier would break a note — this keeps the total exact.
+      const denomUnits: [number, "note_500" | "note_200" | "note_100" | "note_50" | "note_20" | "note_10"][] = [
+        [500, "note_500"], [200, "note_200"], [100, "note_100"],
+        [50, "note_50"], [20, "note_20"], [10, "note_10"],
+      ];
+      let denomDebt = 0;
+      for (const [value, key] of denomUnits) {
+        if (netDen[key] < 0) {
+          denomDebt += -netDen[key] * value;
+          netDen[key] = 0;
+        }
+      }
+      for (const [value, key] of denomUnits) {
+        if (denomDebt <= 0) break;
+        const take = Math.min(netDen[key], Math.floor(denomDebt / value));
+        netDen[key] -= take;
+        denomDebt -= take * value;
+      }
+      netDen.coins = Math.round(Math.max(0, netDen.coins - denomDebt) * 100) / 100;
 
       // Visited stores today
       const visitedStores = staffColsToday.map((c) => ({

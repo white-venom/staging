@@ -579,12 +579,36 @@ export default function StaffDashboard() {
     coins   += sign * (Number(d.denominations.coins)    || 0);
   });
 
-  // Safety clamp for display — a stray negative correction record should never
-  // render as a negative note count
-  note500 = Math.max(0, note500); note200 = Math.max(0, note200);
-  note100 = Math.max(0, note100); note50  = Math.max(0, note50);
-  note20  = Math.max(0, note20);  note10  = Math.max(0, note10);
-  coins   = Math.round(Math.max(0, coins) * 100) / 100;
+  // A denomination can legitimately go negative here (e.g. a deposit took more
+  // ₹500 notes out than were ever collected, because the staff physically broke
+  // smaller notes to make up a ₹500 note). The overall rupee total is still
+  // exactly right in that case — simply clamping the negative slot to 0 would
+  // silently delete that debt while leaving its offsetting surplus in smaller
+  // denominations untouched, inflating the displayed total. Instead, pay off
+  // any negative slot's debt out of the smaller denominations, largest-first,
+  // the way a cashier would break a note — this keeps the total exact.
+  const noteUnits: [number, "note500" | "note200" | "note100" | "note50" | "note20" | "note10"][] = [
+    [500, "note500"], [200, "note200"], [100, "note100"],
+    [50, "note50"], [20, "note20"], [10, "note10"],
+  ];
+  const noteValues: Record<string, number> = { note500, note200, note100, note50, note20, note10 };
+  let debt = 0;
+  for (const [value, key] of noteUnits) {
+    if (noteValues[key] < 0) {
+      debt += -noteValues[key] * value;
+      noteValues[key] = 0;
+    }
+  }
+  for (const [value, key] of noteUnits) {
+    if (debt <= 0) break;
+    const take = Math.min(noteValues[key], Math.floor(debt / value));
+    noteValues[key] -= take;
+    debt -= take * value;
+  }
+  note500 = noteValues.note500; note200 = noteValues.note200;
+  note100 = noteValues.note100; note50  = noteValues.note50;
+  note20  = noteValues.note20;  note10  = noteValues.note10;
+  coins   = Math.round(Math.max(0, coins - debt) * 100) / 100;
 
   // Net denomination breakdown (all in - all out across all time)
   const combinedLedger = [
