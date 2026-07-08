@@ -6,7 +6,7 @@ from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
-from app.database.models import Portal, PortalGroup
+from app.database.models import Portal, PortalGroup, PortalGroupAdjustment
 from app.schemas.portal import (
     PortalCreate, 
     PortalResponse, 
@@ -117,10 +117,24 @@ def update_portal_group(
         delta_give = Decimal(str(group_data.opening_to_give))
         db_group.opening_to_give = (db_group.opening_to_give or Decimal("0.00")) + delta_give
         db_group.balance = (db_group.balance or Decimal("0.00")) - delta_give
+        db.add(PortalGroupAdjustment(
+            group_id=db_group.id,
+            transaction_type="debit",
+            amount=delta_give,
+            description=f"Manually Added by {current_user.name}",
+            created_by=current_user.id
+        ))
     if group_data.opening_to_take is not None:
         delta_take = Decimal(str(group_data.opening_to_take))
         db_group.opening_to_take = (db_group.opening_to_take or Decimal("0.00")) + delta_take
         db_group.balance = (db_group.balance or Decimal("0.00")) + delta_take
+        db.add(PortalGroupAdjustment(
+            group_id=db_group.id,
+            transaction_type="credit",
+            amount=delta_take,
+            description=f"Manually Added by {current_user.name}",
+            created_by=current_user.id
+        ))
     if group_data.show_in_online_payment is not None:
         for portal in db_group.portals:
             portal.show_in_online_payment = group_data.show_in_online_payment
@@ -589,20 +603,40 @@ def get_portal_group_ledger(
     group = db.scalar(select(PortalGroup).where(PortalGroup.id == group_id))
     if not group:
         raise HTTPException(status_code=404, detail="Portal group not found")
-        
+
+    # Manual "Adjust Balance" edits, shown as their own line items in the ledger
+    adjustments = db.scalars(
+        select(PortalGroupAdjustment).where(PortalGroupAdjustment.group_id == group_id)
+    ).all()
+    adjustment_txs = [
+        {
+            "id": str(a.id),
+            "created_at": a.created_at,
+            "transaction_type": a.transaction_type,
+            "amount": float(a.amount),
+            "description": a.description or "Manually Added",
+            "collection_id": None,
+            "deposit_id": None,
+            "remarks": None,
+            "reference_no": None,
+            "deposit_type": None,
+            "payment_mode": None,
+            "recipient_staff_id": None,
+            "to_office": None,
+            "retailer_id": None,
+            "store_id": None,
+            "store_name": None,
+            "portal_id": None,
+            "denominations": None
+        }
+        for a in adjustments
+    ]
+
     # Get all portal IDs in this group
     portals = db.scalars(select(Portal).where(Portal.group_id == group_id)).all()
     portal_ids = [p.id for p in portals]
-    
-    if not portal_ids:
-        # No accounts, return empty ledger starting from group opening balances
-        return {
-            "group_name": group.name,
-            "outstanding_balance": float(group.balance),
-            "statement_history": []
-        }
-        
-    # Fetch verified deposits for these portals
+
+    # Fetch verified deposits for these portals (empty portal_ids naturally yields no rows)
     deposits = db.scalars(
         select(BankDeposit)
         .options(joinedload(BankDeposit.retailer), joinedload(BankDeposit.portal), joinedload(BankDeposit.denominations))
@@ -613,7 +647,7 @@ def get_portal_group_ledger(
             )
         )
     ).all()
-    
+
     # Fetch verified direct collections for these portals (where retailer_id is None)
     collections = db.scalars(
         select(Collection)
@@ -626,7 +660,7 @@ def get_portal_group_ledger(
             )
         )
     ).all()
-    
+
     from app.database.models import Store
     
     # Fetch all verified collections for these portals
@@ -786,13 +820,21 @@ def get_portal_group_ledger(
             "portal_id": str(c.portal_id) if c.portal_id else None,
             "denominations": denom_dict
         })
-        
+
+    tx_list.extend(adjustment_txs)
     tx_list.sort(key=lambda x: x["created_at"])
-    
-    # Calculate running balance safely handling None values
+
+    # opening_to_take/opening_to_give already include every manual adjustment ever made
+    # (each "Adjust Balance" edit increments them). Since those same adjustments are now
+    # also walked as individual line items below, back them out of the starting point here
+    # so they aren't counted twice.
+    adjustment_net = sum(
+        (a["amount"] if a["transaction_type"] == "credit" else -a["amount"])
+        for a in adjustment_txs
+    )
     opening_take = group.opening_to_take or Decimal("0.00")
     opening_give = group.opening_to_give or Decimal("0.00")
-    running_balance = float(opening_take - opening_give)
+    running_balance = float(opening_take - opening_give) - adjustment_net
     formatted_txs = []
     
     for tx in tx_list:

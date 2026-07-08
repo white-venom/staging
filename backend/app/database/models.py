@@ -117,6 +117,22 @@ class Portal(Base):
         return self.group.name if self.group else None
 
 
+class PortalGroupAdjustment(Base):
+    __tablename__ = "portal_group_adjustments"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    group_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("portal_groups.id", ondelete="CASCADE"), nullable=False)
+    transaction_type: Mapped[str] = mapped_column(String(10), nullable=False)  # 'credit', 'debit'
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    group: Mapped[PortalGroup] = relationship("PortalGroup")
+    created_by_user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[created_by])
+
+
 class Store(Base):
     __tablename__ = "stores"
 

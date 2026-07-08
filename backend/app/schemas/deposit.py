@@ -51,6 +51,21 @@ class DepositCreate(BaseModel):
             raise ValueError("deposit_type must be one of 'portal', 'retailer', 'staff', 'virtual', or 'portal_transfer'.")
         return self
 
+    @model_validator(mode="after")
+    def validate_denomination_sum(self) -> "DepositCreate":
+        d = self.denominations
+        if d is not None:
+            denom_sum = (
+                Decimal(d.note_500) * 500 + Decimal(d.note_200) * 200 + Decimal(d.note_100) * 100 +
+                Decimal(d.note_50) * 50 + Decimal(d.note_20) * 20 + Decimal(d.note_10) * 10 +
+                d.coins + d.online_amount
+            )
+            if denom_sum != self.amount:
+                raise ValueError(
+                    f"Denomination total (Rs.{denom_sum}) does not match deposit amount (Rs.{self.amount})"
+                )
+        return self
+
 
 class DepositResponse(BaseModel):
     id: uuid.UUID

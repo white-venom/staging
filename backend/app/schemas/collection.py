@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, date
 from decimal import Decimal
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class DenominationSchema(BaseModel):
@@ -31,6 +31,20 @@ class CollectionCreate(BaseModel):
     remarks: Optional[str] = Field(None, max_length=255)
     collection_date: Optional[date] = None
     denominations: DenominationSchema
+
+    @model_validator(mode="after")
+    def validate_denomination_sum(self) -> "CollectionCreate":
+        d = self.denominations
+        denom_sum = (
+            Decimal(d.note_500) * 500 + Decimal(d.note_200) * 200 + Decimal(d.note_100) * 100 +
+            Decimal(d.note_50) * 50 + Decimal(d.note_20) * 20 + Decimal(d.note_10) * 10 +
+            d.coins + d.online_amount
+        )
+        if denom_sum != self.total_amount:
+            raise ValueError(
+                f"Denomination total (Rs.{denom_sum}) does not match collection amount (Rs.{self.total_amount})"
+            )
+        return self
 
 
 class CollectionResponse(BaseModel):
