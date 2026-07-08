@@ -112,8 +112,6 @@ def update_portal_group(
         if new_take < 0:
             raise HTTPException(status_code=400, detail="To Take cannot be negative")
 
-    from decimal import Decimal
-    
     db_group.name = group_data.name
     if group_data.opening_to_give is not None:
         delta_give = Decimal(str(group_data.opening_to_give))
