@@ -471,13 +471,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6">
           <div className="flex items-center">
             {/* Logo and Brand Name combination */}
-            <a href="#" className={`flex items-center transition-all duration-500 group ${scrolled ? 'gap-3' : 'gap-5'}`}>
+            <a href="#" className={`flex items-center transition-all duration-500 group ${scrolled ? 'gap-2.5' : 'gap-3.5'}`}>
               <img
                 src="/logo-icon.png"
                 alt="CrediiFlow Logo"
-                className={`transition-all duration-500 object-contain group-hover:scale-[1.03] ${scrolled ? 'h-10' : 'h-20'}`}
+                className={`transition-all duration-500 object-contain group-hover:scale-[1.03] ${scrolled ? 'h-9' : 'h-14'}`}
               />
-              <span className={`transition-all duration-500 tracking-tight text-slate-955 select-none font-display ${scrolled ? 'text-2xl' : 'text-5xl'}`}>
+              <span className={`transition-all duration-500 tracking-tight text-slate-955 select-none font-display ${scrolled ? 'text-xl' : 'text-3xl'}`}>
                 <span className="font-extrabold text-slate-900">Credii</span>
                 <span className="font-semibold text-cyan-600">Flow</span>
               </span>
