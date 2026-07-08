@@ -351,13 +351,23 @@ def get_portal_ledger(
         )
     ).all()
 
-    # Fetch all verified collections for this portal to load store/retailer name in memory
+    # Fetch all verified collections across this portal's whole group (not just
+    # this single portal_id) to load store/retailer name in memory. A deposit
+    # can be edited to move it to a different portal within the same group
+    # after the fact — the collection that originally generated it keeps its
+    # own portal_id, so the source lookup below has to search the whole group
+    # or it silently loses the retailer/store name for moved entries.
+    group_portal_ids = [portal_id]
+    if portal.group_id:
+        group_portal_ids = [
+            p.id for p in db.scalars(select(Portal).where(Portal.group_id == portal.group_id)).all()
+        ]
     all_portal_cols = db.scalars(
         select(Collection)
         .options(joinedload(Collection.retailer), joinedload(Collection.store))
         .where(
             and_(
-                Collection.portal_id == portal_id,
+                Collection.portal_id.in_(group_portal_ids),
                 Collection.status == "verified"
             )
         )
@@ -637,16 +647,20 @@ def get_portal_group_ledger(
     # collections can share the same (portal, date) with no retailer_id, so keep all of
     # them per key instead of letting one silently overwrite the rest.
     col_by_portal_date_retailer = {}
+    # Keyed by date only (not portal_id): if a deposit is later edited to move
+    # it to a different portal within the same group, this fallback match
+    # must still find the collection that originally generated it — the
+    # collection's own portal_id doesn't change just because the deposit's did.
     col_by_portal_date = {}
     for col in sorted(all_portal_cols, key=lambda c: c.created_at):
-        k_triple = (col.portal_id, col.collection_date, col.retailer_id)
-        k_pair = (col.portal_id, col.collection_date)
+        k_triple = (col.collection_date, col.retailer_id)
+        k_date = col.collection_date
         if col.retailer_id:
             col_by_portal_date_retailer[k_triple] = col
-        col_by_portal_date.setdefault(k_pair, []).append(col)
+        col_by_portal_date.setdefault(k_date, []).append(col)
 
-    def _best_portal_date_match(portal_id, col_date, deposit_amount):
-        candidates = col_by_portal_date.get((portal_id, col_date)) or []
+    def _best_portal_date_match(col_date, deposit_amount):
+        candidates = col_by_portal_date.get(col_date) or []
         if not candidates:
             return None
         for c in candidates:
@@ -667,7 +681,7 @@ def get_portal_group_ledger(
         store_name = None
         fallback_remarks = d.remarks
         if d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
-            matching_col = _best_portal_date_match(d.portal_id, d.deposit_date, d.amount)
+            matching_col = _best_portal_date_match(d.deposit_date, d.amount)
             if matching_col:
                 retailer_name = matching_col.retailer.retailer_name if matching_col.retailer else None
                 store_name = matching_col.store.store_name if matching_col.store else None
@@ -675,7 +689,7 @@ def get_portal_group_ledger(
                     fallback_remarks = matching_col.remarks
         elif d.retailer:
             # If retailer is available, look up store from matching collection
-            matching_col = col_by_portal_date_retailer.get((d.portal_id, d.deposit_date, d.retailer_id))
+            matching_col = col_by_portal_date_retailer.get((d.deposit_date, d.retailer_id))
             if matching_col and matching_col.store:
                 store_name = matching_col.store.store_name
         

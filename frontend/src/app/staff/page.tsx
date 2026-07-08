@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useAppStore } from "../utils/store";
 import { api } from "../utils/api";
 import { db, OfflineCollection, OfflineDeposit } from "../utils/db";
-import { initializeSyncEngine } from "../utils/sync";
+import { initializeSyncEngine, syncOfflineData } from "../utils/sync";
 import {
   PlusCircle,
   ArrowUpRight,
@@ -150,6 +150,30 @@ export default function StaffDashboard() {
     }
   }, [mounted]);
 
+  // Re-read the local offline (Dexie) sync queues into state — called on
+  // mount, after background sync events, and after manually removing a
+  // stuck waiting-list entry.
+  const loadOfflineQueues = useCallback(async () => {
+    const col = await db.collections.where("synced").equals(0).toArray();
+    const dep = await db.deposits.where("synced").equals(0).toArray();
+    setOfflineCollections(col);
+    setOfflineDeposits(dep);
+  }, []);
+
+  // Permanently remove a queued offline entry that failed to sync (e.g. the
+  // server rejected it) instead of leaving it stuck in "Waiting..." forever
+  // with no way to clear it.
+  const handleDeleteOfflineItem = useCallback(async (kind: "collection" | "deposit", id?: number) => {
+    if (id === undefined) return;
+    if (!window.confirm("Remove this stuck entry from the waiting list? This cannot be undone.")) return;
+    if (kind === "collection") {
+      await db.collections.delete(id);
+    } else {
+      await db.deposits.delete(id);
+    }
+    await loadOfflineQueues();
+  }, [loadOfflineQueues]);
+
   // Read local Dexie databases on mount and monitor status
   useEffect(() => {
     if (!mounted) return;
@@ -158,16 +182,8 @@ export default function StaffDashboard() {
       return;
     }
 
-    // Read offline files
-    const loadOfflineQueues = async () => {
-      const col = await db.collections.where("synced").equals(0).toArray();
-      const dep = await db.deposits.where("synced").equals(0).toArray();
-      setOfflineCollections(col);
-      setOfflineDeposits(dep);
-    };
-
     loadOfflineQueues();
-    
+
     // Auto-restore / sync attendance status with backend database if online
     const autoRestore = async () => {
       if (!isOnline) return;
@@ -206,8 +222,24 @@ export default function StaffDashboard() {
       }
     );
 
-    return () => cleanupSync();
-  }, [currentUser, router, collections, deposits, mounted]);
+    // A failed sync (e.g. the server rejected the submission for a reason
+    // other than being offline) previously only got retried on the next
+    // offline→online transition — if that never happened, the entry stayed
+    // stuck in "Waiting..." indefinitely with no visible error. Retry
+    // periodically as a safety net whenever we're online.
+    const retryInterval = setInterval(() => {
+      if (navigator.onLine) {
+        syncOfflineData().then((count) => {
+          if (count > 0) loadOfflineQueues();
+        }).catch(() => {});
+      }
+    }, 2 * 60 * 1000);
+
+    return () => {
+      cleanupSync();
+      clearInterval(retryInterval);
+    };
+  }, [currentUser, router, collections, deposits, mounted, loadOfflineQueues]);
 
   // Sync Zustand store with backend data on mount or online status change
   const syncWithAPI = useCallback(async () => {
@@ -967,7 +999,17 @@ export default function StaffDashboard() {
                     <span className="font-black text-slate-800 dark:text-slate-200">{col.retailerName}</span>
                     <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash In • {col.date}</span>
                   </div>
-                  <span className="font-black text-slate-800 dark:text-slate-100">₹{col.totalAmount.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-slate-800 dark:text-slate-100">₹{col.totalAmount.toLocaleString()}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOfflineItem("collection", col.id)}
+                      className="text-red-400 hover:text-red-600 transition-colors cursor-pointer"
+                      title="Remove stuck entry"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
 
@@ -977,7 +1019,17 @@ export default function StaffDashboard() {
                     <span className="font-black text-slate-800 dark:text-slate-200">{dep.targetName}</span>
                     <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash Out • {dep.date}</span>
                   </div>
-                  <span className="font-black text-slate-800 dark:text-slate-100">₹{dep.amount.toLocaleString()}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-slate-800 dark:text-slate-100">₹{dep.amount.toLocaleString()}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteOfflineItem("deposit", dep.id)}
+                      className="text-red-400 hover:text-red-600 transition-colors cursor-pointer"
+                      title="Remove stuck entry"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
