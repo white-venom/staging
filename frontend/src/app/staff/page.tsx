@@ -287,12 +287,19 @@ export default function StaffDashboard() {
         created_at: c.created_at,
       }));
 
-      // Map deposits (filtering out received handovers to avoid duplication with collections if a matching collection exists)
+      // Map deposits (filtering out received handovers to avoid duplication with collections if a matching collection exists).
+      // Prefer the real mirror_deposit_id FK link; only fall back to amount/staff_id
+      // coincidence matching for legacy rows created before that FK existed — the
+      // coincidence match silently breaks (and double-counts) as soon as either side
+      // of the handover is edited.
       const mappedDeposits = apiDeps
         .filter((d: any) => {
           if (d.recipient_staff_id === currentUser.id && d.deposit_type === "staff") {
-            const hasMatchingCollection = apiCols.some((c: any) => 
-              c.from_staff_id === d.staff_id && 
+            const hasFkLink = apiCols.some((c: any) => c.mirror_deposit_id === d.id);
+            if (hasFkLink) return false;
+            const hasMatchingCollection = apiCols.some((c: any) =>
+              !c.mirror_deposit_id &&
+              c.from_staff_id === d.staff_id &&
               Number(c.total_amount) === Number(d.amount)
             );
             return !hasMatchingCollection;
