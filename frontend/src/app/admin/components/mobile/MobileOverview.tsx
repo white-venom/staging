@@ -484,111 +484,56 @@ export default function MobileOverview({
 
       netDen.online = Math.max(0, onlineIn - onlineOut);
 
+      // Honest running sum: every collection / received handover adds its
+      // recorded notes, every deposit subtracts its own recorded notes. The
+      // backend enforces sum(denominations) === amount on every transaction,
+      // so this is always exact — it doesn't need to guess which notes are
+      // "still in hand" the way a greedy reconstruction would, which can
+      // invent an entirely different (though dollar-equal) note mix whenever
+      // a deposit doesn't remove a proportional slice of every denomination.
+      // If a verified baseline exists, start from it and only sum
+      // transactions at or after it; otherwise start from zero and sum
+      // everything.
       const baseline = denominationBaselines[user.id];
+      let cutoffMs = -Infinity;
       if (baseline) {
-        // Verified baseline available: start from the confirmed physical count
-        // and honestly add/subtract only transactions recorded at or after it.
         netDen.note_500 = baseline.note_500; netDen.note_200 = baseline.note_200;
         netDen.note_100 = baseline.note_100; netDen.note_50  = baseline.note_50;
         netDen.note_20  = baseline.note_20;  netDen.note_10  = baseline.note_10;
         netDen.coins    = Number(baseline.coins) || 0;
-        const baselineAsOf = toUtcMs(baseline.as_of);
-
-        allStaffCols.forEach(c => {
-          if (!c.denominations || !c.created_at || toUtcMs(c.created_at) < baselineAsOf) return;
-          netDen.note_500 += Number(c.denominations.note_500 || 0);
-          netDen.note_200 += Number(c.denominations.note_200 || 0);
-          netDen.note_100 += Number(c.denominations.note_100 || 0);
-          netDen.note_50  += Number(c.denominations.note_50  || 0);
-          netDen.note_20  += Number(c.denominations.note_20  || 0);
-          netDen.note_10  += Number(c.denominations.note_10  || 0);
-          netDen.coins    += Number(c.denominations.coins    || 0);
-        });
-        allReceivedDeps.forEach(r => {
-          if (!r.denominations || !r.created_at || toUtcMs(r.created_at) < baselineAsOf) return;
-          netDen.note_500 += Number(r.denominations.note_500 || 0);
-          netDen.note_200 += Number(r.denominations.note_200 || 0);
-          netDen.note_100 += Number(r.denominations.note_100 || 0);
-          netDen.note_50  += Number(r.denominations.note_50  || 0);
-          netDen.note_20  += Number(r.denominations.note_20  || 0);
-          netDen.note_10  += Number(r.denominations.note_10  || 0);
-          netDen.coins    += Number(r.denominations.coins    || 0);
-        });
-        allStaffDeps.forEach(d => {
-          if (!d.denominations || !d.created_at || toUtcMs(d.created_at) < baselineAsOf) return;
-          netDen.note_500 -= Number(d.denominations.note_500 || 0);
-          netDen.note_200 -= Number(d.denominations.note_200 || 0);
-          netDen.note_100 -= Number(d.denominations.note_100 || 0);
-          netDen.note_50  -= Number(d.denominations.note_50  || 0);
-          netDen.note_20  -= Number(d.denominations.note_20  || 0);
-          netDen.note_10  -= Number(d.denominations.note_10  || 0);
-          netDen.coins    -= Number(d.denominations.coins    || 0);
-        });
-      } else {
-      // No verified baseline yet: fall back to latest-first reconstruction.
-      // netBalance above is a pure dollar total, so it's always correct. To show a
-      // real note breakdown for that amount, walk cash-IN events (collections +
-      // received handovers) newest-first and take their *actual recorded* notes
-      // until the target is covered — assuming the most recently collected cash
-      // is what's still physically in hand, since older cash has most likely
-      // already been deposited out. This is deliberately NOT a full-lifetime sum:
-      // summing every denomination ever recorded drifts away from netBalance
-      // because staff exchange/consolidate physical notes at deposit time in ways
-      // the ledger never tracks note-for-note.
-      let remaining = Math.max(0, netBalance - netDen.online);
-      const cashInEvents = [...allStaffCols, ...allReceivedDeps]
-        .filter(e => e.denominations)
-        .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-
-      for (const event of cashInEvents) {
-        if (remaining <= 0) break;
-        const den = event.denominations;
-        if (!den) continue;
-        const d500 = Number(den.note_500) || 0, d200 = Number(den.note_200) || 0, d100 = Number(den.note_100) || 0;
-        const d50  = Number(den.note_50)  || 0, d20  = Number(den.note_20)  || 0, d10  = Number(den.note_10)  || 0;
-        const dCoins = Number(den.coins) || 0;
-        const eventValue = d500 * 500 + d200 * 200 + d100 * 100 + d50 * 50 + d20 * 20 + d10 * 10 + dCoins;
-
-        if (eventValue <= 0) {
-          // Net-zero (a recorded note exchange, e.g. note_500:+2/note_50:-20)
-          // or a legitimate net-outflow collection (the schema allows a
-          // negative total_amount) — apply the real recorded deltas in full
-          // regardless of `remaining`, since neither changes how much inflow
-          // value we still need to find.
-          if (d500 || d200 || d100 || d50 || d20 || d10 || dCoins) {
-            netDen.note_500 += d500; netDen.note_200 += d200; netDen.note_100 += d100;
-            netDen.note_50  += d50;  netDen.note_20  += d20;  netDen.note_10  += d10; netDen.coins += dCoins;
-          }
-          continue;
-        }
-
-        // Normal inflow. A negative field within it (a same-transaction note
-        // conversion) is applied directly; positive fields are taken bounded
-        // by `remaining`, largest denomination first, coins last. Any
-        // uncovered remainder rolls over to the next (older) transaction
-        // instead of being discarded.
-        if (d500 < 0) { netDen.note_500 += d500; } else { const t = Math.min(d500, Math.floor(remaining / 500)); netDen.note_500 += t; remaining -= t * 500; }
-        if (d200 < 0) { netDen.note_200 += d200; } else { const t = Math.min(d200, Math.floor(remaining / 200)); netDen.note_200 += t; remaining -= t * 200; }
-        if (d100 < 0) { netDen.note_100 += d100; } else { const t = Math.min(d100, Math.floor(remaining / 100)); netDen.note_100 += t; remaining -= t * 100; }
-        if (d50  < 0) { netDen.note_50  += d50;  } else { const t = Math.min(d50,  Math.floor(remaining / 50));  netDen.note_50  += t; remaining -= t * 50;  }
-        if (d20  < 0) { netDen.note_20  += d20;  } else { const t = Math.min(d20,  Math.floor(remaining / 20));  netDen.note_20  += t; remaining -= t * 20;  }
-        if (d10  < 0) { netDen.note_10  += d10;  } else { const t = Math.min(d10,  Math.floor(remaining / 10));  netDen.note_10  += t; remaining -= t * 10;  }
-        if (dCoins < 0) { netDen.coins += dCoins; } else { const t = Math.min(dCoins, remaining); netDen.coins += t; remaining -= t; }
+        cutoffMs = toUtcMs(baseline.as_of);
       }
 
-      // If recorded transactions don't fully cover the total (data gaps),
-      // represent the shortfall with the largest denominations so the total
-      // still adds up.
-      if (remaining > 0) {
-        netDen.note_500 += Math.floor(remaining / 500); remaining %= 500;
-        netDen.note_200 += Math.floor(remaining / 200); remaining %= 200;
-        netDen.note_100 += Math.floor(remaining / 100); remaining %= 100;
-        netDen.note_50  += Math.floor(remaining / 50);  remaining %= 50;
-        netDen.note_20  += Math.floor(remaining / 20);  remaining %= 20;
-        netDen.note_10  += Math.floor(remaining / 10);  remaining %= 10;
-        netDen.coins    += remaining;
-      }
-      }
+      allStaffCols.forEach(c => {
+        if (!c.denominations || (c.created_at && toUtcMs(c.created_at) < cutoffMs)) return;
+        netDen.note_500 += Number(c.denominations.note_500 || 0);
+        netDen.note_200 += Number(c.denominations.note_200 || 0);
+        netDen.note_100 += Number(c.denominations.note_100 || 0);
+        netDen.note_50  += Number(c.denominations.note_50  || 0);
+        netDen.note_20  += Number(c.denominations.note_20  || 0);
+        netDen.note_10  += Number(c.denominations.note_10  || 0);
+        netDen.coins    += Number(c.denominations.coins    || 0);
+      });
+      allReceivedDeps.forEach(r => {
+        if (!r.denominations || (r.created_at && toUtcMs(r.created_at) < cutoffMs)) return;
+        netDen.note_500 += Number(r.denominations.note_500 || 0);
+        netDen.note_200 += Number(r.denominations.note_200 || 0);
+        netDen.note_100 += Number(r.denominations.note_100 || 0);
+        netDen.note_50  += Number(r.denominations.note_50  || 0);
+        netDen.note_20  += Number(r.denominations.note_20  || 0);
+        netDen.note_10  += Number(r.denominations.note_10  || 0);
+        netDen.coins    += Number(r.denominations.coins    || 0);
+      });
+      allStaffDeps.forEach(d => {
+        if (!d.denominations || (d.created_at && toUtcMs(d.created_at) < cutoffMs)) return;
+        netDen.note_500 -= Number(d.denominations.note_500 || 0);
+        netDen.note_200 -= Number(d.denominations.note_200 || 0);
+        netDen.note_100 -= Number(d.denominations.note_100 || 0);
+        netDen.note_50  -= Number(d.denominations.note_50  || 0);
+        netDen.note_20  -= Number(d.denominations.note_20  || 0);
+        netDen.note_10  -= Number(d.denominations.note_10  || 0);
+        netDen.coins    -= Number(d.denominations.coins    || 0);
+      });
 
       // Safety clamp for display — a stray negative correction record should
       // never render as a negative note count
