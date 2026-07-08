@@ -50,7 +50,9 @@ export const metadata: Metadata = {
     description: "Automate cash collection operations, track denominations, maintain retailer ledger history, and streamline bank deposits. A secure, offline-first, multi-tenant SaaS platform.",
   },
   icons: {
-    icon: "/logo.png",
+    icon: "/logo-icon.png",
+    shortcut: "/logo-icon.png",
+    apple: "/logo-icon.png",
   }
 };
 
