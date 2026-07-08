@@ -375,7 +375,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
 
       {/* Global Toast */}
       {showToast && (
-        <div className="fixed top-6 right-6 z-[60] animate-slide-in">
+        <div className="fixed top-6 right-6 z-[9999] animate-slide-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xl flex items-center gap-4">
             <div className="w-10 h-10 bg-green-500/10 text-green-600 rounded-xl flex items-center justify-center">
               <CheckCircle2 className="w-5 h-5" />

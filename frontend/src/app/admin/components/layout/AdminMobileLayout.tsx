@@ -324,7 +324,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
 
       {/* Global Toast */}
       {showToast && (
-        <div className="fixed top-4 left-4 right-4 z-[100] animate-slide-in">
+        <div className="fixed top-4 left-4 right-4 z-[9999] animate-slide-in">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-2xl flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="w-8 h-8 bg-green-500/10 text-green-600 rounded-lg flex items-center justify-center shrink-0">
