@@ -24,6 +24,19 @@ def submit_deposit(
     current_user=Depends(require_staff)
 ):
     """Staff registers a deposit: Option A (Portal bank), Option B (Retailer payout), or Option C (Staff handover)."""
+    # Backdating gate: a non-admin may only pick a date other than today if
+    # staff_can_change_collection_date is on. Reject with a clear error rather
+    # than silently accepting an unintended backdate.
+    from app.core.timezone import ist_today
+    if current_user.role != "admin" and payload.deposit_date != ist_today():
+        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+        staff_can_change_date = getattr(settings, 'staff_can_change_collection_date', False) if settings else False
+        if not staff_can_change_date:
+            raise HTTPException(
+                status_code=403,
+                detail="Backdating deposits is disabled for staff. Ask an admin to enable it or submit with today's date."
+            )
+
     # Validation checks
     dt = payload.deposit_type.lower().strip()
     portal = None
@@ -585,7 +598,16 @@ def update_deposit(
         if edit_window != -1:
             if datetime.utcnow() - deposit.created_at > timedelta(minutes=edit_window):
                 raise HTTPException(status_code=403, detail=f"Can only update deposits within {edit_window} minutes of creation")
-            
+
+        # Backdating gate: reject with a clear error rather than silently
+        # accepting/discarding a date change.
+        staff_can_change_date = getattr(settings, 'staff_can_change_collection_date', False) if settings else False
+        if payload.deposit_date != deposit.deposit_date and not staff_can_change_date:
+            raise HTTPException(
+                status_code=403,
+                detail="Changing the deposit date is disabled for staff. Ask an admin to enable it."
+            )
+
     # For a full update, it's safest to rely on the delete logic to reverse balances, 
     # and then the submit logic to re-apply them. However, since the endpoint is PUT
     # and we want to keep the same ID and created_at, we will do it manually.

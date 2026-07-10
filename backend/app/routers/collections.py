@@ -44,6 +44,19 @@ def submit_collection(
     elif not payload.from_office:
         raise HTTPException(status_code=400, detail="Must specify a source (Retailer, Staff, or Office)")
 
+    # Backdating gate: a non-admin may only pick a date other than today if
+    # staff_can_change_collection_date is on. Reject with a clear error rather
+    # than silently discarding the requested date.
+    from app.core.timezone import ist_today
+    if current_user.role != "admin" and payload.collection_date is not None and payload.collection_date != ist_today():
+        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+        staff_can_change_date = getattr(settings, 'staff_can_change_collection_date', False) if settings else False
+        if not staff_can_change_date:
+            raise HTTPException(
+                status_code=403,
+                detail="Backdating collections is disabled for staff. Ask an admin to enable it or submit with today's date."
+            )
+
     # Calculate exact denomination totals
     d = payload.denominations
     cash_sum = (
@@ -567,9 +580,19 @@ def update_collection(
         if edit_window != -1:
             if datetime.utcnow() - collection.created_at > timedelta(minutes=edit_window):
                 raise HTTPException(status_code=403, detail=f"Can only update collections within {edit_window} minutes of creation")
-        # Staff can only change date if admin has allowed it
+        # Staff can only change date if admin has allowed it — reject with a
+        # clear error rather than silently keeping the old date.
         staff_can_change_date = getattr(settings, 'staff_can_change_collection_date', False) if settings else False
-        new_collection_date = (payload.collection_date if staff_can_change_date else None) or collection.collection_date
+        if (
+            payload.collection_date is not None
+            and payload.collection_date != collection.collection_date
+            and not staff_can_change_date
+        ):
+            raise HTTPException(
+                status_code=403,
+                detail="Changing the collection date is disabled for staff. Ask an admin to enable it."
+            )
+        new_collection_date = payload.collection_date or collection.collection_date
     else:
         new_collection_date = payload.collection_date or collection.collection_date
     
