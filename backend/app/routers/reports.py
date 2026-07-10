@@ -390,7 +390,7 @@ def get_staff_ledger(
     # Fetch cash collections made by this staff (excluding handovers from staff)
     collections = db.scalars(
         select(Collection)
-        .options(joinedload(Collection.retailer), joinedload(Collection.store))
+        .options(joinedload(Collection.retailer), joinedload(Collection.store), joinedload(Collection.denominations))
         .where(
             and_(
                 Collection.staff_id == staff_id,
@@ -401,7 +401,7 @@ def get_staff_ledger(
 
     received_handovers = db.scalars(
         select(BankDeposit)
-        .options(joinedload(BankDeposit.staff))
+        .options(joinedload(BankDeposit.staff), joinedload(BankDeposit.denominations))
         .where(
             and_(
                 BankDeposit.recipient_staff_id == staff_id,
@@ -416,7 +416,8 @@ def get_staff_ledger(
         .options(
             joinedload(BankDeposit.portal).joinedload(Portal.group),
             joinedload(BankDeposit.retailer),
-            joinedload(BankDeposit.recipient_staff)
+            joinedload(BankDeposit.recipient_staff),
+            joinedload(BankDeposit.denominations)
         )
         .where(
             and_(
@@ -426,16 +427,32 @@ def get_staff_ledger(
         )
     ).all()
 
+    def _denom_dict(denom):
+        if not denom:
+            return None
+        return {
+            "note_500": int(denom.note_500 or 0),
+            "note_200": int(denom.note_200 or 0),
+            "note_100": int(denom.note_100 or 0),
+            "note_50": int(denom.note_50 or 0),
+            "note_20": int(denom.note_20 or 0),
+            "note_10": int(denom.note_10 or 0),
+            "coins": float(denom.coins or 0),
+            "online_amount": float(denom.online_amount or 0),
+        }
+
     tx_list = []
 
     # Format Collections (Inflows)
     for c in collections:
-        retailer_name = c.retailer.retailer_name if c.retailer else "Retailer"
-        store_name = f" ({c.store.store_name})" if c.store else ""
-        desc = f"Collection from {retailer_name}{store_name}"
+        retailer_name = c.retailer.retailer_name if c.retailer else ("Office" if c.from_office else "Retailer")
+        store_name = c.store.store_name if c.store else None
+        desc = f"Collection from {retailer_name}"
+        if store_name:
+            desc += f" ({store_name})"
         if c.status == "pending":
             desc = f"[Pending] {desc}"
-            
+
         tx_list.append({
             "id": str(c.id),
             "created_at": c.created_at,
@@ -444,7 +461,14 @@ def get_staff_ledger(
             "description": desc,
             "remarks": c.remarks or "",
             "reference_no": "",
-            "status": c.status
+            "status": c.status,
+            "retailer_name": retailer_name,
+            "store_name": store_name,
+            "portal_name": None,
+            "portal_group_name": None,
+            "bank_name": None,
+            "deposit_type": None,
+            "denominations": _denom_dict(c.denominations),
         })
 
     # Format Received Handovers (Inflows)
@@ -459,17 +483,27 @@ def get_staff_ledger(
             "description": desc,
             "remarks": d.remarks or "",
             "reference_no": d.reference_no or "",
-            "status": d.status
+            "status": d.status,
+            "retailer_name": f"Staff: {sender_name}",
+            "store_name": None,
+            "portal_name": None,
+            "portal_group_name": None,
+            "bank_name": None,
+            "deposit_type": "staff",
+            "denominations": _denom_dict(d.denominations),
         })
 
     # Format Deposits / Handovers Made (Outflows)
     for d in deposits_made:
+        portal_name = d.portal.portal_name if d.portal else None
+        portal_group_name = d.portal.group.name if (d.portal and d.portal.group) else None
+        bank_name = d.portal.bank_name if d.portal else None
+        retailer_name = d.retailer.retailer_name if d.retailer else None
+
         if d.deposit_type == "portal":
-            portal_group = d.portal.group.name if (d.portal and d.portal.group) else (d.portal.portal_name if d.portal else "Portal")
-            desc = f"Deposit to {portal_group}"
+            desc = f"Deposit to {portal_group_name or portal_name or 'Portal'}"
         elif d.deposit_type == "retailer":
-            retailer_name = d.retailer.retailer_name if d.retailer else "Retailer"
-            desc = f"Deposit to Retailer: {retailer_name}"
+            desc = f"Deposit to Retailer: {retailer_name or 'Retailer'}"
         elif d.deposit_type == "staff":
             if d.to_office:
                 desc = "Handover to Main Office"
@@ -490,7 +524,14 @@ def get_staff_ledger(
             "description": desc,
             "remarks": d.remarks or "",
             "reference_no": d.reference_no or "",
-            "status": d.status
+            "status": d.status,
+            "retailer_name": retailer_name,
+            "store_name": None,
+            "portal_name": portal_name,
+            "portal_group_name": portal_group_name,
+            "bank_name": bank_name,
+            "deposit_type": d.deposit_type,
+            "denominations": _denom_dict(d.denominations),
         })
 
     # Sort transactions chronologically
@@ -515,7 +556,14 @@ def get_staff_ledger(
             "description": tx["description"],
             "remarks": tx["remarks"],
             "reference_no": tx["reference_no"],
-            "status": tx["status"]
+            "status": tx["status"],
+            "retailer_name": tx["retailer_name"],
+            "store_name": tx["store_name"],
+            "portal_name": tx["portal_name"],
+            "portal_group_name": tx["portal_group_name"],
+            "bank_name": tx["bank_name"],
+            "deposit_type": tx["deposit_type"],
+            "denominations": tx["denominations"],
         })
 
     return {
