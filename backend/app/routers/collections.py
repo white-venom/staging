@@ -124,8 +124,11 @@ def submit_collection(
             else:
                 prev_balance = Decimal(str(retailer.opening_to_take or 0))
             
-            new_balance = prev_balance - payload.total_amount
-            
+            # Raw signed running total: collected amount adds directly (respects
+            # its own sign -- a negative total_amount is a net outflow and
+            # correctly decreases the balance on its own, no separate flip).
+            new_balance = prev_balance + payload.total_amount
+
             portal_obj = None
             if payload.portal_id:
                 portal_obj = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
@@ -404,7 +407,8 @@ def verify_collection(
         prev_balance = Decimal(str(collection.retailer.opening_to_take or 0))
     
     # Collections reduce what they owe DO IT SERVICES (credit)
-    new_balance = prev_balance - collection.total_amount
+    # Raw signed running total (see submit_collection for the same convention)
+    new_balance = prev_balance + collection.total_amount
 
     store_name = "Cash"
     if collection.store_id:
@@ -846,8 +850,9 @@ def update_collection(
                 ret_obj = db.scalar(select(Retailer).where(Retailer.id == new_retailer_id))
                 prev_balance = Decimal(str(ret_obj.opening_to_take or 0)) if ret_obj else Decimal("0.00")
             
-            new_balance = prev_balance - new_amount
-            
+            # Raw signed running total (see submit_collection for the same convention)
+            new_balance = prev_balance + new_amount
+
             ledger_entry = Ledger(
                 retailer_id=new_retailer_id,
                 transaction_type="credit",

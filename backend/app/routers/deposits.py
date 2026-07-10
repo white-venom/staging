@@ -128,8 +128,10 @@ def submit_deposit(
             else:
                 prev_balance = Decimal(str(retailer.opening_to_take or 0))
             
-            # Deposits/Payouts to retailer (Debit) increase what they owe DO IT SERVICES
-            new_balance = prev_balance + payload.amount
+            # Raw signed running total: a payout is cash flowing OUT to the
+            # retailer, the opposite direction from a collection, so it
+            # subtracts from the same running total.
+            new_balance = prev_balance - payload.amount
 
             ledger_entry = Ledger(
                 retailer_id=payload.retailer_id,
@@ -186,13 +188,18 @@ def submit_deposit(
             else:
                 prev_balance = Decimal(str(retailer.opening_to_take or 0))
                 
+            # Raw signed running total, relabeled to match ledger.py's
+            # credit=add/debit=subtract convention: a "load" moves money to
+            # the retailer (same direction as a collection -> "credit", adds);
+            # a "refund" reverses that, moving money back to the portal
+            # (opposite direction -> "debit", subtracts).
             if payload.payment_mode == "refund":
                 new_balance = prev_balance - payload.amount
-                transaction_type = "credit"
+                transaction_type = "debit"
                 desc_text = "move to distributor"
             else:
                 new_balance = prev_balance + payload.amount
-                transaction_type = "debit"
+                transaction_type = "credit"
                 desc_text = portal.group.name if (portal and portal.group) else (portal.portal_name if portal else "virtual transfer")
             
             # Step C: Log entry in Retailer's Ledger
@@ -385,7 +392,7 @@ def list_deposits(
             # Determine direction and use linked ledger for accurate balance
             is_ref = (dep.payment_mode == "refund")
             if dep.ledgers:
-                is_ref = is_ref or any(le.transaction_type == "credit" or "refund" in (le.description or "").lower() for le in dep.ledgers if le is not None)
+                is_ref = is_ref or any(le.transaction_type == "debit" or "refund" in (le.description or "").lower() for le in dep.ledgers if le is not None)
             
             dep.is_refund = is_ref
             linked_ledger = next((le for le in dep.ledgers if le is not None), None)
@@ -731,7 +738,9 @@ def update_deposit(
             txn_type = "debit"
             desc = "cash out"
             if dt == "virtual":
-                txn_type = "credit" if payload.payment_mode == "refund" else "debit"
+                # Matches submit_deposit's convention: load="credit" (adds),
+                # refund="debit" (subtracts).
+                txn_type = "debit" if payload.payment_mode == "refund" else "credit"
                 portal = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == deposit.portal_id))
                 desc = "move to distributor" if payload.payment_mode == "refund" else (portal.group.name if (portal and portal.group) else (portal.portal_name if portal else "virtual transfer"))
                 

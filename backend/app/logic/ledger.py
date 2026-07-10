@@ -57,7 +57,7 @@ def recalculate_balances(retailer_id, db: Session):
         opening_datetime = datetime.combine(opening_date, datetime.min.time())
         if opening_ledgers:
             primary_ledger = opening_ledgers[0]
-            primary_ledger.transaction_type = "debit" if net_opening_balance > 0 else "credit"
+            primary_ledger.transaction_type = "credit" if net_opening_balance > 0 else "debit"
             primary_ledger.amount = abs(net_opening_balance)
             primary_ledger.created_at = opening_datetime
             # Delete any extra duplicate Opening Balance entries
@@ -66,7 +66,7 @@ def recalculate_balances(retailer_id, db: Session):
         else:
             primary_ledger = Ledger(
                 retailer_id=retailer_id,
-                transaction_type="debit" if net_opening_balance > 0 else "credit",
+                transaction_type="credit" if net_opening_balance > 0 else "debit",
                 amount=abs(net_opening_balance),
                 balance=net_opening_balance,
                 description="Opening Balance",
@@ -86,12 +86,14 @@ def recalculate_balances(retailer_id, db: Session):
     current_balance = Decimal("0.00")
     
     for entry in entries:
+        # Raw signed running total, no "owe vs credit" business logic: whatever
+        # amount is entered adds directly. "credit" = money flowing in from the
+        # retailer (collections, virtual loads) -> adds. "debit" = money flowing
+        # out to the retailer (payouts, virtual refunds) -> subtracts.
         if entry.transaction_type == "credit":
-            # Collections (Credit) reduce what they owe (more negative/less positive)
-            current_balance -= entry.amount
-        else:
-            # Deposits/Charges (Debit) increase what they owe (more positive/less negative)
             current_balance += entry.amount
+        else:
+            current_balance -= entry.amount
         
         entry.balance = current_balance
         if entry.collection:

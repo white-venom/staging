@@ -182,9 +182,12 @@ def process_virtual_transfer(
             if not retailer:
                 raise HTTPException(status_code=404, detail="Destination retailer not found.")
                 
+            # Matches deposits.py's virtual-transfer convention: load="credit"
+            # (adds, same direction as a collection), refund="debit"
+            # (subtracts, reverses a load).
             if payload.direction == "refund":
                 desc_text = "move to distributor"
-                transaction_type = "credit"
+                transaction_type = "debit"
             else:
                 # Safely get description text
                 if portal_group:
@@ -193,7 +196,7 @@ def process_virtual_transfer(
                     desc_text = portal.portal_name or "virtual transfer"
                 else:
                     desc_text = "virtual transfer"
-                transaction_type = "debit"
+                transaction_type = "credit"
             
             # Create the bank deposit audit record first with a placeholder balance
             db_deposit = BankDeposit(
