@@ -468,30 +468,11 @@ export default function OverviewTab({
 
       // A denomination can legitimately go negative here (e.g. a deposit took more
       // ₹500 notes out than were ever collected, because the staff physically broke
-      // smaller notes to make up a ₹500 note). The overall rupee total is still
-      // exactly right in that case — simply clamping the negative slot to 0 would
-      // silently delete that debt while leaving its offsetting surplus in smaller
-      // denominations untouched, inflating the displayed total. Instead, pay off
-      // any negative slot's debt out of the smaller denominations, largest-first,
-      // the way a cashier would break a note — this keeps the total exact.
-      const denomUnits: [number, "note_500" | "note_200" | "note_100" | "note_50" | "note_20" | "note_10"][] = [
-        [500, "note_500"], [200, "note_200"], [100, "note_100"],
-        [50, "note_50"], [20, "note_20"], [10, "note_10"],
-      ];
-      let denomDebt = 0;
-      for (const [value, key] of denomUnits) {
-        if (netDen[key] < 0) {
-          denomDebt += -netDen[key] * value;
-          netDen[key] = 0;
-        }
-      }
-      for (const [value, key] of denomUnits) {
-        if (denomDebt <= 0) break;
-        const take = Math.min(netDen[key], Math.floor(denomDebt / value));
-        netDen[key] -= take;
-        denomDebt -= take * value;
-      }
-      netDen.coins = Math.round(Math.max(0, netDen.coins - denomDebt) * 100) / 100;
+      // smaller notes to make up a ₹500 note). Show it as-is rather than clamping —
+      // a negative count is real, useful information, and silently zeroing it while
+      // leaving its offsetting surplus in smaller denominations untouched used to
+      // inflate the displayed total.
+      netDen.coins = Math.round(netDen.coins * 100) / 100;
 
       // Get visited stores today
       const visitedStores = staffColsToday.map((c) => ({
@@ -766,24 +747,21 @@ export default function OverviewTab({
                               { label: '₹50',  count: nd.note_50,  val: 50  },
                               { label: '₹20',  count: nd.note_20,  val: 20  },
                               { label: '₹10',  count: nd.note_10,  val: 10  },
-                            ].filter(d => d.count !== 0);
-                            const hasAny = denItems.length > 0 || nd.coins !== 0 || nd.online !== 0;
-                            return hasAny ? (
+                            ];
+                            return (
                               <div className="border-t border-slate-100 dark:border-slate-800/40 pt-2">
                                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Cash in Hand Breakdown</span>
                                 <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                                   {denItems.map(d => (
                                     <div key={d.label} className="flex items-center justify-between text-[9px]">
                                       <span className="font-bold text-slate-500 dark:text-slate-400">{d.label} × {d.count}</span>
-                                      <span className="font-black text-slate-700 dark:text-slate-300">₹{(d.count * d.val).toLocaleString()}</span>
+                                      <span className={`font-black ${d.count < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'}`}>₹{(d.count * d.val).toLocaleString()}</span>
                                     </div>
                                   ))}
-                                  {nd.coins !== 0 && (
-                                    <div className="flex items-center justify-between text-[9px]">
-                                      <span className="font-bold text-slate-500 dark:text-slate-400">Coins</span>
-                                      <span className="font-black text-slate-700 dark:text-slate-300">₹{Number(nd.coins).toFixed(2)}</span>
-                                    </div>
-                                  )}
+                                  <div className="flex items-center justify-between text-[9px]">
+                                    <span className="font-bold text-slate-500 dark:text-slate-400">Coins</span>
+                                    <span className={`font-black ${Number(nd.coins) < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-700 dark:text-slate-300'}`}>₹{Number(nd.coins || 0).toFixed(2)}</span>
+                                  </div>
                                   {nd.online !== 0 && (
                                     <div className="flex items-center justify-between text-[9px] col-span-2 mt-0.5 pt-1 border-t border-slate-100 dark:border-slate-800/40">
                                       <span className="font-bold text-blue-500">Online / UPI</span>
@@ -792,7 +770,7 @@ export default function OverviewTab({
                                   )}
                                 </div>
                               </div>
-                            ) : null;
+                            );
                           })()}
 
                           {/* Stores visited trigger row */}

@@ -581,34 +581,12 @@ export default function StaffDashboard() {
 
   // A denomination can legitimately go negative here (e.g. a deposit took more
   // ₹500 notes out than were ever collected, because the staff physically broke
-  // smaller notes to make up a ₹500 note). The overall rupee total is still
-  // exactly right in that case — simply clamping the negative slot to 0 would
-  // silently delete that debt while leaving its offsetting surplus in smaller
-  // denominations untouched, inflating the displayed total. Instead, pay off
-  // any negative slot's debt out of the smaller denominations, largest-first,
-  // the way a cashier would break a note — this keeps the total exact.
-  const noteUnits: [number, "note500" | "note200" | "note100" | "note50" | "note20" | "note10"][] = [
-    [500, "note500"], [200, "note200"], [100, "note100"],
-    [50, "note50"], [20, "note20"], [10, "note10"],
-  ];
-  const noteValues: Record<string, number> = { note500, note200, note100, note50, note20, note10 };
-  let debt = 0;
-  for (const [value, key] of noteUnits) {
-    if (noteValues[key] < 0) {
-      debt += -noteValues[key] * value;
-      noteValues[key] = 0;
-    }
-  }
-  for (const [value, key] of noteUnits) {
-    if (debt <= 0) break;
-    const take = Math.min(noteValues[key], Math.floor(debt / value));
-    noteValues[key] -= take;
-    debt -= take * value;
-  }
-  note500 = noteValues.note500; note200 = noteValues.note200;
-  note100 = noteValues.note100; note50  = noteValues.note50;
-  note20  = noteValues.note20;  note10  = noteValues.note10;
-  coins   = Math.round(Math.max(0, coins - debt) * 100) / 100;
+  // smaller notes to make up a ₹500 note). Show it as-is rather than clamping —
+  // a negative count is real, useful information ("you're short one ₹500 note,
+  // check the last cash-out"), and silently zeroing it while leaving its
+  // offsetting surplus in smaller denominations untouched used to inflate the
+  // displayed total.
+  coins = Math.round(coins * 100) / 100;
 
   // Net denomination breakdown (all in - all out across all time)
   const combinedLedger = [
@@ -1781,18 +1759,20 @@ function SummaryBlocks({
               { value: "50",  count: note50 },
               { value: "20",  count: note20 },
               { value: "10",  count: note10 },
-            ].filter(n => n.count !== 0).map((note) => (
+            ].map((note) => (
               <div key={note.value} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 py-1.5 px-2 rounded-lg border border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-400 font-bold">₹{note.value}</span>
-                <span className="font-black text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200/50 dark:border-slate-800">{note.count}</span>
+                <span className={`font-black px-1.5 py-0.5 rounded border ${
+                  note.count < 0
+                    ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/40'
+                    : 'text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border-slate-200/50 dark:border-slate-800'
+                }`}>{note.count}</span>
               </div>
             ))}
-            {coins !== 0 && (
-              <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800/60 mt-0.5">
-                <span className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Coins</span>
-                <span className="font-black text-slate-800 dark:text-slate-200 text-xs">₹{coins.toFixed(2)}</span>
-              </div>
-            )}
+            <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800/60 mt-0.5">
+              <span className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Coins</span>
+              <span className={`font-black text-xs ${coins < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>₹{coins.toFixed(2)}</span>
+            </div>
           </div>
         )}
       </div>
