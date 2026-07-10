@@ -12,9 +12,6 @@ export default function WalletTransferTab() {
   const { retailerDirectory, portalDirectory, userDirectory, deposits, fetchData, showToastNotification } = adminContext;
 
   const [selectedDepositId, setSelectedDepositId] = useState<string | null>(null);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editAmount, setEditAmount] = useState(0);
-  const [editRef, setEditRef] = useState("");
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = useState(false);
   const [editingCollection, setEditingCollection] = useState<any | null>(null);
@@ -110,24 +107,6 @@ export default function WalletTransferTab() {
   };
 
   const currentSelection = (deposits || []).find((d: any) => d.id === selectedDepositId);
-
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedDepositId || !currentSelection) return;
-    try {
-      await api.updateDeposit(selectedDepositId, {
-        ...currentSelection,
-        amount: editAmount,
-        reference_no: editRef
-      });
-      if (showToastNotification) showToastNotification("Updated successfully!");
-      setIsEditMode(false);
-      setSelectedDepositId(null);
-      if (fetchData) fetchData();
-    } catch (err: any) {
-      alert("Update failed: " + err.message);
-    }
-  };
 
   const handleDelete = async () => {
     if (!selectedDepositId) return;
@@ -656,7 +635,6 @@ export default function WalletTransferTab() {
               <button
                 onClick={() => {
                   setSelectedDepositId(null);
-                  setIsEditMode(false);
                 }}
                 className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer"
               >
@@ -680,49 +658,22 @@ export default function WalletTransferTab() {
                 </div>
               </div>
 
-              {isEditMode ? (
-                <form onSubmit={handleEdit} className="space-y-4">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Correction Amount (₹)</label>
-                    <input autoComplete="one-time-code" 
-                      type="number" 
-                      value={editAmount}
-                      onChange={(e) => setEditAmount(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Reference No</label>
-                    <input autoComplete="one-time-code" 
-                      type="text" 
-                      value={editRef}
-                      onChange={(e) => setEditRef(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold">Save Changes</button>
-                    <button type="button" onClick={() => setIsEditMode(false)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">Cancel</button>
-                  </div>
-                </form>
-              ) : (
-                <div className="space-y-2">
-                  <button 
-                    onClick={() => {
-                      handleStartEditDeposit(currentSelection);
-                    }}
-                    className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
-                  >
-                    <Edit className="w-4 h-4" /> Edit Entry
-                  </button>
-                  <button 
-                    onClick={handleDelete}
-                    className="w-full py-3 border border-red-200 text-red-600 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" /> Delete Entry
-                  </button>
-                </div>
-              )}
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    handleStartEditDeposit(currentSelection);
+                  }}
+                  className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
+                >
+                  <Edit className="w-4 h-4" /> Edit Entry
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="w-full py-3 border border-red-200 text-red-600 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete Entry
+                </button>
+              </div>
             </div>
           </div>
         </div>
