@@ -144,6 +144,76 @@ export default function DailyReportPage() {
   const totalOutToday = reportItems.reduce((sum, item) => sum + Number(item.outAmount || 0), 0);
   const lastBalance = openingBalance + totalInToday - totalOutToday;
 
+  // Honest-sum note-by-note walk (same approach as the live dashboard,
+  // staff/page.tsx) so Opening Amount and Last Balance can show a real
+  // denomination breakdown here too, not just a rupee total. Raw negative
+  // counts are kept as-is rather than clamped, matching the live dashboard.
+  const computeDenomBreakdown = (throughDateInclusive: string) => {
+    const notes = { note500: 0, note200: 0, note100: 0, note50: 0, note20: 0, note10: 0, coins: 0 };
+    collections.forEach((c) => {
+      if (!c.denominations) return;
+      if (getISTDateString(getUtcDate(c.created_at)) > throughDateInclusive) return;
+      notes.note500 += Number(c.denominations.note_500) || 0;
+      notes.note200 += Number(c.denominations.note_200) || 0;
+      notes.note100 += Number(c.denominations.note_100) || 0;
+      notes.note50  += Number(c.denominations.note_50)  || 0;
+      notes.note20  += Number(c.denominations.note_20)  || 0;
+      notes.note10  += Number(c.denominations.note_10)  || 0;
+      notes.coins   += Number(c.denominations.coins)    || 0;
+    });
+    deposits.forEach((d) => {
+      if (!d.denominations) return;
+      if (getISTDateString(getUtcDate(d.created_at)) > throughDateInclusive) return;
+      const isReceivedHandover = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+      if (!isReceivedHandover && d.deposit_type === "virtual") return;
+      const sign = isReceivedHandover ? 1 : -1;
+      notes.note500 += sign * (Number(d.denominations.note_500) || 0);
+      notes.note200 += sign * (Number(d.denominations.note_200) || 0);
+      notes.note100 += sign * (Number(d.denominations.note_100) || 0);
+      notes.note50  += sign * (Number(d.denominations.note_50)  || 0);
+      notes.note20  += sign * (Number(d.denominations.note_20)  || 0);
+      notes.note10  += sign * (Number(d.denominations.note_10)  || 0);
+      notes.coins   += sign * (Number(d.denominations.coins)    || 0);
+    });
+    notes.coins = Math.round(notes.coins * 100) / 100;
+    return notes;
+  };
+
+  // Opening = everything strictly before selectedDate; use a date one day
+  // earlier as the inclusive upper bound for the same walk function.
+  const dayBefore = (() => {
+    const d = new Date(selectedDate + "T00:00:00");
+    d.setDate(d.getDate() - 1);
+    return getISTDateString(d);
+  })();
+  const openingDenom = computeDenomBreakdown(dayBefore);
+  const lastDenom = computeDenomBreakdown(selectedDate);
+
+  const renderNetDenomBreakdown = (notes: typeof openingDenom) => {
+    const items = [
+      { label: "500", count: notes.note500 },
+      { label: "200", count: notes.note200 },
+      { label: "100", count: notes.note100 },
+      { label: "50", count: notes.note50 },
+      { label: "20", count: notes.note20 },
+      { label: "10", count: notes.note10 },
+    ];
+    return (
+      <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[8px] font-bold justify-end">
+        {items.map(n => (
+          <span key={n.label} className={n.count < 0 ? "text-red-600" : "text-slate-600"}>
+            {n.label}x{n.count}
+          </span>
+        ))}
+        {notes.coins !== 0 && (
+          <span className={notes.coins < 0 ? "text-red-600" : "text-slate-600"}>
+            Coins={notes.coins.toFixed(2)}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   // Generate breakdown content cell in the format matching SS
   const renderNotesBreakdown = (item: any) => {
     const denoms = item.denominations || {};
@@ -398,8 +468,11 @@ export default function DailyReportPage() {
                       <td className="py-1.5 px-2 border-r border-slate-200 text-left font-black text-slate-800 uppercase text-[9px] tracking-wider" colSpan={3}>
                         Opening Balance
                       </td>
-                      <td className="py-1.5 px-2 text-right font-black text-blue-900 text-[10px]" colSpan={2}>
+                      <td className="py-1.5 px-2 border-r border-slate-200 text-right font-black text-blue-900 text-[10px]">
                         ₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-1.5 px-2 align-middle bg-slate-50/20">
+                        {renderNetDenomBreakdown(openingDenom)}
                       </td>
                     </tr>
 
@@ -495,8 +568,11 @@ export default function DailyReportPage() {
                       <td className="py-1.5 px-2 border-r border-slate-200 text-left font-black text-slate-800 uppercase text-[9px] tracking-wider" colSpan={3}>
                         Last Balance
                       </td>
-                      <td className="py-1.5 px-2 text-right font-black text-blue-900 text-[10px]" colSpan={2}>
+                      <td className="py-1.5 px-2 border-r border-slate-200 text-right font-black text-blue-900 text-[10px]">
                         ₹{lastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="py-1.5 px-2 align-middle bg-slate-50/20">
+                        {renderNetDenomBreakdown(lastDenom)}
                       </td>
                     </tr>
                   </tbody>
