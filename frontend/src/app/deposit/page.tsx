@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore, DenominationCounts } from "../utils/store";
 import { db } from "../utils/db";
 import InlineSelect from "../components/InlineSelect";
+import { getISTDateString } from "../utils/dateHelpers";
 import { 
   ArrowLeft, 
   Layers, 
@@ -40,6 +41,10 @@ function NewDepositContent() {
   const [portalsList, setPortalsList] = useState<any[]>([]);
   const [showOnlinePortal, setShowOnlinePortal] = useState(false);
   const [remarks, setRemarks] = useState("");
+
+  // Deposit Date Selector
+  const [depositDate, setDepositDate] = useState<string>(() => getISTDateString());
+  const [staffCanChangeCashInDate, setStaffCanChangeCashInDate] = useState(false);
 
   // Difference Calculator State
   const [isCalcOpen, setIsCalcOpen] = useState(false);
@@ -115,6 +120,9 @@ function NewDepositContent() {
             }
             if (target.remarks) {
               setRemarks(target.remarks);
+            }
+            if (target.deposit_date) {
+              setDepositDate(String(target.deposit_date).substring(0, 10));
             }
             if (target.denominations) {
               setDenominations({
@@ -221,6 +229,16 @@ function NewDepositContent() {
       }
     };
     loadOptions();
+
+    (async () => {
+      try {
+        const { api } = await import("../utils/api");
+        const settings = await api.getAdminSettings().catch(() => null);
+        if (settings) setStaffCanChangeCashInDate(settings.staff_can_change_collection_date ?? false);
+      } catch (err) {
+        console.error("Failed to load admin settings:", err);
+      }
+    })();
   }, []);
 
   // Fetch accounts when group changes
@@ -272,6 +290,7 @@ function NewDepositContent() {
       amount: totalAmount,
       denominations: denominations,
       remarks: remarks,
+      deposit_date: depositDate,
     };
     if (depositType === "portal" || depositType === "virtual") backendPayload.portal_id = selectedPortalId;
     if (depositType === "retailer" || depositType === "virtual") backendPayload.retailer_id = selectedRetailerId;
@@ -695,6 +714,33 @@ function NewDepositContent() {
                   );
                 })()}
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Deposit Date */}
+        <div className="space-y-1">
+          <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 px-1">
+            Deposit Date
+          </label>
+          {staffCanChangeCashInDate ? (
+            /* Admin has allowed date change — show calendar picker with chevron */
+            <div className="relative">
+              <input autoComplete="one-time-code"
+                type="date"
+                value={depositDate}
+                onChange={(e) => setDepositDate(e.target.value)}
+                className="w-full px-3 py-2 pr-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 font-bold cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+            </div>
+          ) : (
+            /* Admin has disabled date change — show today's date as fixed display */
+            <div className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-500 dark:text-slate-400 font-bold select-none">
+              {(() => {
+                const [y, m, d] = depositDate.split("-");
+                return `${d}/${m}/${y}`;
+              })()}
             </div>
           )}
         </div>
