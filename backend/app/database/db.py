@@ -38,10 +38,17 @@ def get_tenant_connection_string(db_name: str) -> str:
 def get_tenant_engine(db_name: str):
     if db_name not in _tenant_engines:
         db_url = get_tenant_connection_string(db_name)
+        # Kept conservative on purpose: these engines are cached forever once a
+        # tenant is first accessed (no idle eviction), so pool_size is really a
+        # per-tenant floor on Postgres connections, not a per-request cap. At
+        # pool_size=10 the server's max_connections=100 caps out around ~9
+        # ever-accessed tenants; at 2-3 the same server comfortably supports
+        # 50-100+. Revisit alongside PgBouncer/idle-eviction before this
+        # becomes the bottleneck again.
         _tenant_engines[db_name] = create_engine(
             db_url,
-            pool_size=10,
-            max_overflow=20,
+            pool_size=3,
+            max_overflow=5,
             pool_pre_ping=True
         )
     return _tenant_engines[db_name]
