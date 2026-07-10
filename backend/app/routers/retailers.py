@@ -130,6 +130,9 @@ def update_retailer(
             setattr(retailer, field, value)
 
     from decimal import Decimal
+    if retailer_data.opening_to_give is not None or retailer_data.opening_to_take is not None:
+        from app.core.timezone import ist_today
+        retailer.opening_balance_set_on = ist_today()
     if retailer_data.opening_to_give is not None:
         retailer.opening_to_give = (retailer.opening_to_give or Decimal("0.00")) + Decimal(str(retailer_data.opening_to_give))
     if retailer_data.opening_to_take is not None:

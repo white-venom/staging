@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from sqlalchemy import select, desc
 from sqlalchemy.orm import Session, joinedload
@@ -48,11 +49,17 @@ def recalculate_balances(retailer_id, db: Session):
             db.delete(ol)
         db.flush()
     else:
+        # Date the Opening Balance entry off when those figures were actually
+        # set (opening_balance_set_on), not when the retailer record itself
+        # was created — fall back to created_at only for legacy rows that
+        # predate this column being tracked.
+        opening_date = retailer.opening_balance_set_on or retailer.created_at.date()
+        opening_datetime = datetime.combine(opening_date, datetime.min.time())
         if opening_ledgers:
             primary_ledger = opening_ledgers[0]
             primary_ledger.transaction_type = "debit" if net_opening_balance > 0 else "credit"
             primary_ledger.amount = abs(net_opening_balance)
-            primary_ledger.created_at = retailer.created_at
+            primary_ledger.created_at = opening_datetime
             # Delete any extra duplicate Opening Balance entries
             for extra_ledger in opening_ledgers[1:]:
                 db.delete(extra_ledger)
@@ -63,7 +70,7 @@ def recalculate_balances(retailer_id, db: Session):
                 amount=abs(net_opening_balance),
                 balance=net_opening_balance,
                 description="Opening Balance",
-                created_at=retailer.created_at
+                created_at=opening_datetime
             )
             db.add(primary_ledger)
         db.flush()

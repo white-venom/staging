@@ -67,6 +67,10 @@ class Retailer(Base):
     opening_to_give: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     opening_to_take: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
+    # The date the opening figures above were actually entered/last adjusted —
+    # NOT when the retailer record itself was created. The "Opening Balance"
+    # ledger entry is dated off this instead of created_at.
+    opening_balance_set_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
