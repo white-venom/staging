@@ -86,6 +86,7 @@ interface LedgerTransaction {
   store_name?: string | null;
   portal_name?: string | null;
   portal_bank_name?: string | null;
+  bank_name?: string | null;
   portal_group_name?: string | null;
   portal_bank_account?: string | null;
   deposit_type?: string | null;
@@ -200,7 +201,7 @@ export default function LedgerReportView({
         const refNoText = tx.reference_no || "";
         const storeText = tx.store_name || "";
         const portalText = tx.portal_name || "";
-        const bankText = tx.portal_bank_name || "";
+        const bankText = tx.portal_bank_name || tx.bank_name || "";
         const q = searchQuery.toLowerCase();
         if (
           searchQuery && 
@@ -763,7 +764,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               {/* Cash Out (Deposit/Payout) Details */}
               {selectedEntryForDetails.transaction_type === "debit" && 
                (selectedEntryForDetails.deposit_type === "retailer" || selectedEntryForDetails.deposit_type === "staff" || !hidePortalBankNames || selectedEntryForDetails.portal_group_name) && 
-               (selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_group_name || selectedEntryForDetails.portal_bank_name) && (
+               (selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_group_name || selectedEntryForDetails.portal_bank_name || selectedEntryForDetails.bank_name) && (
                  <div className="bg-indigo-50/50 dark:bg-indigo-950/15 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/30 space-y-2 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
                    <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target</span>
                    {(selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_group_name) && (
@@ -781,10 +782,10 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                        </span>
                      </div>
                    )}
-                   {selectedEntryForDetails.portal_bank_name && !hidePortalBankNames && (
+                   {(selectedEntryForDetails.portal_bank_name || selectedEntryForDetails.bank_name) && !hidePortalBankNames && (
                      <div className="flex justify-between pb-0.5">
                        <span>Bank Name</span>
-                       <span className="font-extrabold">{selectedEntryForDetails.portal_bank_name}</span>
+                       <span className="font-extrabold">{selectedEntryForDetails.portal_bank_name || selectedEntryForDetails.bank_name}</span>
                      </div>
                    )}
                  </div>
