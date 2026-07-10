@@ -171,15 +171,13 @@ def submit_collection(
                     if portal_obj.group:
                         portal_obj.group.balance += d.online_amount
 
-        elif payload.portal_id:
-            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
-            if portal:
-                lock_portal_group(db, portal)
-                portal.balance -= Decimal(str(payload.total_amount))
-                db_collection.balance_snapshot = portal.balance
-                if portal.group:
-                    portal.group.balance -= Decimal(str(payload.total_amount))
         elif payload.from_staff_id:
+            # Checked before portal_id: a staff-to-staff handover collection can
+            # carry a leftover/default portal_id from UI state even though the
+            # source is really another staff member. Checking portal_id first
+            # used to silently take the CMS-style direct-portal-deduction branch
+            # instead, which never creates the mirrored BankDeposit for the
+            # sender — leaving their balance never debited.
             # Auto-create corresponding BankDeposit for the sender staff (from_staff_id)
             # representing the handover payout to the recipient staff (current_user.id)
             db_deposit = BankDeposit(
@@ -211,6 +209,14 @@ def submit_collection(
             db.add(db_deposit_denom)
             db_collection.balance_snapshot = Decimal("0.00")
             db_collection.mirror_deposit_id = db_deposit.id
+        elif payload.portal_id:
+            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
+            if portal:
+                lock_portal_group(db, portal)
+                portal.balance -= Decimal(str(payload.total_amount))
+                db_collection.balance_snapshot = portal.balance
+                if portal.group:
+                    portal.group.balance -= Decimal(str(payload.total_amount))
         else:
             db_collection.balance_snapshot = Decimal("0.00")
 
@@ -597,8 +603,10 @@ def update_collection(
                 cms_portal_name = portal_obj.portal_name
         cms_remark = collection.remarks
 
-    # Handle Portal Balance Adjustments (only for direct portal collections, NOT retailer collections)
-    if not old_retailer_id and not new_retailer_id:
+    # Handle Portal Balance Adjustments (only for direct CMS portal collections —
+    # NOT retailer collections, and NOT staff-to-staff handovers, which manage
+    # their own mirrored BankDeposit further below instead of touching a portal).
+    if not old_retailer_id and not new_retailer_id and not old_from_staff_id and not new_from_staff_id:
         if old_portal_id != new_portal_id:
             # Revert old portal
             if old_portal_id:
@@ -630,8 +638,11 @@ def update_collection(
     old_online_amount = collection.denominations.online_amount if collection.denominations else Decimal("0.00")
     new_online_amount = payload.denominations.online_amount if payload.denominations else Decimal("0.00")
     
-    # Transitioning between CMS (no retailer) and Retailer collection
-    if (old_retailer_id is None) != (new_retailer_id is None):
+    # Transitioning between CMS (no retailer) and Retailer collection. Guarded
+    # against from_staff_id on either side for the same reason as above — a
+    # staff handover is never a CMS portal collection even if a stale portal_id
+    # is also present.
+    if (old_retailer_id is None) != (new_retailer_id is None) and not old_from_staff_id and not new_from_staff_id:
         # Transitioning: Revert direct portal balance decrement if it was a CMS collection (old_retailer_id is None)
         if not old_retailer_id and old_portal_id:
             old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
