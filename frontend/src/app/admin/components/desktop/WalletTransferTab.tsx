@@ -567,8 +567,6 @@ export default function WalletTransferTab() {
                     key={tx.id} 
                     onClick={() => {
                       setSelectedDepositId(tx.id);
-                      setEditAmount(tx.amount || 0);
-                      setEditRef(tx.reference_no || tx.referenceNo || "");
                     }}
                     className="py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors cursor-pointer rounded-lg px-2"
                   >
