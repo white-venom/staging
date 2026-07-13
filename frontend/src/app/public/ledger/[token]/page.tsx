@@ -59,7 +59,7 @@ export default function PublicRetailerLedgerPage() {
     store_name: tx.store_name,
     bank_account_name: tx.bank_account_name,
     bank_name: tx.bank_name,
-    portal_group_name: tx.portal_group_name,
+    portal_name: tx.portal_name,
     deposit_type: tx.deposit_type
   }));
 

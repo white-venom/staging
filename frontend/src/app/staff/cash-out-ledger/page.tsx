@@ -155,13 +155,13 @@ export default function CashOutLedgerPage() {
       const isRecipient = entry.recipient_staff_id === currentUser?.id;
       headerLines.push(isRecipient ? `Received from: ${entry.staff_name}` : `Staff Handover: ${entry.target_name}`);
     } else if (entry.deposit_type === "portal") {
-      headerLines.push(`Store/BankAccount: ${entry.portal_group_name || entry.target_name}`);
+      headerLines.push(`Store/BankAccount: ${entry.portal_name || entry.target_name}`);
     } else if (entry.deposit_type === "retailer") {
       headerLines.push(`Retailer Payout: ${entry.target_name}`);
     } else if (entry.deposit_type === "virtual") {
       headerLines.push(`Virtual Transfer`);
       if (entry.target_name) headerLines.push(`Retailer: ${entry.target_name}`);
-      if (entry.portal_group_name) headerLines.push(`Store: ${entry.portal_group_name}`);
+      if (entry.portal_name) headerLines.push(`Store: ${entry.portal_name}`);
     }
     const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
     const text = `${headerText}${lines.join("\n")}
@@ -273,7 +273,7 @@ ${dateFormatted}`;
         retailer_id: updated.retailer_id,
         recipient_staff_id: updated.recipient_staff_id,
         depositType: updated.deposit_type,
-        targetName: (updated.deposit_type === "portal" && updated.portal_group_name) ? updated.portal_group_name : (updated.target_name || "Super Distributor"),
+        targetName: (updated.deposit_type === "portal" && updated.portal_name) ? updated.portal_name : (updated.target_name || "Super Distributor"),
         amount: Number(updated.amount),
         paymentMode: (updated.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
         denominations: updated.denominations ? {
@@ -306,7 +306,7 @@ ${dateFormatted}`;
   const filteredDeposits = deposits.filter(d => {
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      const displayName = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : d.target_name;
+      const displayName = (d.deposit_type === "portal" && d.portal_name) ? d.portal_name : d.target_name;
       const targetMatch = displayName?.toLowerCase().includes(q) || false;
       const bankAccountMatch = d.bank_account_name?.toLowerCase().includes(q) || false;
       const remarksMatch = d.remarks?.toLowerCase().includes(q) || false;
@@ -427,7 +427,7 @@ ${dateFormatted}`;
                       >
                         <div>
                           <h3 className="text-[13px] font-black text-slate-800 dark:text-slate-200">
-                             {d.deposit_type === "portal" && d.portal_group_name ? d.portal_group_name : d.target_name}
+                             {d.deposit_type === "portal" && d.portal_name ? d.portal_name : d.target_name}
                            </h3>
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
                             <span className="capitalize">{d.deposit_type}</span>

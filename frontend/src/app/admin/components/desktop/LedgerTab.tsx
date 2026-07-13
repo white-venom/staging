@@ -16,18 +16,18 @@ interface LedgerTabProps {
   collections?: any[];
   deposits?: any[];
   retailerDirectory?: any[];
-  bankAccountDirectory?: any[];
+  portalDirectory?: any[];
 }
 
 export default function LedgerTab({
   collections = [],
   deposits = [],
   retailerDirectory: propsRetailerDir,
-  bankAccountDirectory: propsBankAccountDir
+  portalDirectory: propsBankAccountDir
 }: LedgerTabProps) {
   const adminContext = useAdmin();
   const retailerDirectory = propsRetailerDir || adminContext.retailerDirectory;
-  const bankAccountDirectory = propsBankAccountDir || adminContext.bankAccountDirectory;
+  const portalDirectory = propsBankAccountDir || adminContext.portalDirectory;
   const getTodayDateString = () => {
     const d = new Date();
     const tzString = d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
@@ -277,7 +277,7 @@ export default function LedgerTab({
       // For virtual deposits targeting a retailer, use the retailer as party
       // so balance calculations and filtering work correctly
       let partyId = d.bank_account_id || d.retailer_id;
-      let party = d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
+      let party = d.portalId ? `${d.portalName} (${d.targetName})` : d.targetName;
       
       if (isVirtual && d.retailer_id) {
         partyId = d.retailer_id;
@@ -297,7 +297,7 @@ export default function LedgerTab({
         partyId,
         party,
         store_name: null,
-        bankAccount: isVirtual ? (d.portalGroupName || d.bankAccountName || d.targetName) : d.targetName, 
+        bankAccount: isVirtual ? (d.portalName || d.bankAccountName || d.targetName) : d.targetName, 
         staff: d.staffName || "Admin",
         debit: isRef ? 0 : d.amount,
         credit: isRef ? d.amount : 0,
@@ -324,11 +324,11 @@ export default function LedgerTab({
     const ret = (retailerDirectory || []).find(r => r.name === partyFilter);
     if (ret) initialBalance = (ret.opening_to_take || 0);
     else {
-        const port = (bankAccountDirectory || []).find(p => p.name === partyFilter);
+        const port = (portalDirectory || []).find(p => p.name === partyFilter);
         if (port) initialBalance = (port.opening_to_take || 0);
     }
   } else if (bankAccountFilter !== "all") {
-      const port = (bankAccountDirectory || []).find(p => p.name === bankAccountFilter);
+      const port = (portalDirectory || []).find(p => p.name === bankAccountFilter);
       if (port) initialBalance = (port.opening_to_take || 0);
   }
 
@@ -371,7 +371,7 @@ export default function LedgerTab({
     (retailerDirectory || []).forEach(r => {
         partyOpeningBalances.set(r.id, (r.opening_to_take || 0));
     });
-    (bankAccountDirectory || []).forEach(p => {
+    (portalDirectory || []).forEach(p => {
         partyOpeningBalances.set(p.id, (p.opening_to_take || 0));
     });
 
@@ -675,7 +675,7 @@ export default function LedgerTab({
                   ₹{(() => {
                     const ret = (retailerDirectory || []).find(r => r.name === (partyFilter !== "all" ? partyFilter : bankAccountFilter));
                     if (ret) return (ret.opening_to_take || 0);
-                    const port = (bankAccountDirectory || []).find(p => p.name === (partyFilter !== "all" ? partyFilter : bankAccountFilter));
+                    const port = (portalDirectory || []).find(p => p.name === (partyFilter !== "all" ? partyFilter : bankAccountFilter));
                     return port ? (port.opening_to_take || 0) : 0;
                   })().toLocaleString()}.00
                 </span>
@@ -686,7 +686,7 @@ export default function LedgerTab({
                   ₹{(() => {
                     const ret = (retailerDirectory || []).find(r => r.name === (partyFilter !== "all" ? partyFilter : bankAccountFilter));
                     if (ret) return (ret.opening_to_give || 0);
-                    const port = (bankAccountDirectory || []).find(p => p.name === (partyFilter !== "all" ? partyFilter : bankAccountFilter));
+                    const port = (portalDirectory || []).find(p => p.name === (partyFilter !== "all" ? partyFilter : bankAccountFilter));
                     return port ? (port.opening_to_give || 0) : 0;
                   })().toLocaleString()}.00
                 </span>
@@ -994,7 +994,7 @@ export default function LedgerTab({
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "None / Cash" },
-                        ...bankAccountDirectory
+                        ...portalDirectory
                           .flatMap((group: any) => {
                             const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
                             if (!firstOnlineBankAccount) return [];
@@ -1146,7 +1146,7 @@ export default function LedgerTab({
                         onChange={setSelectedNewBankAccountId}
                         options={[
                           { value: "", label: "Select Bank Account" },
-                          ...bankAccountDirectory
+                          ...portalDirectory
                             .flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
@@ -1213,7 +1213,7 @@ export default function LedgerTab({
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...bankAccountDirectory.flatMap((group: any) => {
+                            ...portalDirectory.flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
                               return [{ value: String(firstBankAccount.id), label: group.name }];

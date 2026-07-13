@@ -96,7 +96,7 @@ export default function MobileOverview({
   userDirectory,
   staffComplianceLogs
 }: MobileOverviewProps) {
-  const { retailerDirectory, bankAccountDirectory, showToastNotification } = useAdmin();
+  const { retailerDirectory, portalDirectory, showToastNotification } = useAdmin();
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = useState(false);
   const [isRecentLedgerExpanded, setIsRecentLedgerExpanded] = useState(true);
@@ -225,7 +225,7 @@ export default function MobileOverview({
         id: d.id,
         date: d.date,
         created_at: d.created_at || d.date,
-        party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
+        party: d.portalName ? `${d.portalName} (${d.targetName})` : d.targetName,
         store_name: null,
         remarks: d.remarks || "",
         staff: d.staffName || "Admin",
@@ -1177,7 +1177,7 @@ export default function MobileOverview({
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "None / Cash" },
-                        ...bankAccountDirectory
+                        ...portalDirectory
                           .flatMap((group: any) => {
                             const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
                             if (!firstOnlineBankAccount) return [];
@@ -1322,7 +1322,7 @@ export default function MobileOverview({
                         onChange={setSelectedNewBankAccountId}
                         options={[
                           { value: "", label: "Select Bank Account" },
-                          ...bankAccountDirectory
+                          ...portalDirectory
                             .flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
@@ -1388,7 +1388,7 @@ export default function MobileOverview({
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...bankAccountDirectory.flatMap((group: any) => {
+                            ...portalDirectory.flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
                               return [{ value: String(firstBankAccount.id), label: group.name }];

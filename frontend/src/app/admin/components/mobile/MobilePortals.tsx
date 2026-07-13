@@ -16,13 +16,13 @@ import BankAccountLedgerModal, { type LedgerTarget } from "../../../components/B
 import MobileBankAccountsPanel from "./MobileBankAccountsPanel";
 
 interface MobilePortalsProps {
-  bankAccountDirectory: any[];
+  portalDirectory: any[];
   showToastNotification: (msg: string) => void;
   fetchData: () => void;
 }
 
 export default function MobilePortals({
-  bankAccountDirectory,
+  portalDirectory,
   showToastNotification,
   fetchData
 }: MobilePortalsProps) {
@@ -34,24 +34,24 @@ export default function MobilePortals({
 
   const [ledgerTarget, setLedgerTarget] = useState<LedgerTarget | null>(null);
 
-  // Portal Group form states
+  // Portal form states
   const [pName, setPName] = useState("");
-  const [pGroupBalance, setPGroupBalance] = useState("");
-  const [pGroupOnline, setPGroupOnline] = useState(false);
+  const [pBalance, setPGroupBalance] = useState("");
+  const [pOnline, setPGroupOnline] = useState(false);
 
-  // Portal Group being managed (accounts panel)
+  // Portal being managed (accounts panel)
   const [isAccountsPanelOpen, setIsAccountsPanelOpen] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
+  const [selectedPortal, setSelectedPortal] = useState<any | null>(null);
 
   useEffect(() => {
-    if (selectedGroup && bankAccountDirectory) {
-      const fresh = bankAccountDirectory.find(g => g.id === selectedGroup.id);
+    if (selectedPortal && portalDirectory) {
+      const fresh = portalDirectory.find(g => g.id === selectedPortal.id);
       if (fresh) {
-        setSelectedGroup(fresh);
+        setSelectedPortal(fresh);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bankAccountDirectory]);
+  }, [portalDirectory]);
 
   const openGroupLedger = (group: any) => {
     setLedgerTarget({
@@ -65,20 +65,20 @@ export default function MobilePortals({
   };
 
   const handleStartManageGroup = (group: any) => {
-    setSelectedGroup(group);
+    setSelectedPortal(group);
     setIsAccountsPanelOpen(true);
   };
 
-  const handleCreatePortalGroup = async (e: React.FormEvent) => {
+  const handleCreatePortal = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    const val = parseFloat(pGroupBalance || "0");
+    const val = parseFloat(pBalance || "0");
     try {
-      await api.createPortalGroup({
+      await api.createPortal({
         name: pName,
         opening_to_give: val < 0 ? Math.abs(val) : 0,
         opening_to_take: val > 0 ? val : 0,
-        show_in_online_payment: pGroupOnline
+        show_in_online_payment: pOnline
       });
       showToastNotification(`Portal "${pName}" registered`);
       setPName(""); setPGroupBalance("");
@@ -92,7 +92,7 @@ export default function MobilePortals({
     }
   };
 
-  const filtered = bankAccountDirectory
+  const filtered = portalDirectory
     .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(p => filterOnline === "all" || p.show_in_online_payment === true);
 
@@ -106,7 +106,7 @@ export default function MobilePortals({
           </Link>
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white uppercase tracking-tight">Portals</h2>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{bankAccountDirectory.length} Groups Active</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{portalDirectory.length} Portals Active</p>
           </div>
         </div>
         <button
@@ -117,13 +117,13 @@ export default function MobilePortals({
         </button>
       </div>
 
-      {/* Add Portal Group Form */}
+      {/* Add Portal Form */}
       {showAddForm && (
         <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-lg p-3 space-y-2 shadow-sm animate-in fade-in slide-in-from-top-2 duration-200">
-          <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider border-l-2 border-indigo-500 pl-1.5">New Portal Group</p>
-          <form onSubmit={handleCreatePortalGroup} className="space-y-2">
+          <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wider border-l-2 border-indigo-500 pl-1.5">New Portal</p>
+          <form onSubmit={handleCreatePortal} className="space-y-2">
             <div>
-              <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Portal Group Name</label>
+              <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Portal Name</label>
               <input autoComplete="one-time-code"
                 type="text"
                 value={pName}
@@ -138,7 +138,7 @@ export default function MobilePortals({
                <input autoComplete="one-time-code"
                  type="number"
                  step="any"
-                 value={pGroupBalance}
+                 value={pBalance}
                  onChange={e => setPGroupBalance(e.target.value)}
                  placeholder="e.g. 5000 (negative for To Give)"
                  className="w-full px-2 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-indigo-500/20"
@@ -148,7 +148,7 @@ export default function MobilePortals({
                 <input
                   type="checkbox"
                   id="pGroupOnlineMobile"
-                  checked={pGroupOnline}
+                  checked={pOnline}
                   onChange={(e) => setPGroupOnline(e.target.checked)}
                   className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
                 />
@@ -173,7 +173,7 @@ export default function MobilePortals({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input autoComplete="one-time-code"
             type="text"
-            placeholder="Search portal groups..."
+            placeholder="Search portals..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg py-1.5 pl-9 pr-3 text-xs font-medium shadow-sm focus:ring-1 focus:ring-purple-500/20"
@@ -206,7 +206,7 @@ export default function MobilePortals({
         </button>
       </div>
 
-      {/* Portal Group Cards */}
+      {/* Portal Cards */}
       <div className="divide-y divide-slate-100 dark:divide-slate-850 pb-20">
         {filtered.length === 0 ? (
           <div className="py-8 text-center bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg">
@@ -260,19 +260,19 @@ export default function MobilePortals({
         )}
       </div>
 
-      {isAccountsPanelOpen && selectedGroup && (
+      {isAccountsPanelOpen && selectedPortal && (
         <MobileBankAccountsPanel
-          group={selectedGroup}
+          group={selectedPortal}
           onClose={() => {
             setIsAccountsPanelOpen(false);
-            setSelectedGroup(null);
+            setSelectedPortal(null);
           }}
           showToastNotification={showToastNotification}
           fetchData={fetchData}
           onOpenLedger={setLedgerTarget}
           onGroupDeleted={() => {
             setIsAccountsPanelOpen(false);
-            setSelectedGroup(null);
+            setSelectedPortal(null);
           }}
         />
       )}
@@ -280,7 +280,7 @@ export default function MobilePortals({
       <BankAccountLedgerModal
         target={ledgerTarget}
         onClose={() => setLedgerTarget(null)}
-        bankAccountDirectory={bankAccountDirectory}
+        portalDirectory={portalDirectory}
         retailerDirectory={retailerDirectory}
         userDirectory={userDirectory}
         showToastNotification={showToastNotification}

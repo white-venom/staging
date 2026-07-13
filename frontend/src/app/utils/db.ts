@@ -8,7 +8,7 @@ export interface OfflineCollection {
   bank_account_id?: string;
   retailerName: string;
   bankAccountName: string;
-  portalGroupName?: string;
+  portalName?: string;
   totalAmount: number;
   denominations: DenominationCounts;
   remarks?: string;

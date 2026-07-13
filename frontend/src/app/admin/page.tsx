@@ -7,7 +7,7 @@ import MobileOverview from "./components/mobile/MobileOverview";
 import { useDevice } from "../hooks/useDevice";
 
 export default function AdminPage() {
-  const { collections, deposits, retailerDirectory, bankAccountDirectory, fetchData, userDirectory, staffComplianceLogs, businessSettings } = useAdmin();
+  const { collections, deposits, retailerDirectory, portalDirectory, fetchData, userDirectory, staffComplianceLogs, businessSettings } = useAdmin();
   const { isMobile } = useDevice();
 
   const allTimeCollected = (collections || []).reduce((s, c) => s + (c.totalAmount || 0), 0);
@@ -27,11 +27,11 @@ export default function AdminPage() {
   // matching the sign convention used for the per-row Due display in OverviewTab.
   const totalToTake =
     (retailerDirectory || []).reduce((s, r) => s + (r.balance > 0 ? r.balance : 0), 0) +
-    (bankAccountDirectory || []).reduce((s, p) => s + (p.balance > 0 ? p.balance : 0), 0);
+    (portalDirectory || []).reduce((s, p) => s + (p.balance > 0 ? p.balance : 0), 0);
 
   const totalToGive =
     (retailerDirectory || []).reduce((s, r) => s + (r.balance < 0 ? -r.balance : 0), 0) +
-    (bankAccountDirectory || []).reduce((s, p) => s + (p.balance < 0 ? -p.balance : 0), 0);
+    (portalDirectory || []).reduce((s, p) => s + (p.balance < 0 ? -p.balance : 0), 0);
 
   if (isMobile) {
     return (

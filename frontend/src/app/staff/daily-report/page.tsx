@@ -103,7 +103,7 @@ export default function DailyReportPage() {
     })),
     ...filteredDeposits.map(d => {
       const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
-      const targetDisp = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : (d.target_name || "Super Distributor");
+      const targetDisp = (d.deposit_type === "portal" && d.portal_name) ? d.portal_name : (d.target_name || "Super Distributor");
       return {
         ...d,
         itemType: isRecipient ? "collection" : "deposit",
@@ -499,15 +499,15 @@ export default function DailyReportPage() {
                           source = item.from_office
                             ? "Super Distributor"
                             : retDispName;
-                          destination = item.portal_group_name
-                             ? `${item.portal_group_name}${item.bank_name ? ` (${item.bank_name})` : (item.bank_account_name ? ` (${item.bank_account_name})` : "")}`
+                          destination = item.portal_name
+                             ? `${item.portal_name}${item.bank_name ? ` (${item.bank_name})` : (item.bank_account_name ? ` (${item.bank_account_name})` : "")}`
                              : staffName;
                         } else {
                           source = staffName;
                           const bankSuffix = (item.deposit_type === "portal" && item.bank_name)
                             ? ` (${item.bank_name})`
                             : (item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "");
-                          const destName = (item.deposit_type === "portal" && item.portal_group_name) ? item.portal_group_name : (item.target_name || "Recipient");
+                          const destName = (item.deposit_type === "portal" && item.portal_name) ? item.portal_name : (item.target_name || "Recipient");
                           destination = item.to_office
                             ? "Super Distributor"
                             : `${destName}${bankSuffix}`;

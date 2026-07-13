@@ -23,7 +23,7 @@ export default function RetailersTab({
   fetchData
 }: RetailersTabProps) {
   const router = useRouter();
-  const { collections, deposits, setLedgerSearchTerm, bankAccountDirectory, userDirectory } = useAdmin();
+  const { collections, deposits, setLedgerSearchTerm, portalDirectory, userDirectory } = useAdmin();
   const [retailerSearch, setRetailerSearch] = useState("");
   const [selectedRetailer, setSelectedRetailer] = useState<any | null>(null);
   const [stores, setStores] = useState<any[]>([]);
@@ -932,7 +932,7 @@ export default function RetailersTab({
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "Select Bank Account" },
-                        ...bankAccountDirectory
+                        ...portalDirectory
                           .flatMap((group: any) => {
                             const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
                             if (!firstOnlineBankAccount) return [];
@@ -986,7 +986,7 @@ export default function RetailersTab({
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...bankAccountDirectory
+                            ...portalDirectory
                               .flatMap((group: any) => {
                                 const firstBankAccount = (group.bankAccounts || [])[0];
                                 if (!firstBankAccount) return [];
@@ -1052,7 +1052,7 @@ export default function RetailersTab({
                             onChange={setSelectedNewBankAccountId}
                             options={[
                               { value: "", label: "Select Bank Account" },
-                              ...bankAccountDirectory
+                              ...portalDirectory
                                 .flatMap((group: any) => {
                                   const firstBankAccount = (group.bankAccounts || [])[0];
                                   if (!firstBankAccount) return [];

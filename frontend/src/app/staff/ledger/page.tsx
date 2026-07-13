@@ -141,7 +141,7 @@ export default function StaffLedgerPage() {
       })
       .map(d => {
         const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
-      const targetName = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : (d.target_name || "Super Distributor");
+      const targetName = (d.deposit_type === "portal" && d.portal_name) ? d.portal_name : (d.target_name || "Super Distributor");
       
       let displayName = targetName;
       if (d.deposit_type === "staff") {
@@ -486,7 +486,7 @@ export default function StaffLedgerPage() {
                                     {
                                       retailer_name: item.retailerName || item.retailer_name,
                                       bank_account_name: item.bankAccountName || item.bank_account_name,
-                                      portal_group_name: item.portalGroupName || item.portal_group_name,
+                                      portal_name: item.portalName || item.portal_name,
                                       store_name: item.store_name,
                                       total_amount: item.totalAmount,
                                       denominations: item.denominations,
@@ -500,7 +500,7 @@ export default function StaffLedgerPage() {
                                     {
                                       deposit_type: item.deposit_type,
                                       target_name: item.target_name,
-                                      portal_group_name: item.portal_group_name,
+                                      portal_name: item.portal_name,
                                       amount: item.totalAmount,
                                       denominations: item.denominations,
                                       created_at: item.created_at,

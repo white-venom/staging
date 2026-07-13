@@ -9,7 +9,7 @@ import { getISTDateString } from "../../../utils/dateHelpers";
 
 export default function WalletTransferTab() {
   const adminContext = useAdmin();
-  const { retailerDirectory, bankAccountDirectory, userDirectory, deposits, fetchData, showToastNotification } = adminContext;
+  const { retailerDirectory, portalDirectory, userDirectory, deposits, fetchData, showToastNotification } = adminContext;
 
   const [selectedDepositId, setSelectedDepositId] = useState<string | null>(null);
 
@@ -157,7 +157,7 @@ export default function WalletTransferTab() {
   const [ptpDate, setPtpDate] = useState(todayIST);
   const [isPortalTransferring, setIsPortalTransferring] = useState(false);
 
-  const allBankAccounts = (bankAccountDirectory || []).flatMap((g: any) => 
+  const allBankAccounts = (portalDirectory || []).flatMap((g: any) => 
     (g.bankAccounts || []).map((p: any) => ({
       ...p,
       groupName: g.name
@@ -362,7 +362,7 @@ export default function WalletTransferTab() {
                 <InlineSelect
                   value={ptpFromAccountId}
                   onChange={(val) => setPtpFromAccountId(val)}
-                  options={(bankAccountDirectory || []).flatMap((g: any) =>
+                  options={(portalDirectory || []).flatMap((g: any) =>
                     (g.bankAccounts || []).map((p: any) => ({
                       value: p.id,
                       label: `${g.name}${g.bankAccounts.length > 1 ? ` / ${p.bank_account_name}` : ""} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`
@@ -379,7 +379,7 @@ export default function WalletTransferTab() {
                 <InlineSelect
                   value={ptpToAccountId}
                   onChange={(val) => setPtpToAccountId(val)}
-                  options={(bankAccountDirectory || []).flatMap((g: any) =>
+                  options={(portalDirectory || []).flatMap((g: any) =>
                     (g.bankAccounts || []).map((p: any) => ({
                       value: p.id,
                       label: `${g.name}${g.bankAccounts.length > 1 ? ` / ${p.bank_account_name}` : ""} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`,
@@ -459,7 +459,7 @@ export default function WalletTransferTab() {
               <InlineSelect
                 value={vSourceBankAccountId}
                 onChange={(val) => setVSourceBankAccountId(val)}
-                options={(bankAccountDirectory || []).map((g: any) => {
+                options={(portalDirectory || []).map((g: any) => {
                   const primaryBankAccountId = g.bankAccounts && g.bankAccounts.length > 0 ? g.bankAccounts[0].id : "";
                   return {
                     value: primaryBankAccountId,
@@ -555,7 +555,7 @@ export default function WalletTransferTab() {
               {recentVirtualTransfers.map((tx: any) => {
                 const formatted = formatIST(tx.created_at || tx.date);
                 const isRefund = tx.isRefund === true;
-                const bankAccountName = tx.portalGroupName || tx.bankAccountName || "Bank Account";
+                const bankAccountName = tx.portalName || tx.bankAccountName || "Bank Account";
                 const retailer = (retailerDirectory || []).find((r: any) => r.id === tx.retailer_id);
                 const retailerName = retailer?.name || tx.targetName || "Retailer/Staff";
                 
@@ -736,7 +736,7 @@ export default function WalletTransferTab() {
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "Select Bank Account" },
-                        ...bankAccountDirectory.flatMap((group: any) => {
+                        ...portalDirectory.flatMap((group: any) => {
                           const firstBankAccount = (group.bankAccounts || [])[0];
                           if (!firstBankAccount) return [];
                           return [{ value: String(firstBankAccount.id), label: group.name }];
@@ -803,7 +803,7 @@ export default function WalletTransferTab() {
                         onChange={setSelectedNewBankAccountId}
                         options={[
                           { value: "", label: "Select Bank Account" },
-                          ...bankAccountDirectory.flatMap((group: any) => {
+                          ...portalDirectory.flatMap((group: any) => {
                             const firstBankAccount = (group.bankAccounts || [])[0];
                             if (!firstBankAccount) return [];
                             return [{ value: String(firstBankAccount.id), label: group.name }];

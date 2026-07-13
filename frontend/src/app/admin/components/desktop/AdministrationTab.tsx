@@ -18,21 +18,21 @@ import { useAdmin } from "../../context/AdminContext";
 
 interface AdministrationTabProps {
   userDirectory: any[];
-  bankAccountDirectory: any[];
+  portalDirectory: any[];
   fetchData: () => void;
   showToastNotification: (msg: string) => void;
 }
 
 export default function AdministrationTab({
   userDirectory: propsUserDir,
-  bankAccountDirectory: propsBankAccountDir,
+  portalDirectory: propsBankAccountDir,
   fetchData: propsFetchData,
   showToastNotification: propsShowToast
 }: AdministrationTabProps) {
   const adminContext = useAdmin();
   const fetchData = propsFetchData || adminContext.fetchData;
   const showToastNotification = propsShowToast || adminContext.showToastNotification;
-  const { retailerDirectory, bankAccountDirectory, collections, deposits } = adminContext;
+  const { retailerDirectory, portalDirectory, collections, deposits } = adminContext;
   const [users, setUsers] = useState<any[]>([]);
 
 
@@ -46,7 +46,7 @@ export default function AdministrationTab({
   const [pName, setPName] = useState("");
   const [pToTake, setPToTake] = useState<string>("");
   const [pToGive, setPToGive] = useState<string>("");
-  const [pGroupOnline, setPGroupOnline] = useState(false);
+  const [pOnline, setPGroupOnline] = useState(false);
   const [bAccName, setBAccName] = useState("");
   const [bBankName, setBBankName] = useState("");
   const [bBranchName, setBBranchName] = useState("");
@@ -167,7 +167,7 @@ export default function AdministrationTab({
       return;
     }
     try {
-      const group = await api.createPortalGroup({ 
+      const group = await api.createPortal({ 
         name: pName,
         opening_to_give: giveVal,
         opening_to_take: takeVal
@@ -175,7 +175,7 @@ export default function AdministrationTab({
 
       if (bAccName) {
         await api.createBankAccount({
-          group_id: group.id,
+          portal_id: group.id,
           bank_account_name: bAccName,
           bank_name: `${bBankName}${bBranchName ? ' (' + bBranchName + ')' : ''}`,
           bank_account_no: bAccNo,
@@ -386,7 +386,7 @@ export default function AdministrationTab({
                   <input 
                     type="checkbox" 
                     id="adminPortalOnline"
-                    checked={pGroupOnline} 
+                    checked={pOnline} 
                     onChange={(e) => setPGroupOnline(e.target.checked)} 
                     className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
                   />

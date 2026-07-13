@@ -37,8 +37,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     showToastNotification,
     showRetailerDrawer,
     setShowRetailerDrawer,
-    showBankAccountDrawer,
-    setShowBankAccountDrawer
+    showPortalDrawer,
+    setShowPortalDrawer
   } = useAdmin();
   
   // States for new entries
@@ -50,8 +50,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
   const [retailerToGive, setRetailerToGive] = useState<string>("");
   const [retailerToTake, setRetailerToTake] = useState<string>("");
   const [pGroupName, setPGroupName] = useState("");
-  const [pGroupBalance, setPGroupBalance] = useState<string>("");
-  const [pGroupOnline, setPGroupOnline] = useState(false);
+  const [pBalance, setPGroupBalance] = useState<string>("");
+  const [pOnline, setPGroupOnline] = useState(false);
 
   // Profile Edit States
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -164,19 +164,19 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     }
   };
 
-  const handleCreatePortalGroup = async (e: React.FormEvent) => {
+  const handleCreatePortal = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const val = parseFloat(pGroupBalance || "0");
-      await api.createPortalGroup({ 
+      const val = parseFloat(pBalance || "0");
+      await api.createPortal({ 
         name: pGroupName,
         opening_to_give: val < 0 ? Math.abs(val) : 0,
         opening_to_take: val > 0 ? val : 0,
-        show_in_online_payment: pGroupOnline
+        show_in_online_payment: pOnline
       });
 
-      showToastNotification(`Portal Group "${pGroupName}" registered!`);
-      setShowBankAccountDrawer(false);
+      showToastNotification(`Portal "${pGroupName}" registered!`);
+      setShowPortalDrawer(false);
       setPGroupName("");
       setPGroupBalance("");
       setPGroupOnline(false);
@@ -329,16 +329,16 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       )}
 
       {/* PORTAL REGISTER DRAWER */}
-      {showBankAccountDrawer && (
+      {showPortalDrawer && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 animate-slide-up shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Register BankAccount</h3>
-              <button onClick={() => setShowBankAccountDrawer(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+              <button onClick={() => setShowPortalDrawer(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <form onSubmit={handleCreatePortalGroup} className="space-y-6 text-xs font-semibold">
+            <form onSubmit={handleCreatePortal} className="space-y-6 text-xs font-semibold">
               <div className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">BankAccount Name</label>
@@ -349,7 +349,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                   <input autoComplete="one-time-code" 
                     type="number" 
                     placeholder="Enter Opening Balance (negative if To Give)" 
-                    value={pGroupBalance} 
+                    value={pBalance} 
                     onChange={(e) => setPGroupBalance(e.target.value)} 
                     className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg font-bold focus:outline-none" 
                   />
@@ -357,12 +357,12 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                 <div className="flex items-center gap-2 px-1 py-1">
                   <input 
                     type="checkbox" 
-                    id="pGroupOnline"
-                    checked={pGroupOnline} 
+                    id="pOnline"
+                    checked={pOnline} 
                     onChange={(e) => setPGroupOnline(e.target.checked)} 
                     className="w-4 h-4 rounded text-blue-650 focus:ring-blue-500 border-slate-300 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
                   />
-                  <label htmlFor="pGroupOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                  <label htmlFor="pOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
                     Online
                   </label>
                 </div>

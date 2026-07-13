@@ -279,23 +279,23 @@ export const api = {
     method: "DELETE",
   }),
   
-  // Portal Groups (aggregators)
-  getPortalGroups: () => request<any[]>("/portals/groups"),
-  createPortalGroup: (data: any) => request<any>("/portals/groups", {
+  // Portals (aggregators)
+  getPortals: () => request<any[]>("/portals"),
+  createPortal: (data: any) => request<any>("/portals", {
     method: "POST",
     body: JSON.stringify(data),
   }),
-  updatePortalGroup: (id: string, data: any) => request<any>(`/portals/groups/${id}`, {
+  updatePortal: (id: string, data: any) => request<any>(`/portals/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   }),
-  deletePortalGroup: (id: string) => request<any>(`/portals/groups/${id}`, {
+  deletePortal: (id: string) => request<any>(`/portals/${id}`, {
     method: "DELETE",
   }),
 
   // Bank Accounts
   getBankAccounts: () => request<any[]>("/bank-accounts"),
-  getGroupAccounts: (groupId: string) => request<any[]>(`/portals/groups/${groupId}/accounts`),
+  getPortalAccounts: (portalId: string) => request<any[]>(`/portals/${portalId}/accounts`),
   createBankAccount: (data: any) => request<any>("/bank-accounts", {
     method: "POST",
     body: JSON.stringify(data),
@@ -366,7 +366,7 @@ export const api = {
   }),
   getPublicLedger: (token: string) => request<any>(`/public/ledger/${token}`),
   getBankAccountLedger: (bankAccountId: string) => request<any>(`/bank-accounts/${bankAccountId}/ledger`),
-  getPortalGroupLedger: (groupId: string) => request<any>(`/portals/groups/${groupId}/ledger`),
+  getPortalLedger: (portalId: string) => request<any>(`/portals/${portalId}/ledger`),
   getStaffLedger: (staffId: string) => request<any>(`/staff/${staffId}/ledger`),
   getStaffDailySummary: (date: string, staffId?: string) => request<any>(`/staff/daily-summary?selected_date=${date}${staffId ? `&staff_id=${staffId}` : ''}`),
 };

@@ -206,7 +206,7 @@ export default function OverviewTab({
     return combined.sort((a, b) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime());
   }, [filteredCollections, filteredDeposits]);
 
-  const { retailerDirectory, bankAccountDirectory, showToastNotification } = useAdmin();
+  const { retailerDirectory, portalDirectory, showToastNotification } = useAdmin();
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
   const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
@@ -1033,7 +1033,7 @@ export default function OverviewTab({
             id: d.id,
             date: d.date,
             created_at: d.created_at || d.date,
-            party: d.portalGroupName ? `${d.portalGroupName} (${d.targetName})` : d.targetName,
+            party: d.portalName ? `${d.portalName} (${d.targetName})` : d.targetName,
             store_name: null,
             staff: d.staffName || "Admin",
             amount: d.amount,
@@ -1400,7 +1400,7 @@ export default function OverviewTab({
                            <span className="font-black text-red-600 text-sm">-₹{(d.amount || 0).toLocaleString()}</span>
                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                              <button
-                               onClick={() => shareDepositEntry({ deposit_type: d.depositType, target_name: d.targetName, portal_group_name: d.bankAccountName, amount: d.amount, denominations: d.denominations, created_at: d.created_at || d.date, remarks: d.remarks, recipient_staff_id: d.recipient_staff_id || d.recipientStaffId }, d.staffName || 'Staff')}
+                               onClick={() => shareDepositEntry({ deposit_type: d.depositType, target_name: d.targetName, portal_name: d.bankAccountName, amount: d.amount, denominations: d.denominations, created_at: d.created_at || d.date, remarks: d.remarks, recipient_staff_id: d.recipient_staff_id || d.recipientStaffId }, d.staffName || 'Staff')}
                                className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
                                title="Share"
                              >
@@ -1544,7 +1544,7 @@ export default function OverviewTab({
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "None / Cash" },
-                        ...bankAccountDirectory
+                        ...portalDirectory
                           .flatMap((group: any) => {
                             const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
                             if (!firstOnlineBankAccount) return [];
@@ -1696,7 +1696,7 @@ export default function OverviewTab({
                         onChange={setSelectedNewBankAccountId}
                         options={[
                           { value: "", label: "Select Bank Account" },
-                          ...bankAccountDirectory
+                          ...portalDirectory
                             .flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
@@ -1764,7 +1764,7 @@ export default function OverviewTab({
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...bankAccountDirectory.flatMap((group: any) => {
+                            ...portalDirectory.flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
                               return [{ value: String(firstBankAccount.id), label: group.name }];

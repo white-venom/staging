@@ -78,8 +78,8 @@ export const shareCollectionEntry = async (entry: {
   retailerName?: string;
   bank_account_name?: string;
   bankAccountName?: string;
-  portal_group_name?: string;
-  portalGroupName?: string;
+  portal_name?: string;
+  portalName?: string;
   store_name?: string;
   storeName?: string;
   total_amount?: number;
@@ -143,9 +143,9 @@ export const shareCollectionEntry = async (entry: {
   if (store_name) {
     headerLines.push(`Store: ${store_name}`);
   }
-  const portal_group_name = entry.portal_group_name || entry.portalGroupName;
-  if (portal_group_name && portal_group_name !== "Cash" && portal_group_name !== "N/A") {
-    headerLines.push(`Portal: ${portal_group_name}`);
+  const portal_name = entry.portal_name || entry.portalName;
+  if (portal_name && portal_name !== "Cash" && portal_name !== "N/A") {
+    headerLines.push(`Portal: ${portal_name}`);
   }
   if (remarks) {
     headerLines.push(`Remark: ${remarks}`);
@@ -173,8 +173,8 @@ export const shareDepositEntry = async (entry: {
   depositType?: string;
   target_name?: string;
   targetName?: string;
-  portal_group_name?: string;
-  portalGroupName?: string;
+  portal_name?: string;
+  portalName?: string;
   staff_name?: string;
   staffName?: string;
   amount?: number;
@@ -192,7 +192,7 @@ export const shareDepositEntry = async (entry: {
 }, staffName: string, currentUserId?: string) => {
   const deposit_type = entry.deposit_type || entry.depositType;
   const target_name = entry.target_name || entry.targetName;
-  const portal_group_name = entry.portal_group_name || entry.portalGroupName;
+  const portal_name = entry.portal_name || entry.portalName;
   const staff_name_val = entry.staff_name || entry.staffName;
   const amount = entry.amount ?? 0;
   const created_at = entry.created_at || entry.createdAt || entry.date;
@@ -238,13 +238,13 @@ export const shareDepositEntry = async (entry: {
     headerLines.push(isRecipient ? `Received from: ${staff_name_val}` : `Staff Handover: ${target_name}`);
   } else if (deposit_type === "portal") {
     const bankAccountSuffix = entry.bank_account_name || entry.bankAccountName ? `  (${entry.bank_account_name || entry.bankAccountName})` : "";
-    headerLines.push(`Store/Portal: ${portal_group_name || target_name}${bankAccountSuffix}`);
+    headerLines.push(`Store/Portal: ${portal_name || target_name}${bankAccountSuffix}`);
   } else if (deposit_type === "retailer") {
     headerLines.push(`Retailer Payout: ${target_name}`);
   } else if (deposit_type === "virtual") {
     headerLines.push("Virtual Transfer");
     if (target_name) headerLines.push(`Retailer: ${target_name}`);
-    if (portal_group_name) headerLines.push(`Store: ${portal_group_name}`);
+    if (portal_name) headerLines.push(`Store: ${portal_name}`);
   }
   if (remarks) {
     headerLines.push(`Remark: ${remarks}`);

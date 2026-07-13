@@ -7,21 +7,21 @@ import BankAccountsPanel from "./BankAccountsPanel";
 import BankAccountLedgerModal, { type LedgerTarget } from "../../../components/BankAccountLedgerModal";
 
 interface PortalsTabProps {
-  bankAccountDirectory: any[]; // Portal Groups, each carrying its own bank_accounts
+  portalDirectory: any[]; // Portals, each carrying its own bank_accounts
   showToastNotification: (msg: string) => void;
-  setShowBankAccountDrawer: (val: boolean) => void;
+  setShowPortalDrawer: (val: boolean) => void;
   fetchData?: () => void;
 }
 
 export default function PortalsTab({
-  bankAccountDirectory,
+  portalDirectory,
   showToastNotification,
-  setShowBankAccountDrawer,
+  setShowPortalDrawer,
   fetchData
 }: PortalsTabProps) {
   const { retailerDirectory, userDirectory } = useAdmin();
   const [portalSearch, setPortalSearch] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState<any | null>(null);
+  const [selectedPortal, setSelectedPortal] = useState<any | null>(null);
   const [isAccountsPanelOpen, setIsAccountsPanelOpen] = useState(false);
   const [filterOnline, setFilterOnline] = useState<"all" | "online">("all");
   const [ledgerTarget, setLedgerTarget] = useState<LedgerTarget | null>(null);
@@ -44,7 +44,7 @@ export default function PortalsTab({
           <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
           <input autoComplete="one-time-code"
             type="text"
-            placeholder="Search Portal Groups (e.g. RevaPay)..."
+            placeholder="Search Portals (e.g. RevaPay)..."
             value={portalSearch}
             onChange={(e) => setPortalSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none shadow-sm"
@@ -52,7 +52,7 @@ export default function PortalsTab({
         </div>
 
         <button
-          onClick={() => setShowBankAccountDrawer(true)}
+          onClick={() => setShowPortalDrawer(true)}
           className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-all"
         >
           <Plus className="w-4 h-4" /> Register Portal
@@ -85,7 +85,7 @@ export default function PortalsTab({
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        {bankAccountDirectory
+        {portalDirectory
           .filter(p => (p.name || "").toLowerCase().includes(portalSearch.toLowerCase()))
           .filter(group => filterOnline === "all" || group.show_in_online_payment === true)
           .map((group) => (
@@ -121,7 +121,7 @@ export default function PortalsTab({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setSelectedGroup(group);
+                      setSelectedPortal(group);
                       setIsAccountsPanelOpen(true);
                     }}
                     className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
@@ -134,27 +134,27 @@ export default function PortalsTab({
           ))}
       </div>
 
-      {bankAccountDirectory.length === 0 && (
+      {portalDirectory.length === 0 && (
         <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 border-dashed dark:border-slate-800">
           <Globe className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm font-bold text-slate-500">No Portal Groups Found</p>
+          <p className="text-sm font-bold text-slate-500">No Portals Found</p>
           <p className="text-[10px] text-slate-400 mt-1">Register a portal first.</p>
         </div>
       )}
 
-      {isAccountsPanelOpen && selectedGroup && (
+      {isAccountsPanelOpen && selectedPortal && (
         <BankAccountsPanel
-          group={selectedGroup}
+          group={selectedPortal}
           onClose={() => {
             setIsAccountsPanelOpen(false);
-            setSelectedGroup(null);
+            setSelectedPortal(null);
           }}
           showToastNotification={showToastNotification}
           fetchData={fetchData}
           onOpenLedger={setLedgerTarget}
           onGroupDeleted={() => {
             setIsAccountsPanelOpen(false);
-            setSelectedGroup(null);
+            setSelectedPortal(null);
           }}
         />
       )}
@@ -162,7 +162,7 @@ export default function PortalsTab({
       <BankAccountLedgerModal
         target={ledgerTarget}
         onClose={() => setLedgerTarget(null)}
-        bankAccountDirectory={bankAccountDirectory}
+        portalDirectory={portalDirectory}
         retailerDirectory={retailerDirectory}
         userDirectory={userDirectory}
         showToastNotification={showToastNotification}

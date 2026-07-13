@@ -9,7 +9,7 @@ import { getISTDateString } from "../../../utils/dateHelpers";
 
 export default function VirtualLedgerTab() {
   const adminContext = useAdmin();
-  const { retailerDirectory, bankAccountDirectory, userDirectory, deposits, collections, fetchData, showToastNotification } = adminContext;
+  const { retailerDirectory, portalDirectory, userDirectory, deposits, collections, fetchData, showToastNotification } = adminContext;
 
   const [selectedDepositId, setSelectedDepositId] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -95,7 +95,7 @@ export default function VirtualLedgerTab() {
     (collections || []).forEach((c: any) => {
       const retailer = (retailerDirectory || []).find((r: any) => r.id === c.retailer_id);
       const retailerName = retailer?.name || c.retailerName || "Retailer";
-      const bankAccount = (bankAccountDirectory || []).flatMap((g: any) => g.bankAccounts || []).find((p: any) => p.id === c.bank_account_id);
+      const bankAccount = (portalDirectory || []).flatMap((g: any) => g.bankAccounts || []).find((p: any) => p.id === c.bank_account_id);
       const bankAccountName = bankAccount?.bank_account_name || c.bankAccountName || "Bank Account";
       
       combined.push({
@@ -124,7 +124,7 @@ export default function VirtualLedgerTab() {
         type = isRefund ? "move-to-dist" : "virtual-transfer";
       }
       
-      const bankAccountName = d.portalGroupName || d.bankAccountName || "Bank Account";
+      const bankAccountName = d.portalName || d.bankAccountName || "Bank Account";
       let targetNameClean = d.targetName || "Retailer/Staff";
       if (d.depositType === "staff") {
         targetNameClean = d.targetName?.replace(/^(Staff:?\s*-\s*|Staff:?\s*|Received\s+from:\s*)/i, "") || "Staff";
@@ -152,7 +152,7 @@ export default function VirtualLedgerTab() {
     });
 
     return combined;
-  }, [deposits, collections, retailerDirectory, bankAccountDirectory]);
+  }, [deposits, collections, retailerDirectory, portalDirectory]);
 
   const filteredTransfers = useMemo(() => {
     return allTransactions
@@ -1023,7 +1023,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "None / Cash" },
-                        ...bankAccountDirectory
+                        ...portalDirectory
                           .flatMap((group: any) => {
                             const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
                             if (!firstOnlineBankAccount) return [];
@@ -1158,7 +1158,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                         onChange={setSelectedNewBankAccountId}
                         options={[
                           { value: "", label: "Select Bank Account" },
-                          ...bankAccountDirectory
+                          ...portalDirectory
                             .flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
@@ -1226,7 +1226,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...bankAccountDirectory.flatMap((group: any) => {
+                            ...portalDirectory.flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
                               return [{ value: String(firstBankAccount.id), label: group.name }];

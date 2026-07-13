@@ -28,12 +28,12 @@ function NewDepositContent() {
   const [depositType, setDepositType] = useState<"portal" | "retailer" | "staff" | "virtual">("portal");
 
   // Dynamic options loaded from backend
-  const [portalGroups, setPortalGroups] = useState<any[]>([]);
-  const [groupAccounts, setGroupAccounts] = useState<{ id: string; name: string }[]>([]);
+  const [portals, setPortals] = useState<any[]>([]);
+  const [portalAccounts, setPortalAccounts] = useState<{ id: string; name: string }[]>([]);
   const [retailers, setRetailers] = useState<{ id: string; name: string }[]>([]);
   const [staffUsers, setStaffUsers] = useState<{ id: string; name: string }[]>([]);
 
-  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [selectedPortalId, setSelectedPortalId] = useState("");
   const [selectedBankAccountId, setSelectedBankAccountId] = useState("");
   const [selectedRetailerId, setSelectedRetailerId] = useState("");
   const [selectedStaffId, setSelectedStaffId] = useState("");
@@ -101,7 +101,7 @@ function NewDepositContent() {
 
   // Pre-fill if editing
   React.useEffect(() => {
-    if (editId && mounted && portalGroups.length > 0) {
+    if (editId && mounted && portals.length > 0) {
       const loadEdit = async () => {
         try {
           const { api } = await import("../utils/api");
@@ -147,7 +147,7 @@ function NewDepositContent() {
       };
       loadEdit();
     }
-  }, [editId, mounted, portalGroups]);
+  }, [editId, mounted, portals]);
 
 
   React.useEffect(() => {
@@ -167,8 +167,8 @@ function NewDepositContent() {
 
       try {
         const { api } = await import("../utils/api");
-        const [groups, r, s] = await Promise.all([api.getPortalGroups(), api.getRetailers(), api.getStaffList()]);
-        const mappedGroups = groups.map((x: any) => {
+        const [groups, r, s] = await Promise.all([api.getPortals(), api.getRetailers(), api.getStaffList()]);
+        const mappedPortals = groups.map((x: any) => {
           return { 
             id: x.id, 
             name: x.name,
@@ -179,7 +179,7 @@ function NewDepositContent() {
         const mappedRetailers = r.map((x: any) => ({ id: x.id, name: x.retailer_name || x.name }));
         const mappedStaff = s.map((x: any) => ({ id: x.id, name: x.name }));
         
-        setPortalGroups(mappedGroups);
+        setPortals(mappedPortals);
         setRetailers(mappedRetailers);
         setStaffUsers(mappedStaff);
 
@@ -220,7 +220,7 @@ function NewDepositContent() {
           }
         }
         
-        if (mappedGroups.length > 0) setSelectedGroupId(mappedGroups[0].id);
+        if (mappedPortals.length > 0) setSelectedPortalId(mappedPortals[0].id);
         // Do not auto-select the first retailer on mount, keep it empty for search selection
         setSelectedRetailerId("");
         if (mappedStaff.length > 0) setSelectedStaffId(mappedStaff[0].id);
@@ -243,13 +243,13 @@ function NewDepositContent() {
 
   // Fetch accounts when group changes
   React.useEffect(() => {
-    if (selectedGroupId) {
+    if (selectedPortalId) {
       const fetchAccounts = async () => {
         try {
           const { api } = await import("../utils/api");
-          const accounts = await api.getGroupAccounts(selectedGroupId);
+          const accounts = await api.getPortalAccounts(selectedPortalId);
           const mappedAccounts = accounts.map((x: any) => ({ id: x.id, name: x.bank_account_name }));
-          setGroupAccounts(mappedAccounts);
+          setPortalAccounts(mappedAccounts);
           if (mappedAccounts.length > 0) setSelectedBankAccountId(mappedAccounts[0].id);
           else setSelectedBankAccountId("");
         } catch (err) {
@@ -258,7 +258,7 @@ function NewDepositContent() {
       };
       fetchAccounts();
     }
-  }, [selectedGroupId]);
+  }, [selectedPortalId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,12 +271,12 @@ function NewDepositContent() {
     // Build target name for local store display
     let targetName = "";
     if (depositType === "portal") {
-      const groupName = portalGroups.find(g => g.id === selectedGroupId)?.name || "Bank Account";
+      const groupName = portals.find(g => g.id === selectedPortalId)?.name || "Bank Account";
       targetName = groupName;
     } else if (depositType === "retailer") {
       targetName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer Store";
     } else if (depositType === "virtual") {
-      const bankAccountName = groupAccounts.find(a => a.id === selectedBankAccountId)?.name || "Bank Account";
+      const bankAccountName = portalAccounts.find(a => a.id === selectedBankAccountId)?.name || "Bank Account";
       const retailerName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer";
       targetName = `Virtual: ${bankAccountName} → ${retailerName}`;
     } else {
@@ -434,15 +434,15 @@ function NewDepositContent() {
                       1. Select Source Portal
                     </label>
                     <InlineSelect
-                      value={selectedGroupId}
-                      onChange={(val) => setSelectedGroupId(val)}
-                      options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
-                      placeholder={portalGroups.length === 0 ? "Loading accounts..." : "Select Bank"}
+                      value={selectedPortalId}
+                      onChange={(val) => setSelectedPortalId(val)}
+                      options={portals.map(g => ({ value: g.id, label: g.name }))}
+                      placeholder={portals.length === 0 ? "Loading accounts..." : "Select Bank"}
                       icon={<Building className="w-3.5 h-3.5" />}
                     />
                   </div>
 
-                  {selectedGroupId && (
+                  {selectedPortalId && (
                     <div>
                       <label className="block text-[8px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500 mb-1">
                         2. Select Source Bank Account
@@ -450,8 +450,8 @@ function NewDepositContent() {
                       <InlineSelect
                         value={selectedBankAccountId}
                         onChange={(val) => setSelectedBankAccountId(val)}
-                        options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
-                        placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
+                        options={portalAccounts.map(a => ({ value: a.id, label: a.name }))}
+                        placeholder={portalAccounts.length === 0 ? "No accounts found..." : "Select Account"}
                         icon={<CreditCard className="w-3.5 h-3.5" />}
                       />
                     </div>
@@ -479,29 +479,29 @@ function NewDepositContent() {
                       1. Choose Portal
                     </label>
                     <InlineSelect
-                      value={selectedGroupId}
-                      onChange={(val) => setSelectedGroupId(val)}
-                      options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
-                      placeholder={portalGroups.length === 0 ? "Loading accounts..." : "Select Bank"}
+                      value={selectedPortalId}
+                      onChange={(val) => setSelectedPortalId(val)}
+                      options={portals.map(g => ({ value: g.id, label: g.name }))}
+                      placeholder={portals.length === 0 ? "Loading accounts..." : "Select Bank"}
                       icon={<Building className="w-3.5 h-3.5" />}
                     />
                     
-                    {selectedGroupId && (
+                    {selectedPortalId && (
                       <div className="mt-1.5 flex items-center gap-1.5">
-                        {portalGroups.find(g => g.id === selectedGroupId)?.toGive > 0 && (
+                        {portals.find(g => g.id === selectedPortalId)?.toGive > 0 && (
                           <div className="flex-1 px-2 py-1 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-lg">
                             <span className="text-[7px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest block">To Give</span>
-                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">₹{portalGroups.find(g => g.id === selectedGroupId)?.toGive.toLocaleString()}</span>
+                            <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">₹{portals.find(g => g.id === selectedPortalId)?.toGive.toLocaleString()}</span>
                           </div>
                         )}
-                        {portalGroups.find(g => g.id === selectedGroupId)?.toTake > 0 && (
+                        {portals.find(g => g.id === selectedPortalId)?.toTake > 0 && (
                           <div className="flex-1 px-2 py-1 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-lg">
                             <span className="text-[7px] font-black text-red-600 dark:text-red-500 uppercase tracking-widest block">To Take</span>
-                            <span className="text-[10px] font-black text-red-700 dark:text-red-400">₹{portalGroups.find(g => g.id === selectedGroupId)?.toTake.toLocaleString()}</span>
+                            <span className="text-[10px] font-black text-red-700 dark:text-red-400">₹{portals.find(g => g.id === selectedPortalId)?.toTake.toLocaleString()}</span>
                           </div>
                         )}
-                        {(portalGroups.find(g => g.id === selectedGroupId)?.toGive === 0 || !portalGroups.find(g => g.id === selectedGroupId)?.toGive) && 
-                         (portalGroups.find(g => g.id === selectedGroupId)?.toTake === 0 || !portalGroups.find(g => g.id === selectedGroupId)?.toTake) && (
+                        {(portals.find(g => g.id === selectedPortalId)?.toGive === 0 || !portals.find(g => g.id === selectedPortalId)?.toGive) && 
+                         (portals.find(g => g.id === selectedPortalId)?.toTake === 0 || !portals.find(g => g.id === selectedPortalId)?.toTake) && (
                           <div className="flex-1 px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg">
                             <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block">Balance</span>
                             <span className="text-[10px] font-black text-slate-600 dark:text-slate-500">Settled</span>
@@ -511,7 +511,7 @@ function NewDepositContent() {
                     )}
                   </div>
 
-                  {selectedGroupId && (
+                  {selectedPortalId && (
                     <div>
                       <label className="block text-[8px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500 mb-1">
                         2. Choose Bank Account
@@ -519,8 +519,8 @@ function NewDepositContent() {
                       <InlineSelect
                         value={selectedBankAccountId}
                         onChange={(val) => setSelectedBankAccountId(val)}
-                        options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
-                        placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
+                        options={portalAccounts.map(a => ({ value: a.id, label: a.name }))}
+                        placeholder={portalAccounts.length === 0 ? "No accounts found..." : "Select Account"}
                         icon={<CreditCard className="w-3.5 h-3.5" />}
                       />
                     </div>

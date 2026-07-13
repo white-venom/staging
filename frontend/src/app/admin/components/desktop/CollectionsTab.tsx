@@ -31,7 +31,7 @@ export default function CollectionsTab({
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortBy, setSortBy] = React.useState("date-desc");
 
-  const { retailerDirectory, bankAccountDirectory, userDirectory } = useAdmin();
+  const { retailerDirectory, portalDirectory, userDirectory } = useAdmin();
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
   const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
@@ -613,7 +613,7 @@ export default function CollectionsTab({
                     onChange={setSelectedNewBankAccountId}
                     options={[
                       { value: "", label: "None / Cash" },
-                      ...bankAccountDirectory
+                      ...portalDirectory
                         .flatMap((group: any) => {
                           const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
                           if (!firstOnlineBankAccount) return [];

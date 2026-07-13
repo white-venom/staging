@@ -75,7 +75,7 @@ export default function HistoryPage() {
     if (entry.store_name) {
       headerLines.push(`Store: ${entry.store_name}`);
     }
-    const pGroupName = entry.portalGroupName || entry.portal_group_name;
+    const pGroupName = entry.portalName || entry.portal_name;
     if (pGroupName && pGroupName !== "Cash" && pGroupName !== "N/A") {
       headerLines.push(`BankAccount: ${pGroupName}`);
     }

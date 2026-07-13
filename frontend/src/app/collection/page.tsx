@@ -89,7 +89,7 @@ function NewCollectionContent() {
 
   const [mounted, setMounted] = useState(false);
   const [staffCanChangeCashInDate, setStaffCanChangeCashInDate] = useState(false);
-  const [portalGroups, setPortalGroups] = useState<any[]>([]);
+  const [portals, setPortals] = useState<any[]>([]);
 
   // Pre-fill if editing
   useEffect(() => {
@@ -197,8 +197,8 @@ function NewCollectionContent() {
         const settings = await api.getAdminSettings().catch(() => null);
         if (settings) setStaffCanChangeCashInDate(settings.staff_can_change_collection_date ?? false);
 
-        const groups = await api.getPortalGroups();
-        setPortalGroups(groups);
+        const groups = await api.getPortals();
+        setPortals(groups);
         // Flatten: only individual bankAccount accounts marked show_in_online_payment=true
         const onlineBankAccounts: { id: string; name: string }[] = [];
         for (const g of groups) {
@@ -288,15 +288,15 @@ function NewCollectionContent() {
       return;
     }
 
-    // Resolve bank account name and portal group name for display
+    // Resolve bank account name and portal name for display
     let computedBankAccountName = "Cash";
-    let computedPortalGroupName = "";
+    let computedPortalName = "";
     if (denominations.online_amount > 0 && denominations.online_bank_account_id) {
-      for (const g of portalGroups) {
+      for (const g of portals) {
         const foundP = (g.bank_accounts || []).find((p: any) => p.id === denominations.online_bank_account_id);
         if (foundP) {
           computedBankAccountName = foundP.bank_account_name;
-          computedPortalGroupName = g.name;
+          computedPortalName = g.name;
           break;
         }
       }
@@ -315,7 +315,7 @@ function NewCollectionContent() {
         bank_account_id: denominations.online_bank_account_id || undefined,
         retailerName: selectedRetailer?.name || "Unknown",
         bankAccountName: computedBankAccountName,
-        portalGroupName: computedPortalGroupName || undefined,
+        portalName: computedPortalName || undefined,
         totalAmount: totalCollectionAmount,
         denominations,
         remarks: remarks || "Offline transaction logs",
@@ -354,7 +354,7 @@ function NewCollectionContent() {
           store_name: sourceType === "retailer" && selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : undefined,
           retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
           bankAccountName: computedBankAccountName,
-          portalGroupName: computedPortalGroupName || undefined,
+          portalName: computedPortalName || undefined,
           totalAmount: totalCollectionAmount,
           denominations,
           remarks: remarks || ""

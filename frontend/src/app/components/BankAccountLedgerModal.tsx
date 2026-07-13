@@ -13,13 +13,13 @@ export interface LedgerTarget {
   bank_name: string;
   bank_account_no: string;
   ifsc_code: string;
-  isGroupLedger?: boolean; // true = consolidated Portal Group wallet, false/undefined = single Bank Account
+  isGroupLedger?: boolean; // true = consolidated Portal wallet, false/undefined = single Bank Account
 }
 
 interface BankAccountLedgerModalProps {
   target: LedgerTarget | null;
   onClose: () => void;
-  bankAccountDirectory: any[];
+  portalDirectory: any[];
   retailerDirectory: any[];
   userDirectory: any[];
   showToastNotification: (msg: string) => void;
@@ -29,7 +29,7 @@ interface BankAccountLedgerModalProps {
 export default function BankAccountLedgerModal({
   target,
   onClose,
-  bankAccountDirectory,
+  portalDirectory,
   retailerDirectory,
   userDirectory,
   showToastNotification,
@@ -98,7 +98,7 @@ export default function BankAccountLedgerModal({
     setLoadingLedger(true);
     try {
       const res = t.isGroupLedger
-        ? await api.getPortalGroupLedger(t.id)
+        ? await api.getPortalLedger(t.id)
         : await api.getBankAccountLedger(t.id);
       setLedgerData(res.statement_history || []);
       setLedgerOutstanding(res.outstanding_balance || 0);
@@ -115,7 +115,7 @@ export default function BankAccountLedgerModal({
       const load = async () => {
         try {
           const res = target.isGroupLedger
-            ? await api.getPortalGroupLedger(target.id)
+            ? await api.getPortalLedger(target.id)
             : await api.getBankAccountLedger(target.id);
           setLedgerData(res.statement_history || []);
           setLedgerOutstanding(res.outstanding_balance || 0);
@@ -401,7 +401,7 @@ export default function BankAccountLedgerModal({
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "Select Bank Account" },
-                        ...bankAccountDirectory
+                        ...portalDirectory
                           .flatMap((group: any) => {
                             const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
                             if (!firstOnlineBankAccount) return [];
@@ -455,7 +455,7 @@ export default function BankAccountLedgerModal({
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...bankAccountDirectory
+                            ...portalDirectory
                               .flatMap((group: any) => {
                                 const firstBankAccount = (group.bankAccounts || [])[0];
                                 if (!firstBankAccount) return [];
@@ -521,7 +521,7 @@ export default function BankAccountLedgerModal({
                             onChange={setSelectedNewBankAccountId}
                             options={[
                               { value: "", label: "Select Bank Account" },
-                              ...bankAccountDirectory
+                              ...portalDirectory
                                 .flatMap((group: any) => {
                                   const firstBankAccount = (group.bankAccounts || [])[0];
                                   if (!firstBankAccount) return [];

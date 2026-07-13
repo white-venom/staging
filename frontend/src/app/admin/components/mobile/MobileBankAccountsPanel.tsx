@@ -25,7 +25,7 @@ export default function MobileBankAccountsPanel({
   const [submitting, setSubmitting] = useState(false);
   const [editBankAccountName, setEditBankAccountName] = useState(group.name);
   const [editPortalBalanceAdjustment, setEditPortalBalanceAdjustment] = useState<string>("");
-  const [editGroupOnline, setEditGroupOnline] = useState(!!group.show_in_online_payment);
+  const [editPortalOnline, setEditPortalOnline] = useState(!!group.show_in_online_payment);
 
   const [bAccLabel, setBAccLabel] = useState("");
   const [bBankName, setBBankName] = useState("");
@@ -41,7 +41,7 @@ export default function MobileBankAccountsPanel({
     try {
       const payload: any = {
         name: editBankAccountName,
-        show_in_online_payment: editGroupOnline
+        show_in_online_payment: editPortalOnline
       };
       if (adjustVal > 0) {
         payload.opening_to_take = adjustVal;
@@ -49,7 +49,7 @@ export default function MobileBankAccountsPanel({
         payload.opening_to_give = Math.abs(adjustVal);
       }
 
-      await api.updatePortalGroup(group.id, payload);
+      await api.updatePortal(group.id, payload);
       showToastNotification(`Portal "${editBankAccountName}" updated`);
       onClose();
       fetchData();
@@ -60,10 +60,10 @@ export default function MobileBankAccountsPanel({
     }
   };
 
-  const handleDeletePortalGroup = async () => {
-    if (!confirm(`Delete portal group "${group.name}"? This will delete all associated bank accounts.`)) return;
+  const handleDeletePortal = async () => {
+    if (!confirm(`Delete portal "${group.name}"? This will delete all associated bank accounts.`)) return;
     try {
-      await api.deletePortalGroup(group.id);
+      await api.deletePortal(group.id);
       showToastNotification(`Portal "${group.name}" deleted`);
       onGroupDeleted();
       fetchData();
@@ -80,7 +80,7 @@ export default function MobileBankAccountsPanel({
     setAddingBank(true);
     try {
       await api.createBankAccount({
-        group_id: group.id,
+        portal_id: group.id,
         bank_account_name: bAccLabel,
         bank_name: bBankName,
         bank_account_no: bAccNo,
@@ -113,7 +113,7 @@ export default function MobileBankAccountsPanel({
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[140] flex items-center justify-center p-2">
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-sm p-4 space-y-4 shadow-2xl animate-in zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-          <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Manage Portal Group</h3>
+          <h3 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">Manage Portal</h3>
           <button
             onClick={onClose}
             className="p-1 rounded bg-slate-105 dark:bg-slate-800 text-slate-500 cursor-pointer hover:bg-slate-200 transition-colors"
@@ -176,8 +176,8 @@ export default function MobileBankAccountsPanel({
               <input
                 type="checkbox"
                 id="editGroupOnlineMobile"
-                checked={editGroupOnline}
-                onChange={(e) => setEditGroupOnline(e.target.checked)}
+                checked={editPortalOnline}
+                onChange={(e) => setEditPortalOnline(e.target.checked)}
                 className="w-3.5 h-3.5 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
               />
               <label htmlFor="editGroupOnlineMobile" className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
@@ -195,7 +195,7 @@ export default function MobileBankAccountsPanel({
             </button>
             <button
               type="button"
-              onClick={handleDeletePortalGroup}
+              onClick={handleDeletePortal}
               className="px-3 py-2 border border-red-200 text-red-500 hover:bg-red-50 rounded-md text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer"
             >
               Delete Group

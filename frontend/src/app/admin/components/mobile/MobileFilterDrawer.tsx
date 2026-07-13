@@ -11,7 +11,7 @@ interface MobileFilterDrawerProps {
   onClose: () => void;
   staffList: string[];
   retailerDirectory: any[];
-  bankAccountDirectory: any[];
+  portalDirectory: any[];
   filters: {
     dateFrom: string;
     dateTo: string;
@@ -19,7 +19,7 @@ interface MobileFilterDrawerProps {
     selectedTypes: string[];
     retailerId: string;
     storeId: string;
-    portalGroupId: string;
+    portalId: string;
     bankAccountId: string;
     sortBy: string;
   };
@@ -31,7 +31,7 @@ export default function MobileFilterDrawer({
   onClose,
   staffList,
   retailerDirectory,
-  bankAccountDirectory,
+  portalDirectory,
   filters,
   setFilters
 }: MobileFilterDrawerProps) {
@@ -57,12 +57,12 @@ export default function MobileFilterDrawer({
   }, [filters.retailerId, isOpen]);
 
   const availableFilterBanks = useMemo(() => {
-    if (filters.portalGroupId && filters.portalGroupId !== 'all') {
-      const group = bankAccountDirectory.find((g: any) => String(g.id) === String(filters.portalGroupId));
+    if (filters.portalId && filters.portalId !== 'all') {
+      const group = portalDirectory.find((g: any) => String(g.id) === String(filters.portalId));
       return group?.bankAccounts || [];
     }
     return [];
-  }, [filters.portalGroupId, bankAccountDirectory]);
+  }, [filters.portalId, portalDirectory]);
 
   if (!isOpen) return null;
 
@@ -137,21 +137,21 @@ export default function MobileFilterDrawer({
           {/* 2. BankAccount Filter */}
           <div className="space-y-1">
             <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-              <Globe className="w-3 h-3" /> Portal Group
+              <Globe className="w-3 h-3" /> Portal
             </label>
             <InlineSelect
-              value={filters.portalGroupId}
-              onChange={(val) => setFilters({ ...filters, portalGroupId: val, bankAccountId: "all" })}
+              value={filters.portalId}
+              onChange={(val) => setFilters({ ...filters, portalId: val, bankAccountId: "all" })}
               options={[
-                { value: "all", label: "All Portal Groups" },
-                ...bankAccountDirectory.map(g => ({ value: String(g.id), label: g.name }))
+                { value: "all", label: "All Portals" },
+                ...portalDirectory.map(g => ({ value: String(g.id), label: g.name }))
               ]}
-              placeholder="All Portal Groups"
+              placeholder="All Portals"
             />
           </div>
 
           {/* 2b. Bank/Account Filter (Dynamic) */}
-          {filters.portalGroupId !== "all" && availableFilterBanks.length > 0 && (
+          {filters.portalId !== "all" && availableFilterBanks.length > 0 && (
             <div className="space-y-1 animate-in fade-in duration-200">
               <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
                 <Globe className="w-3 h-3" /> Bank Account / Branch
@@ -275,7 +275,7 @@ export default function MobileFilterDrawer({
                 selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist"],
                 retailerId: 'all',
                 storeId: 'all',
-                portalGroupId: 'all',
+                portalId: 'all',
                 bankAccountId: 'all',
                 sortBy: 'date-desc'
               });

@@ -28,7 +28,7 @@ import { getISTDateString } from "../../../utils/dateHelpers";
 import InlineSelect from "@/app/components/InlineSelect";
 
 export default function MobileLedger() {
-  const { collections, deposits, retailerDirectory, bankAccountDirectory, fetchData, showToastNotification, userDirectory } = useAdmin();
+  const { collections, deposits, retailerDirectory, portalDirectory, fetchData, showToastNotification, userDirectory } = useAdmin();
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -220,7 +220,7 @@ export default function MobileLedger() {
     selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist"],
     retailerId: 'all',
     storeId: 'all',
-    portalGroupId: 'all',
+    portalId: 'all',
     bankAccountId: 'all',
     sortBy: 'date-desc'
   });
@@ -255,7 +255,7 @@ export default function MobileLedger() {
         } else if (d.depositType === "retailer") {
           return d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
         }
-        return d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
+        return d.portalId ? `${d.portalName} (${d.targetName})` : d.targetName;
       })
     ];
     return Array.from(new Set(rawParties.filter(Boolean))).sort() as string[];
@@ -266,7 +266,7 @@ export default function MobileLedger() {
       ...(collections || []).map(c => c.bankAccountName),
       ...(deposits || []).map(d => {
         const isVirtual = d.depositType === 'virtual';
-        return isVirtual ? (d.portalGroupName || d.bankAccountName || d.targetName) : d.targetName;
+        return isVirtual ? (d.portalName || d.bankAccountName || d.targetName) : d.targetName;
       })
     ];
     return Array.from(new Set(rawBankAccounts.filter(Boolean))).sort() as string[];
@@ -300,7 +300,7 @@ export default function MobileLedger() {
           txType = isRef ? "move-to-dist" : "virtual-transfer";
         }
         
-        let party = d.portalGroupId ? `${d.portalGroupName} (${d.targetName})` : d.targetName;
+        let party = d.portalId ? `${d.portalName} (${d.targetName})` : d.targetName;
         if (isVirtual && d.retailer_id) {
           const ret = (retailerDirectory || []).find((r: any) => r.id === d.retailer_id);
           party = ret?.name || d.targetName;
@@ -315,7 +315,7 @@ export default function MobileLedger() {
           type: isRef ? 'collection' : 'deposit',
           txType,
           party,
-          bankAccount: isVirtual ? (d.portalGroupName || d.bankAccountName || d.targetName) : d.targetName, 
+          bankAccount: isVirtual ? (d.portalName || d.bankAccountName || d.targetName) : d.targetName, 
           staff: d.staffName || "Admin"
         };
       })
@@ -345,16 +345,16 @@ export default function MobileLedger() {
     if (filters.storeId !== 'all') {
       combined = combined.filter(tx => String(tx.store_id || tx.storeId || '') === String(filters.storeId));
     }
-    if (filters.portalGroupId !== 'all') {
+    if (filters.portalId !== 'all') {
       combined = combined.filter(tx => {
-        if (tx.portal_group_id || tx.portalGroupId) {
-          return String(tx.portal_group_id || tx.portalGroupId) === String(filters.portalGroupId);
+        if (tx.portal_id || tx.portalId) {
+          return String(tx.portal_id || tx.portalId) === String(filters.portalId);
         }
         if (tx.bank_account_id || tx.bankAccountId) {
-          const group = bankAccountDirectory.find((g: any) => 
+          const group = portalDirectory.find((g: any) => 
             (g.bankAccounts || []).some((p: any) => String(p.id) === String(tx.bank_account_id || tx.bankAccountId))
           );
-          return group && String(group.id) === String(filters.portalGroupId);
+          return group && String(group.id) === String(filters.portalId);
         }
         return false;
       });
@@ -388,7 +388,7 @@ export default function MobileLedger() {
            filters.selectedTypes.length < 4 || 
            filters.retailerId !== 'all' || 
            filters.storeId !== 'all' || 
-           filters.portalGroupId !== 'all' || 
+           filters.portalId !== 'all' || 
            filters.bankAccountId !== 'all' || 
            filters.dateFrom !== getTodayDateString() || 
            filters.dateTo !== getTodayDateString() ||
@@ -465,7 +465,7 @@ export default function MobileLedger() {
                 selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist"],
                 retailerId: 'all',
                 storeId: 'all',
-                portalGroupId: 'all',
+                portalId: 'all',
                 bankAccountId: 'all',
                 sortBy: 'date-desc'
               });
@@ -616,7 +616,7 @@ export default function MobileLedger() {
         onClose={() => setIsFilterOpen(false)}
         staffList={staffList}
         retailerDirectory={retailerDirectory || []}
-        bankAccountDirectory={bankAccountDirectory || []}
+        portalDirectory={portalDirectory || []}
         filters={filters}
         setFilters={setFilters}
       />
@@ -719,7 +719,7 @@ export default function MobileLedger() {
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "None / Cash" },
-                        ...bankAccountDirectory
+                        ...portalDirectory
                           .flatMap((group: any) => {
                             const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
                             if (!firstOnlineBankAccount) return [];
@@ -864,7 +864,7 @@ export default function MobileLedger() {
                         onChange={setSelectedNewBankAccountId}
                         options={[
                           { value: "", label: "Select Bank Account" },
-                          ...bankAccountDirectory
+                          ...portalDirectory
                             .flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
@@ -930,7 +930,7 @@ export default function MobileLedger() {
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...bankAccountDirectory.flatMap((group: any) => {
+                            ...portalDirectory.flatMap((group: any) => {
                               const firstBankAccount = (group.bankAccounts || [])[0];
                               if (!firstBankAccount) return [];
                               return [{ value: String(firstBankAccount.id), label: group.name }];

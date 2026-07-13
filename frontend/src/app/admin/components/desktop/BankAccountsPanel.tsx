@@ -24,9 +24,9 @@ export default function BankAccountsPanel({
 }: BankAccountsPanelProps) {
   const [accounts, setAccounts] = useState<any[]>([]);
 
-  const [editingGroupName, setEditingGroupName] = useState(group.name);
-  const [editingGroupBalanceAdjustment, setEditingGroupBalanceAdjustment] = useState<string>("");
-  const [editGroupOnline, setEditGroupOnline] = useState(!!group.show_in_online_payment);
+  const [editingPortalName, setEditingPortalName] = useState(group.name);
+  const [editingPortalBalanceAdjustment, setEditingPortalBalanceAdjustment] = useState<string>("");
+  const [editPortalOnline, setEditPortalOnline] = useState(!!group.show_in_online_payment);
 
   const [newAccName, setNewAccName] = useState("");
   const [newAccBank, setNewAccBank] = useState("");
@@ -49,7 +49,7 @@ export default function BankAccountsPanel({
 
   const fetchAccounts = async (groupId: string) => {
     try {
-      const data = await api.getGroupAccounts(groupId);
+      const data = await api.getPortalAccounts(groupId);
       setAccounts(data);
     } catch (err) {
       console.error("Failed to fetch accounts:", err);
@@ -63,7 +63,7 @@ export default function BankAccountsPanel({
     setIsCreatingAcc(true);
     try {
       await api.createBankAccount({
-        group_id: group.id,
+        portal_id: group.id,
         bank_account_name: newAccName,
         bank_name: newAccBank,
         bank_account_no: newAccNo,
@@ -85,10 +85,10 @@ export default function BankAccountsPanel({
     }
   };
 
-  const handleDeleteGroup = async () => {
+  const handleDeletePortal = async () => {
     if (!confirm(`Are you sure you want to delete "${group.name}"? This will remove all associated bank accounts.`)) return;
     try {
-      await api.deletePortalGroup(group.id);
+      await api.deletePortal(group.id);
       showToastNotification(`Portal "${group.name}" deleted.`);
       onGroupDeleted();
       if (fetchData) fetchData();
@@ -97,22 +97,22 @@ export default function BankAccountsPanel({
     }
   };
 
-  const handleUpdateGroup = async () => {
-    if (!group.id || !editingGroupName) return;
-    const adjustVal = parseFloat(editingGroupBalanceAdjustment || "0");
+  const handleUpdatePortal = async () => {
+    if (!group.id || !editingPortalName) return;
+    const adjustVal = parseFloat(editingPortalBalanceAdjustment || "0");
 
     try {
       const payload: any = {
-        name: editingGroupName,
-        show_in_online_payment: editGroupOnline
+        name: editingPortalName,
+        show_in_online_payment: editPortalOnline
       };
       if (adjustVal > 0) {
         payload.opening_to_take = adjustVal;
       } else if (adjustVal < 0) {
         payload.opening_to_give = Math.abs(adjustVal);
       }
-      await api.updatePortalGroup(group.id, payload);
-      showToastNotification(`Portal "${editingGroupName}" updated.`);
+      await api.updatePortal(group.id, payload);
+      showToastNotification(`Portal "${editingPortalName}" updated.`);
       onClose();
       if (fetchData) fetchData();
     } catch (err: any) {
@@ -141,7 +141,7 @@ export default function BankAccountsPanel({
         bank_name: editAccBank,
         bank_account_no: editAccNo,
         ifsc_code: editAccIfsc,
-        group_id: group.id,
+        portal_id: group.id,
         show_in_online_payment: editAccOnline
       });
       showToastNotification(`Account "${editAccName}" updated.`);
@@ -185,8 +185,8 @@ export default function BankAccountsPanel({
                 <label className="block text-[9px] text-slate-400 uppercase font-black mb-1">Portal Name</label>
                 <input autoComplete="one-time-code"
                   type="text"
-                  value={editingGroupName}
-                  onChange={e => setEditingGroupName(e.target.value)}
+                  value={editingPortalName}
+                  onChange={e => setEditingPortalName(e.target.value)}
                   className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
                 />
               </div>
@@ -220,10 +220,10 @@ export default function BankAccountsPanel({
                 <input autoComplete="one-time-code"
                   type="number"
                   placeholder="e.g. +1000 to add, -1000 to subtract"
-                  value={editingGroupBalanceAdjustment}
-                  onChange={e => setEditingGroupBalanceAdjustment(e.target.value)}
+                  value={editingPortalBalanceAdjustment}
+                  onChange={e => setEditingPortalBalanceAdjustment(e.target.value)}
                   onFocus={e => {
-                    if (Number(e.target.value) === 0) setEditingGroupBalanceAdjustment("");
+                    if (Number(e.target.value) === 0) setEditingPortalBalanceAdjustment("");
                     e.target.select();
                   }}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
@@ -232,24 +232,24 @@ export default function BankAccountsPanel({
               <div className="flex items-center gap-2 px-1 py-1">
                 <input
                   type="checkbox"
-                  id="editGroupOnline"
-                  checked={editGroupOnline}
-                  onChange={(e) => setEditGroupOnline(e.target.checked)}
+                  id="editPortalOnline"
+                  checked={editPortalOnline}
+                  onChange={(e) => setEditPortalOnline(e.target.checked)}
                   className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
                 />
-                <label htmlFor="editGroupOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
+                <label htmlFor="editPortalOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
                   Online
                 </label>
               </div>
               <button
-                onClick={handleUpdateGroup}
+                onClick={handleUpdatePortal}
                 className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-indigo-600/20 cursor-pointer"
               >
                 Save Portal Settings
               </button>
               <button
                 type="button"
-                onClick={handleDeleteGroup}
+                onClick={handleDeletePortal}
                 className="w-full mt-2 py-2 border border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-950/10 text-red-650 rounded-xl text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors"
               >
                 Delete Portal

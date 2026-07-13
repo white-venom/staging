@@ -23,7 +23,7 @@ export default function DepositsTab({
   const [editAmount, setEditAmount] = React.useState(0);
   const [editRef, setEditRef] = React.useState("");
 
-  const { retailerDirectory, bankAccountDirectory, userDirectory } = useAdmin();
+  const { retailerDirectory, portalDirectory, userDirectory } = useAdmin();
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
   const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
@@ -534,7 +534,7 @@ export default function DepositsTab({
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "Select Bank Account" },
-                        ...bankAccountDirectory.flatMap((group: any) => {
+                        ...portalDirectory.flatMap((group: any) => {
                           const firstBankAccount = (group.bankAccounts || [])[0];
                           if (!firstBankAccount) return [];
                           return [{ value: String(firstBankAccount.id), label: group.name }];
@@ -600,7 +600,7 @@ export default function DepositsTab({
                         onChange={setSelectedNewBankAccountId}
                         options={[
                           { value: "", label: "Select Bank Account" },
-                          ...bankAccountDirectory.flatMap((group: any) => {
+                          ...portalDirectory.flatMap((group: any) => {
                             const firstBankAccount = (group.bankAccounts || [])[0];
                             if (!firstBankAccount) return [];
                             return [{ value: String(firstBankAccount.id), label: group.name }];

@@ -30,7 +30,7 @@ export default function MobileRetailers({
   showToastNotification,
   fetchData
 }: MobileRetailersProps) {
-  const { collections, deposits, bankAccountDirectory, userDirectory } = useAdmin();
+  const { collections, deposits, portalDirectory, userDirectory } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -1137,7 +1137,7 @@ export default function MobileRetailers({
                       onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "Select Bank Account" },
-                        ...bankAccountDirectory
+                        ...portalDirectory
                           .flatMap((group: any) => {
                             const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
                             if (!firstOnlineBankAccount) return [];
@@ -1191,7 +1191,7 @@ export default function MobileRetailers({
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...bankAccountDirectory
+                            ...portalDirectory
                               .flatMap((group: any) => {
                                 const firstBankAccount = (group.bankAccounts || [])[0];
                                 if (!firstBankAccount) return [];
@@ -1257,7 +1257,7 @@ export default function MobileRetailers({
                             onChange={setSelectedNewBankAccountId}
                             options={[
                               { value: "", label: "Select Bank Account" },
-                              ...bankAccountDirectory
+                              ...portalDirectory
                                 .flatMap((group: any) => {
                                   const firstBankAccount = (group.bankAccounts || [])[0];
                                   if (!firstBankAccount) return [];
