@@ -89,11 +89,11 @@ class DepositResponse(BaseModel):
     # Virtual fields populated by router
     target_name: Optional[str] = None
     bank_account_name: Optional[str] = None
-    portal_group_name: Optional[str] = None
-    portal_group_id: Optional[uuid.UUID] = None
+    portal_name: Optional[str] = None
+    portal_id: Optional[uuid.UUID] = None
     bank_name: Optional[str] = None
     from_bank_account_name: Optional[str] = None  # Source account name for portal_transfer type
-    from_portal_group_name: Optional[str] = None  # Source portal group name for portal_transfer type
+    from_portal_name: Optional[str] = None  # Source portal group name for portal_transfer type
     staff_name: Optional[str] = None
     is_refund: Optional[bool] = None  # True when this is a "Move to Distributor" reverse transfer
     retailer_ledger_token: Optional[str] = None

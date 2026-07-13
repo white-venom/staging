@@ -70,7 +70,7 @@ class CollectionResponse(BaseModel):
     staff_name: Optional[str] = None
     from_staff_name: Optional[str] = None
     bank_account_name: Optional[str] = None
-    portal_group_name: Optional[str] = None
+    portal_name: Optional[str] = None
     bank_name: Optional[str] = None
 
     class Config:

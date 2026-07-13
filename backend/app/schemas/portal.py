@@ -6,23 +6,23 @@ from pydantic import BaseModel, Field
 from app.schemas.bank_account import BankAccountResponse
 
 
-class PortalGroupBase(BaseModel):
+class PortalBase(BaseModel):
     name: str = Field(..., max_length=100, examples=["RevaPay"])
 
 
-class PortalGroupCreate(PortalGroupBase):
+class PortalCreate(PortalBase):
     opening_to_give: float = 0.0
     opening_to_take: float = 0.0
     show_in_online_payment: bool = False
 
 
-class PortalGroupUpdate(PortalGroupBase):
+class PortalUpdate(PortalBase):
     opening_to_give: Optional[float] = None
     opening_to_take: Optional[float] = None
     show_in_online_payment: Optional[bool] = None
 
 
-class PortalGroupResponse(PortalGroupBase):
+class PortalResponse(PortalBase):
     id: uuid.UUID
     created_at: datetime
     opening_to_give: float

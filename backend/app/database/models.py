@@ -81,8 +81,8 @@ class Retailer(Base):
     deposits: Mapped[List["BankDeposit"]] = relationship("BankDeposit", back_populates="retailer")
 
 
-class PortalGroup(Base):
-    __tablename__ = "portal_groups"
+class Portal(Base):
+    __tablename__ = "portals"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
@@ -92,14 +92,14 @@ class PortalGroup(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
-    bank_accounts: Mapped[List["BankAccount"]] = relationship("BankAccount", back_populates="group", cascade="all, delete-orphan")
+    bank_accounts: Mapped[List["BankAccount"]] = relationship("BankAccount", back_populates="portal", cascade="all, delete-orphan")
 
 
 class BankAccount(Base):
     __tablename__ = "bank_accounts"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    group_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("portal_groups.id", ondelete="CASCADE"), nullable=False)
+    portal_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("portals.id", ondelete="CASCADE"), nullable=False)
     bank_account_name: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
     bank_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     bank_account_no: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
@@ -113,19 +113,19 @@ class BankAccount(Base):
     balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
 
     # Relationships
-    group: Mapped[PortalGroup] = relationship("PortalGroup", back_populates="bank_accounts")
+    portal: Mapped[Portal] = relationship("Portal", back_populates="bank_accounts")
     deposits: Mapped[List["BankDeposit"]] = relationship("BankDeposit", foreign_keys="[BankDeposit.bank_account_id]", back_populates="bank_account")
 
     @property
-    def group_name(self) -> Optional[str]:
-        return self.group.name if self.group else None
+    def portal_name(self) -> Optional[str]:
+        return self.portal.name if self.portal else None
 
 
-class PortalGroupAdjustment(Base):
-    __tablename__ = "portal_group_adjustments"
+class PortalAdjustment(Base):
+    __tablename__ = "portal_adjustments"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    group_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("portal_groups.id", ondelete="CASCADE"), nullable=False)
+    portal_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("portals.id", ondelete="CASCADE"), nullable=False)
     transaction_type: Mapped[str] = mapped_column(String(10), nullable=False)  # 'credit', 'debit'
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -133,7 +133,7 @@ class PortalGroupAdjustment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
-    group: Mapped[PortalGroup] = relationship("PortalGroup")
+    portal: Mapped[Portal] = relationship("Portal")
     created_by_user: Mapped[Optional["User"]] = relationship("User", foreign_keys=[created_by])
 
 

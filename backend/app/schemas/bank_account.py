@@ -13,13 +13,13 @@ class BankAccountBase(BaseModel):
 
 
 class BankAccountCreate(BankAccountBase):
-    group_id: uuid.UUID
+    portal_id: uuid.UUID
     opening_to_give: float = 0.0
     opening_to_take: float = 0.0
 
 
 class BankAccountUpdate(BankAccountBase):
-    group_id: Optional[uuid.UUID] = None
+    portal_id: Optional[uuid.UUID] = None
     opening_to_give: Optional[float] = None
     opening_to_take: Optional[float] = None
     show_in_online_payment: Optional[bool] = None
@@ -27,8 +27,8 @@ class BankAccountUpdate(BankAccountBase):
 
 class BankAccountResponse(BankAccountBase):
     id: uuid.UUID
-    group_id: Optional[uuid.UUID]
-    group_name: Optional[str] = None
+    portal_id: Optional[uuid.UUID]
+    portal_name: Optional[str] = None
     created_at: datetime
     opening_to_give: float
     opening_to_take: float

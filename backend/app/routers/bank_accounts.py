@@ -6,7 +6,7 @@ from sqlalchemy import select, or_
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
-from app.database.models import BankAccount, PortalGroup
+from app.database.models import BankAccount, Portal
 from app.schemas.bank_account import BankAccountCreate, BankAccountResponse, BankAccountUpdate
 from app.dependencies import require_admin, require_any_user
 
@@ -26,7 +26,7 @@ def create_bank_account(
     # Create bank account
     initial_balance = Decimal(str(account_data.opening_to_take)) - Decimal(str(account_data.opening_to_give))
     db_account = BankAccount(
-        group_id=account_data.group_id,
+        portal_id=account_data.portal_id,
         bank_account_name=account_data.bank_account_name,
         bank_name=account_data.bank_name,
         bank_account_no=account_data.bank_account_no,
@@ -38,7 +38,7 @@ def create_bank_account(
     )
 
     # Also update the parent group's running balance
-    group = db.scalar(select(PortalGroup).where(PortalGroup.id == account_data.group_id))
+    group = db.scalar(select(Portal).where(Portal.id == account_data.portal_id))
     if group:
         group.balance += initial_balance
 
@@ -55,7 +55,7 @@ def list_bank_accounts(
 ):
     """Get all active stores / bank accounts with bank details."""
     from sqlalchemy.orm import joinedload
-    accounts = db.scalars(select(BankAccount).options(joinedload(BankAccount.group)).order_by(BankAccount.bank_account_name)).all()
+    accounts = db.scalars(select(BankAccount).options(joinedload(BankAccount.portal)).order_by(BankAccount.bank_account_name)).all()
     return accounts
 
 
@@ -89,14 +89,14 @@ def update_bank_account(
         delta_give = Decimal(str(account_data.opening_to_give))
         db_account.opening_to_give = (db_account.opening_to_give or Decimal("0.00")) + delta_give
         db_account.balance = (db_account.balance or Decimal("0.00")) - delta_give
-        if db_account.group:
-            db_account.group.balance = (db_account.group.balance or Decimal("0.00")) - delta_give
+        if db_account.portal:
+            db_account.portal.balance = (db_account.portal.balance or Decimal("0.00")) - delta_give
     if account_data.opening_to_take is not None:
         delta_take = Decimal(str(account_data.opening_to_take))
         db_account.opening_to_take = (db_account.opening_to_take or Decimal("0.00")) + delta_take
         db_account.balance = (db_account.balance or Decimal("0.00")) + delta_take
-        if db_account.group:
-            db_account.group.balance = (db_account.group.balance or Decimal("0.00")) + delta_take
+        if db_account.portal:
+            db_account.portal.balance = (db_account.portal.balance or Decimal("0.00")) + delta_take
 
     db.commit()
     db.refresh(db_account)
@@ -114,7 +114,7 @@ def delete_bank_account(
     if not account:
         raise HTTPException(status_code=404, detail="Bank account not found")
 
-    group = account.group
+    group = account.portal
     if group:
         group.balance -= account.balance
 
@@ -126,7 +126,7 @@ def delete_bank_account(
         db.refresh(group)
         if len(group.bank_accounts) == 0:
             primary_account = BankAccount(
-                group_id=group.id,
+                portal_id=group.id,
                 bank_account_name="Primary Account",
                 opening_to_give=Decimal("0.00"),
                 opening_to_take=Decimal("0.00"),
@@ -152,7 +152,7 @@ def get_bank_account_ledger(
 
     account = db.scalar(
         select(BankAccount)
-        .options(joinedload(BankAccount.group))
+        .options(joinedload(BankAccount.portal))
         .where(BankAccount.id == bank_account_id)
     )
     if not account:
@@ -164,8 +164,8 @@ def get_bank_account_ledger(
         .options(
             joinedload(BankDeposit.retailer),
             joinedload(BankDeposit.denominations),
-            joinedload(BankDeposit.from_bank_account).joinedload(BankAccount.group),
-            joinedload(BankDeposit.bank_account).joinedload(BankAccount.group)
+            joinedload(BankDeposit.from_bank_account).joinedload(BankAccount.portal),
+            joinedload(BankDeposit.bank_account).joinedload(BankAccount.portal)
         )
         .where(
             and_(
@@ -199,9 +199,9 @@ def get_bank_account_ledger(
     # own bank_account_id, so the source lookup below has to search the whole group
     # or it silently loses the retailer/store name for moved entries.
     group_account_ids = [bank_account_id]
-    if account.group_id:
+    if account.portal_id:
         group_account_ids = [
-            a.id for a in db.scalars(select(BankAccount).where(BankAccount.group_id == account.group_id)).all()
+            a.id for a in db.scalars(select(BankAccount).where(BankAccount.portal_id == account.portal_id)).all()
         ]
     all_group_cols = db.scalars(
         select(Collection)
@@ -287,12 +287,12 @@ def get_bank_account_ledger(
             if str(d.bank_account_id) == str(bank_account_id):
                 # This account is the destination: it received money (credit)
                 tx_type = "credit"
-                src_name = d.from_bank_account.group.name if (d.from_bank_account and d.from_bank_account.group) else (d.from_bank_account.bank_account_name if d.from_bank_account else "Source Account")
+                src_name = d.from_bank_account.portal.name if (d.from_bank_account and d.from_bank_account.portal) else (d.from_bank_account.bank_account_name if d.from_bank_account else "Source Account")
                 desc_text = f"Transfer received from {src_name}"
             else:
                 # This account is the source: it sent money (debit)
                 tx_type = "debit"
-                dst_name = d.bank_account.group.name if (d.bank_account and d.bank_account.group) else (d.bank_account.bank_account_name if d.bank_account else "Destination Account")
+                dst_name = d.bank_account.portal.name if (d.bank_account and d.bank_account.portal) else (d.bank_account.bank_account_name if d.bank_account else "Destination Account")
                 desc_text = f"Transfer sent to {dst_name}"
             amount = float(d.amount)
             if fallback_remarks:
@@ -409,7 +409,7 @@ def get_bank_account_ledger(
 
     return {
         "bank_account_name": account.bank_account_name,
-        "group_name": account.group.name if account.group else None,
+        "portal_name": account.portal.name if account.portal else None,
         "bank_name": account.bank_name,
         "bank_account_no": account.bank_account_no,
         "ifsc_code": account.ifsc_code,

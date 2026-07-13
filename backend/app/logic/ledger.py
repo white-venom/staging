@@ -5,18 +5,18 @@ from sqlalchemy.orm import Session, joinedload
 from app.database.models import Ledger
 
 
-def lock_portal_group(db: Session, bank_account):
-    """Lock the bank account's PortalGroup row (if any) before mutating its balance.
+def lock_portal(db: Session, bank_account):
+    """Lock the bank account's Portal row (if any) before mutating its balance.
 
     `BankAccount` is locked with `with_for_update()` at every call site, but the related
-    `PortalGroup.balance` (mutated via the lazy-loaded `bank_account.group` relationship)
-    was never locked, so concurrent requests touching different bank accounts in the
-    same group could race on the group's running balance. Call this right after locking
-    the `BankAccount` row, before any `bank_account.group.balance` mutation.
+    `Portal.balance` (mutated via the lazy-loaded `bank_account.portal` relationship)
+    was never locked, so concurrent requests touching different bank accounts under the
+    same portal could race on the portal's running balance. Call this right after locking
+    the `BankAccount` row, before any `bank_account.portal.balance` mutation.
     """
-    if bank_account and bank_account.group_id:
-        from app.database.models import PortalGroup
-        db.scalar(select(PortalGroup).where(PortalGroup.id == bank_account.group_id).with_for_update())
+    if bank_account and bank_account.portal_id:
+        from app.database.models import Portal
+        db.scalar(select(Portal).where(Portal.id == bank_account.portal_id).with_for_update())
 
 
 def recalculate_balances(retailer_id, db: Session):

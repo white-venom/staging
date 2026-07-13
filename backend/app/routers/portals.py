@@ -6,11 +6,11 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
-from app.database.models import BankAccount, PortalGroup, PortalGroupAdjustment
+from app.database.models import BankAccount, Portal, PortalAdjustment
 from app.schemas.portal import (
-    PortalGroupCreate,
-    PortalGroupResponse,
-    PortalGroupUpdate
+    PortalCreate,
+    PortalResponse,
+    PortalUpdate
 )
 from app.schemas.bank_account import BankAccountResponse
 from app.dependencies import require_admin, require_any_user
@@ -18,21 +18,21 @@ from app.dependencies import require_admin, require_any_user
 router = APIRouter(prefix="/portals", tags=["Portals & Stores"])
 
 
-# --- Portal Groups ---
+# --- Portals ---
 
-@router.post("/groups", response_model=PortalGroupResponse, status_code=status.HTTP_201_CREATED)
-def create_portal_group(
-    group_data: PortalGroupCreate,
+@router.post("", response_model=PortalResponse, status_code=status.HTTP_201_CREATED)
+def create_portal(
+    group_data: PortalCreate,
     db: Session = Depends(get_db),
     current_user=Depends(require_admin)
 ):
-    """Admin-only endpoint to register a Portal Group (e.g., RevaPay)."""
+    """Admin-only endpoint to register a Portal (e.g., RevaPay)."""
     if group_data.opening_to_take < 0 or group_data.opening_to_give < 0:
         raise HTTPException(status_code=400, detail="Opening balances cannot be negative")
 
     initial_balance = Decimal(str(group_data.opening_to_take)) - Decimal(str(group_data.opening_to_give))
 
-    db_group = PortalGroup(
+    db_group = Portal(
         name=group_data.name,
         opening_to_give=group_data.opening_to_give,
         opening_to_take=group_data.opening_to_take,
@@ -42,9 +42,9 @@ def create_portal_group(
     db.commit()
     db.refresh(db_group)
 
-    # Automatically create a default Primary Account for the new Portal Group
+    # Automatically create a default Primary Account for the new Portal
     db_account = BankAccount(
-        group_id=db_group.id,
+        portal_id=db_group.id,
         bank_account_name="Primary Account",
         opening_to_give=db_group.opening_to_give,
         opening_to_take=db_group.opening_to_take,
@@ -57,21 +57,21 @@ def create_portal_group(
     return db_group
 
 
-@router.get("/groups", response_model=List[PortalGroupResponse])
-def list_portal_groups(
+@router.get("", response_model=List[PortalResponse])
+def list_portals(
     db: Session = Depends(get_db),
     current_user=Depends(require_any_user)
 ):
-    """Get all Portal Groups."""
+    """Get all Portals."""
     from sqlalchemy.orm import joinedload
-    groups = db.scalars(select(PortalGroup).options(joinedload(PortalGroup.bank_accounts)).order_by(PortalGroup.name)).unique().all()
+    groups = db.scalars(select(Portal).options(joinedload(Portal.bank_accounts)).order_by(Portal.name)).unique().all()
 
     # Auto-heal: Ensure every group has at least one bank account (e.g. Primary Account)
     healed = False
     for group in groups:
         if len(group.bank_accounts) == 0:
             primary_account = BankAccount(
-                group_id=group.id,
+                portal_id=group.id,
                 bank_account_name="Primary Account",
                 opening_to_give=Decimal("0.00"),
                 opening_to_take=Decimal("0.00"),
@@ -84,22 +84,22 @@ def list_portal_groups(
     if healed:
         db.commit()
         # Re-fetch healed groups
-        groups = db.scalars(select(PortalGroup).options(joinedload(PortalGroup.bank_accounts)).order_by(PortalGroup.name)).unique().all()
+        groups = db.scalars(select(Portal).options(joinedload(Portal.bank_accounts)).order_by(Portal.name)).unique().all()
 
     return groups
 
 
-@router.put("/groups/{group_id}", response_model=PortalGroupResponse)
-def update_portal_group(
-    group_id: uuid.UUID,
-    group_data: PortalGroupUpdate,
+@router.put("/{portal_id}", response_model=PortalResponse)
+def update_portal(
+    portal_id: uuid.UUID,
+    group_data: PortalUpdate,
     db: Session = Depends(get_db),
     current_user=Depends(require_admin)
 ):
-    """Admin-only endpoint to update a Portal Group."""
-    db_group = db.scalar(select(PortalGroup).where(PortalGroup.id == group_id))
+    """Admin-only endpoint to update a Portal."""
+    db_group = db.scalar(select(Portal).where(Portal.id == portal_id))
     if not db_group:
-        raise HTTPException(status_code=404, detail="Portal Group not found")
+        raise HTTPException(status_code=404, detail="Portal not found")
 
     if group_data.opening_to_give is not None:
         new_give = (db_group.opening_to_give or Decimal("0.00")) + Decimal(str(group_data.opening_to_give))
@@ -115,8 +115,8 @@ def update_portal_group(
         delta_give = Decimal(str(group_data.opening_to_give))
         db_group.opening_to_give = (db_group.opening_to_give or Decimal("0.00")) + delta_give
         db_group.balance = (db_group.balance or Decimal("0.00")) - delta_give
-        db.add(PortalGroupAdjustment(
-            group_id=db_group.id,
+        db.add(PortalAdjustment(
+            portal_id=db_group.id,
             transaction_type="debit",
             amount=delta_give,
             description=f"Manually Added by {current_user.name}",
@@ -126,8 +126,8 @@ def update_portal_group(
         delta_take = Decimal(str(group_data.opening_to_take))
         db_group.opening_to_take = (db_group.opening_to_take or Decimal("0.00")) + delta_take
         db_group.balance = (db_group.balance or Decimal("0.00")) + delta_take
-        db.add(PortalGroupAdjustment(
-            group_id=db_group.id,
+        db.add(PortalAdjustment(
+            portal_id=db_group.id,
             transaction_type="credit",
             amount=delta_take,
             description=f"Manually Added by {current_user.name}",
@@ -142,59 +142,59 @@ def update_portal_group(
     return db_group
 
 
-@router.delete("/groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_portal_group(
-    group_id: uuid.UUID,
+@router.delete("/{portal_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_portal(
+    portal_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user=Depends(require_admin)
 ):
-    """Admin-only endpoint to remove a portal group and all its accounts."""
-    db_group = db.scalar(select(PortalGroup).where(PortalGroup.id == group_id))
+    """Admin-only endpoint to remove a portal and all its accounts."""
+    db_group = db.scalar(select(Portal).where(Portal.id == portal_id))
     if not db_group:
-        raise HTTPException(status_code=404, detail="Portal Group not found")
+        raise HTTPException(status_code=404, detail="Portal not found")
 
     try:
         db.delete(db_group)
         db.commit()
     except Exception as e:
         db.rollback()
-        print(f"Error deleting portal group: {e}")
+        print(f"Error deleting portal: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An internal error occurred while deleting the portal group."
+            detail="An internal error occurred while deleting the portal."
         )
     return None
 
 
-@router.get("/groups/{group_id}/accounts", response_model=List[BankAccountResponse])
-def list_group_accounts(
-    group_id: uuid.UUID,
+@router.get("/{portal_id}/accounts", response_model=List[BankAccountResponse])
+def list_portal_accounts(
+    portal_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user=Depends(require_any_user)
 ):
-    """Get all accounts under a specific Portal Group."""
-    accounts = db.scalars(select(BankAccount).where(BankAccount.group_id == group_id).order_by(BankAccount.bank_account_name)).all()
+    """Get all accounts under a specific Portal."""
+    accounts = db.scalars(select(BankAccount).where(BankAccount.portal_id == portal_id).order_by(BankAccount.bank_account_name)).all()
     return accounts
 
 
-@router.get("/groups/{group_id}/ledger")
-def get_portal_group_ledger(
-    group_id: uuid.UUID,
+@router.get("/{portal_id}/ledger")
+def get_portal_ledger(
+    portal_id: uuid.UUID,
     db: Session = Depends(get_db),
     current_user=Depends(require_any_user)
 ):
-    """Fetch chronological consolidated transaction ledger for a portal group (e.g. PAYNEARBY)."""
+    """Fetch chronological consolidated transaction ledger for a portal (e.g. PAYNEARBY)."""
     from sqlalchemy import and_, select
     from sqlalchemy.orm import joinedload
     from app.database.models import BankDeposit, Collection
 
-    group = db.scalar(select(PortalGroup).where(PortalGroup.id == group_id))
+    group = db.scalar(select(Portal).where(Portal.id == portal_id))
     if not group:
         raise HTTPException(status_code=404, detail="Portal group not found")
 
     # Manual "Adjust Balance" edits, shown as their own line items in the ledger
     adjustments = db.scalars(
-        select(PortalGroupAdjustment).where(PortalGroupAdjustment.group_id == group_id)
+        select(PortalAdjustment).where(PortalAdjustment.portal_id == portal_id)
     ).all()
     adjustment_txs = [
         {
@@ -221,7 +221,7 @@ def get_portal_group_ledger(
     ]
 
     # Get all bank account IDs in this group
-    accounts = db.scalars(select(BankAccount).where(BankAccount.group_id == group_id)).all()
+    accounts = db.scalars(select(BankAccount).where(BankAccount.portal_id == portal_id)).all()
     account_ids = [a.id for a in accounts]
 
     # Fetch verified deposits for these accounts (empty account_ids naturally yields no rows)
@@ -452,7 +452,7 @@ def get_portal_group_ledger(
         })
 
     return {
-        "group_name": group.name,
+        "portal_name": group.name,
         "outstanding_balance": float(group.balance or Decimal("0.00")),
         "statement_history": formatted_txs
     }

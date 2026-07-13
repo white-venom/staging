@@ -146,7 +146,7 @@ def process_virtual_transfer(
             raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
 
         # 1. Fetch Source BankAccount (locked)
-        # NOTE: Do NOT use joinedload(BankAccount.group) here — PostgreSQL forbids
+        # NOTE: Do NOT use joinedload(BankAccount.portal) here — PostgreSQL forbids
         # FOR UPDATE on the nullable side of an outer join.
         bank_account = db.scalar(
             select(BankAccount)
@@ -156,25 +156,25 @@ def process_virtual_transfer(
         if not bank_account:
             raise HTTPException(status_code=404, detail="Source bank/wallet account not found.")
             
-        # Lock the associated PortalGroup to prevent race conditions on group balance
-        account_group = None
-        if bank_account.group_id:
-            from app.database.models import PortalGroup
-            account_group = db.scalar(
-                select(PortalGroup)
-                .where(PortalGroup.id == bank_account.group_id)
+        # Lock the associated Portal to prevent race conditions on its balance
+        account_portal = None
+        if bank_account.portal_id:
+            from app.database.models import Portal
+            account_portal = db.scalar(
+                select(Portal)
+                .where(Portal.id == bank_account.portal_id)
                 .with_for_update()
             )
 
         # Step A: Adjust BankAccount Balance
         if payload.direction == "refund":
             bank_account.balance = Decimal(str(bank_account.balance or 0)) + payload.amount
-            if account_group:
-                account_group.balance = Decimal(str(account_group.balance or 0)) + payload.amount
+            if account_portal:
+                account_portal.balance = Decimal(str(account_portal.balance or 0)) + payload.amount
         else:
             bank_account.balance = Decimal(str(bank_account.balance or 0)) - payload.amount
-            if account_group:
-                account_group.balance = Decimal(str(account_group.balance or 0)) - payload.amount
+            if account_portal:
+                account_portal.balance = Decimal(str(account_portal.balance or 0)) - payload.amount
             
         if payload.retailer_id:
             # Transfer to/from Retailer
@@ -190,8 +190,8 @@ def process_virtual_transfer(
                 transaction_type = "debit"
             else:
                 # Safely get description text
-                if account_group:
-                    desc_text = account_group.name or "virtual transfer"
+                if account_portal:
+                    desc_text = account_portal.name or "virtual transfer"
                 elif bank_account:
                     desc_text = bank_account.bank_account_name or "virtual transfer"
                 else:

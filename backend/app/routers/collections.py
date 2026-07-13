@@ -10,7 +10,7 @@ from app.database.db import get_db
 from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, BankAccount, BankDeposit, BusinessSettings
 from app.schemas.collection import CollectionCreate, CollectionResponse
 from app.dependencies import require_staff, require_admin, require_any_user
-from app.logic.ledger import recalculate_balances, lock_portal_group
+from app.logic.ledger import recalculate_balances, lock_portal
 
 router = APIRouter(prefix="/collections", tags=["Collections Control"])
 
@@ -181,11 +181,11 @@ def submit_collection(
                 db.add(db_deposit_denom)
                 
                 if bank_account_obj:
-                    lock_portal_group(db, bank_account_obj)
+                    lock_portal(db, bank_account_obj)
                     bank_account_obj.balance += d.online_amount
                     db_deposit.balance_snapshot = bank_account_obj.balance
-                    if bank_account_obj.group:
-                        bank_account_obj.group.balance += d.online_amount
+                    if bank_account_obj.portal:
+                        bank_account_obj.portal.balance += d.online_amount
 
         elif payload.from_staff_id:
             # Checked before bank_account_id: a staff-to-staff handover collection can
@@ -228,11 +228,11 @@ def submit_collection(
         elif payload.bank_account_id:
             bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
             if bank_account:
-                lock_portal_group(db, bank_account)
+                lock_portal(db, bank_account)
                 bank_account.balance -= Decimal(str(payload.total_amount))
                 db_collection.balance_snapshot = bank_account.balance
-                if bank_account.group:
-                    bank_account.group.balance -= Decimal(str(payload.total_amount))
+                if bank_account.portal:
+                    bank_account.portal.balance -= Decimal(str(payload.total_amount))
         else:
             db_collection.balance_snapshot = Decimal("0.00")
 
@@ -263,10 +263,10 @@ def submit_collection(
         
         # BankAccount name for response
         if db_collection.bank_account_id:
-            bank_account_obj = db.scalar(select(BankAccount).options(joinedload(BankAccount.group)).where(BankAccount.id == db_collection.bank_account_id))
+            bank_account_obj = db.scalar(select(BankAccount).options(joinedload(BankAccount.portal)).where(BankAccount.id == db_collection.bank_account_id))
             if bank_account_obj:
                 db_collection.bank_account_name = bank_account_obj.bank_account_name
-                db_collection.portal_group_name = bank_account_obj.group.name if bank_account_obj.group else None
+                db_collection.portal_name = bank_account_obj.portal.name if bank_account_obj.portal else None
 
         # 3. Simulate Email Alert (Task 110: Auto-Verify)
         if retailer and retailer.email:
@@ -335,7 +335,7 @@ def list_collections(
         joinedload(Collection.store),
         joinedload(Collection.staff),
         joinedload(Collection.from_staff),
-        joinedload(Collection.bank_account).joinedload(BankAccount.group),
+        joinedload(Collection.bank_account).joinedload(BankAccount.portal),
         joinedload(Collection.denominations),
         selectinload(Collection.ledgers)
     )
@@ -357,7 +357,7 @@ def list_collections(
         col.store_name = col.store.store_name if col.store else "Cash"
         col.staff_name = col.staff.name if col.staff else "Unknown Staff"
         col.bank_account_name = col.bank_account.bank_account_name if col.bank_account else None
-        col.portal_group_name = col.bank_account.group.name if (col.bank_account and col.bank_account.group) else None
+        col.portal_name = col.bank_account.portal.name if (col.bank_account and col.bank_account.portal) else None
         col.bank_name = col.bank_account.bank_name if col.bank_account else None
         
         linked_ledger = next((le for le in col.ledgers if le is not None), None)
@@ -468,7 +468,7 @@ def verify_collection(
     collection.store_name = collection.store.store_name if collection.store else "Cash"
     collection.staff_name = collection.staff.name if collection.staff else "Unknown"
     collection.bank_account_name = collection.bank_account.bank_account_name if collection.bank_account else None
-    collection.portal_group_name = collection.bank_account.group.name if (collection.bank_account and collection.bank_account.group) else None
+    collection.portal_name = collection.bank_account.portal.name if (collection.bank_account and collection.bank_account.portal) else None
 
     return collection
 
@@ -508,10 +508,10 @@ def delete_collection(
     if collection.bank_account_id and not collection.retailer_id:
         bank_account = db.scalar(select(BankAccount).where(BankAccount.id == collection.bank_account_id).with_for_update())
         if bank_account:
-            lock_portal_group(db, bank_account)
+            lock_portal(db, bank_account)
             bank_account.balance += Decimal(str(collection.total_amount))
-            if bank_account.group:
-                bank_account.group.balance += Decimal(str(collection.total_amount))
+            if bank_account.portal:
+                bank_account.portal.balance += Decimal(str(collection.total_amount))
 
     # Delete corresponding auto-created bank_account deposit if this collection had an online component
     if collection.retailer_id and collection.bank_account_id and collection.denominations and collection.denominations.online_amount > 0:
@@ -529,10 +529,10 @@ def delete_collection(
         if bank_account_dep:
             bank_account = db.scalar(select(BankAccount).where(BankAccount.id == collection.bank_account_id).with_for_update())
             if bank_account:
-                lock_portal_group(db, bank_account)
+                lock_portal(db, bank_account)
                 bank_account.balance -= bank_account_dep.amount
-                if bank_account.group:
-                    bank_account.group.balance -= bank_account_dep.amount
+                if bank_account.portal:
+                    bank_account.portal.balance -= bank_account_dep.amount
             db.delete(bank_account_dep)
 
     # Delete the mirrored staff handover deposit, if this collection is one.
@@ -639,27 +639,27 @@ def update_collection(
             if old_bank_account_id:
                 old_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == old_bank_account_id).with_for_update())
                 if old_bank_account:
-                    lock_portal_group(db, old_bank_account)
+                    lock_portal(db, old_bank_account)
                     old_bank_account.balance += Decimal(str(old_amount))
-                    if old_bank_account.group:
-                        old_bank_account.group.balance += Decimal(str(old_amount))
+                    if old_bank_account.portal:
+                        old_bank_account.portal.balance += Decimal(str(old_amount))
             # Deduct new bank_account
             if new_bank_account_id:
                 new_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
                 if new_bank_account:
-                    lock_portal_group(db, new_bank_account)
+                    lock_portal(db, new_bank_account)
                     new_bank_account.balance -= Decimal(str(new_amount))
-                    if new_bank_account.group:
-                        new_bank_account.group.balance -= Decimal(str(new_amount))
+                    if new_bank_account.portal:
+                        new_bank_account.portal.balance -= Decimal(str(new_amount))
         elif old_bank_account_id and new_amount != old_amount:
             # Same bank_account, but amount changed
             diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
             bank_account = db.scalar(select(BankAccount).where(BankAccount.id == old_bank_account_id).with_for_update())
             if bank_account:
-                lock_portal_group(db, bank_account)
+                lock_portal(db, bank_account)
                 bank_account.balance -= diff
-                if bank_account.group:
-                    bank_account.group.balance -= diff
+                if bank_account.portal:
+                    bank_account.portal.balance -= diff
 
     # Sync corresponding auto-created bank_account deposit if needed
     old_online_amount = collection.denominations.online_amount if collection.denominations else Decimal("0.00")
@@ -674,19 +674,19 @@ def update_collection(
         if not old_retailer_id and old_bank_account_id:
             old_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == old_bank_account_id).with_for_update())
             if old_bank_account:
-                lock_portal_group(db, old_bank_account)
+                lock_portal(db, old_bank_account)
                 old_bank_account.balance += Decimal(str(old_amount))
-                if old_bank_account.group:
-                    old_bank_account.group.balance += Decimal(str(old_amount))
+                if old_bank_account.portal:
+                    old_bank_account.portal.balance += Decimal(str(old_amount))
 
         # Transitioning: Apply direct bank_account balance decrement if it is now a CMS collection (new_retailer_id is None)
         if not new_retailer_id and new_bank_account_id:
             new_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
             if new_bank_account:
-                lock_portal_group(db, new_bank_account)
+                lock_portal(db, new_bank_account)
                 new_bank_account.balance -= Decimal(str(new_amount))
-                if new_bank_account.group:
-                    new_bank_account.group.balance -= Decimal(str(new_amount))
+                if new_bank_account.portal:
+                    new_bank_account.portal.balance -= Decimal(str(new_amount))
     
     # Find the existing auto-created deposit if it existed
     existing_dep = None
@@ -722,10 +722,10 @@ def update_collection(
             if existing_dep.bank_account_id:
                 old_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == existing_dep.bank_account_id).with_for_update())
                 if old_bank_acct:
-                    lock_portal_group(db, old_bank_acct)
+                    lock_portal(db, old_bank_acct)
                     old_bank_acct.balance -= existing_dep.amount
-                    if old_bank_acct.group:
-                        old_bank_acct.group.balance -= existing_dep.amount
+                    if old_bank_acct.portal:
+                        old_bank_acct.portal.balance -= existing_dep.amount
 
             # Update existing deposit in-place
             existing_dep.bank_account_id = new_bank_account_id
@@ -746,11 +746,11 @@ def update_collection(
             # Apply new bank_account balance changes
             new_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
             if new_bank_acct:
-                lock_portal_group(db, new_bank_acct)
+                lock_portal(db, new_bank_acct)
                 new_bank_acct.balance += new_online_amount
                 existing_dep.balance_snapshot = new_bank_acct.balance
-                if new_bank_acct.group:
-                    new_bank_acct.group.balance += new_online_amount
+                if new_bank_acct.portal:
+                    new_bank_acct.portal.balance += new_online_amount
         else:
             # Create a brand new deposit
             new_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
@@ -778,21 +778,21 @@ def update_collection(
             db.add(db_denom)
             
             if new_bank_acct:
-                lock_portal_group(db, new_bank_acct)
+                lock_portal(db, new_bank_acct)
                 new_bank_acct.balance += new_online_amount
                 db_deposit.balance_snapshot = new_bank_acct.balance
-                if new_bank_acct.group:
-                    new_bank_acct.group.balance += new_online_amount
+                if new_bank_acct.portal:
+                    new_bank_acct.portal.balance += new_online_amount
     else:
         # The new state should NOT have an auto-created bank_account deposit
         if existing_dep:
             if existing_dep.bank_account_id:
                 old_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == existing_dep.bank_account_id).with_for_update())
                 if old_bank_acct:
-                    lock_portal_group(db, old_bank_acct)
+                    lock_portal(db, old_bank_acct)
                     old_bank_acct.balance -= existing_dep.amount
-                    if old_bank_acct.group:
-                        old_bank_acct.group.balance -= existing_dep.amount
+                    if old_bank_acct.portal:
+                        old_bank_acct.portal.balance -= existing_dep.amount
             db.delete(existing_dep)
 
 
@@ -973,6 +973,6 @@ def update_collection(
     collection.store_name = collection.store.store_name if collection.store else "Cash"
     collection.staff_name = collection.staff.name if collection.staff else "Unknown"
     collection.bank_account_name = collection.bank_account.bank_account_name if collection.bank_account else None
-    collection.portal_group_name = collection.bank_account.group.name if (collection.bank_account and collection.bank_account.group) else None
+    collection.portal_name = collection.bank_account.portal.name if (collection.bank_account and collection.bank_account.portal) else None
     
     return collection
