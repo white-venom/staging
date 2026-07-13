@@ -10,7 +10,7 @@ interface AdminContextType {
   collections: any[];
   deposits: any[];
   retailerDirectory: any[];
-  portalDirectory: any[];
+  bankAccountDirectory: any[];
   userDirectory: any[];
   staffComplianceLogs: any[];
   businessSettings: any;
@@ -21,8 +21,8 @@ interface AdminContextType {
   setShowToast: (val: boolean) => void;
   showRetailerDrawer: boolean;
   setShowRetailerDrawer: (val: boolean) => void;
-  showPortalDrawer: boolean;
-  setShowPortalDrawer: (val: boolean) => void;
+  showBankAccountDrawer: boolean;
+  setShowBankAccountDrawer: (val: boolean) => void;
   ledgerSearchTerm: string;
   setLedgerSearchTerm: (val: string) => void;
 }
@@ -35,7 +35,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   
   const [retailerDirectory, setRetailerDirectory] = useState<any[]>([]);
-  const [portalDirectory, setPortalDirectory] = useState<any[]>([]);
+  const [bankAccountDirectory, setBankAccountDirectory] = useState<any[]>([]);
   const [userDirectory, setUserDirectory] = useState<any[]>([]);
   const [staffComplianceLogs, setStaffComplianceLogs] = useState<any[]>([]);
   const [businessSettings, setBusinessSettings] = useState<any>(null);
@@ -43,7 +43,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [showRetailerDrawer, setShowRetailerDrawer] = useState(false);
-  const [showPortalDrawer, setShowPortalDrawer] = useState(false);
+  const [showBankAccountDrawer, setShowBankAccountDrawer] = useState(false);
   const [ledgerSearchTerm, setLedgerSearchTerm] = useState("");
 
   const showToastNotification = (msg: string) => {
@@ -86,13 +86,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         return {
           id: c.id,
           retailer_id: c.retailer_id,
-          portal_id: c.portal_id,
+          bank_account_id: c.bank_account_id,
           store_id: c.store_id,
           from_staff_id: c.from_staff_id,
           staff_id: c.staff_id,
           retailerName: c.retailer_name || "Unknown Retailer",
           store_name: c.store_name || null,
-          portalName: c.portal_name || "Standard Channel",
+          bankAccountName: c.bank_account_name || "Standard Channel",
           staffName: c.staff_name || "Unknown Staff",
           totalAmount: parseFloat(c.total_amount),
           balance_snapshot: c.balance_snapshot,
@@ -121,7 +121,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         }
         return {
           id: d.id,
-          portal_id: d.portal_id,
+          bank_account_id: d.bank_account_id,
           retailer_id: d.retailer_id,
           staff_id: d.staff_id,
           recipient_staff_id: d.recipient_staff_id,
@@ -129,7 +129,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           portalGroupName: d.portal_group_name,
           depositType: d.deposit_type,
           targetName: d.target_name || "Direct Deposit",
-          portalName: d.portal_name || null,
+          bankAccountName: d.bank_account_name || null,
           amount: parseFloat(d.amount),
           balance_snapshot: d.balance_snapshot,
           paymentMode: d.payment_mode,
@@ -159,9 +159,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       mappedDeps.sort((a: any, b: any) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime());
       
       const mappedGroups = pGroups.map((g: any) => {
-        const portalsMapped = (g.portals || []).map((p: any) => ({
+        const bankAccountsMapped = (g.bank_accounts || []).map((p: any) => ({
           id: p.id,
-          portal_name: p.portal_name,
+          bank_account_name: p.bank_account_name,
           bank_name: p.bank_name,
           bank_account_no: p.bank_account_no,
           ifsc_code: p.ifsc_code,
@@ -176,8 +176,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           opening_to_give: parseFloat(g.opening_to_give || 0),
           opening_to_take: parseFloat(g.opening_to_take || 0),
           balance: parseFloat(g.balance || 0),
-          portals: portalsMapped,
-          show_in_online_payment: portalsMapped.some((p: any) => p.show_in_online_payment)
+          bankAccounts: bankAccountsMapped,
+          show_in_online_payment: bankAccountsMapped.some((p: any) => p.show_in_online_payment)
         };
       });
       
@@ -185,7 +185,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setDeposits(mappedDeps);
       setRetailerDirectory(mappedRets);
       setUserDirectory(fetchedUsers);
-      setPortalDirectory(mappedGroups);
+      setBankAccountDirectory(mappedGroups);
       setBusinessSettings(settings);
       const uniqueAttendanceLogs = Array.from(new Map(attendanceLogs.map((log: any) => [log.id, log])).values());
       
@@ -245,7 +245,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       collections: storeCols,
       deposits: storeDeps,
       retailerDirectory,
-      portalDirectory,
+      bankAccountDirectory,
       userDirectory,
       staffComplianceLogs,
       businessSettings,
@@ -256,8 +256,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       setShowToast,
       showRetailerDrawer,
       setShowRetailerDrawer,
-      showPortalDrawer,
-      setShowPortalDrawer,
+      showBankAccountDrawer,
+      setShowBankAccountDrawer,
       ledgerSearchTerm,
       setLedgerSearchTerm
     }}>

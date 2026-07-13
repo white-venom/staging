@@ -37,8 +37,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     showToastNotification,
     showRetailerDrawer,
     setShowRetailerDrawer,
-    showPortalDrawer,
-    setShowPortalDrawer
+    showBankAccountDrawer,
+    setShowBankAccountDrawer
   } = useAdmin();
   
   // States for new entries
@@ -176,13 +176,13 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       });
 
       showToastNotification(`Portal Group "${pGroupName}" registered!`);
-      setShowPortalDrawer(false);
+      setShowBankAccountDrawer(false);
       setPGroupName("");
       setPGroupBalance("");
       setPGroupOnline(false);
       fetchData();
     } catch (err: any) {
-      alert("Failed to register portal: " + err.message);
+      alert("Failed to register bankAccount: " + err.message);
     }
   };
 
@@ -191,7 +191,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
     { id: "ledger", label: "Ledger", icon: BookOpen, path: "/admin/ledger" },
     { id: "wallet-transfer", label: "Virtual Money Transfer", icon: CreditCard, path: "/admin/wallet-transfer" },
     { id: "virtual-ledger", label: "Virtual Ledger", icon: ClipboardList, path: "/admin/virtual-ledger" },
-    { id: "portals", label: "Portals", icon: Globe, path: "/admin/portals" },
+    { id: "bankAccounts", label: "Portals", icon: Globe, path: "/admin/bankAccounts" },
     { id: "retailers", label: "Retailers", icon: Home, path: "/admin/retailers" },
     { id: "staff", label: "Staff", icon: Users, path: "/admin/staff" },
     { id: "attendance", label: "Attendance", icon: Clock, path: "/admin/attendance" },
@@ -329,19 +329,19 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       )}
 
       {/* PORTAL REGISTER DRAWER */}
-      {showPortalDrawer && (
+      {showBankAccountDrawer && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 animate-slide-up shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Register Portal</h3>
-              <button onClick={() => setShowPortalDrawer(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Register BankAccount</h3>
+              <button onClick={() => setShowBankAccountDrawer(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <form onSubmit={handleCreatePortalGroup} className="space-y-6 text-xs font-semibold">
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Portal Name</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">BankAccount Name</label>
                   <input autoComplete="one-time-code" type="text" placeholder="e.g. RevaPay" value={pGroupName} onChange={(e) => setPGroupName(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg font-bold" required />
                 </div>
                 <div className="space-y-1">
@@ -367,7 +367,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                   </label>
                 </div>
               </div>
-              <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors text-xs uppercase tracking-wider">Register Portal</button>
+              <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors text-xs uppercase tracking-wider">Register BankAccount</button>
             </form>
           </div>
         </div>

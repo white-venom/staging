@@ -103,7 +103,7 @@ export default function ReportsTab({ collections, deposits }: ReportsTabProps) {
       title: "Retailer & Portals",
       reports: [
         { name: "Retailer Ledger (A-Z)", icon: FileText, formats: "PDF • XLSX", color: "purple", type: "retailer_ledger" },
-        { name: "Portal Settlement Report", icon: PieChart, formats: "PDF • XLSX", color: "purple" },
+        { name: "BankAccount Settlement Report", icon: PieChart, formats: "PDF • XLSX", color: "purple" },
       ]
     }
   ];

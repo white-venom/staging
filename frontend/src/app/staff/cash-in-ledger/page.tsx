@@ -164,7 +164,7 @@ export default function CashInLedgerPage() {
       headerLines.push(`Store: ${entry.store_name}`);
     }
     if (entry.portal_group_name && entry.portal_group_name !== "Cash" && entry.portal_group_name !== "N/A") {
-      headerLines.push(`Portal: ${entry.portal_group_name}`);
+      headerLines.push(`BankAccount: ${entry.portal_group_name}`);
     }
     const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
     const text = `${headerText}${lines.join("\n")}
@@ -256,7 +256,7 @@ ${dateFormatted}`;
         denominations: editDenoms,
         retailer_id: editingItem.retailer_id,
         store_id: editingItem.store_id,
-        portal_id: editingItem.portal_id,
+        bank_account_id: editingItem.bank_account_id,
         from_staff_id: editingItem.from_staff_id,
         from_office: editingItem.from_office,
       };
@@ -273,7 +273,7 @@ ${dateFormatted}`;
         retailer_id: updated.retailer_id,
         store_id: updated.store_id,
         retailerName: updated.retailer_name || "Unknown Retailer",
-        portalName: updated.portal_name || "Cash",
+        bankAccountName: updated.bank_account_name || "Cash",
         staffName: updated.staff_name,
         totalAmount: Number(updated.total_amount),
         denominations: {
@@ -285,7 +285,7 @@ ${dateFormatted}`;
           note_10: Number(updated.denominations?.note_10 || 0),
           coins: Number(updated.denominations?.coins || 0),
           online_amount: Number(updated.denominations?.online_amount || 0),
-          online_portal_id: updated.denominations?.online_portal_id,
+          online_bank_account_id: updated.denominations?.online_bank_account_id,
         },
         status: updated.status,
         remarks: updated.remarks,
@@ -307,12 +307,12 @@ ${dateFormatted}`;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const retailerMatch = c.retailer_name?.toLowerCase().includes(q) || false;
-      const portalMatch = c.portal_name?.toLowerCase().includes(q) || false;
+      const bankAccountMatch = c.bank_account_name?.toLowerCase().includes(q) || false;
       const storeMatch = c.store_name?.toLowerCase().includes(q) || false;
       const remarksMatch = c.remarks?.toLowerCase().includes(q) || false;
       const amountMatch = String(c.total_amount || c.totalAmount || "").includes(q);
       
-      if (!retailerMatch && !portalMatch && !storeMatch && !remarksMatch && !amountMatch) {
+      if (!retailerMatch && !bankAccountMatch && !storeMatch && !remarksMatch && !amountMatch) {
         return false;
       }
     }
@@ -360,7 +360,7 @@ ${dateFormatted}`;
           <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
           <input autoComplete="one-time-code"
             type="text"
-            placeholder="Filter by retailer or portal..."
+            placeholder="Filter by retailer or bankAccount..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-[11px] text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold shadow-sm"
@@ -451,7 +451,7 @@ ${dateFormatted}`;
                             </div>
                           )}
                           <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
-                            <span>{c.portal_name || "N/A"}</span>
+                            <span>{c.bank_account_name || "N/A"}</span>
                             <span>•</span>
                             <span>{getUtcDate(c.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</span>
                           </p>

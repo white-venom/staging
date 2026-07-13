@@ -34,13 +34,13 @@ export default function AdminTabPage() {
     collections, 
     deposits, 
     retailerDirectory, 
-    portalDirectory, 
+    bankAccountDirectory, 
     userDirectory, 
     staffComplianceLogs,
     showToastNotification,
     fetchData,
     setShowRetailerDrawer,
-    setShowPortalDrawer
+    setShowBankAccountDrawer
   } = useAdmin();
 
   const renderTab = () => {
@@ -83,18 +83,18 @@ export default function AdminTabPage() {
             retailerDirectory={retailerDirectory}
           />
         );
-      case "portals":
+      case "bankAccounts":
         return isMobile ? (
           <MobilePortals 
-            portalDirectory={portalDirectory}
+            bankAccountDirectory={bankAccountDirectory}
             showToastNotification={showToastNotification}
             fetchData={fetchData}
           />
         ) : (
           <PortalsTab 
-            portalDirectory={portalDirectory}
+            bankAccountDirectory={bankAccountDirectory}
             showToastNotification={showToastNotification}
-            setShowPortalDrawer={setShowPortalDrawer}
+            setShowBankAccountDrawer={setShowBankAccountDrawer}
             fetchData={fetchData}
           />
         );
@@ -132,7 +132,7 @@ export default function AdminTabPage() {
         return (
           <AdministrationTab 
             userDirectory={userDirectory}
-            portalDirectory={portalDirectory}
+            bankAccountDirectory={bankAccountDirectory}
             fetchData={fetchData}
             showToastNotification={showToastNotification}
           />

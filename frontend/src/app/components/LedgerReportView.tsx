@@ -28,7 +28,7 @@ const cleanDescription = (desc: string, tx?: any): string => {
     .replace(/cash collection/gi, "cash in");
     
   if (cleaned.toLowerCase().startsWith("move to distributor")) {
-    const portal = tx?.portal_group_name || tx?.portal_name || "";
+    const portal = tx?.portal_group_name || tx?.bank_account_name || "";
     if (portal) {
       cleaned = `move to distributor ${portal.toLowerCase()}`;
     }
@@ -84,11 +84,9 @@ interface LedgerTransaction {
   collection_id?: string | null;
   deposit_id?: string | null;
   store_name?: string | null;
-  portal_name?: string | null;
-  portal_bank_name?: string | null;
+  bank_account_name?: string | null;
   bank_name?: string | null;
   portal_group_name?: string | null;
-  portal_bank_account?: string | null;
   deposit_type?: string | null;
   denominations?: {
     note_500: number;
@@ -116,7 +114,7 @@ interface LedgerReportViewProps {
   phone?: string;
   onEditEntry?: (entry: any) => void;
   onDeleteEntry?: (entry: any) => void;
-  hidePortalBankNames?: boolean;
+  hideBankNames?: boolean;
 }
 
 export default function LedgerReportView({
@@ -133,7 +131,7 @@ export default function LedgerReportView({
   phone,
   onEditEntry,
   onDeleteEntry,
-  hidePortalBankNames = false
+  hideBankNames = false
 }: LedgerReportViewProps) {
   const [selectedEntryForDetails, setSelectedEntryForDetails] = useState<LedgerTransaction | null>(null);
   const [startDate, setStartDate] = useState("");
@@ -200,8 +198,8 @@ export default function LedgerReportView({
         const remarkText = tx.remarks || "";
         const refNoText = tx.reference_no || "";
         const storeText = tx.store_name || "";
-        const portalText = tx.portal_name || "";
-        const bankText = tx.portal_bank_name || tx.bank_name || "";
+        const bankAccountText = tx.bank_account_name || "";
+        const bankText = tx.bank_name || "";
         const q = searchQuery.toLowerCase();
         if (
           searchQuery && 
@@ -209,7 +207,7 @@ export default function LedgerReportView({
           !remarkText.toLowerCase().includes(q) &&
           !refNoText.toLowerCase().includes(q) &&
           !storeText.toLowerCase().includes(q) &&
-          !portalText.toLowerCase().includes(q) &&
+          !bankAccountText.toLowerCase().includes(q) &&
           !bankText.toLowerCase().includes(q) &&
           !tx.amount.toString().includes(q)
         ) {
@@ -614,15 +612,15 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                             Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
                           </div>
                         )}
-                        {isDebit && (tx.portal_name || tx.portal_group_name) && (
+                        {isDebit && (tx.bank_account_name || tx.portal_group_name) && (
                           <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
                             {tx.deposit_type === "retailer"
-                              ? `Retailer - ${tx.portal_name}`
+                              ? `Retailer - ${tx.bank_account_name}`
                               : tx.deposit_type === "staff"
-                              ? `Staff - ${tx.portal_name}`
-                              : hidePortalBankNames
+                              ? `Staff - ${tx.bank_account_name}`
+                              : hideBankNames
                               ? (tx.portal_group_name || "Portal")
-                              : (tx.portal_group_name ? `${tx.portal_group_name}${tx.portal_name ? ` (${tx.portal_name})` : ""}` : tx.portal_name)}
+                              : (tx.portal_group_name ? `${tx.portal_group_name}${tx.bank_account_name ? ` (${tx.bank_account_name})` : ""}` : tx.bank_account_name)}
                           </div>
                         )}
                         {tx.remarks && (
@@ -739,16 +737,16 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               {/* Cash In (Collection) Details */}
               {selectedEntryForDetails.transaction_type === "credit" && (
                 <>
-                  {/* Show Online Portal Name if payment was online */}
-                  {(selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_group_name) && (
+                  {/* Show Online Bank Account Name if payment was online */}
+                  {(selectedEntryForDetails.bank_account_name || selectedEntryForDetails.portal_group_name) && (
                     <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-3.5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex justify-between items-center text-xs">
-                      <span className="font-bold text-emerald-700 dark:text-emerald-400">Online Portal</span>
+                      <span className="font-bold text-emerald-700 dark:text-emerald-400">Online Bank Account</span>
                       <span className="font-extrabold text-emerald-650 dark:text-emerald-400 uppercase tracking-wider">
-                        {hidePortalBankNames
+                        {hideBankNames
                           ? (selectedEntryForDetails.portal_group_name || "Portal")
                           : (selectedEntryForDetails.portal_group_name
-                            ? `${selectedEntryForDetails.portal_group_name}${selectedEntryForDetails.portal_name ? ` (${selectedEntryForDetails.portal_name})` : ""}`
-                            : selectedEntryForDetails.portal_name)}
+                            ? `${selectedEntryForDetails.portal_group_name}${selectedEntryForDetails.bank_account_name ? ` (${selectedEntryForDetails.bank_account_name})` : ""}`
+                            : selectedEntryForDetails.bank_account_name)}
                         {selectedEntryForDetails.denominations?.online_amount ? ` (₹${selectedEntryForDetails.denominations.online_amount})` : ""}
                       </span>
                     </div>
@@ -763,29 +761,29 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
               {/* Cash Out (Deposit/Payout) Details */}
               {selectedEntryForDetails.transaction_type === "debit" && 
-               (selectedEntryForDetails.deposit_type === "retailer" || selectedEntryForDetails.deposit_type === "staff" || !hidePortalBankNames || selectedEntryForDetails.portal_group_name) && 
-               (selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_group_name || selectedEntryForDetails.portal_bank_name || selectedEntryForDetails.bank_name) && (
+               (selectedEntryForDetails.deposit_type === "retailer" || selectedEntryForDetails.deposit_type === "staff" || !hideBankNames || selectedEntryForDetails.portal_group_name) && 
+               (selectedEntryForDetails.bank_account_name || selectedEntryForDetails.portal_group_name || selectedEntryForDetails.bank_name) && (
                  <div className="bg-indigo-50/50 dark:bg-indigo-950/15 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/30 space-y-2 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
                    <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target</span>
-                   {(selectedEntryForDetails.portal_name || selectedEntryForDetails.portal_group_name) && (
+                   {(selectedEntryForDetails.bank_account_name || selectedEntryForDetails.portal_group_name) && (
                      <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
                        <span className="font-extrabold uppercase tracking-wide">
                          {selectedEntryForDetails.deposit_type === "retailer"
-                           ? `Retailer - ${selectedEntryForDetails.portal_name}`
+                           ? `Retailer - ${selectedEntryForDetails.bank_account_name}`
                            : selectedEntryForDetails.deposit_type === "staff"
-                           ? `Staff - ${selectedEntryForDetails.portal_name}`
-                           : hidePortalBankNames
+                           ? `Staff - ${selectedEntryForDetails.bank_account_name}`
+                           : hideBankNames
                            ? (selectedEntryForDetails.portal_group_name || "Portal")
                            : (selectedEntryForDetails.portal_group_name
-                             ? `${selectedEntryForDetails.portal_group_name}${selectedEntryForDetails.portal_name ? ` (${selectedEntryForDetails.portal_name})` : ""}`
-                             : selectedEntryForDetails.portal_name)}
+                             ? `${selectedEntryForDetails.portal_group_name}${selectedEntryForDetails.bank_account_name ? ` (${selectedEntryForDetails.bank_account_name})` : ""}`
+                             : selectedEntryForDetails.bank_account_name)}
                        </span>
                      </div>
                    )}
-                   {(selectedEntryForDetails.portal_bank_name || selectedEntryForDetails.bank_name) && !hidePortalBankNames && (
+                   {(selectedEntryForDetails.bank_name) && !hideBankNames && (
                      <div className="flex justify-between pb-0.5">
                        <span>Bank Name</span>
-                       <span className="font-extrabold">{selectedEntryForDetails.portal_bank_name || selectedEntryForDetails.bank_name}</span>
+                       <span className="font-extrabold">{selectedEntryForDetails.bank_name}</span>
                      </div>
                    )}
                  </div>
@@ -817,7 +815,7 @@ Date: ${formatIST(entry.date).full}
 Type: ${entry.transaction_type === "credit" ? "Cash In" : "Cash Out"}
 Amount: ₹ ${Math.round(entry.amount).toLocaleString()}
 Desc: ${cleanDescription(entry.description, entry)}
-${entry.store_name ? `Store: ${entry.store_name}\n` : ''}${entry.portal_name ? `Portal: ${entry.portal_name}\n` : ''}Remarks: ${entry.remarks || 'None'}`;
+${entry.store_name ? `Store: ${entry.store_name}\n` : ''}${entry.bank_account_name ? `Bank: ${entry.bank_account_name}\n` : ''}Remarks: ${entry.remarks || 'None'}`;
                   if (navigator.share) {
                     navigator.share({ title: "Transaction Receipt", text: shareText }).catch(() => {});
                   } else {

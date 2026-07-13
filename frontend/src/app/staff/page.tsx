@@ -265,7 +265,7 @@ export default function StaffDashboard() {
         store_id: c.store_id,
         store_name: c.store_name,
         retailerName: c.retailer_name || "Unknown Retailer",
-        portalName: c.portal_name || "Cash",
+        bankAccountName: c.bank_account_name || "Cash",
         portalGroupName: c.portal_group_name || undefined,
         staffName: c.staff_name,
         totalAmount: Number(c.total_amount),
@@ -278,7 +278,7 @@ export default function StaffDashboard() {
           note_10: Number(c.denominations?.note_10 || 0),
           coins: Number(c.denominations?.coins || 0),
           online_amount: Number(c.denominations?.online_amount || 0),
-          online_portal_id: c.denominations?.online_portal_id,
+          online_bank_account_id: c.denominations?.online_bank_account_id,
         },
         status: c.status,
         remarks: c.remarks,
@@ -308,7 +308,7 @@ export default function StaffDashboard() {
         })
         .map((d: any) => ({
         id: d.id,
-        portal_id: d.portal_id,
+        bank_account_id: d.bank_account_id,
         retailer_id: d.retailer_id,
         recipient_staff_id: d.recipient_staff_id,
         depositType: d.deposit_type,
@@ -324,11 +324,11 @@ export default function StaffDashboard() {
           note_10: Number(d.denominations.note_10 || 0),
           coins: Number(d.denominations.coins || 0),
           online_amount: Number(d.denominations.online_amount || 0),
-          online_portal_id: d.denominations.online_portal_id,
+          online_bank_account_id: d.denominations.online_bank_account_id,
         } : undefined,
         status: d.status,
         remarks: d.remarks,
-        portalName: d.portal_name || undefined,
+        bankAccountName: d.bank_account_name || undefined,
         bankName: d.bank_name || undefined,
         date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
         retailer_ledger_token: d.retailer_ledger_token,
@@ -387,7 +387,7 @@ export default function StaffDashboard() {
           denominations: editDenoms,
           retailer_id: editingItem.retailer_id,
           store_id: editingItem.store_id,
-          portal_id: editingItem.portal_id,
+          bank_account_id: editingItem.bank_account_id,
           from_staff_id: editingItem.from_staff_id,
           from_office: editingItem.from_office,
         };
@@ -401,7 +401,7 @@ export default function StaffDashboard() {
           retailer_id: updated.retailer_id,
           store_id: updated.store_id,
           retailerName: updated.retailer_name || "Unknown Retailer",
-          portalName: updated.portal_name || "Cash",
+          bankAccountName: updated.bank_account_name || "Cash",
           portalGroupName: updated.portal_group_name || undefined,
           staffName: updated.staff_name,
           totalAmount: Number(updated.total_amount),
@@ -414,7 +414,7 @@ export default function StaffDashboard() {
             note_10: Number(updated.denominations?.note_10 || 0),
             coins: Number(updated.denominations?.coins || 0),
             online_amount: Number(updated.denominations?.online_amount || 0),
-            online_portal_id: updated.denominations?.online_portal_id,
+            online_bank_account_id: updated.denominations?.online_bank_account_id,
           },
           status: updated.status,
           remarks: updated.remarks,
@@ -428,7 +428,7 @@ export default function StaffDashboard() {
           remarks: editRemarks,
           denominations: editDenoms,
           deposit_type: editingItem.depositType || editingItem.deposit_type,
-          portal_id: editingItem.portal_id,
+          bank_account_id: editingItem.bank_account_id,
           retailer_id: editingItem.retailer_id,
           recipient_staff_id: editingItem.recipient_staff_id,
           to_office: editingItem.to_office,
@@ -441,7 +441,7 @@ export default function StaffDashboard() {
         const store = useAppStore.getState();
         const mappedUpdated = {
           id: updated.id,
-          portal_id: updated.portal_id,
+          bank_account_id: updated.bank_account_id,
           retailer_id: updated.retailer_id,
           recipient_staff_id: updated.recipient_staff_id,
           depositType: updated.deposit_type,
@@ -457,11 +457,11 @@ export default function StaffDashboard() {
             note_10: Number(updated.denominations.note_10 || 0),
             coins: Number(updated.denominations.coins || 0),
             online_amount: Number(updated.denominations.online_amount || 0),
-            online_portal_id: updated.denominations.online_portal_id,
+            online_bank_account_id: updated.denominations.online_bank_account_id,
           } : undefined,
           status: updated.status,
           remarks: updated.remarks,
-          portalName: updated.portal_name || undefined,
+          bankAccountName: updated.bank_account_name || undefined,
           bankName: updated.bank_name || undefined,
           date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
           created_at: updated.created_at,
@@ -1135,7 +1135,7 @@ export default function StaffDashboard() {
                            </div>
                          )}
                          <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                           <span className="text-blue-500">{c.type === 'collection' ? (c.portalName || "Handover") : (c.depositType || 'Deposit')}</span>
+                           <span className="text-blue-500">{c.type === 'collection' ? (c.bankAccountName || "Handover") : (c.depositType || 'Deposit')}</span>
                            <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                            <span>{c.date}</span>
                          </div>
@@ -1185,9 +1185,9 @@ export default function StaffDashboard() {
                          <button
                            onClick={() => {
                              if (c.type === 'collection') {
-                               shareCollectionEntry({ retailer_name: c.retailerName, portal_name: c.portalName, portal_group_name: c.portalGroupName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name);
+                               shareCollectionEntry({ retailer_name: c.retailerName, bank_account_name: c.bankAccountName, portal_group_name: c.portalGroupName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name);
                              } else {
-                               shareDepositEntry({ deposit_type: c.depositType, target_name: c.targetName, portal_name: c.portalName, amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name, currentUser.id);
+                               shareDepositEntry({ deposit_type: c.depositType, target_name: c.targetName, bank_account_name: c.bankAccountName, amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name, currentUser.id);
                              }
                            }}
                            className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 active:scale-95 transition-transform"
@@ -1228,8 +1228,8 @@ export default function StaffDashboard() {
                                      // Refresh data
                                      const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
                                      const { setCollections, setDeposits } = useAppStore.getState();
-                                     setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', portalName: col.portal_name || 'Cash', portalGroupName: col.portal_group_name || undefined, staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
-                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, portal_id: d.portal_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, remarks: d.remarks, portalName: d.portal_name || undefined, bankName: d.bank_name || undefined, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
+                                     setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', bankAccountName: col.bank_account_name || 'Cash', portalGroupName: col.portal_group_name || undefined, staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
+                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, bank_account_id: d.bank_account_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_group_name) ? d.portal_group_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, remarks: d.remarks, bankAccountName: d.bank_account_name || undefined, bankName: d.bank_name || undefined, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
                                      setExpandedHomeId(null);
                                    } catch (err: any) {
                                      alert('Delete failed: ' + err.message);

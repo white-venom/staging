@@ -23,13 +23,13 @@ export default function DepositsTab({
   const [editAmount, setEditAmount] = React.useState(0);
   const [editRef, setEditRef] = React.useState("");
 
-  const { retailerDirectory, portalDirectory, userDirectory } = useAdmin();
+  const { retailerDirectory, bankAccountDirectory, userDirectory } = useAdmin();
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
   const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
   
   const [selectedNewRetailerId, setSelectedNewRetailerId] = React.useState("");
-  const [selectedNewPortalId, setSelectedNewPortalId] = React.useState("");
+  const [selectedNewBankAccountId, setSelectedNewBankAccountId] = React.useState("");
   const [selectedNewRemarks, setSelectedNewRemarks] = React.useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = React.useState("");
   const [selectedNewToOffice, setSelectedNewToOffice] = React.useState(false);
@@ -55,7 +55,7 @@ export default function DepositsTab({
   const handleStartEditDeposit = (item: any) => {
     setEditingCollection(item);
     setSelectedNewRetailerId(item.retailer_id || "");
-    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewBankAccountId(item.bank_account_id || "");
     setSelectedNewRemarks(item.remarks || "");
     setSelectedNewDepositType(item.depositType || item.deposit_type || "virtual");
     setSelectedNewPaymentMode(item.paymentMode || item.payment_mode || "online");
@@ -89,14 +89,14 @@ export default function DepositsTab({
     setIsSavingCollection(true);
     
     try {
-      const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+      const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewBankAccountId : null;
       const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
       const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
       const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
       await api.updateDeposit(editingCollection.id, {
         deposit_type: selectedNewDepositType,
-        portal_id: portalId || null,
+        bank_account_id: bankAccountId || null,
         retailer_id: retailerId || null,
         recipient_staff_id: recipientStaffId || null,
         to_office: toOffice,
@@ -172,7 +172,7 @@ export default function DepositsTab({
     filtered = filtered.filter(d => 
       (d.targetName || "").toLowerCase().includes(q) || 
       (d.paymentMode || "").toLowerCase().includes(q) ||
-      (d.portalName || "").toLowerCase().includes(q) ||
+      (d.bankAccountName || "").toLowerCase().includes(q) ||
       (d.remarks || "").toLowerCase().includes(q) ||
       (d.referenceNo || d.reference_no || "").toLowerCase().includes(q) ||
       (d.staff || "").toLowerCase().includes(q) ||
@@ -339,7 +339,7 @@ export default function DepositsTab({
             <div className="space-y-4">
               <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase">Target (Bank/Portal)</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase">Target (Bank/BankAccount)</span>
                   <span className="text-xs font-black text-slate-900 dark:text-white uppercase">{currentSelection.targetName}</span>
                 </div>
                 <div className="flex items-center justify-between mb-3">
@@ -417,7 +417,7 @@ export default function DepositsTab({
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 text-[10px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800">Date</th>
-                <th className="p-4 border-r border-slate-100 dark:border-slate-800">Target (Bank/Portal)</th>
+                <th className="p-4 border-r border-slate-100 dark:border-slate-800">Target (Bank/BankAccount)</th>
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800">Type/Mode</th>
                 <th className="p-4 border-r border-slate-100 dark:border-slate-800">Staff</th>
                 <th className="p-4 text-right">Amount</th>
@@ -528,19 +528,19 @@ export default function DepositsTab({
                 {/* Target Fields depending on deposit type */}
                 {selectedNewDepositType === "portal" && (
                   <div className="space-y-1">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Portal</label>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target BankAccount</label>
                     <InlineSelect
-                      value={selectedNewPortalId}
-                      onChange={setSelectedNewPortalId}
+                      value={selectedNewBankAccountId}
+                      onChange={setSelectedNewBankAccountId}
                       options={[
-                        { value: "", label: "Select Portal Bank Account" },
-                        ...portalDirectory.flatMap((group: any) => {
-                          const firstPortal = (group.portals || [])[0];
-                          if (!firstPortal) return [];
-                          return [{ value: String(firstPortal.id), label: group.name }];
+                        { value: "", label: "Select Bank Account" },
+                        ...bankAccountDirectory.flatMap((group: any) => {
+                          const firstBankAccount = (group.bankAccounts || [])[0];
+                          if (!firstBankAccount) return [];
+                          return [{ value: String(firstBankAccount.id), label: group.name }];
                         })
                       ]}
-                      placeholder="Select Portal Bank Account"
+                      placeholder="Select Bank Account"
                     />
                   </div>
                 )}
@@ -593,20 +593,20 @@ export default function DepositsTab({
                   <>
                     <div className="space-y-1">
                       <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
-                        {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                        {selectedNewPaymentMode === "refund" ? "Destination BankAccount" : "Source BankAccount"}
                       </label>
                       <InlineSelect
-                        value={selectedNewPortalId}
-                        onChange={setSelectedNewPortalId}
+                        value={selectedNewBankAccountId}
+                        onChange={setSelectedNewBankAccountId}
                         options={[
-                          { value: "", label: "Select Portal Bank Account" },
-                          ...portalDirectory.flatMap((group: any) => {
-                            const firstPortal = (group.portals || [])[0];
-                            if (!firstPortal) return [];
-                            return [{ value: String(firstPortal.id), label: group.name }];
+                          { value: "", label: "Select Bank Account" },
+                          ...bankAccountDirectory.flatMap((group: any) => {
+                            const firstBankAccount = (group.bankAccounts || [])[0];
+                            if (!firstBankAccount) return [];
+                            return [{ value: String(firstBankAccount.id), label: group.name }];
                           })
                         ]}
-                        placeholder="Select Portal Bank Account"
+                        placeholder="Select Bank Account"
                       />
                     </div>
 

@@ -53,8 +53,8 @@ function NewCollectionContent() {
   const [selectedStaffId, setSelectedStaffId] = useState<string>("");
   const [sourceType, setSourceType] = useState<"retailer" | "staff" | "office">("retailer");
   const [staffMembers, setStaffMembers] = useState<any[]>([]);
-  const [portals, setPortals] = useState<any[]>([]);
-  const [showOnlinePortal, setShowOnlinePortal] = useState(false);
+  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [showOnlineBankAccount, setShowOnlineBankAccount] = useState(false);
 
   // Fetch stores when retailer changes
   useEffect(() => {
@@ -76,7 +76,7 @@ function NewCollectionContent() {
     fetchStores();
   }, [selectedRetailer, isOnline]);
 
-  const [denominations, setDenominations] = useState<DenominationCounts & { online_portal_id?: string }>({
+  const [denominations, setDenominations] = useState<DenominationCounts & { online_bank_account_id?: string }>({
     note_500: 0,
     note_200: 0,
     note_100: 0,
@@ -121,10 +121,10 @@ function NewCollectionContent() {
                 note_10: Number(target.denominations.note_10) || 0,
                 coins: Number(target.denominations.coins) || 0,
                 online_amount: Number(target.denominations.online_amount) || 0,
-                online_portal_id: target.denominations.online_portal_id
+                online_bank_account_id: target.denominations.online_bank_account_id
               });
-              if (target.denominations.online_portal_id) {
-                setShowOnlinePortal(true);
+              if (target.denominations.online_bank_account_id) {
+                setShowOnlineBankAccount(true);
               }
             }
             if (target.collection_date) {
@@ -172,7 +172,7 @@ function NewCollectionContent() {
             id: r.id,
             name: r.retailer_name,
             phone: r.phone || "",
-            portalName: "Standard",
+            bankAccountName: "Standard",
             opening_to_give: parseFloat(r.opening_to_give || 0),
             opening_to_take: parseFloat(r.opening_to_take || 0),
             net_balance: parseFloat(r.balance || 0)
@@ -188,7 +188,7 @@ function NewCollectionContent() {
       // Do not auto-select the first retailer on mount, keep it null for search
       setSelectedRetailer(null);
 
-      // Fetch Staff Members and Portals
+      // Fetch Staff Members and Bank Accounts
       try {
         const { api } = await import("../utils/api");
         const staffList = await api.getStaffList();
@@ -199,30 +199,30 @@ function NewCollectionContent() {
 
         const groups = await api.getPortalGroups();
         setPortalGroups(groups);
-        // Flatten: only individual portal accounts marked show_in_online_payment=true
-        const onlinePortals: { id: string; name: string }[] = [];
+        // Flatten: only individual bankAccount accounts marked show_in_online_payment=true
+        const onlineBankAccounts: { id: string; name: string }[] = [];
         for (const g of groups) {
-          for (const p of (g.portals || [])) {
+          for (const p of (g.bank_accounts || [])) {
             if (p.show_in_online_payment) {
-              onlinePortals.push({
+              onlineBankAccounts.push({
                 id: p.id,
-                name: g.portals.length > 1 ? `${g.name} - ${p.portal_name}` : g.name
+                name: g.bank_accounts.length > 1 ? `${g.name} - ${p.bank_account_name}` : g.name
               });
             }
           }
         }
-        setPortals(onlinePortals);
+        setBankAccounts(onlineBankAccounts);
         
-        // Auto default to last used online portal if not editing
+        // Auto default to last used online bankAccount if not editing
         if (!editId && typeof window !== "undefined") {
-          const lastUsedPortalId = localStorage.getItem("last_used_online_portal_id");
-          if (lastUsedPortalId && onlinePortals.some(p => p.id === lastUsedPortalId)) {
-            setDenominations(prev => ({ ...prev, online_portal_id: lastUsedPortalId }));
-            setShowOnlinePortal(true);
+          const lastUsedBankAccountId = localStorage.getItem("last_used_online_bank_account_id");
+          if (lastUsedBankAccountId && onlineBankAccounts.some(p => p.id === lastUsedBankAccountId)) {
+            setDenominations(prev => ({ ...prev, online_bank_account_id: lastUsedBankAccountId }));
+            setShowOnlineBankAccount(true);
           }
         }
       } catch (err) {
-        console.warn("Failed to fetch staff members or portals", err);
+        console.warn("Failed to fetch staff members or bankAccounts", err);
       }
     };
     initDB();
@@ -246,7 +246,7 @@ function NewCollectionContent() {
 
 
   const handleDenomChange = (key: keyof DenominationCounts, value: string) => {
-    if (key === "online_portal_id") {
+    if (key === "online_bank_account_id") {
       setDenominations(prev => ({ ...prev, [key]: value }));
       return;
     }
@@ -288,14 +288,14 @@ function NewCollectionContent() {
       return;
     }
 
-    // Resolve portal name (Bank) and portal group name (Portal)
-    let computedPortalName = "Cash";
+    // Resolve bank account name and portal group name for display
+    let computedBankAccountName = "Cash";
     let computedPortalGroupName = "";
-    if (denominations.online_amount > 0 && denominations.online_portal_id) {
+    if (denominations.online_amount > 0 && denominations.online_bank_account_id) {
       for (const g of portalGroups) {
-        const foundP = (g.portals || []).find((p: any) => p.id === denominations.online_portal_id);
+        const foundP = (g.bank_accounts || []).find((p: any) => p.id === denominations.online_bank_account_id);
         if (foundP) {
-          computedPortalName = foundP.portal_name;
+          computedBankAccountName = foundP.bank_account_name;
           computedPortalGroupName = g.name;
           break;
         }
@@ -303,7 +303,7 @@ function NewCollectionContent() {
     } else if (selectedStoreId) {
       const storeObj = retailerStores.find(s => s.id === selectedStoreId);
       if (storeObj) {
-        computedPortalName = storeObj.store_name;
+        computedBankAccountName = storeObj.store_name;
       }
     }
 
@@ -312,9 +312,9 @@ function NewCollectionContent() {
       await db.collections.add({
         retailer_id: selectedRetailer!.id,
         store_id: selectedStoreId || undefined,
-        portal_id: denominations.online_portal_id || undefined,
+        bank_account_id: denominations.online_bank_account_id || undefined,
         retailerName: selectedRetailer?.name || "Unknown",
-        portalName: computedPortalName,
+        bankAccountName: computedBankAccountName,
         portalGroupName: computedPortalGroupName || undefined,
         totalAmount: totalCollectionAmount,
         denominations,
@@ -336,7 +336,7 @@ function NewCollectionContent() {
         from_staff_id: sourceType === "staff" ? selectedStaffId : null,
         from_office: sourceType === "office",
         store_id: selectedStoreId || null,
-        portal_id: denominations.online_portal_id || null,
+        bank_account_id: denominations.online_bank_account_id || null,
         total_amount: totalCollectionAmount,
         collection_date: collectionDate,
         denominations: denominations,
@@ -353,7 +353,7 @@ function NewCollectionContent() {
           store_id: selectedStoreId || undefined,
           store_name: sourceType === "retailer" && selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : undefined,
           retailerName: sourceType === "retailer" ? selectedRetailer!.name : (sourceType === "staff" ? `Staff: ${staffMembers.find(s => s.id === selectedStaffId)?.name}` : "Super Distributor"),
-          portalName: computedPortalName,
+          bankAccountName: computedBankAccountName,
           portalGroupName: computedPortalGroupName || undefined,
           totalAmount: totalCollectionAmount,
           denominations,
@@ -376,16 +376,16 @@ function NewCollectionContent() {
       } else if (sourceType === "retailer" && selectedRetailer) {
         // Queue it the same way the explicit offline path does, so it's retried
         // automatically by the existing background sync instead of being lost.
-        const onlinePortalName = denominations.online_amount > 0 && denominations.online_portal_id
-          ? portals.find(p => p.id === denominations.online_portal_id)?.name || "Online"
+        const onlineBankAccountName = denominations.online_amount > 0 && denominations.online_bank_account_id
+          ? bankAccounts.find(p => p.id === denominations.online_bank_account_id)?.name || "Online"
           : (selectedStoreId ? retailerStores.find(s => s.id === selectedStoreId)?.store_name : "Cash");
 
         await db.collections.add({
           retailer_id: selectedRetailer.id,
           store_id: selectedStoreId || undefined,
-          portal_id: denominations.online_portal_id || undefined,
+          bank_account_id: denominations.online_bank_account_id || undefined,
           retailerName: selectedRetailer.name || "Unknown",
-          portalName: onlinePortalName,
+          bankAccountName: onlineBankAccountName,
           totalAmount: totalCollectionAmount,
           denominations,
           remarks: remarks || "Queued (online submission failed)",
@@ -454,9 +454,9 @@ function NewCollectionContent() {
                 setDenominations(prev => ({
                   ...prev,
                   online_amount: 0,
-                  online_portal_id: undefined
+                  online_bank_account_id: undefined
                 }));
-                setShowOnlinePortal(false);
+                setShowOnlineBankAccount(false);
               }}
               className={`flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all ${sourceType === "staff" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-655"}`}
             >
@@ -469,9 +469,9 @@ function NewCollectionContent() {
                 setDenominations(prev => ({
                   ...prev,
                   online_amount: 0,
-                  online_portal_id: undefined
+                  online_bank_account_id: undefined
                 }));
-                setShowOnlinePortal(false);
+                setShowOnlineBankAccount(false);
               }}
               className={`flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all ${sourceType === "office" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-655"}`}
             >
@@ -635,7 +635,7 @@ function NewCollectionContent() {
                   <div className="flex items-center gap-2 justify-between">
                     <span 
                       className="text-[11px] font-black text-slate-600 dark:text-slate-300 w-24 cursor-pointer"
-                      onClick={() => setShowOnlinePortal(true)}
+                      onClick={() => setShowOnlineBankAccount(true)}
                     >
                       Online (UPI)
                     </span>
@@ -650,21 +650,21 @@ function NewCollectionContent() {
                       min="0"
                     />
                   </div>
-                  {(showOnlinePortal || denominations.online_amount > 0) && (
+                  {(showOnlineBankAccount || denominations.online_amount > 0) && (
                     <div className="mt-0.5 animate-in fade-in slide-in-from-top-2 duration-300">
                       <InlineSelect
-                        value={denominations.online_portal_id || ""}
+                        value={denominations.online_bank_account_id || ""}
                         onChange={(val) => {
-                          handleDenomChange("online_portal_id", val);
+                          handleDenomChange("online_bank_account_id", val);
                           if (val && typeof window !== "undefined") {
-                            localStorage.setItem("last_used_online_portal_id", val);
+                            localStorage.setItem("last_used_online_bank_account_id", val);
                           }
                         }}
                         options={[
-                          { value: "", label: "Select Portal Account..." },
-                          ...portals.map(p => ({ value: p.id, label: p.name }))
+                          { value: "", label: "Select Bank Account..." },
+                          ...bankAccounts.map(p => ({ value: p.id, label: p.name }))
                         ]}
-                        placeholder="Select Portal Account..."
+                        placeholder="Select Bank Account..."
                       />
                     </div>
                   )}

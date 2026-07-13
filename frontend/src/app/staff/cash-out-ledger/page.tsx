@@ -155,7 +155,7 @@ export default function CashOutLedgerPage() {
       const isRecipient = entry.recipient_staff_id === currentUser?.id;
       headerLines.push(isRecipient ? `Received from: ${entry.staff_name}` : `Staff Handover: ${entry.target_name}`);
     } else if (entry.deposit_type === "portal") {
-      headerLines.push(`Store/Portal: ${entry.portal_group_name || entry.target_name}`);
+      headerLines.push(`Store/BankAccount: ${entry.portal_group_name || entry.target_name}`);
     } else if (entry.deposit_type === "retailer") {
       headerLines.push(`Retailer Payout: ${entry.target_name}`);
     } else if (entry.deposit_type === "virtual") {
@@ -252,7 +252,7 @@ ${dateFormatted}`;
         remarks: editRemarks,
         denominations: editDenoms,
         deposit_type: editingItem.deposit_type || editingItem.depositType,
-        portal_id: editingItem.portal_id,
+        bank_account_id: editingItem.bank_account_id,
         retailer_id: editingItem.retailer_id,
         recipient_staff_id: editingItem.recipient_staff_id,
         to_office: editingItem.to_office,
@@ -269,7 +269,7 @@ ${dateFormatted}`;
       const store = useAppStore.getState();
       const mappedUpdated = {
         id: updated.id,
-        portal_id: updated.portal_id,
+        bank_account_id: updated.bank_account_id,
         retailer_id: updated.retailer_id,
         recipient_staff_id: updated.recipient_staff_id,
         depositType: updated.deposit_type,
@@ -285,7 +285,7 @@ ${dateFormatted}`;
           note_10: Number(updated.denominations.note_10 || 0),
           coins: Number(updated.denominations.coins || 0),
           online_amount: Number(updated.denominations.online_amount || 0),
-          online_portal_id: updated.denominations.online_portal_id,
+          online_bank_account_id: updated.denominations.online_bank_account_id,
         } : undefined,
         status: updated.status,
         remarks: updated.remarks,
@@ -308,12 +308,12 @@ ${dateFormatted}`;
       const q = searchQuery.toLowerCase();
       const displayName = (d.deposit_type === "portal" && d.portal_group_name) ? d.portal_group_name : d.target_name;
       const targetMatch = displayName?.toLowerCase().includes(q) || false;
-      const portalMatch = d.portal_name?.toLowerCase().includes(q) || false;
+      const bankAccountMatch = d.bank_account_name?.toLowerCase().includes(q) || false;
       const remarksMatch = d.remarks?.toLowerCase().includes(q) || false;
       const refMatch = (d.reference_no || d.referenceNo || "").toLowerCase().includes(q);
       const amountMatch = String(d.amount || d.totalAmount || "").includes(q);
       
-      if (!targetMatch && !portalMatch && !remarksMatch && !refMatch && !amountMatch) {
+      if (!targetMatch && !bankAccountMatch && !remarksMatch && !refMatch && !amountMatch) {
         return false;
       }
     }

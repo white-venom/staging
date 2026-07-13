@@ -279,7 +279,7 @@ export const api = {
     method: "DELETE",
   }),
   
-  // Portals
+  // Portal Groups (aggregators)
   getPortalGroups: () => request<any[]>("/portals/groups"),
   createPortalGroup: (data: any) => request<any>("/portals/groups", {
     method: "POST",
@@ -292,17 +292,19 @@ export const api = {
   deletePortalGroup: (id: string) => request<any>(`/portals/groups/${id}`, {
     method: "DELETE",
   }),
-  getPortals: () => request<any[]>("/portals"),
+
+  // Bank Accounts
+  getBankAccounts: () => request<any[]>("/bank-accounts"),
   getGroupAccounts: (groupId: string) => request<any[]>(`/portals/groups/${groupId}/accounts`),
-  createPortal: (data: any) => request<any>("/portals", {
+  createBankAccount: (data: any) => request<any>("/bank-accounts", {
     method: "POST",
     body: JSON.stringify(data),
   }),
-  updatePortal: (id: string, data: any) => request<any>(`/portals/${id}`, {
+  updateBankAccount: (id: string, data: any) => request<any>(`/bank-accounts/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   }),
-  deletePortal: (id: string) => request<any>(`/portals/${id}`, {
+  deleteBankAccount: (id: string) => request<any>(`/bank-accounts/${id}`, {
     method: "DELETE",
   }),
 
@@ -332,11 +334,11 @@ export const api = {
     method: "POST",
     body: JSON.stringify({ attendance_id: attendanceId, approve }),
   }),
-  virtualTransfer: (data: { portal_id: string; retailer_id?: string; staff_id?: string; amount: number; remarks?: string; direction?: string; transfer_date?: string }) => request<any>("/admin-settings/virtual-transfer", {
+  virtualTransfer: (data: { bank_account_id: string; retailer_id?: string; staff_id?: string; amount: number; remarks?: string; direction?: string; transfer_date?: string }) => request<any>("/admin-settings/virtual-transfer", {
     method: "POST",
     body: JSON.stringify(data),
   }),
-  portalTransfer: (data: { from_portal_id: string; portal_id: string; amount: number; remarks?: string; deposit_date: string }) => request<any>("/bank-deposits", {
+  portalTransfer: (data: { from_bank_account_id: string; bank_account_id: string; amount: number; remarks?: string; deposit_date: string }) => request<any>("/bank-deposits", {
     method: "POST",
     body: JSON.stringify({ ...data, deposit_type: "portal_transfer", payment_mode: "online", status: "verified" }),
   }),
@@ -363,7 +365,7 @@ export const api = {
     method: "POST",
   }),
   getPublicLedger: (token: string) => request<any>(`/public/ledger/${token}`),
-  getPortalLedger: (portalId: string) => request<any>(`/portals/${portalId}/ledger`),
+  getBankAccountLedger: (bankAccountId: string) => request<any>(`/bank-accounts/${bankAccountId}/ledger`),
   getPortalGroupLedger: (groupId: string) => request<any>(`/portals/groups/${groupId}/ledger`),
   getStaffLedger: (staffId: string) => request<any>(`/staff/${staffId}/ledger`),
   getStaffDailySummary: (date: string, staffId?: string) => request<any>(`/staff/daily-summary?selected_date=${date}${staffId ? `&staff_id=${staffId}` : ''}`),

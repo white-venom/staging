@@ -132,10 +132,10 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
 
           <div className="space-y-4">
             <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-red-600 to-amber-600 bg-clip-text text-transparent uppercase">
-              Portal Inactive
+              BankAccount Inactive
             </h1>
             <p className="text-slate-600 text-sm leading-relaxed max-w-md">
-              This organization portal link is no longer active. The subdomain may have been changed, suspended, or deleted.
+              This organization bankAccount link is no longer active. The subdomain may have been changed, suspended, or deleted.
             </p>
             <p className="text-red-650 font-bold text-xs uppercase tracking-widest mt-4">
               Please contact your administrator for the new login link.

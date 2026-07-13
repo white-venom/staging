@@ -15,7 +15,7 @@ class DenominationSchema(BaseModel):
     note_10: int = Field(0)
     coins: Decimal = Field(Decimal("0.00"))
     online_amount: Decimal = Field(Decimal("0.00"), ge=0)
-    online_portal_id: Optional[str] = None
+    online_bank_account_id: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -26,7 +26,7 @@ class CollectionCreate(BaseModel):
     from_staff_id: Optional[uuid.UUID] = None
     from_office: bool = False
     store_id: Optional[uuid.UUID] = None
-    portal_id: Optional[uuid.UUID] = None
+    bank_account_id: Optional[uuid.UUID] = None
     total_amount: Decimal  # Can be zero (pure note exchange), negative (net outflow), or positive
     remarks: Optional[str] = Field(None, max_length=255)
     collection_date: Optional[date] = None
@@ -69,7 +69,7 @@ class CollectionResponse(BaseModel):
     store_name: Optional[str] = None
     staff_name: Optional[str] = None
     from_staff_name: Optional[str] = None
-    portal_name: Optional[str] = None
+    bank_account_name: Optional[str] = None
     portal_group_name: Optional[str] = None
     bank_name: Optional[str] = None
 

@@ -7,7 +7,7 @@ from sqlalchemy import select, and_, desc, update, delete
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database.db import get_db
-from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, Portal, BankDeposit, BusinessSettings
+from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, BankAccount, BankDeposit, BusinessSettings
 from app.schemas.collection import CollectionCreate, CollectionResponse
 from app.dependencies import require_staff, require_admin, require_any_user
 from app.logic.ledger import recalculate_balances, lock_portal_group
@@ -87,7 +87,7 @@ def submit_collection(
             from_staff_id=payload.from_staff_id,
             from_office=payload.from_office,
             store_id=payload.store_id,
-            portal_id=payload.portal_id,
+            bank_account_id=payload.bank_account_id,
             total_amount=payload.total_amount,
             remarks=payload.remarks,
             collection_date=payload.collection_date or ist_today(),
@@ -129,9 +129,9 @@ def submit_collection(
             # correctly decreases the balance on its own, no separate flip).
             new_balance = prev_balance + payload.total_amount
 
-            portal_obj = None
-            if payload.portal_id:
-                portal_obj = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
+            bank_account_obj = None
+            if payload.bank_account_id:
+                bank_account_obj = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
             
             description = "cash in"
             
@@ -149,11 +149,11 @@ def submit_collection(
             db_collection.balance_snapshot = new_balance
             
             # Auto-create corresponding BankDeposit for the online amount direct routing
-            if d.online_amount > 0 and payload.portal_id:
+            if d.online_amount > 0 and payload.bank_account_id:
                 db_deposit = BankDeposit(
                     staff_id=current_user.id,
                     deposit_type="portal",
-                    portal_id=payload.portal_id,
+                    bank_account_id=payload.bank_account_id,
                     retailer_id=payload.retailer_id,
                     recipient_staff_id=None,
                     to_office=False,
@@ -180,18 +180,18 @@ def submit_collection(
                 )
                 db.add(db_deposit_denom)
                 
-                if portal_obj:
-                    lock_portal_group(db, portal_obj)
-                    portal_obj.balance += d.online_amount
-                    db_deposit.balance_snapshot = portal_obj.balance
-                    if portal_obj.group:
-                        portal_obj.group.balance += d.online_amount
+                if bank_account_obj:
+                    lock_portal_group(db, bank_account_obj)
+                    bank_account_obj.balance += d.online_amount
+                    db_deposit.balance_snapshot = bank_account_obj.balance
+                    if bank_account_obj.group:
+                        bank_account_obj.group.balance += d.online_amount
 
         elif payload.from_staff_id:
-            # Checked before portal_id: a staff-to-staff handover collection can
-            # carry a leftover/default portal_id from UI state even though the
-            # source is really another staff member. Checking portal_id first
-            # used to silently take the CMS-style direct-portal-deduction branch
+            # Checked before bank_account_id: a staff-to-staff handover collection can
+            # carry a leftover/default bank_account_id from UI state even though the
+            # source is really another staff member. Checking bank_account_id first
+            # used to silently take the CMS-style direct-bank_account-deduction branch
             # instead, which never creates the mirrored BankDeposit for the
             # sender — leaving their balance never debited.
             # Auto-create corresponding BankDeposit for the sender staff (from_staff_id)
@@ -225,14 +225,14 @@ def submit_collection(
             db.add(db_deposit_denom)
             db_collection.balance_snapshot = Decimal("0.00")
             db_collection.mirror_deposit_id = db_deposit.id
-        elif payload.portal_id:
-            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
-            if portal:
-                lock_portal_group(db, portal)
-                portal.balance -= Decimal(str(payload.total_amount))
-                db_collection.balance_snapshot = portal.balance
-                if portal.group:
-                    portal.group.balance -= Decimal(str(payload.total_amount))
+        elif payload.bank_account_id:
+            bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
+            if bank_account:
+                lock_portal_group(db, bank_account)
+                bank_account.balance -= Decimal(str(payload.total_amount))
+                db_collection.balance_snapshot = bank_account.balance
+                if bank_account.group:
+                    bank_account.group.balance -= Decimal(str(payload.total_amount))
         else:
             db_collection.balance_snapshot = Decimal("0.00")
 
@@ -261,12 +261,12 @@ def submit_collection(
             
         db_collection.staff_name = current_user.name
         
-        # Portal name for response
-        if db_collection.portal_id:
-            portal_obj = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == db_collection.portal_id))
-            if portal_obj:
-                db_collection.portal_name = portal_obj.portal_name
-                db_collection.portal_group_name = portal_obj.group.name if portal_obj.group else None
+        # BankAccount name for response
+        if db_collection.bank_account_id:
+            bank_account_obj = db.scalar(select(BankAccount).options(joinedload(BankAccount.group)).where(BankAccount.id == db_collection.bank_account_id))
+            if bank_account_obj:
+                db_collection.bank_account_name = bank_account_obj.bank_account_name
+                db_collection.portal_group_name = bank_account_obj.group.name if bank_account_obj.group else None
 
         # 3. Simulate Email Alert (Task 110: Auto-Verify)
         if retailer and retailer.email:
@@ -335,7 +335,7 @@ def list_collections(
         joinedload(Collection.store),
         joinedload(Collection.staff),
         joinedload(Collection.from_staff),
-        joinedload(Collection.portal).joinedload(Portal.group),
+        joinedload(Collection.bank_account).joinedload(BankAccount.group),
         joinedload(Collection.denominations),
         selectinload(Collection.ledgers)
     )
@@ -356,9 +356,9 @@ def list_collections(
             
         col.store_name = col.store.store_name if col.store else "Cash"
         col.staff_name = col.staff.name if col.staff else "Unknown Staff"
-        col.portal_name = col.portal.portal_name if col.portal else None
-        col.portal_group_name = col.portal.group.name if (col.portal and col.portal.group) else None
-        col.bank_name = col.portal.bank_name if col.portal else None
+        col.bank_account_name = col.bank_account.bank_account_name if col.bank_account else None
+        col.portal_group_name = col.bank_account.group.name if (col.bank_account and col.bank_account.group) else None
+        col.bank_name = col.bank_account.bank_name if col.bank_account else None
         
         linked_ledger = next((le for le in col.ledgers if le is not None), None)
         if linked_ledger:
@@ -467,8 +467,8 @@ def verify_collection(
     collection.retailer_ledger_token = collection.retailer.ledger_token if collection.retailer else None
     collection.store_name = collection.store.store_name if collection.store else "Cash"
     collection.staff_name = collection.staff.name if collection.staff else "Unknown"
-    collection.portal_name = collection.portal.portal_name if collection.portal else None
-    collection.portal_group_name = collection.portal.group.name if (collection.portal and collection.portal.group) else None
+    collection.bank_account_name = collection.bank_account.bank_account_name if collection.bank_account else None
+    collection.portal_group_name = collection.bank_account.group.name if (collection.bank_account and collection.bank_account.group) else None
 
     return collection
 
@@ -504,36 +504,36 @@ def delete_collection(
     # Delete associated ledger entries (cascade is set to SET NULL in model, so we find and delete manually)
     db.execute(delete(Ledger).where(Ledger.collection_id == collection_id))
     
-    # Restore portal balance if the collection was directly against a portal (not a retailer collection)
-    if collection.portal_id and not collection.retailer_id:
-        portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
-        if portal:
-            lock_portal_group(db, portal)
-            portal.balance += Decimal(str(collection.total_amount))
-            if portal.group:
-                portal.group.balance += Decimal(str(collection.total_amount))
+    # Restore bank_account balance if the collection was directly against a bank_account (not a retailer collection)
+    if collection.bank_account_id and not collection.retailer_id:
+        bank_account = db.scalar(select(BankAccount).where(BankAccount.id == collection.bank_account_id).with_for_update())
+        if bank_account:
+            lock_portal_group(db, bank_account)
+            bank_account.balance += Decimal(str(collection.total_amount))
+            if bank_account.group:
+                bank_account.group.balance += Decimal(str(collection.total_amount))
 
-    # Delete corresponding auto-created portal deposit if this collection had an online component
-    if collection.retailer_id and collection.portal_id and collection.denominations and collection.denominations.online_amount > 0:
-        portal_dep = db.scalar(
+    # Delete corresponding auto-created bank_account deposit if this collection had an online component
+    if collection.retailer_id and collection.bank_account_id and collection.denominations and collection.denominations.online_amount > 0:
+        bank_account_dep = db.scalar(
             select(BankDeposit).where(
                 and_(
                     BankDeposit.deposit_type == "portal",
                     BankDeposit.staff_id == collection.staff_id,
-                    BankDeposit.portal_id == collection.portal_id,
+                    BankDeposit.bank_account_id == collection.bank_account_id,
                     BankDeposit.amount == collection.denominations.online_amount,
                     BankDeposit.deposit_date == collection.collection_date
                 )
             )
         )
-        if portal_dep:
-            portal = db.scalar(select(Portal).where(Portal.id == collection.portal_id).with_for_update())
-            if portal:
-                lock_portal_group(db, portal)
-                portal.balance -= portal_dep.amount
-                if portal.group:
-                    portal.group.balance -= portal_dep.amount
-            db.delete(portal_dep)
+        if bank_account_dep:
+            bank_account = db.scalar(select(BankAccount).where(BankAccount.id == collection.bank_account_id).with_for_update())
+            if bank_account:
+                lock_portal_group(db, bank_account)
+                bank_account.balance -= bank_account_dep.amount
+                if bank_account.group:
+                    bank_account.group.balance -= bank_account_dep.amount
+            db.delete(bank_account_dep)
 
     # Delete the mirrored staff handover deposit, if this collection is one.
     # Prefer the real FK link; only fall back to matching by coincidence for
@@ -570,7 +570,7 @@ def update_collection(
     db: Session = Depends(get_db),
     current_user=Depends(require_any_user)
 ):
-    """Admin or Staff (within 5 mins): Update collection amount, retailer, portal, or details and recalculate balances."""
+    """Admin or Staff (within 5 mins): Update collection amount, retailer, bank_account, or details and recalculate balances."""
     collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
@@ -612,91 +612,91 @@ def update_collection(
     if new_retailer_id and new_retailer_id != old_retailer_id:
         db.scalar(select(Retailer).where(Retailer.id == new_retailer_id).with_for_update())
 
-    old_portal_id = collection.portal_id
-    new_portal_id = payload.portal_id
+    old_bank_account_id = collection.bank_account_id
+    new_bank_account_id = payload.bank_account_id
     old_from_staff_id = collection.from_staff_id
     new_from_staff_id = payload.from_staff_id
 
     # Capture CMS details if transitioning from CMS (no retailer) to a Retailer
     was_cms = (old_retailer_id is None) and (new_retailer_id is not None)
-    cms_portal_name = None
+    cms_bank_account_name = None
     cms_remark = None
     if was_cms:
-        if collection.portal:
-            cms_portal_name = collection.portal.portal_name
-        elif collection.portal_id:
-            portal_obj = db.scalar(select(Portal).where(Portal.id == collection.portal_id))
-            if portal_obj:
-                cms_portal_name = portal_obj.portal_name
+        if collection.bank_account:
+            cms_bank_account_name = collection.bank_account.bank_account_name
+        elif collection.bank_account_id:
+            bank_account_obj = db.scalar(select(BankAccount).where(BankAccount.id == collection.bank_account_id))
+            if bank_account_obj:
+                cms_bank_account_name = bank_account_obj.bank_account_name
         cms_remark = collection.remarks
 
-    # Handle Portal Balance Adjustments (only for direct CMS portal collections —
+    # Handle BankAccount Balance Adjustments (only for direct CMS bank_account collections —
     # NOT retailer collections, and NOT staff-to-staff handovers, which manage
-    # their own mirrored BankDeposit further below instead of touching a portal).
+    # their own mirrored BankDeposit further below instead of touching a bank_account).
     if not old_retailer_id and not new_retailer_id and not old_from_staff_id and not new_from_staff_id:
-        if old_portal_id != new_portal_id:
-            # Revert old portal
-            if old_portal_id:
-                old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
-                if old_portal:
-                    lock_portal_group(db, old_portal)
-                    old_portal.balance += Decimal(str(old_amount))
-                    if old_portal.group:
-                        old_portal.group.balance += Decimal(str(old_amount))
-            # Deduct new portal
-            if new_portal_id:
-                new_portal = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
-                if new_portal:
-                    lock_portal_group(db, new_portal)
-                    new_portal.balance -= Decimal(str(new_amount))
-                    if new_portal.group:
-                        new_portal.group.balance -= Decimal(str(new_amount))
-        elif old_portal_id and new_amount != old_amount:
-            # Same portal, but amount changed
+        if old_bank_account_id != new_bank_account_id:
+            # Revert old bank_account
+            if old_bank_account_id:
+                old_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == old_bank_account_id).with_for_update())
+                if old_bank_account:
+                    lock_portal_group(db, old_bank_account)
+                    old_bank_account.balance += Decimal(str(old_amount))
+                    if old_bank_account.group:
+                        old_bank_account.group.balance += Decimal(str(old_amount))
+            # Deduct new bank_account
+            if new_bank_account_id:
+                new_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
+                if new_bank_account:
+                    lock_portal_group(db, new_bank_account)
+                    new_bank_account.balance -= Decimal(str(new_amount))
+                    if new_bank_account.group:
+                        new_bank_account.group.balance -= Decimal(str(new_amount))
+        elif old_bank_account_id and new_amount != old_amount:
+            # Same bank_account, but amount changed
             diff = Decimal(str(new_amount)) - Decimal(str(old_amount))
-            portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
-            if portal:
-                lock_portal_group(db, portal)
-                portal.balance -= diff
-                if portal.group:
-                    portal.group.balance -= diff
+            bank_account = db.scalar(select(BankAccount).where(BankAccount.id == old_bank_account_id).with_for_update())
+            if bank_account:
+                lock_portal_group(db, bank_account)
+                bank_account.balance -= diff
+                if bank_account.group:
+                    bank_account.group.balance -= diff
 
-    # Sync corresponding auto-created portal deposit if needed
+    # Sync corresponding auto-created bank_account deposit if needed
     old_online_amount = collection.denominations.online_amount if collection.denominations else Decimal("0.00")
     new_online_amount = payload.denominations.online_amount if payload.denominations else Decimal("0.00")
     
     # Transitioning between CMS (no retailer) and Retailer collection. Guarded
     # against from_staff_id on either side for the same reason as above — a
-    # staff handover is never a CMS portal collection even if a stale portal_id
+    # staff handover is never a CMS bank_account collection even if a stale bank_account_id
     # is also present.
     if (old_retailer_id is None) != (new_retailer_id is None) and not old_from_staff_id and not new_from_staff_id:
-        # Transitioning: Revert direct portal balance decrement if it was a CMS collection (old_retailer_id is None)
-        if not old_retailer_id and old_portal_id:
-            old_portal = db.scalar(select(Portal).where(Portal.id == old_portal_id).with_for_update())
-            if old_portal:
-                lock_portal_group(db, old_portal)
-                old_portal.balance += Decimal(str(old_amount))
-                if old_portal.group:
-                    old_portal.group.balance += Decimal(str(old_amount))
+        # Transitioning: Revert direct bank_account balance decrement if it was a CMS collection (old_retailer_id is None)
+        if not old_retailer_id and old_bank_account_id:
+            old_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == old_bank_account_id).with_for_update())
+            if old_bank_account:
+                lock_portal_group(db, old_bank_account)
+                old_bank_account.balance += Decimal(str(old_amount))
+                if old_bank_account.group:
+                    old_bank_account.group.balance += Decimal(str(old_amount))
 
-        # Transitioning: Apply direct portal balance decrement if it is now a CMS collection (new_retailer_id is None)
-        if not new_retailer_id and new_portal_id:
-            new_portal = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
-            if new_portal:
-                lock_portal_group(db, new_portal)
-                new_portal.balance -= Decimal(str(new_amount))
-                if new_portal.group:
-                    new_portal.group.balance -= Decimal(str(new_amount))
+        # Transitioning: Apply direct bank_account balance decrement if it is now a CMS collection (new_retailer_id is None)
+        if not new_retailer_id and new_bank_account_id:
+            new_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
+            if new_bank_account:
+                lock_portal_group(db, new_bank_account)
+                new_bank_account.balance -= Decimal(str(new_amount))
+                if new_bank_account.group:
+                    new_bank_account.group.balance -= Decimal(str(new_amount))
     
     # Find the existing auto-created deposit if it existed
     existing_dep = None
-    if old_portal_id and old_online_amount > 0:
+    if old_bank_account_id and old_online_amount > 0:
         existing_dep = db.scalar(
             select(BankDeposit).where(
                 and_(
                     BankDeposit.deposit_type == "portal",
                     BankDeposit.staff_id == collection.staff_id,
-                    BankDeposit.portal_id == old_portal_id,
+                    BankDeposit.bank_account_id == old_bank_account_id,
                     BankDeposit.amount == old_online_amount,
                     BankDeposit.deposit_date == collection.collection_date
                 )
@@ -709,26 +709,26 @@ def update_collection(
                     and_(
                         BankDeposit.deposit_type == "portal",
                         BankDeposit.staff_id == collection.staff_id,
-                        BankDeposit.portal_id == old_portal_id,
+                        BankDeposit.bank_account_id == old_bank_account_id,
                         BankDeposit.amount == old_online_amount
                     )
                 ).limit(1)
             )
 
-    # If the collection should have an auto-created portal deposit in its new state
-    if new_retailer_id and new_portal_id and new_online_amount > 0:
+    # If the collection should have an auto-created bank_account deposit in its new state
+    if new_retailer_id and new_bank_account_id and new_online_amount > 0:
         if existing_dep:
-            # Revert old portal balance changes
-            if existing_dep.portal_id:
-                old_port = db.scalar(select(Portal).where(Portal.id == existing_dep.portal_id).with_for_update())
-                if old_port:
-                    lock_portal_group(db, old_port)
-                    old_port.balance -= existing_dep.amount
-                    if old_port.group:
-                        old_port.group.balance -= existing_dep.amount
+            # Revert old bank_account balance changes
+            if existing_dep.bank_account_id:
+                old_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == existing_dep.bank_account_id).with_for_update())
+                if old_bank_acct:
+                    lock_portal_group(db, old_bank_acct)
+                    old_bank_acct.balance -= existing_dep.amount
+                    if old_bank_acct.group:
+                        old_bank_acct.group.balance -= existing_dep.amount
 
             # Update existing deposit in-place
-            existing_dep.portal_id = new_portal_id
+            existing_dep.bank_account_id = new_bank_account_id
             existing_dep.amount = new_online_amount
             existing_dep.deposit_date = new_collection_date
 
@@ -743,21 +743,21 @@ def update_collection(
                 )
                 db.add(db_denom)
 
-            # Apply new portal balance changes
-            new_port = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
-            if new_port:
-                lock_portal_group(db, new_port)
-                new_port.balance += new_online_amount
-                existing_dep.balance_snapshot = new_port.balance
-                if new_port.group:
-                    new_port.group.balance += new_online_amount
+            # Apply new bank_account balance changes
+            new_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
+            if new_bank_acct:
+                lock_portal_group(db, new_bank_acct)
+                new_bank_acct.balance += new_online_amount
+                existing_dep.balance_snapshot = new_bank_acct.balance
+                if new_bank_acct.group:
+                    new_bank_acct.group.balance += new_online_amount
         else:
             # Create a brand new deposit
-            new_port = db.scalar(select(Portal).where(Portal.id == new_portal_id).with_for_update())
+            new_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
             db_deposit = BankDeposit(
                 staff_id=collection.staff_id,
                 deposit_type="portal",
-                portal_id=new_portal_id,
+                bank_account_id=new_bank_account_id,
                 recipient_staff_id=None,
                 to_office=False,
                 payment_mode="online",
@@ -777,22 +777,22 @@ def update_collection(
             )
             db.add(db_denom)
             
-            if new_port:
-                lock_portal_group(db, new_port)
-                new_port.balance += new_online_amount
-                db_deposit.balance_snapshot = new_port.balance
-                if new_port.group:
-                    new_port.group.balance += new_online_amount
+            if new_bank_acct:
+                lock_portal_group(db, new_bank_acct)
+                new_bank_acct.balance += new_online_amount
+                db_deposit.balance_snapshot = new_bank_acct.balance
+                if new_bank_acct.group:
+                    new_bank_acct.group.balance += new_online_amount
     else:
-        # The new state should NOT have an auto-created portal deposit
+        # The new state should NOT have an auto-created bank_account deposit
         if existing_dep:
-            if existing_dep.portal_id:
-                old_port = db.scalar(select(Portal).where(Portal.id == existing_dep.portal_id).with_for_update())
-                if old_port:
-                    lock_portal_group(db, old_port)
-                    old_port.balance -= existing_dep.amount
-                    if old_port.group:
-                        old_port.group.balance -= existing_dep.amount
+            if existing_dep.bank_account_id:
+                old_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == existing_dep.bank_account_id).with_for_update())
+                if old_bank_acct:
+                    lock_portal_group(db, old_bank_acct)
+                    old_bank_acct.balance -= existing_dep.amount
+                    if old_bank_acct.group:
+                        old_bank_acct.group.balance -= existing_dep.amount
             db.delete(existing_dep)
 
 
@@ -827,8 +827,8 @@ def update_collection(
         description = store_name
         if was_cms:
             desc_parts = []
-            if cms_portal_name:
-                desc_parts.append(f"CMS Portal: {cms_portal_name}")
+            if cms_bank_account_name:
+                desc_parts.append(f"CMS Bank Account: {cms_bank_account_name}")
             if cms_remark:
                 desc_parts.append(f"CMS Remark: {cms_remark}")
             if desc_parts:
@@ -972,7 +972,7 @@ def update_collection(
     collection.retailer_ledger_token = collection.retailer.ledger_token if collection.retailer else None
     collection.store_name = collection.store.store_name if collection.store else "Cash"
     collection.staff_name = collection.staff.name if collection.staff else "Unknown"
-    collection.portal_name = collection.portal.portal_name if collection.portal else None
-    collection.portal_group_name = collection.portal.group.name if (collection.portal and collection.portal.group) else None
+    collection.bank_account_name = collection.bank_account.bank_account_name if collection.bank_account else None
+    collection.portal_group_name = collection.bank_account.group.name if (collection.bank_account and collection.bank_account.group) else None
     
     return collection

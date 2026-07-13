@@ -92,29 +92,29 @@ class PortalGroup(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
-    portals: Mapped[List["Portal"]] = relationship("Portal", back_populates="group", cascade="all, delete-orphan")
+    bank_accounts: Mapped[List["BankAccount"]] = relationship("BankAccount", back_populates="group", cascade="all, delete-orphan")
 
 
-class Portal(Base):
-    __tablename__ = "portals"
+class BankAccount(Base):
+    __tablename__ = "bank_accounts"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     group_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("portal_groups.id", ondelete="CASCADE"), nullable=False)
-    portal_name: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
+    bank_account_name: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
     bank_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     bank_account_no: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     ifsc_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     show_in_online_payment: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
-    
-    # Financial state for individual portal account
+
+    # Financial state for this individual bank account
     opening_to_give: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     opening_to_take: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
 
     # Relationships
-    group: Mapped[PortalGroup] = relationship("PortalGroup", back_populates="portals")
-    deposits: Mapped[List["BankDeposit"]] = relationship("BankDeposit", foreign_keys="[BankDeposit.portal_id]", back_populates="portal")
+    group: Mapped[PortalGroup] = relationship("PortalGroup", back_populates="bank_accounts")
+    deposits: Mapped[List["BankDeposit"]] = relationship("BankDeposit", foreign_keys="[BankDeposit.bank_account_id]", back_populates="bank_account")
 
     @property
     def group_name(self) -> Optional[str]:
@@ -208,7 +208,7 @@ class Collection(Base):
     from_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     from_office: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     store_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("stores.id", ondelete="CASCADE"), nullable=True)
-    portal_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("portals.id", ondelete="SET NULL"), nullable=True)
+    bank_account_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bank_accounts.id", ondelete="SET NULL"), nullable=True)
     # For a staff-to-staff handover, points at the auto-created BankDeposit that
     # mirrors this collection on the sender's (from_staff_id's) side. A real FK
     # instead of matching by staff_id/amount/date coincidence, so create/update/
@@ -227,7 +227,7 @@ class Collection(Base):
     staff: Mapped[User] = relationship("User", foreign_keys=[staff_id], back_populates="collections")
     from_staff: Mapped[Optional[User]] = relationship("User", foreign_keys=[from_staff_id])
     store: Mapped[Optional[Store]] = relationship("Store", back_populates="collections")
-    portal: Mapped[Optional[Portal]] = relationship("Portal")
+    bank_account: Mapped[Optional[BankAccount]] = relationship("BankAccount")
     denominations: Mapped["Denomination"] = relationship(
         "Denomination", back_populates="collection", uselist=False, cascade="all, delete-orphan"
     )
@@ -299,8 +299,8 @@ class BankDeposit(Base):
     # deposit_type: 'portal', 'retailer', 'staff', 'virtual', 'portal_transfer'
     deposit_type: Mapped[str] = mapped_column(String(20), nullable=False)
     
-    portal_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("portals.id", ondelete="SET NULL"), nullable=True)
-    from_portal_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("portals.id", ondelete="SET NULL"), nullable=True)  # Source portal for portal_transfer type
+    bank_account_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bank_accounts.id", ondelete="SET NULL"), nullable=True)
+    from_bank_account_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bank_accounts.id", ondelete="SET NULL"), nullable=True)  # Source account for portal_transfer type
     retailer_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("retailers.id", ondelete="SET NULL"), nullable=True)
     recipient_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
@@ -322,8 +322,8 @@ class BankDeposit(Base):
     staff: Mapped[User] = relationship("User", foreign_keys=[staff_id], back_populates="bank_deposits")
     recipient_staff: Mapped[Optional[User]] = relationship("User", foreign_keys=[recipient_staff_id], back_populates="received_handovers")
     verifier: Mapped[Optional[User]] = relationship("User", foreign_keys=[verified_by], back_populates="verified_deposits")
-    portal: Mapped[Optional[Portal]] = relationship("Portal", foreign_keys=[portal_id], back_populates="deposits")
-    from_portal: Mapped[Optional[Portal]] = relationship("Portal", foreign_keys=[from_portal_id])
+    bank_account: Mapped[Optional[BankAccount]] = relationship("BankAccount", foreign_keys=[bank_account_id], back_populates="deposits")
+    from_bank_account: Mapped[Optional[BankAccount]] = relationship("BankAccount", foreign_keys=[from_bank_account_id])
     retailer: Mapped[Optional[Retailer]] = relationship("Retailer", back_populates="deposits")
     denominations: Mapped[Optional[Denomination]] = relationship(
         "Denomination", back_populates="deposit", uselist=False, cascade="all, delete-orphan"

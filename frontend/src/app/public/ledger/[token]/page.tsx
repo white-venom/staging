@@ -57,8 +57,8 @@ export default function PublicRetailerLedgerPage() {
     remarks: tx.remarks,
     reference_no: tx.reference_no,
     store_name: tx.store_name,
-    portal_name: tx.portal_name,
-    portal_bank_name: tx.portal_bank_name,
+    bank_account_name: tx.bank_account_name,
+    bank_name: tx.bank_name,
     portal_group_name: tx.portal_group_name,
     deposit_type: tx.deposit_type
   }));
@@ -75,7 +75,7 @@ export default function PublicRetailerLedgerPage() {
       outstandingBalance={data.outstanding_balance}
       isPublic={true}
       publicLink={publicLink}
-      hidePortalBankNames={true}
+      hideBankNames={true}
     />
   );
 }

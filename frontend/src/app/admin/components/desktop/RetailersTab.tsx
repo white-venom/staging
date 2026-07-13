@@ -23,7 +23,7 @@ export default function RetailersTab({
   fetchData
 }: RetailersTabProps) {
   const router = useRouter();
-  const { collections, deposits, setLedgerSearchTerm, portalDirectory, userDirectory } = useAdmin();
+  const { collections, deposits, setLedgerSearchTerm, bankAccountDirectory, userDirectory } = useAdmin();
   const [retailerSearch, setRetailerSearch] = useState("");
   const [selectedRetailer, setSelectedRetailer] = useState<any | null>(null);
   const [stores, setStores] = useState<any[]>([]);
@@ -82,7 +82,7 @@ export default function RetailersTab({
   const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
   const [selectedNewStoreId, setSelectedNewStoreId] = useState("");
   const [availableStores, setAvailableStores] = useState<any[]>([]);
-  const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
+  const [selectedNewBankAccountId, setSelectedNewBankAccountId] = useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
   const [selectedNewToOffice, setSelectedNewToOffice] = useState(false);
   const [selectedNewDepositType, setSelectedNewDepositType] = useState("");
@@ -171,11 +171,11 @@ export default function RetailersTab({
     
     setSelectedNewRetailerId(item.retailer_id || (ledgerRetailer ? ledgerRetailer.id : ""));
     setSelectedNewStoreId(item.store_id || item.storeId || "");
-    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewBankAccountId(item.bank_account_id || "");
     setSelectedNewRemarks(item.remarks || "");
     setSelectedNewDate((item.date || "").split(" ")[0]);
     
-    const isOnlineCol = !isDeposit && (item.portal_id != null || (item.denominations && Number(item.denominations.online_amount || 0) > 0));
+    const isOnlineCol = !isDeposit && (item.bank_account_id != null || (item.denominations && Number(item.denominations.online_amount || 0) > 0));
     const initialPaymentMode = isDeposit ? (item.payment_mode || "online") : (isOnlineCol ? "online" : "cash");
     setSelectedNewPaymentMode(initialPaymentMode);
     setSelectedNewAmount(Number(item.amount || 0));
@@ -252,14 +252,14 @@ export default function RetailersTab({
         : { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online_amount: Number(selectedNewAmount) };
 
       if (editingIsDeposit) {
-        const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+        const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewBankAccountId : null;
         const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
         const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
         const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
         await api.updateDeposit(targetId, {
           deposit_type: selectedNewDepositType,
-          portal_id: portalId,
+          bank_account_id: bankAccountId,
           retailer_id: retailerId,
           recipient_staff_id: recipientStaffId,
           to_office: toOffice,
@@ -273,7 +273,7 @@ export default function RetailersTab({
       } else {
         await api.updateCollection(targetId, {
           retailer_id: selectedNewRetailerId || null,
-          portal_id: selectedNewPaymentMode === "online" ? selectedNewPortalId : null,
+          bank_account_id: selectedNewPaymentMode === "online" ? selectedNewBankAccountId : null,
           store_id: selectedNewStoreId || null,
           total_amount: selectedNewAmount,
           collection_date: selectedNewDate || getISTDateString(),
@@ -836,7 +836,7 @@ export default function RetailersTab({
               phone={ledgerRetailer.phone}
               onEditEntry={handleStartEditEntry}
               onDeleteEntry={handleDeleteEntry}
-              hidePortalBankNames={true}
+              hideBankNames={true}
             />
           )}
         </div>
@@ -912,7 +912,7 @@ export default function RetailersTab({
                         const mode = e.target.value;
                         setSelectedNewPaymentMode(mode);
                         if (mode === "cash") {
-                          setSelectedNewPortalId("");
+                          setSelectedNewBankAccountId("");
                         }
                       }}
                       className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
@@ -926,20 +926,20 @@ export default function RetailersTab({
                 {/* PORTAL SELECTOR (only for Online collections) */}
                 {!editingIsDeposit && selectedNewPaymentMode === "online" && (
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Portal Channel</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">BankAccount Channel</label>
                     <InlineSelect
-                      value={selectedNewPortalId}
-                      onChange={setSelectedNewPortalId}
+                      value={selectedNewBankAccountId}
+                      onChange={setSelectedNewBankAccountId}
                       options={[
-                        { value: "", label: "Select Portal Bank Account" },
-                        ...portalDirectory
+                        { value: "", label: "Select Bank Account" },
+                        ...bankAccountDirectory
                           .flatMap((group: any) => {
-                            const firstOnlinePortal = (group.portals || []).find((p: any) => p.show_in_online_payment);
-                            if (!firstOnlinePortal) return [];
-                            return [{ value: String(firstOnlinePortal.id), label: group.name }];
+                            const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
+                            if (!firstOnlineBankAccount) return [];
+                            return [{ value: String(firstOnlineBankAccount.id), label: group.name }];
                           })
                       ]}
-                      placeholder="Select Portal Bank Account"
+                      placeholder="Select Bank Account"
                     />
                   </div>
                 )}
@@ -980,20 +980,20 @@ export default function RetailersTab({
 
                     {selectedNewDepositType === "portal" && (
                       <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Portal</label>
+                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target BankAccount</label>
                         <InlineSelect
-                          value={selectedNewPortalId}
-                          onChange={setSelectedNewPortalId}
+                          value={selectedNewBankAccountId}
+                          onChange={setSelectedNewBankAccountId}
                           options={[
-                            { value: "", label: "Select Portal Bank Account" },
-                            ...portalDirectory
+                            { value: "", label: "Select Bank Account" },
+                            ...bankAccountDirectory
                               .flatMap((group: any) => {
-                                const firstPortal = (group.portals || [])[0];
-                                if (!firstPortal) return [];
-                                return [{ value: String(firstPortal.id), label: group.name }];
+                                const firstBankAccount = (group.bankAccounts || [])[0];
+                                if (!firstBankAccount) return [];
+                                return [{ value: String(firstBankAccount.id), label: group.name }];
                               })
                           ]}
-                          placeholder="Select Portal Bank Account"
+                          placeholder="Select Bank Account"
                         />
                       </div>
                     )}
@@ -1045,21 +1045,21 @@ export default function RetailersTab({
                       <>
                         <div>
                           <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                            {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                            {selectedNewPaymentMode === "refund" ? "Destination BankAccount" : "Source BankAccount"}
                           </label>
                           <InlineSelect
-                            value={selectedNewPortalId}
-                            onChange={setSelectedNewPortalId}
+                            value={selectedNewBankAccountId}
+                            onChange={setSelectedNewBankAccountId}
                             options={[
-                              { value: "", label: "Select Portal Bank Account" },
-                              ...portalDirectory
+                              { value: "", label: "Select Bank Account" },
+                              ...bankAccountDirectory
                                 .flatMap((group: any) => {
-                                  const firstPortal = (group.portals || [])[0];
-                                  if (!firstPortal) return [];
-                                  return [{ value: String(firstPortal.id), label: group.name }];
+                                  const firstBankAccount = (group.bankAccounts || [])[0];
+                                  if (!firstBankAccount) return [];
+                                  return [{ value: String(firstBankAccount.id), label: group.name }];
                                 })
                             ]}
-                            placeholder="Select Portal Bank Account"
+                            placeholder="Select Bank Account"
                           />
                         </div>
 

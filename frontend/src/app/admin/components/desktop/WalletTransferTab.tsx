@@ -9,7 +9,7 @@ import { getISTDateString } from "../../../utils/dateHelpers";
 
 export default function WalletTransferTab() {
   const adminContext = useAdmin();
-  const { retailerDirectory, portalDirectory, userDirectory, deposits, fetchData, showToastNotification } = adminContext;
+  const { retailerDirectory, bankAccountDirectory, userDirectory, deposits, fetchData, showToastNotification } = adminContext;
 
   const [selectedDepositId, setSelectedDepositId] = useState<string | null>(null);
 
@@ -17,7 +17,7 @@ export default function WalletTransferTab() {
   const [editingCollection, setEditingCollection] = useState<any | null>(null);
 
   const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
-  const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
+  const [selectedNewBankAccountId, setSelectedNewBankAccountId] = useState("");
   const [selectedNewRemarks, setSelectedNewRemarks] = useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
   const [selectedNewToOffice, setSelectedNewToOffice] = useState(false);
@@ -43,7 +43,7 @@ export default function WalletTransferTab() {
   const handleStartEditDeposit = (item: any) => {
     setEditingCollection(item);
     setSelectedNewRetailerId(item.retailer_id || "");
-    setSelectedNewPortalId(item.portal_id || "");
+    setSelectedNewBankAccountId(item.bank_account_id || "");
     setSelectedNewRemarks(item.remarks || "");
     setSelectedNewDepositType(item.depositType || item.deposit_type || "virtual");
     setSelectedNewPaymentMode(item.paymentMode || item.payment_mode || "online");
@@ -77,14 +77,14 @@ export default function WalletTransferTab() {
     setIsSavingCollection(true);
 
     try {
-      const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+      const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewBankAccountId : null;
       const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
       const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
       const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
       await api.updateDeposit(editingCollection.id, {
         deposit_type: selectedNewDepositType,
-        portal_id: portalId || null,
+        bank_account_id: bankAccountId || null,
         retailer_id: retailerId || null,
         recipient_staff_id: recipientStaffId || null,
         to_office: toOffice,
@@ -121,7 +121,7 @@ export default function WalletTransferTab() {
     }
   };
 
-  const [vSourcePortalId, setVSourcePortalId] = useState("");
+  const [vSourceBankAccountId, setVSourceBankAccountId] = useState("");
   const [vDirection, setVDirection] = useState<"load" | "refund">("load");
   const [vDestType, setVDestType] = useState<"retailer" | "staff">("retailer");
   const [vDestRetailerId, setVDestRetailerId] = useState("");
@@ -139,7 +139,7 @@ export default function WalletTransferTab() {
   });
   const [isTransferring, setIsTransferring] = useState(false);
 
-  // Portal-to-Portal Transfer state
+  // BankAccount-to-BankAccount Transfer state
   const todayIST = () => {
     const d = new Date();
     const tzString = d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
@@ -150,15 +150,15 @@ export default function WalletTransferTab() {
     return `${y}-${m}-${day}`;
   };
   const [activeTab, setActiveTab] = useState<"virtual" | "portal_to_portal">("virtual");
-  const [ptpFromPortalId, setPtpFromPortalId] = useState("");
-  const [ptpToPortalId, setPtpToPortalId] = useState("");
+  const [ptpFromAccountId, setPtpFromAccountId] = useState("");
+  const [ptpToAccountId, setPtpToAccountId] = useState("");
   const [ptpAmount, setPtpAmount] = useState("");
   const [ptpRemarks, setPtpRemarks] = useState("");
   const [ptpDate, setPtpDate] = useState(todayIST);
   const [isPortalTransferring, setIsPortalTransferring] = useState(false);
 
-  const allPortals = (portalDirectory || []).flatMap((g: any) => 
-    (g.portals || []).map((p: any) => ({
+  const allBankAccounts = (bankAccountDirectory || []).flatMap((g: any) => 
+    (g.bankAccounts || []).map((p: any) => ({
       ...p,
       groupName: g.name
     }))
@@ -166,12 +166,12 @@ export default function WalletTransferTab() {
 
   const handlePortalToPortalTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ptpFromPortalId || !ptpToPortalId) {
-      alert("Please select both source and destination portals.");
+    if (!ptpFromAccountId || !ptpToAccountId) {
+      alert("Please select both source and destination bankAccounts.");
       return;
     }
-    if (ptpFromPortalId === ptpToPortalId) {
-      alert("Source and destination portals must be different.");
+    if (ptpFromAccountId === ptpToAccountId) {
+      alert("Source and destination bankAccounts must be different.");
       return;
     }
     const amt = parseFloat(ptpAmount);
@@ -182,17 +182,17 @@ export default function WalletTransferTab() {
     setIsPortalTransferring(true);
     try {
       await api.portalTransfer({
-        from_portal_id: ptpFromPortalId,
-        portal_id: ptpToPortalId,
+        from_bank_account_id: ptpFromAccountId,
+        bank_account_id: ptpToAccountId,
         amount: amt,
         remarks: ptpRemarks || undefined,
         deposit_date: ptpDate,
       });
       if (showToastNotification) {
-        showToastNotification(`Portal Transfer of ₹${amt.toLocaleString("en-IN")} done successfully!`);
+        showToastNotification(`BankAccount Transfer of ₹${amt.toLocaleString("en-IN")} done successfully!`);
       }
-      setPtpFromPortalId("");
-      setPtpToPortalId("");
+      setPtpFromAccountId("");
+      setPtpToAccountId("");
       setPtpAmount("");
       setPtpRemarks("");
       setPtpDate(todayIST());
@@ -206,8 +206,8 @@ export default function WalletTransferTab() {
 
   const handleVirtualTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vSourcePortalId) {
-      alert("Please select a source portal account");
+    if (!vSourceBankAccountId) {
+      alert("Please select a source bankAccount account");
       return;
     }
     const amt = parseFloat(vAmount);
@@ -217,7 +217,7 @@ export default function WalletTransferTab() {
     }
 
     const payload: any = {
-      portal_id: vSourcePortalId,
+      bank_account_id: vSourceBankAccountId,
       amount: amt,
       remarks: vRemarks || undefined,
       direction: vDirection,
@@ -245,7 +245,7 @@ export default function WalletTransferTab() {
       const targetMsg = vDestType === "retailer" ? "Retailer" : "Staff";
       const actionMsg = vDirection === "load" 
         ? `Virtually loaded ₹${amt.toLocaleString()} to ${targetMsg}'s wallet!`
-        : `Moved ₹${amt.toLocaleString()} from ${targetMsg} back to Portal!`;
+        : `Moved ₹${amt.toLocaleString()} from ${targetMsg} back to BankAccount!`;
 
       if (showToastNotification) {
         showToastNotification(actionMsg);
@@ -253,7 +253,7 @@ export default function WalletTransferTab() {
         alert(actionMsg);
       }
 
-      setVSourcePortalId("");
+      setVSourceBankAccountId("");
       setVDestRetailerId("");
       setVDestStaffId("");
       setVAmount("");
@@ -343,50 +343,50 @@ export default function WalletTransferTab() {
             }`}
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
-            Portal to Portal
+            BankAccount to BankAccount
           </button>
         </div>
 
         {activeTab === "portal_to_portal" ? (
-          /* ---- PORTAL TO PORTAL TRANSFER FORM ---- */
+          /* ---- ACCOUNT TO ACCOUNT TRANSFER FORM ---- */
           <>
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <ArrowLeftRight className="w-5 h-5 text-violet-600" />
               <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
-                Portal to Portal Transfer
+                BankAccount to BankAccount Transfer
               </h3>
             </div>
             <form onSubmit={handlePortalToPortalTransfer} className="space-y-4">
               <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Portal (From)</label>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source BankAccount (From)</label>
                 <InlineSelect
-                  value={ptpFromPortalId}
-                  onChange={(val) => setPtpFromPortalId(val)}
-                  options={(portalDirectory || []).flatMap((g: any) =>
-                    (g.portals || []).map((p: any) => ({
+                  value={ptpFromAccountId}
+                  onChange={(val) => setPtpFromAccountId(val)}
+                  options={(bankAccountDirectory || []).flatMap((g: any) =>
+                    (g.bankAccounts || []).map((p: any) => ({
                       value: p.id,
-                      label: `${g.name}${g.portals.length > 1 ? ` / ${p.portal_name}` : ""} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`
+                      label: `${g.name}${g.bankAccounts.length > 1 ? ` / ${p.bank_account_name}` : ""} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`
                     }))
                   )}
-                  placeholder="Select Source Portal"
+                  placeholder="Select Source BankAccount"
                 />
               </div>
               <div className="flex items-center justify-center">
                 <ArrowLeftRight className="w-4 h-4 text-violet-400" />
               </div>
               <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Portal (To)</label>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination BankAccount (To)</label>
                 <InlineSelect
-                  value={ptpToPortalId}
-                  onChange={(val) => setPtpToPortalId(val)}
-                  options={(portalDirectory || []).flatMap((g: any) =>
-                    (g.portals || []).map((p: any) => ({
+                  value={ptpToAccountId}
+                  onChange={(val) => setPtpToAccountId(val)}
+                  options={(bankAccountDirectory || []).flatMap((g: any) =>
+                    (g.bankAccounts || []).map((p: any) => ({
                       value: p.id,
-                      label: `${g.name}${g.portals.length > 1 ? ` / ${p.portal_name}` : ""} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`,
-                      disabled: p.id === ptpFromPortalId
+                      label: `${g.name}${g.bankAccounts.length > 1 ? ` / ${p.bank_account_name}` : ""} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`,
+                      disabled: p.id === ptpFromAccountId
                     }))
                   )}
-                  placeholder="Select Destination Portal"
+                  placeholder="Select Destination BankAccount"
                 />
               </div>
               <div>
@@ -426,7 +426,7 @@ export default function WalletTransferTab() {
                 disabled={isPortalTransferring}
                 className="w-full py-3 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-600"
               >
-                {isPortalTransferring ? "Processing Transfer..." : "Transfer Between Portals"}
+                {isPortalTransferring ? "Processing Transfer..." : "Transfer Between Accounts"}
               </button>
             </form>
           </>
@@ -454,19 +454,19 @@ export default function WalletTransferTab() {
           <div className={`flex ${vDirection === 'load' ? 'flex-col' : 'flex-col-reverse'} gap-4`}>
             <div>
               <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                {vDirection === "load" ? "Source Portal" : "Destination Portal"}
+                {vDirection === "load" ? "Source BankAccount" : "Destination BankAccount"}
               </label>
               <InlineSelect
-                value={vSourcePortalId}
-                onChange={(val) => setVSourcePortalId(val)}
-                options={(portalDirectory || []).map((g: any) => {
-                  const primaryPortalId = g.portals && g.portals.length > 0 ? g.portals[0].id : "";
+                value={vSourceBankAccountId}
+                onChange={(val) => setVSourceBankAccountId(val)}
+                options={(bankAccountDirectory || []).map((g: any) => {
+                  const primaryBankAccountId = g.bankAccounts && g.bankAccounts.length > 0 ? g.bankAccounts[0].id : "";
                   return {
-                    value: primaryPortalId,
+                    value: primaryBankAccountId,
                     label: `${g.name} - Bal: ₹${(g.balance || 0).toLocaleString()}`
                   };
                 })}
-                placeholder="Select Portal"
+                placeholder="Select Bank Account"
               />
             </div>
 
@@ -555,12 +555,12 @@ export default function WalletTransferTab() {
               {recentVirtualTransfers.map((tx: any) => {
                 const formatted = formatIST(tx.created_at || tx.date);
                 const isRefund = tx.isRefund === true;
-                const portalName = tx.portalGroupName || tx.portalName || "Portal";
+                const bankAccountName = tx.portalGroupName || tx.bankAccountName || "Bank Account";
                 const retailer = (retailerDirectory || []).find((r: any) => r.id === tx.retailer_id);
                 const retailerName = retailer?.name || tx.targetName || "Retailer/Staff";
                 
-                const narrationFrom = isRefund ? retailerName : portalName;
-                const narrationTo = isRefund ? portalName : retailerName;
+                const narrationFrom = isRefund ? retailerName : bankAccountName;
+                const narrationTo = isRefund ? bankAccountName : retailerName;
 
                 return (
                   <div 
@@ -643,7 +643,7 @@ export default function WalletTransferTab() {
             <div className="space-y-4 text-left">
               <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase">Target (Bank/Portal)</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase">Target (Bank/BankAccount)</span>
                   <span className="text-xs font-black text-slate-900 dark:text-white uppercase">{currentSelection.targetName}</span>
                 </div>
                 <div className="flex items-center justify-between mb-3">
@@ -730,19 +730,19 @@ export default function WalletTransferTab() {
                 {/* Target Fields depending on deposit type */}
                 {selectedNewDepositType === "portal" && (
                   <div className="space-y-1">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Portal</label>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target BankAccount</label>
                     <InlineSelect
-                      value={selectedNewPortalId}
-                      onChange={setSelectedNewPortalId}
+                      value={selectedNewBankAccountId}
+                      onChange={setSelectedNewBankAccountId}
                       options={[
-                        { value: "", label: "Select Portal Bank Account" },
-                        ...portalDirectory.flatMap((group: any) => {
-                          const firstPortal = (group.portals || [])[0];
-                          if (!firstPortal) return [];
-                          return [{ value: String(firstPortal.id), label: group.name }];
+                        { value: "", label: "Select Bank Account" },
+                        ...bankAccountDirectory.flatMap((group: any) => {
+                          const firstBankAccount = (group.bankAccounts || [])[0];
+                          if (!firstBankAccount) return [];
+                          return [{ value: String(firstBankAccount.id), label: group.name }];
                         })
                       ]}
-                      placeholder="Select Portal Bank Account"
+                      placeholder="Select Bank Account"
                     />
                   </div>
                 )}
@@ -796,20 +796,20 @@ export default function WalletTransferTab() {
                   <>
                     <div className="space-y-1">
                       <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
-                        {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                        {selectedNewPaymentMode === "refund" ? "Destination BankAccount" : "Source BankAccount"}
                       </label>
                       <InlineSelect
-                        value={selectedNewPortalId}
-                        onChange={setSelectedNewPortalId}
+                        value={selectedNewBankAccountId}
+                        onChange={setSelectedNewBankAccountId}
                         options={[
-                          { value: "", label: "Select Portal Bank Account" },
-                          ...portalDirectory.flatMap((group: any) => {
-                            const firstPortal = (group.portals || [])[0];
-                            if (!firstPortal) return [];
-                            return [{ value: String(firstPortal.id), label: group.name }];
+                          { value: "", label: "Select Bank Account" },
+                          ...bankAccountDirectory.flatMap((group: any) => {
+                            const firstBankAccount = (group.bankAccounts || [])[0];
+                            if (!firstBankAccount) return [];
+                            return [{ value: String(firstBankAccount.id), label: group.name }];
                           })
                         ]}
-                        placeholder="Select Portal Bank Account"
+                        placeholder="Select Bank Account"
                       />
                     </div>
 

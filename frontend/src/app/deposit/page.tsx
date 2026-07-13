@@ -34,12 +34,12 @@ function NewDepositContent() {
   const [staffUsers, setStaffUsers] = useState<{ id: string; name: string }[]>([]);
 
   const [selectedGroupId, setSelectedGroupId] = useState("");
-  const [selectedPortalId, setSelectedPortalId] = useState("");
+  const [selectedBankAccountId, setSelectedBankAccountId] = useState("");
   const [selectedRetailerId, setSelectedRetailerId] = useState("");
   const [selectedStaffId, setSelectedStaffId] = useState("");
   const [toOffice, setToOffice] = useState(false);
-  const [portalsList, setPortalsList] = useState<any[]>([]);
-  const [showOnlinePortal, setShowOnlinePortal] = useState(false);
+  const [bankAccountsList, setBankAccountsList] = useState<any[]>([]);
+  const [showOnlineBankAccount, setShowOnlineBankAccount] = useState(false);
   const [remarks, setRemarks] = useState("");
 
   // Deposit Date Selector
@@ -77,7 +77,7 @@ function NewDepositContent() {
   const totalAmount = totalCashAmount + denominations.online_amount;
 
   const handleDenomChange = (key: keyof DenominationCounts, value: string) => {
-    if (key === "online_portal_id") {
+    if (key === "online_bank_account_id") {
       setDenominations(prev => ({ ...prev, [key]: value }));
       return;
     }
@@ -110,7 +110,7 @@ function NewDepositContent() {
           if (target) {
             setDepositType(target.deposit_type);
             if (target.deposit_type === "portal" || target.deposit_type === "virtual") {
-              setSelectedPortalId(target.portal_id);
+              setSelectedBankAccountId(target.bank_account_id);
             }
             if (target.deposit_type === "retailer" || target.deposit_type === "virtual") {
               setSelectedRetailerId(target.retailer_id);
@@ -134,10 +134,10 @@ function NewDepositContent() {
                 note_10: Number(target.denominations.note_10) || 0,
                 coins: Number(target.denominations.coins) || 0,
                 online_amount: Number(target.denominations.online_amount) || 0,
-                online_portal_id: target.denominations.online_portal_id
+                online_bank_account_id: target.denominations.online_bank_account_id
               });
-              if (target.denominations.online_portal_id) {
-                setShowOnlinePortal(true);
+              if (target.denominations.online_bank_account_id) {
+                setShowOnlineBankAccount(true);
               }
             }
           }
@@ -190,33 +190,33 @@ function NewDepositContent() {
             id: x.id,
             name: x.retailer_name || x.name,
             phone: x.phone || "",
-            portalName: "Standard",
+            bankAccountName: "Standard",
             opening_to_give: parseFloat(x.opening_to_give || 0),
             opening_to_take: parseFloat(x.opening_to_take || 0),
             net_balance: parseFloat(x.balance || 0)
           })));
         }
 
-        // Flatten: only individual portal accounts marked show_in_online_payment=true
-        const onlinePortals: { id: string; name: string }[] = [];
+        // Flatten: only individual bank accounts marked show_in_online_payment=true
+        const onlineBankAccounts: { id: string; name: string }[] = [];
         for (const g of groups) {
-          for (const p of (g.portals || [])) {
+          for (const p of (g.bank_accounts || [])) {
             if (p.show_in_online_payment) {
-              onlinePortals.push({
+              onlineBankAccounts.push({
                 id: p.id,
-                name: g.portals.length > 1 ? `${g.name} - ${p.portal_name}` : g.name
+                name: g.bank_accounts.length > 1 ? `${g.name} - ${p.bank_account_name}` : g.name
               });
             }
           }
         }
-        setPortalsList(onlinePortals);
+        setBankAccountsList(onlineBankAccounts);
         
-        // Auto default to last used online portal if not editing
+        // Auto default to last used online bankAccount if not editing
         if (!editId && typeof window !== "undefined") {
-          const lastUsedPortalId = localStorage.getItem("last_used_online_portal_id");
-          if (lastUsedPortalId && onlinePortals.some(p => p.id === lastUsedPortalId)) {
-            setDenominations(prev => ({ ...prev, online_portal_id: lastUsedPortalId }));
-            setShowOnlinePortal(true);
+          const lastUsedBankAccountId = localStorage.getItem("last_used_online_bank_account_id");
+          if (lastUsedBankAccountId && onlineBankAccounts.some(p => p.id === lastUsedBankAccountId)) {
+            setDenominations(prev => ({ ...prev, online_bank_account_id: lastUsedBankAccountId }));
+            setShowOnlineBankAccount(true);
           }
         }
         
@@ -248,10 +248,10 @@ function NewDepositContent() {
         try {
           const { api } = await import("../utils/api");
           const accounts = await api.getGroupAccounts(selectedGroupId);
-          const mappedAccounts = accounts.map((x: any) => ({ id: x.id, name: x.portal_name }));
+          const mappedAccounts = accounts.map((x: any) => ({ id: x.id, name: x.bank_account_name }));
           setGroupAccounts(mappedAccounts);
-          if (mappedAccounts.length > 0) setSelectedPortalId(mappedAccounts[0].id);
-          else setSelectedPortalId("");
+          if (mappedAccounts.length > 0) setSelectedBankAccountId(mappedAccounts[0].id);
+          else setSelectedBankAccountId("");
         } catch (err) {
           console.error("Failed to fetch group accounts:", err);
         }
@@ -271,14 +271,14 @@ function NewDepositContent() {
     // Build target name for local store display
     let targetName = "";
     if (depositType === "portal") {
-      const groupName = portalGroups.find(g => g.id === selectedGroupId)?.name || "Portal";
+      const groupName = portalGroups.find(g => g.id === selectedGroupId)?.name || "Bank Account";
       targetName = groupName;
     } else if (depositType === "retailer") {
       targetName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer Store";
     } else if (depositType === "virtual") {
-      const portalName = groupAccounts.find(a => a.id === selectedPortalId)?.name || "Portal";
+      const bankAccountName = groupAccounts.find(a => a.id === selectedBankAccountId)?.name || "Bank Account";
       const retailerName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer";
-      targetName = `Virtual: ${portalName} → ${retailerName}`;
+      targetName = `Virtual: ${bankAccountName} → ${retailerName}`;
     } else {
       targetName = "Super Distributor";
     }
@@ -292,7 +292,7 @@ function NewDepositContent() {
       remarks: remarks,
       deposit_date: depositDate,
     };
-    if (depositType === "portal" || depositType === "virtual") backendPayload.portal_id = selectedPortalId;
+    if (depositType === "portal" || depositType === "virtual") backendPayload.bank_account_id = selectedBankAccountId;
     if (depositType === "retailer" || depositType === "virtual") backendPayload.retailer_id = selectedRetailerId;
     if (depositType === "staff") {
       backendPayload.to_office = true;
@@ -306,7 +306,7 @@ function NewDepositContent() {
       paymentMode: depositType === "virtual" ? "online" : "cash",
       denominations: denominations,
       remarks: remarks,
-      portal_id: (depositType === "portal" || depositType === "virtual") ? selectedPortalId : undefined,
+      bank_account_id: (depositType === "portal" || depositType === "virtual") ? selectedBankAccountId : undefined,
       retailer_id: (depositType === "retailer" || depositType === "virtual") ? selectedRetailerId : undefined,
       recipient_staff_id: depositType === "staff" ? selectedStaffId : undefined,
     };
@@ -337,7 +337,7 @@ function NewDepositContent() {
         // Queue it for the existing background sync to retry automatically,
         // instead of losing it or faking success.
         await db.deposits.add({
-          portal_id: backendPayload.portal_id,
+          bank_account_id: backendPayload.bank_account_id,
           retailer_id: backendPayload.retailer_id,
           recipient_staff_id: backendPayload.recipient_staff_id,
           depositType,
@@ -406,9 +406,9 @@ function NewDepositContent() {
                       setDenominations(prev => ({
                         ...prev,
                         online_amount: 0,
-                        online_portal_id: undefined
+                        online_bank_account_id: undefined
                       }));
-                      setShowOnlinePortal(false);
+                      setShowOnlineBankAccount(false);
                     }
                   }}
                   className={`py-1.5 px-1 rounded-md border text-center transition-all cursor-pointer ${
@@ -431,13 +431,13 @@ function NewDepositContent() {
                 <div className="space-y-2">
                   <div>
                     <label className="block text-[8px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500 mb-1">
-                      1. Select Source Portal Account
+                      1. Select Source Portal
                     </label>
                     <InlineSelect
                       value={selectedGroupId}
                       onChange={(val) => setSelectedGroupId(val)}
                       options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
-                      placeholder={portalGroups.length === 0 ? "Loading portals..." : "Select Portal"}
+                      placeholder={portalGroups.length === 0 ? "Loading accounts..." : "Select Bank"}
                       icon={<Building className="w-3.5 h-3.5" />}
                     />
                   </div>
@@ -448,8 +448,8 @@ function NewDepositContent() {
                         2. Select Source Bank Account
                       </label>
                       <InlineSelect
-                        value={selectedPortalId}
-                        onChange={(val) => setSelectedPortalId(val)}
+                        value={selectedBankAccountId}
+                        onChange={(val) => setSelectedBankAccountId(val)}
                         options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
                         placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
                         icon={<CreditCard className="w-3.5 h-3.5" />}
@@ -482,7 +482,7 @@ function NewDepositContent() {
                       value={selectedGroupId}
                       onChange={(val) => setSelectedGroupId(val)}
                       options={portalGroups.map(g => ({ value: g.id, label: g.name }))}
-                      placeholder={portalGroups.length === 0 ? "Loading portals..." : "Select Portal"}
+                      placeholder={portalGroups.length === 0 ? "Loading accounts..." : "Select Bank"}
                       icon={<Building className="w-3.5 h-3.5" />}
                     />
                     
@@ -517,8 +517,8 @@ function NewDepositContent() {
                         2. Choose Bank Account
                       </label>
                       <InlineSelect
-                        value={selectedPortalId}
-                        onChange={(val) => setSelectedPortalId(val)}
+                        value={selectedBankAccountId}
+                        onChange={(val) => setSelectedBankAccountId(val)}
                         options={groupAccounts.map(a => ({ value: a.id, label: a.name }))}
                         placeholder={groupAccounts.length === 0 ? "No accounts found..." : "Select Account"}
                         icon={<CreditCard className="w-3.5 h-3.5" />}
@@ -613,7 +613,7 @@ function NewDepositContent() {
                   <div className="flex items-center gap-1.5 justify-between">
                     <span 
                       className="text-[10px] font-black text-slate-600 dark:text-slate-300 w-20 cursor-pointer"
-                      onClick={() => setShowOnlinePortal(true)}
+                      onClick={() => setShowOnlineBankAccount(true)}
                     >
                       Online (GPay)
                     </span>
@@ -628,21 +628,21 @@ function NewDepositContent() {
                       min="0"
                     />
                   </div>
-                  {(showOnlinePortal || denominations.online_amount > 0) && (
+                  {(showOnlineBankAccount || denominations.online_amount > 0) && (
                     <div className="mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
                       <InlineSelect
-                        value={denominations.online_portal_id || ""}
+                        value={denominations.online_bank_account_id || ""}
                         onChange={(val) => {
-                          handleDenomChange("online_portal_id", val);
+                          handleDenomChange("online_bank_account_id", val);
                           if (val && typeof window !== "undefined") {
-                            localStorage.setItem("last_used_online_portal_id", val);
+                            localStorage.setItem("last_used_online_bank_account_id", val);
                           }
                         }}
                         options={[
-                          { value: "", label: "Select Portal Account..." },
-                          ...portalsList.map(p => ({ value: p.id, label: p.name }))
+                          { value: "", label: "Select Bank Account..." },
+                          ...bankAccountsList.map(p => ({ value: p.id, label: p.name }))
                         ]}
-                        placeholder="Select Portal Account..."
+                        placeholder="Select Bank Account..."
                       />
                     </div>
                   )}

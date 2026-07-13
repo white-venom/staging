@@ -18,21 +18,21 @@ import { useAdmin } from "../../context/AdminContext";
 
 interface AdministrationTabProps {
   userDirectory: any[];
-  portalDirectory: any[];
+  bankAccountDirectory: any[];
   fetchData: () => void;
   showToastNotification: (msg: string) => void;
 }
 
 export default function AdministrationTab({
   userDirectory: propsUserDir,
-  portalDirectory: propsPortalDir,
+  bankAccountDirectory: propsBankAccountDir,
   fetchData: propsFetchData,
   showToastNotification: propsShowToast
 }: AdministrationTabProps) {
   const adminContext = useAdmin();
   const fetchData = propsFetchData || adminContext.fetchData;
   const showToastNotification = propsShowToast || adminContext.showToastNotification;
-  const { retailerDirectory, portalDirectory, collections, deposits } = adminContext;
+  const { retailerDirectory, bankAccountDirectory, collections, deposits } = adminContext;
   const [users, setUsers] = useState<any[]>([]);
 
 
@@ -42,7 +42,7 @@ export default function AdministrationTab({
   const [uRole, setURole] = useState("staff");
   const [uPassword, setUPassword] = useState("");
 
-  // Portal & Bank State
+  // BankAccount & Bank State
   const [pName, setPName] = useState("");
   const [pToTake, setPToTake] = useState<string>("");
   const [pToGive, setPToGive] = useState<string>("");
@@ -158,7 +158,7 @@ export default function AdministrationTab({
     }
   };
 
-  const handleRegisterPortalAndBank = async (e: React.FormEvent) => {
+  const handleRegisterBankAccount = async (e: React.FormEvent) => {
     e.preventDefault();
     const takeVal = parseFloat(pToTake || "0");
     const giveVal = parseFloat(pToGive || "0");
@@ -174,9 +174,9 @@ export default function AdministrationTab({
       });
 
       if (bAccName) {
-        await api.createPortal({
+        await api.createBankAccount({
           group_id: group.id,
-          portal_name: bAccName,
+          bank_account_name: bAccName,
           bank_name: `${bBankName}${bBranchName ? ' (' + bBranchName + ')' : ''}`,
           bank_account_no: bAccNo,
           ifsc_code: bIfsc
@@ -336,20 +336,20 @@ export default function AdministrationTab({
         </div>
 
 
-        {/* Right Column: Portal/Bank & Users Directory */}
+        {/* Right Column: BankAccount/Bank & Users Directory */}
         <div className="space-y-6">
-          {/* Register Portal & Bank Form */}
+          {/* Register BankAccount & Bank Form */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6">
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <Globe className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Register Portal & Bank</h3>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Register BankAccount & Bank</h3>
             </div>
             
-            <form onSubmit={handleRegisterPortalAndBank} className="space-y-6">
+            <form onSubmit={handleRegisterBankAccount} className="space-y-6">
               <div className="space-y-4">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-l-2 border-indigo-500 pl-2">add portal details</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-l-2 border-indigo-500 pl-2">add bankAccount details</span>
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Portal Name</label>
+                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">BankAccount Name</label>
                   <input autoComplete="one-time-code" type="text" value={pName} onChange={e => setPName(e.target.value)} placeholder="e.g. RevaPay" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -425,7 +425,7 @@ export default function AdministrationTab({
               </div>
 
               <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all active:scale-[0.98]">
-                Register Portal & Bank
+                Register BankAccount & Bank
               </button>
             </form>
           </div>

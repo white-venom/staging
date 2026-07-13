@@ -77,7 +77,7 @@ export default function HistoryPage() {
     }
     const pGroupName = entry.portalGroupName || entry.portal_group_name;
     if (pGroupName && pGroupName !== "Cash" && pGroupName !== "N/A") {
-      headerLines.push(`Portal: ${pGroupName}`);
+      headerLines.push(`BankAccount: ${pGroupName}`);
     }
 
     const headerText = headerLines.length > 0 ? `${headerLines.join("\n")}\n` : "";
@@ -120,7 +120,7 @@ ${dateFormatted}`;
     const q = searchQuery.toLowerCase();
     return (
       (c.retailerName || "").toLowerCase().includes(q) ||
-      (c.portalName || "").toLowerCase().includes(q) ||
+      (c.bankAccountName || "").toLowerCase().includes(q) ||
       (c.store_name || "").toLowerCase().includes(q) ||
       (c.remarks || "").toLowerCase().includes(q) ||
       String(c.totalAmount || "").includes(q)
@@ -152,7 +152,7 @@ ${dateFormatted}`;
           <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
           <input autoComplete="one-time-code"
             type="text"
-            placeholder="Filter by retailer or portal..."
+            placeholder="Filter by retailer or bankAccount..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-[11px] text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold shadow-sm"
@@ -210,7 +210,7 @@ ${dateFormatted}`;
                           </div>
                         )}
                         <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 flex items-center gap-1.5 font-bold">
-                          <span>{c.portalName}</span>
+                          <span>{c.bankAccountName}</span>
                           <span>•</span>
                           <span>{c.date}</span>
                         </p>

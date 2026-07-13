@@ -135,7 +135,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
     { label: "VIRTUAL LEDGER", icon: ClipboardList, href: "/admin/virtual-ledger" },
     { label: "STAFF", icon: Users, href: "/admin/staff" },
     { label: "RETAILERS", icon: Building, href: "/admin/retailers" },
-    { label: "PORTALS", icon: Globe, href: "/admin/portals" },
+    { label: "PORTALS", icon: Globe, href: "/admin/bankAccounts" },
     { label: "ATTENDANCE", icon: Clock, href: "/admin/attendance" },
     { label: "ADMINISTRATION", icon: Settings, href: "/admin/administration" },
     { label: "REPORTS", icon: BarChart2, href: "/admin/reports" },

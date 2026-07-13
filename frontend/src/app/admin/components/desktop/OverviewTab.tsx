@@ -44,7 +44,7 @@ interface VisitedStore {
   id: string;
   retailerName: string;
   store_name?: string;
-  portalName?: string;
+  bankAccountName?: string;
   remarks?: string;
   time: string;
   amount: number;
@@ -206,7 +206,7 @@ export default function OverviewTab({
     return combined.sort((a, b) => new Date(b.date.replace(' ', 'T')).getTime() - new Date(a.date.replace(' ', 'T')).getTime());
   }, [filteredCollections, filteredDeposits]);
 
-  const { retailerDirectory, portalDirectory, showToastNotification } = useAdmin();
+  const { retailerDirectory, bankAccountDirectory, showToastNotification } = useAdmin();
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
   const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
@@ -215,7 +215,7 @@ export default function OverviewTab({
   const [selectedNewRetailerId, setSelectedNewRetailerId] = React.useState("");
   const [selectedNewStoreId, setSelectedNewStoreId] = React.useState("");
   const [availableStores, setAvailableStores] = React.useState<any[]>([]);
-  const [selectedNewPortalId, setSelectedNewPortalId] = React.useState("");
+  const [selectedNewBankAccountId, setSelectedNewBankAccountId] = React.useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = React.useState("");
   const [selectedNewToOffice, setSelectedNewToOffice] = React.useState(false);
   const [selectedNewDepositType, setSelectedNewDepositType] = React.useState("");
@@ -269,7 +269,7 @@ export default function OverviewTab({
     
     setSelectedNewRetailerId(item.retailer_id || item.retailerId || "");
     setSelectedNewStoreId(item.store_id || item.storeId || "");
-    setSelectedNewPortalId(item.portal_id || item.portalId || "");
+    setSelectedNewBankAccountId(item.bank_account_id || item.bankAccountId || "");
     setSelectedNewRemarks(item.remarks || "");
     
     if (isDeposit) {
@@ -308,14 +308,14 @@ export default function OverviewTab({
     
     try {
       if (editingIsDeposit) {
-        const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+        const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewBankAccountId : null;
         const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
         const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
         const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
         await api.updateDeposit(editingCollection.id, {
           deposit_type: selectedNewDepositType,
-          portal_id: portalId || null,
+          bank_account_id: bankAccountId || null,
           retailer_id: retailerId || null,
           recipient_staff_id: recipientStaffId || null,
           to_office: toOffice,
@@ -340,7 +340,7 @@ export default function OverviewTab({
 
         await api.updateCollection(editingCollection.id, {
           retailer_id: selectedNewRetailerId || null,
-          portal_id: selectedNewPortalId || null,
+          bank_account_id: selectedNewBankAccountId || null,
           store_id: selectedNewStoreId || null,
           total_amount: computedCollectionTotal,
           collection_date: selectedNewDate || getISTDateString(),
@@ -479,7 +479,7 @@ export default function OverviewTab({
         id: c.id,
         retailerName: c.retailerName,
         store_name: c.store_name || null,
-        portalName: c.portalName || null,
+        bankAccountName: c.bankAccountName || null,
         remarks: c.remarks || null,
         time: c.date ? c.date.split(" ")[1] : "N/A",
         amount: c.totalAmount,
@@ -861,8 +861,8 @@ export default function OverviewTab({
                               } catch (e) { return item.time; }
                             })()}</span>
                           </div>
-                          {item.portalName && (
-                            <span className="text-[7px] font-black text-blue-500 uppercase bg-blue-50 dark:bg-blue-950/20 px-1 py-0.5 rounded border border-blue-100 dark:border-blue-900/20">{item.portalName}</span>
+                          {item.bankAccountName && (
+                            <span className="text-[7px] font-black text-blue-500 uppercase bg-blue-50 dark:bg-blue-950/20 px-1 py-0.5 rounded border border-blue-100 dark:border-blue-900/20">{item.bankAccountName}</span>
                           )}
                         </div>
                       </div>
@@ -1023,7 +1023,7 @@ export default function OverviewTab({
             denominations: c.denominations,
             retailer_id: c.retailer_id,
             store_id: c.store_id,
-            portal_id: c.portal_id,
+            bank_account_id: c.bank_account_id,
             rawRecord: c.rawRecord,
             deposit_type: undefined,
             recipient_staff_id: undefined,
@@ -1042,7 +1042,7 @@ export default function OverviewTab({
             remarks: d.remarks || "",
             denominations: d.denominations,
             deposit_type: d.depositType,
-            portal_id: d.portal_id,
+            bank_account_id: d.bank_account_id,
             retailer_id: d.retailer_id,
             recipient_staff_id: d.recipient_staff_id,
             paymentMode: d.paymentMode,
@@ -1304,7 +1304,7 @@ export default function OverviewTab({
                            <span className="font-black text-emerald-600 text-sm">+₹{(c.totalAmount || 0).toLocaleString()}</span>
                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                              <button
-                               onClick={() => shareCollectionEntry({ retailer_name: c.retailerName, portal_name: c.portalName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.rawRecord?.created_at || c.date, remarks: c.remarks }, c.staffName || 'Staff')}
+                               onClick={() => shareCollectionEntry({ retailer_name: c.retailerName, bank_account_name: c.bankAccountName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.rawRecord?.created_at || c.date, remarks: c.remarks }, c.staffName || 'Staff')}
                                className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
                                title="Share"
                              >
@@ -1400,7 +1400,7 @@ export default function OverviewTab({
                            <span className="font-black text-red-600 text-sm">-₹{(d.amount || 0).toLocaleString()}</span>
                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                              <button
-                               onClick={() => shareDepositEntry({ deposit_type: d.depositType, target_name: d.targetName, portal_group_name: d.portalName, amount: d.amount, denominations: d.denominations, created_at: d.created_at || d.date, remarks: d.remarks, recipient_staff_id: d.recipient_staff_id || d.recipientStaffId }, d.staffName || 'Staff')}
+                               onClick={() => shareDepositEntry({ deposit_type: d.depositType, target_name: d.targetName, portal_group_name: d.bankAccountName, amount: d.amount, denominations: d.denominations, created_at: d.created_at || d.date, remarks: d.remarks, recipient_staff_id: d.recipient_staff_id || d.recipientStaffId }, d.staffName || 'Staff')}
                                className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
                                title="Share"
                              >
@@ -1536,19 +1536,19 @@ export default function OverviewTab({
                     </div>
                   )}
 
-                  {/* Portal Select */}
+                  {/* BankAccount Select */}
                   <div className="space-y-1">
-                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Portal Channel</label>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">BankAccount Channel</label>
                     <InlineSelect
-                      value={selectedNewPortalId}
-                      onChange={setSelectedNewPortalId}
+                      value={selectedNewBankAccountId}
+                      onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "None / Cash" },
-                        ...portalDirectory
+                        ...bankAccountDirectory
                           .flatMap((group: any) => {
-                            const firstOnlinePortal = (group.portals || []).find((p: any) => p.show_in_online_payment);
-                            if (!firstOnlinePortal) return [];
-                            return [{ value: String(firstOnlinePortal.id), label: group.name }];
+                            const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
+                            if (!firstOnlineBankAccount) return [];
+                            return [{ value: String(firstOnlineBankAccount.id), label: group.name }];
                           })
                       ]}
                       placeholder="None / Cash"
@@ -1690,20 +1690,20 @@ export default function OverviewTab({
                   {/* Target Fields depending on deposit type */}
                   {selectedNewDepositType === "portal" && (
                     <div className="space-y-1">
-                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target Portal</label>
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Target BankAccount</label>
                       <InlineSelect
-                        value={selectedNewPortalId}
-                        onChange={setSelectedNewPortalId}
+                        value={selectedNewBankAccountId}
+                        onChange={setSelectedNewBankAccountId}
                         options={[
-                          { value: "", label: "Select Portal Bank Account" },
-                          ...portalDirectory
+                          { value: "", label: "Select Bank Account" },
+                          ...bankAccountDirectory
                             .flatMap((group: any) => {
-                              const firstPortal = (group.portals || [])[0];
-                              if (!firstPortal) return [];
-                              return [{ value: String(firstPortal.id), label: group.name }];
+                              const firstBankAccount = (group.bankAccounts || [])[0];
+                              if (!firstBankAccount) return [];
+                              return [{ value: String(firstBankAccount.id), label: group.name }];
                             })
                         ]}
-                        placeholder="Select Portal Bank Account"
+                        placeholder="Select Bank Account"
                       />
                     </div>
                   )}
@@ -1757,20 +1757,20 @@ export default function OverviewTab({
                     <>
                       <div className="space-y-1">
                         <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
-                          {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                          {selectedNewPaymentMode === "refund" ? "Destination BankAccount" : "Source BankAccount"}
                         </label>
                         <InlineSelect
-                          value={selectedNewPortalId}
-                          onChange={setSelectedNewPortalId}
+                          value={selectedNewBankAccountId}
+                          onChange={setSelectedNewBankAccountId}
                           options={[
-                            { value: "", label: "Select Portal Bank Account" },
-                            ...portalDirectory.flatMap((group: any) => {
-                              const firstPortal = (group.portals || [])[0];
-                              if (!firstPortal) return [];
-                              return [{ value: String(firstPortal.id), label: group.name }];
+                            { value: "", label: "Select Bank Account" },
+                            ...bankAccountDirectory.flatMap((group: any) => {
+                              const firstBankAccount = (group.bankAccounts || [])[0];
+                              if (!firstBankAccount) return [];
+                              return [{ value: String(firstBankAccount.id), label: group.name }];
                             })
                           ]}
-                          placeholder="Select Portal Bank Account"
+                          placeholder="Select Bank Account"
                         />
                       </div>
 

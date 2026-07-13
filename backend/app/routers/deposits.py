@@ -6,7 +6,7 @@ from sqlalchemy import select, and_, or_, desc
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.database.db import get_db
-from app.database.models import BankDeposit, Denomination, Portal, PortalGroup, Retailer, User, Ledger, BusinessSettings, Collection
+from app.database.models import BankDeposit, Denomination, BankAccount, PortalGroup, Retailer, User, Ledger, BusinessSettings, Collection
 from app.logic.ledger import recalculate_balances, lock_portal_group
 from sqlalchemy import update, delete
 from decimal import Decimal
@@ -23,7 +23,7 @@ def submit_deposit(
     db: Session = Depends(get_db),
     current_user=Depends(require_staff)
 ):
-    """Staff registers a deposit: Option A (Portal bank), Option B (Retailer payout), or Option C (Staff handover)."""
+    """Staff registers a deposit: Option A (Bank Account), Option B (Retailer payout), or Option C (Staff handover)."""
     # Backdating gate: a non-admin may only pick a date other than today if
     # staff_can_change_collection_date is on. Reject with a clear error rather
     # than silently accepting an unintended backdate.
@@ -39,12 +39,12 @@ def submit_deposit(
 
     # Validation checks
     dt = payload.deposit_type.lower().strip()
-    portal = None
+    bank_account = None
     retailer = None
     if dt == "portal":
-        portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
-        if not portal:
-            raise HTTPException(status_code=404, detail="Target portal bank account not found.")
+        bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
+        if not bank_account:
+            raise HTTPException(status_code=404, detail="Target bank account not found.")
     elif dt == "retailer":
         retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
         if not retailer:
@@ -60,9 +60,9 @@ def submit_deposit(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only administrators are authorized to process virtual transfers."
             )
-        portal = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == payload.portal_id).with_for_update())
-        if not portal:
-            raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
+        bank_account = db.scalar(select(BankAccount).options(joinedload(BankAccount.group)).where(BankAccount.id == payload.bank_account_id).with_for_update())
+        if not bank_account:
+            raise HTTPException(status_code=404, detail="Source bank/wallet account not found.")
         retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
         if not retailer:
             raise HTTPException(status_code=404, detail="Target retailer not found.")
@@ -70,21 +70,21 @@ def submit_deposit(
         if current_user.role != "admin":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only administrators are authorized to process portal-to-portal transfers."
+                detail="Only administrators are authorized to process account-to-account transfers."
             )
-        portal = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == payload.portal_id).with_for_update())
-        if not portal:
-            raise HTTPException(status_code=404, detail="Destination portal not found.")
-        from_portal = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == payload.from_portal_id).with_for_update())
-        if not from_portal:
-            raise HTTPException(status_code=404, detail="Source portal not found.")
+        bank_account = db.scalar(select(BankAccount).options(joinedload(BankAccount.group)).where(BankAccount.id == payload.bank_account_id).with_for_update())
+        if not bank_account:
+            raise HTTPException(status_code=404, detail="Destination bank account not found.")
+        from_bank_account = db.scalar(select(BankAccount).options(joinedload(BankAccount.group)).where(BankAccount.id == payload.from_bank_account_id).with_for_update())
+        if not from_bank_account:
+            raise HTTPException(status_code=404, detail="Source bank account not found.")
 
     try:
         db_deposit = BankDeposit(
             staff_id=current_user.id,
             deposit_type=dt,
-            portal_id=payload.portal_id,
-            from_portal_id=payload.from_portal_id,
+            bank_account_id=payload.bank_account_id,
+            from_bank_account_id=payload.from_bank_account_id,
             retailer_id=payload.retailer_id,
             recipient_staff_id=payload.recipient_staff_id,
             to_office=payload.to_office,
@@ -148,32 +148,32 @@ def submit_deposit(
             db_deposit.balance_snapshot = new_balance
         
         elif dt == "portal":
-            # Portal deposits reduce what DO IT SERVICES owes to the portal group
+            # BankAccount deposits reduce what DO IT SERVICES owes to the bank_account group
             # Assets increase (from DO IT perspective, we have less cash but less debt)
             # Actually, PortalGroup.balance = Assets - Liabilities.
             # Depositing money to them increases the balance (closer to zero if negative).
-            if portal:
-                lock_portal_group(db, portal)
-                # Update individual portal balance
-                portal.balance += Decimal(str(payload.amount))
-                db_deposit.balance_snapshot = portal.balance
+            if bank_account:
+                lock_portal_group(db, bank_account)
+                # Update individual bank_account balance
+                bank_account.balance += Decimal(str(payload.amount))
+                db_deposit.balance_snapshot = bank_account.balance
 
                 # Also update group balance
-                if portal.group:
-                    portal.group.balance += Decimal(str(payload.amount))
+                if bank_account.group:
+                    bank_account.group.balance += Decimal(str(payload.amount))
         elif dt == "virtual":
             # Admin does not have a virtual balance limit to validate/decrement.
-            lock_portal_group(db, portal)
+            lock_portal_group(db, bank_account)
 
-            # Step A: Adjust Portal Balance
+            # Step A: Adjust BankAccount Balance
             if payload.payment_mode == "refund":
-                portal.balance += payload.amount
-                if portal.group:
-                    portal.group.balance += payload.amount
+                bank_account.balance += payload.amount
+                if bank_account.group:
+                    bank_account.group.balance += payload.amount
             else:
-                portal.balance -= payload.amount
-                if portal.group:
-                    portal.group.balance -= payload.amount
+                bank_account.balance -= payload.amount
+                if bank_account.group:
+                    bank_account.group.balance -= payload.amount
                 
             # Step B: Fetch latest ledger entry to calculate new running balance
             latest_ledger = db.scalar(
@@ -191,7 +191,7 @@ def submit_deposit(
             # Raw signed running total, relabeled to match ledger.py's
             # credit=add/debit=subtract convention: a "load" moves money to
             # the retailer (same direction as a collection -> "credit", adds);
-            # a "refund" reverses that, moving money back to the portal
+            # a "refund" reverses that, moving money back to the bank_account
             # (opposite direction -> "debit", subtracts).
             if payload.payment_mode == "refund":
                 new_balance = prev_balance - payload.amount
@@ -200,7 +200,7 @@ def submit_deposit(
             else:
                 new_balance = prev_balance + payload.amount
                 transaction_type = "credit"
-                desc_text = portal.group.name if (portal and portal.group) else (portal.portal_name if portal else "virtual transfer")
+                desc_text = bank_account.group.name if (bank_account and bank_account.group) else (bank_account.bank_account_name if bank_account else "virtual transfer")
             
             # Step C: Log entry in Retailer's Ledger
             ledger_entry = Ledger(
@@ -218,16 +218,16 @@ def submit_deposit(
             db_deposit.balance_snapshot = new_balance
 
         elif dt == "portal_transfer":
-            # Deduct from source portal, add to destination portal
-            lock_portal_group(db, from_portal)
-            lock_portal_group(db, portal)
-            from_portal.balance -= Decimal(str(payload.amount))
-            if from_portal.group:
-                from_portal.group.balance -= Decimal(str(payload.amount))
-            portal.balance += Decimal(str(payload.amount))
-            if portal.group:
-                portal.group.balance += Decimal(str(payload.amount))
-            db_deposit.balance_snapshot = portal.balance
+            # Deduct from source bank_account, add to destination bank_account
+            lock_portal_group(db, from_bank_account)
+            lock_portal_group(db, bank_account)
+            from_bank_account.balance -= Decimal(str(payload.amount))
+            if from_bank_account.group:
+                from_bank_account.group.balance -= Decimal(str(payload.amount))
+            bank_account.balance += Decimal(str(payload.amount))
+            if bank_account.group:
+                bank_account.group.balance += Decimal(str(payload.amount))
+            db_deposit.balance_snapshot = bank_account.balance
 
         if dt in ["retailer", "virtual"] and payload.retailer_id:
             recalculate_balances(payload.retailer_id, db)
@@ -243,14 +243,14 @@ def submit_deposit(
         
         # Populate target_name for response
         if dt == "portal":
-            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
-            if portal:
-                db_deposit.target_name = portal.portal_name
-                if portal.group:
-                    db_deposit.portal_group_name = portal.group.name
-                    db_deposit.portal_group_id = portal.group.id
+            bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
+            if bank_account:
+                db_deposit.target_name = bank_account.bank_account_name
+                if bank_account.group:
+                    db_deposit.portal_group_name = bank_account.group.name
+                    db_deposit.portal_group_id = bank_account.group.id
             else:
-                db_deposit.target_name = "Portal Bank"
+                db_deposit.target_name = "Bank Account"
         elif dt == "retailer":
             retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
             db_deposit.target_name = retailer.retailer_name if retailer else "Retailer Store"
@@ -266,24 +266,24 @@ def submit_deposit(
                 else:
                     db_deposit.target_name = "Field Staff"
         elif dt == "virtual":
-            portal = db.scalar(select(Portal).where(Portal.id == payload.portal_id).with_for_update())
+            bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
             retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
-            p_name = portal.portal_name if portal else "Portal"
+            p_name = bank_account.bank_account_name if bank_account else "Bank Account"
             r_name = retailer.retailer_name if retailer else "Retailer"
             db_deposit.target_name = f"Virtual: {p_name} -> {r_name}"
             if retailer:
                 db_deposit.retailer_ledger_token = retailer.ledger_token
-            if portal and portal.group:
-                db_deposit.portal_group_name = portal.group.name
-                db_deposit.portal_group_id = portal.group.id
+            if bank_account and bank_account.group:
+                db_deposit.portal_group_name = bank_account.group.name
+                db_deposit.portal_group_id = bank_account.group.id
         elif dt == "portal_transfer":
-            src = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == payload.from_portal_id))
-            dst = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == payload.portal_id))
-            src_name = (src.group.name if src and src.group else (src.portal_name if src else "Source Portal"))
-            dst_name = (dst.group.name if dst and dst.group else (dst.portal_name if dst else "Dest Portal"))
+            src = db.scalar(select(BankAccount).options(joinedload(BankAccount.group)).where(BankAccount.id == payload.from_bank_account_id))
+            dst = db.scalar(select(BankAccount).options(joinedload(BankAccount.group)).where(BankAccount.id == payload.bank_account_id))
+            src_name = (src.group.name if src and src.group else (src.bank_account_name if src else "Source Account"))
+            dst_name = (dst.group.name if dst and dst.group else (dst.bank_account_name if dst else "Destination Account"))
             db_deposit.target_name = f"{src_name} → {dst_name}"
             if src and src.group:
-                db_deposit.from_portal_name = src.group.name
+                db_deposit.from_bank_account_name = src.group.name
                 db_deposit.from_portal_group_name = src.group.name
             if dst and dst.group:
                 db_deposit.portal_group_name = dst.group.name
@@ -344,8 +344,8 @@ def list_deposits(
         query = query.where(and_(*filters))
 
     query = query.options(
-        joinedload(BankDeposit.portal).joinedload(Portal.group),
-        joinedload(BankDeposit.from_portal).joinedload(Portal.group),
+        joinedload(BankDeposit.bank_account).joinedload(BankAccount.group),
+        joinedload(BankDeposit.from_bank_account).joinedload(BankAccount.group),
         joinedload(BankDeposit.retailer),
         joinedload(BankDeposit.recipient_staff),
         joinedload(BankDeposit.staff),
@@ -357,12 +357,12 @@ def list_deposits(
     # Manually populate target_name
     for dep in deposits:
         if dep.deposit_type == "portal":
-            dep.target_name = dep.portal.portal_name if dep.portal else "Portal Bank"
-            dep.portal_name = dep.portal.portal_name if dep.portal else None
-            dep.bank_name = dep.portal.bank_name if dep.portal else None
-            if dep.portal and dep.portal.group:
-                dep.portal_group_name = dep.portal.group.name
-                dep.portal_group_id = dep.portal.group.id
+            dep.target_name = dep.bank_account.bank_account_name if dep.bank_account else "Bank Account"
+            dep.bank_account_name = dep.bank_account.bank_account_name if dep.bank_account else None
+            dep.bank_name = dep.bank_account.bank_name if dep.bank_account else None
+            if dep.bank_account and dep.bank_account.group:
+                dep.portal_group_name = dep.bank_account.group.name
+                dep.portal_group_id = dep.bank_account.group.id
         elif dep.deposit_type == "retailer":
             dep.target_name = dep.retailer.retailer_name if dep.retailer else "Retailer Store"
             if dep.retailer:
@@ -376,7 +376,7 @@ def list_deposits(
                 else:
                     dep.target_name = dep.recipient_staff.name if dep.recipient_staff else "Field Staff"
         elif dep.deposit_type == "virtual":
-            portal_obj = dep.portal
+            bank_account_obj = dep.bank_account
             if dep.retailer:
                 dep.target_name = dep.retailer.retailer_name
                 dep.retailer_ledger_token = dep.retailer.ledger_token
@@ -384,11 +384,11 @@ def list_deposits(
                 dep.target_name = dep.recipient_staff.name
             else:
                 dep.target_name = "Virtual Transfer"
-            # Set portal name for narration
-            dep.portal_name = portal_obj.portal_name if portal_obj else "Portal"
-            if portal_obj and portal_obj.group:
-                dep.portal_group_name = portal_obj.group.name
-                dep.portal_group_id = portal_obj.group.id
+            # Set bank_account name for narration
+            dep.bank_account_name = bank_account_obj.bank_account_name if bank_account_obj else "Bank Account"
+            if bank_account_obj and bank_account_obj.group:
+                dep.portal_group_name = bank_account_obj.group.name
+                dep.portal_group_id = bank_account_obj.group.id
             # Determine direction and use linked ledger for accurate balance
             is_ref = (dep.payment_mode == "refund")
             if dep.ledgers:
@@ -399,13 +399,13 @@ def list_deposits(
             if linked_ledger:
                 dep.balance_snapshot = linked_ledger.balance  # Always use recalculated balance
         elif dep.deposit_type == "portal_transfer":
-            src = dep.from_portal
-            dst = dep.portal
-            src_name = (src.group.name if src and src.group else (src.portal_name if src else "Source Portal"))
-            dst_name = (dst.group.name if dst and dst.group else (dst.portal_name if dst else "Dest Portal"))
+            src = dep.from_bank_account
+            dst = dep.bank_account
+            src_name = (src.group.name if src and src.group else (src.bank_account_name if src else "Source Account"))
+            dst_name = (dst.group.name if dst and dst.group else (dst.bank_account_name if dst else "Destination Account"))
             dep.target_name = f"{src_name} → {dst_name}"
             if src and src.group:
-                dep.from_portal_name = src.group.name
+                dep.from_bank_account_name = src.group.name
                 dep.from_portal_group_name = src.group.name
             if dst and dst.group:
                 dep.portal_group_name = dst.group.name
@@ -510,45 +510,45 @@ def delete_deposit(
             db.execute(delete(Ledger).where(Ledger.collection_id == matching_collection.id))
             db.delete(matching_collection)
 
-    # Handle Portal and Staff balance reversals
-    if deposit.portal_id:
-        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
-        if portal:
-            lock_portal_group(db, portal)
+    # Handle BankAccount and Staff balance reversals
+    if deposit.bank_account_id:
+        bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.bank_account_id).with_for_update())
+        if bank_account:
+            lock_portal_group(db, bank_account)
             if deposit.deposit_type == "portal":
-                # Deleting portal deposit: reduce portal balance since cash was never deposited
-                portal.balance -= Decimal(str(deposit.amount))
-                if portal.group:
-                    portal.group.balance -= Decimal(str(deposit.amount))
+                # Deleting bank_account deposit: reduce bank_account balance since cash was never deposited
+                bank_account.balance -= Decimal(str(deposit.amount))
+                if bank_account.group:
+                    bank_account.group.balance -= Decimal(str(deposit.amount))
             elif deposit.deposit_type == "virtual":
-                # Deleting virtual transfer: restore/revert portal balance
+                # Deleting virtual transfer: restore/revert bank_account balance
                 if deposit.payment_mode == "refund":
-                    # Deleting virtual refund: decrease portal balance since refund is reverted
-                    portal.balance -= Decimal(str(deposit.amount))
-                    if portal.group:
-                        portal.group.balance -= Decimal(str(deposit.amount))
+                    # Deleting virtual refund: decrease bank_account balance since refund is reverted
+                    bank_account.balance -= Decimal(str(deposit.amount))
+                    if bank_account.group:
+                        bank_account.group.balance -= Decimal(str(deposit.amount))
                 else:
-                    # Deleting virtual load: increase portal balance since load is reverted
-                    portal.balance += Decimal(str(deposit.amount))
-                    if portal.group:
-                        portal.group.balance += Decimal(str(deposit.amount))
+                    # Deleting virtual load: increase bank_account balance since load is reverted
+                    bank_account.balance += Decimal(str(deposit.amount))
+                    if bank_account.group:
+                        bank_account.group.balance += Decimal(str(deposit.amount))
 
     # Reverse portal_transfer balances if needed
     if deposit.deposit_type == "portal_transfer":
-        if deposit.portal_id:
-            dst_portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
-            if dst_portal:
-                lock_portal_group(db, dst_portal)
-                dst_portal.balance -= Decimal(str(deposit.amount))
-                if dst_portal.group:
-                    dst_portal.group.balance -= Decimal(str(deposit.amount))
-        if deposit.from_portal_id:
-            src_portal = db.scalar(select(Portal).where(Portal.id == deposit.from_portal_id).with_for_update())
-            if src_portal:
-                lock_portal_group(db, src_portal)
-                src_portal.balance += Decimal(str(deposit.amount))
-                if src_portal.group:
-                    src_portal.group.balance += Decimal(str(deposit.amount))
+        if deposit.bank_account_id:
+            dst_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.bank_account_id).with_for_update())
+            if dst_bank_account:
+                lock_portal_group(db, dst_bank_account)
+                dst_bank_account.balance -= Decimal(str(deposit.amount))
+                if dst_bank_account.group:
+                    dst_bank_account.group.balance -= Decimal(str(deposit.amount))
+        if deposit.from_bank_account_id:
+            src_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.from_bank_account_id).with_for_update())
+            if src_bank_account:
+                lock_portal_group(db, src_bank_account)
+                src_bank_account.balance += Decimal(str(deposit.amount))
+                if src_bank_account.group:
+                    src_bank_account.group.balance += Decimal(str(deposit.amount))
 
     # Reverse staff virtual limit if virtual limit transfer is deleted
     if deposit.deposit_type == "virtual":
@@ -561,7 +561,7 @@ def delete_deposit(
                 else:
                     recipient.virtual_balance -= Decimal(str(deposit.amount))
         else:
-            # Reversing portal-to-retailer transfer: refund creator's limit if they are staff
+            # Reversing bank_account-to-retailer transfer: refund creator's limit if they are staff
             creator = db.scalar(select(User).where(User.id == deposit.staff_id).with_for_update())
             if creator and creator.role != "admin":
                 if deposit.payment_mode == "refund":
@@ -620,23 +620,23 @@ def update_deposit(
     # and we want to keep the same ID and created_at, we will do it manually.
     
     # First, reverse old balances (similar to delete_deposit)
-    if deposit.portal_id:
-        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
-        if portal:
-            lock_portal_group(db, portal)
+    if deposit.bank_account_id:
+        bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.bank_account_id).with_for_update())
+        if bank_account:
+            lock_portal_group(db, bank_account)
             if deposit.deposit_type == "portal":
-                portal.balance -= Decimal(str(deposit.amount))
-                if portal.group:
-                    portal.group.balance -= Decimal(str(deposit.amount))
+                bank_account.balance -= Decimal(str(deposit.amount))
+                if bank_account.group:
+                    bank_account.group.balance -= Decimal(str(deposit.amount))
             elif deposit.deposit_type == "virtual":
                 if deposit.payment_mode == "refund":
-                    portal.balance -= Decimal(str(deposit.amount))
-                    if portal.group:
-                        portal.group.balance -= Decimal(str(deposit.amount))
+                    bank_account.balance -= Decimal(str(deposit.amount))
+                    if bank_account.group:
+                        bank_account.group.balance -= Decimal(str(deposit.amount))
                 else:
-                    portal.balance += Decimal(str(deposit.amount))
-                    if portal.group:
-                        portal.group.balance += Decimal(str(deposit.amount))
+                    bank_account.balance += Decimal(str(deposit.amount))
+                    if bank_account.group:
+                        bank_account.group.balance += Decimal(str(deposit.amount))
 
     if deposit.deposit_type == "virtual":
         if deposit.recipient_staff_id:
@@ -694,24 +694,24 @@ def update_deposit(
     # Re-apply new balances (similar to submit_deposit)
     dt = payload.deposit_type.lower().strip()
     if dt == "portal":
-        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
-        if portal:
-            lock_portal_group(db, portal)
-            portal.balance += Decimal(str(deposit.amount))
-            if portal.group:
-                portal.group.balance += Decimal(str(deposit.amount))
+        bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.bank_account_id).with_for_update())
+        if bank_account:
+            lock_portal_group(db, bank_account)
+            bank_account.balance += Decimal(str(deposit.amount))
+            if bank_account.group:
+                bank_account.group.balance += Decimal(str(deposit.amount))
     elif dt == "virtual":
-        portal = db.scalar(select(Portal).where(Portal.id == deposit.portal_id).with_for_update())
-        if portal:
-            lock_portal_group(db, portal)
+        bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.bank_account_id).with_for_update())
+        if bank_account:
+            lock_portal_group(db, bank_account)
             if deposit.payment_mode == "refund":
-                portal.balance += Decimal(str(deposit.amount))
-                if portal.group:
-                    portal.group.balance += Decimal(str(deposit.amount))
+                bank_account.balance += Decimal(str(deposit.amount))
+                if bank_account.group:
+                    bank_account.group.balance += Decimal(str(deposit.amount))
             else:
-                portal.balance -= Decimal(str(deposit.amount))
-                if portal.group:
-                    portal.group.balance -= Decimal(str(deposit.amount))
+                bank_account.balance -= Decimal(str(deposit.amount))
+                if bank_account.group:
+                    bank_account.group.balance -= Decimal(str(deposit.amount))
         
         if payload.recipient_staff_id:
             recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id).with_for_update())
@@ -741,8 +741,8 @@ def update_deposit(
                 # Matches submit_deposit's convention: load="credit" (adds),
                 # refund="debit" (subtracts).
                 txn_type = "debit" if payload.payment_mode == "refund" else "credit"
-                portal = db.scalar(select(Portal).options(joinedload(Portal.group)).where(Portal.id == deposit.portal_id))
-                desc = "move to distributor" if payload.payment_mode == "refund" else (portal.group.name if (portal and portal.group) else (portal.portal_name if portal else "virtual transfer"))
+                bank_account = db.scalar(select(BankAccount).options(joinedload(BankAccount.group)).where(BankAccount.id == deposit.bank_account_id))
+                desc = "move to distributor" if payload.payment_mode == "refund" else (bank_account.group.name if (bank_account and bank_account.group) else (bank_account.bank_account_name if bank_account else "virtual transfer"))
                 
             if not ledger_entry:
                 ledger_entry = Ledger(
@@ -794,11 +794,11 @@ def update_deposit(
     
     # Populate virtual fields
     deposit.staff_name = deposit.staff.name if deposit.staff else "Unknown"
-    deposit.portal_name = deposit.portal.portal_name if deposit.portal else "Main Office"
-    if deposit.portal and deposit.portal.group:
-        deposit.portal_group_name = deposit.portal.group.name
-        deposit.portal_group_id = deposit.portal.group.id
-    deposit.bank_name = deposit.portal.bank_name if deposit.portal else None
+    deposit.bank_account_name = deposit.bank_account.bank_account_name if deposit.bank_account else "Main Office"
+    if deposit.bank_account and deposit.bank_account.group:
+        deposit.portal_group_name = deposit.bank_account.group.name
+        deposit.portal_group_id = deposit.bank_account.group.id
+    deposit.bank_name = deposit.bank_account.bank_name if deposit.bank_account else None
     deposit.is_refund = (deposit.payment_mode == "refund")
     
     if deposit.retailer_id and deposit.retailer:
@@ -807,7 +807,7 @@ def update_deposit(
     elif deposit.recipient_staff_id and deposit.recipient_staff:
         deposit.target_name = deposit.recipient_staff.name
     else:
-        deposit.target_name = deposit.portal_name
+        deposit.target_name = deposit.bank_account_name
 
     return deposit
 

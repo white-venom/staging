@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel, Field
 
 from app.database.db import get_db
-from app.database.models import BusinessSettings, Attendance, Portal, Retailer, Ledger, User, BankDeposit
+from app.database.models import BusinessSettings, Attendance, BankAccount, Retailer, Ledger, User, BankDeposit
 from datetime import date
 from app.dependencies import require_admin, require_any_user
 
@@ -27,12 +27,12 @@ class PenaltyApproval(BaseModel):
     approve: bool
 
 class VirtualTransferRequest(BaseModel):
-    portal_id: uuid.UUID
+    bank_account_id: uuid.UUID
     retailer_id: Optional[uuid.UUID] = None
     staff_id: Optional[uuid.UUID] = None
     amount: Decimal = Field(..., gt=0)
     remarks: Optional[str] = None
-    direction: str = "load"  # "load" (Portal -> Retailer) or "refund" (Retailer -> Portal)
+    direction: str = "load"  # "load" (BankAccount -> Retailer) or "refund" (Retailer -> BankAccount)
     transfer_date: Optional[date] = None
 
 @router.get("/business", response_model=dict)
@@ -127,7 +127,7 @@ def process_virtual_transfer(
     db: Session = Depends(get_db),
     current_user=Depends(require_admin)
 ):
-    """Atomically transfers virtual balance from Portal to Retailer or Staff."""
+    """Atomically transfers virtual balance from BankAccount to Retailer or Staff."""
     try:
         import pytz
         from datetime import datetime, time as dt_time, timezone
@@ -145,36 +145,36 @@ def process_virtual_transfer(
         if not payload.retailer_id and not payload.staff_id:
             raise HTTPException(status_code=400, detail="Either retailer_id or staff_id must be provided.")
 
-        # 1. Fetch Source Portal (locked)
-        # NOTE: Do NOT use joinedload(Portal.group) here — PostgreSQL forbids
+        # 1. Fetch Source BankAccount (locked)
+        # NOTE: Do NOT use joinedload(BankAccount.group) here — PostgreSQL forbids
         # FOR UPDATE on the nullable side of an outer join.
-        portal = db.scalar(
-            select(Portal)
-            .where(Portal.id == payload.portal_id)
+        bank_account = db.scalar(
+            select(BankAccount)
+            .where(BankAccount.id == payload.bank_account_id)
             .with_for_update()
         )
-        if not portal:
-            raise HTTPException(status_code=404, detail="Source portal bank/wallet account not found.")
+        if not bank_account:
+            raise HTTPException(status_code=404, detail="Source bank/wallet account not found.")
             
         # Lock the associated PortalGroup to prevent race conditions on group balance
-        portal_group = None
-        if portal.group_id:
+        account_group = None
+        if bank_account.group_id:
             from app.database.models import PortalGroup
-            portal_group = db.scalar(
+            account_group = db.scalar(
                 select(PortalGroup)
-                .where(PortalGroup.id == portal.group_id)
+                .where(PortalGroup.id == bank_account.group_id)
                 .with_for_update()
             )
 
-        # Step A: Adjust Portal Balance
+        # Step A: Adjust BankAccount Balance
         if payload.direction == "refund":
-            portal.balance = Decimal(str(portal.balance or 0)) + payload.amount
-            if portal_group:
-                portal_group.balance = Decimal(str(portal_group.balance or 0)) + payload.amount
+            bank_account.balance = Decimal(str(bank_account.balance or 0)) + payload.amount
+            if account_group:
+                account_group.balance = Decimal(str(account_group.balance or 0)) + payload.amount
         else:
-            portal.balance = Decimal(str(portal.balance or 0)) - payload.amount
-            if portal_group:
-                portal_group.balance = Decimal(str(portal_group.balance or 0)) - payload.amount
+            bank_account.balance = Decimal(str(bank_account.balance or 0)) - payload.amount
+            if account_group:
+                account_group.balance = Decimal(str(account_group.balance or 0)) - payload.amount
             
         if payload.retailer_id:
             # Transfer to/from Retailer
@@ -190,10 +190,10 @@ def process_virtual_transfer(
                 transaction_type = "debit"
             else:
                 # Safely get description text
-                if portal_group:
-                    desc_text = portal_group.name or "virtual transfer"
-                elif portal:
-                    desc_text = portal.portal_name or "virtual transfer"
+                if account_group:
+                    desc_text = account_group.name or "virtual transfer"
+                elif bank_account:
+                    desc_text = bank_account.bank_account_name or "virtual transfer"
                 else:
                     desc_text = "virtual transfer"
                 transaction_type = "credit"
@@ -202,7 +202,7 @@ def process_virtual_transfer(
             db_deposit = BankDeposit(
                 staff_id=current_user.id,
                 deposit_type="virtual",
-                portal_id=payload.portal_id,
+                bank_account_id=payload.bank_account_id,
                 retailer_id=payload.retailer_id,
                 amount=payload.amount,
                 payment_mode="refund" if payload.direction == "refund" else "online",
@@ -251,9 +251,9 @@ def process_virtual_transfer(
             
             return {
                 "message": "Virtual transfer processed successfully",
-                "portal_name": portal.portal_name,
+                "bank_account_name": bank_account.bank_account_name,
                 "target_name": retailer.retailer_name,
-                "new_portal_balance": float(portal.balance),
+                "new_bank_account_balance": float(bank_account.balance),
                 "new_target_balance": float(final_balance)
             }
         else:
@@ -271,7 +271,7 @@ def process_virtual_transfer(
             db_deposit = BankDeposit(
                 staff_id=current_user.id,
                 deposit_type="virtual",
-                portal_id=payload.portal_id,
+                bank_account_id=payload.bank_account_id,
                 recipient_staff_id=payload.staff_id,
                 amount=payload.amount,
                 payment_mode="refund" if payload.direction == "refund" else "online",
@@ -286,9 +286,9 @@ def process_virtual_transfer(
             db.commit()
             return {
                 "message": "Virtual transfer processed successfully",
-                "portal_name": portal.portal_name,
+                "bank_account_name": bank_account.bank_account_name,
                 "target_name": staff.name,
-                "new_portal_balance": float(portal.balance),
+                "new_bank_account_balance": float(bank_account.balance),
                 "new_target_balance": float(staff.virtual_balance)
             }
             

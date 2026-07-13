@@ -55,7 +55,7 @@ export async function syncOfflineData(): Promise<number> {
       await api.createCollection({
         retailer_id: col.retailer_id,
         store_id: col.store_id,
-        portal_id: col.portal_id,
+        bank_account_id: col.bank_account_id,
         total_amount: col.totalAmount,
         denominations: col.denominations,
         remarks: col.remarks
@@ -64,7 +64,7 @@ export async function syncOfflineData(): Promise<number> {
       if (col.id) {
         await db.collections.update(col.id, { synced: 1 });
         totalSynced++;
-        
+
         // Update client store so state updates in real-time
         const store = useAppStore.getState();
         const alreadyInStore = store.collections.some(c => c.retailerName === col.retailerName && c.totalAmount === col.totalAmount && c.date === col.date);
@@ -73,7 +73,7 @@ export async function syncOfflineData(): Promise<number> {
             retailer_id: col.retailer_id,
             store_id: col.store_id,
             retailerName: col.retailerName,
-            portalName: col.portalName,
+            bankAccountName: col.bankAccountName,
             portalGroupName: col.portalGroupName,
             totalAmount: col.totalAmount,
             denominations: col.denominations,
@@ -91,7 +91,7 @@ export async function syncOfflineData(): Promise<number> {
     try {
       await api.createDeposit({
         deposit_type: dep.depositType,
-        portal_id: dep.portal_id,
+        bank_account_id: dep.bank_account_id,
         retailer_id: dep.retailer_id,
         recipient_staff_id: dep.recipient_staff_id,
         amount: dep.amount,
@@ -103,10 +103,10 @@ export async function syncOfflineData(): Promise<number> {
       if (dep.id) {
         await db.deposits.update(dep.id, { synced: 1 });
         totalSynced++;
-        
+
         const store = useAppStore.getState();
         store.addDeposit({
-          portal_id: dep.portal_id,
+          bank_account_id: dep.bank_account_id,
           retailer_id: dep.retailer_id,
           recipient_staff_id: dep.recipient_staff_id,
           depositType: dep.depositType,
@@ -115,7 +115,7 @@ export async function syncOfflineData(): Promise<number> {
           paymentMode: dep.paymentMode,
           denominations: dep.denominations,
           remarks: dep.remarks,
-          portalName: dep.portalName,
+          bankAccountName: dep.bankAccountName,
           bankName: dep.bankName
         });
       }

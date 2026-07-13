@@ -8,7 +8,7 @@ from sqlalchemy import select, func, and_, desc
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
-from app.database.models import Retailer, Ledger, Collection, BankDeposit, Attendance, Denomination, Portal, User, DenominationBaseline
+from app.database.models import Retailer, Ledger, Collection, BankDeposit, Attendance, Denomination, BankAccount, User, DenominationBaseline
 from app.dependencies import require_admin, require_staff, require_any_user
 from app.core.timezone import ist_today, ist_day_bounds_utc
 
@@ -34,9 +34,9 @@ def get_public_ledger(
         .options(
             joinedload(Ledger.collection).joinedload(Collection.denominations),
             joinedload(Ledger.collection).joinedload(Collection.store),
-            joinedload(Ledger.collection).joinedload(Collection.portal).joinedload(Portal.group),
+            joinedload(Ledger.collection).joinedload(Collection.bank_account).joinedload(BankAccount.group),
             joinedload(Ledger.deposit).joinedload(BankDeposit.denominations),
-            joinedload(Ledger.deposit).joinedload(BankDeposit.portal).joinedload(Portal.group),
+            joinedload(Ledger.deposit).joinedload(BankDeposit.bank_account).joinedload(BankAccount.group),
             joinedload(Ledger.deposit).joinedload(BankDeposit.retailer),
             joinedload(Ledger.deposit).joinedload(BankDeposit.recipient_staff)
         )
@@ -61,40 +61,40 @@ def get_public_ledger(
             remarks = tx.deposit.remarks
         reference_no = tx.deposit.reference_no if (tx.deposit and tx.deposit.reference_no) else ""
         
-        # Get store name and portal name if available
+        # Get store name and bank_account name if available
         store_name = None
-        portal_name = None
-        portal_bank_name = None
+        bank_account_name = None
+        bank_name = None
         portal_group_name = None
         if tx.collection:
             if tx.collection.store:
                 store_name = tx.collection.store.store_name
-            if tx.collection.portal:
-                portal_name = tx.collection.portal.portal_name
-                portal_bank_name = tx.collection.portal.bank_name
-                if tx.collection.portal.group:
-                    portal_group_name = tx.collection.portal.group.name
+            if tx.collection.bank_account:
+                bank_account_name = tx.collection.bank_account.bank_account_name
+                bank_name = tx.collection.bank_account.bank_name
+                if tx.collection.bank_account.group:
+                    portal_group_name = tx.collection.bank_account.group.name
         elif tx.deposit:
-            if tx.deposit.portal:
-                portal_name = tx.deposit.portal.portal_name
-                portal_bank_name = tx.deposit.portal.bank_name
-                if tx.deposit.portal.group:
-                    portal_group_name = tx.deposit.portal.group.name
+            if tx.deposit.bank_account:
+                bank_account_name = tx.deposit.bank_account.bank_account_name
+                bank_name = tx.deposit.bank_account.bank_name
+                if tx.deposit.bank_account.group:
+                    portal_group_name = tx.deposit.bank_account.group.name
             elif tx.deposit.deposit_type == "retailer" and tx.deposit.retailer:
-                portal_name = tx.deposit.retailer.retailer_name
+                bank_account_name = tx.deposit.retailer.retailer_name
             elif tx.deposit.deposit_type == "staff":
                 if tx.deposit.to_office:
-                    portal_name = "Main Office Cashier"
+                    bank_account_name = "Main Office Cashier"
                 elif tx.deposit.recipient_staff:
-                    portal_name = tx.deposit.recipient_staff.name
+                    bank_account_name = tx.deposit.recipient_staff.name
             elif tx.deposit.deposit_type == "virtual":
-                if tx.deposit.portal:
-                    portal_name = tx.deposit.portal.portal_name
-                    portal_bank_name = tx.deposit.portal.bank_name
-                    if tx.deposit.portal.group:
-                        portal_group_name = tx.deposit.portal.group.name
+                if tx.deposit.bank_account:
+                    bank_account_name = tx.deposit.bank_account.bank_account_name
+                    bank_name = tx.deposit.bank_account.bank_name
+                    if tx.deposit.bank_account.group:
+                        portal_group_name = tx.deposit.bank_account.group.name
                 else:
-                    portal_name = "Virtual Transfer"
+                    bank_account_name = "Virtual Transfer"
 
         # Extract denominations if available
         denom_dict = None
@@ -128,8 +128,8 @@ def get_public_ledger(
             "collection_id": str(tx.collection_id) if tx.collection_id else None,
             "deposit_id": str(tx.deposit_id) if tx.deposit_id else None,
             "store_name": store_name,
-            "portal_name": portal_name,
-            "portal_bank_name": portal_bank_name,
+            "bank_account_name": bank_account_name,
+            "bank_name": bank_name,
             "portal_group_name": portal_group_name,
             "deposit_type": tx.deposit.deposit_type if tx.deposit else None,
             "denominations": denom_dict
@@ -414,7 +414,7 @@ def get_staff_ledger(
     deposits_made = db.scalars(
         select(BankDeposit)
         .options(
-            joinedload(BankDeposit.portal).joinedload(Portal.group),
+            joinedload(BankDeposit.bank_account).joinedload(BankAccount.group),
             joinedload(BankDeposit.retailer),
             joinedload(BankDeposit.recipient_staff),
             joinedload(BankDeposit.denominations)
@@ -464,7 +464,7 @@ def get_staff_ledger(
             "status": c.status,
             "retailer_name": retailer_name,
             "store_name": store_name,
-            "portal_name": None,
+            "bank_account_name": None,
             "portal_group_name": None,
             "bank_name": None,
             "deposit_type": None,
@@ -486,7 +486,7 @@ def get_staff_ledger(
             "status": d.status,
             "retailer_name": f"Staff: {sender_name}",
             "store_name": None,
-            "portal_name": None,
+            "bank_account_name": None,
             "portal_group_name": None,
             "bank_name": None,
             "deposit_type": "staff",
@@ -495,13 +495,13 @@ def get_staff_ledger(
 
     # Format Deposits / Handovers Made (Outflows)
     for d in deposits_made:
-        portal_name = d.portal.portal_name if d.portal else None
-        portal_group_name = d.portal.group.name if (d.portal and d.portal.group) else None
-        bank_name = d.portal.bank_name if d.portal else None
+        bank_account_name = d.bank_account.bank_account_name if d.bank_account else None
+        portal_group_name = d.bank_account.group.name if (d.bank_account and d.bank_account.group) else None
+        bank_name = d.bank_account.bank_name if d.bank_account else None
         retailer_name = d.retailer.retailer_name if d.retailer else None
 
         if d.deposit_type == "portal":
-            desc = f"Deposit to {portal_group_name or portal_name or 'Portal'}"
+            desc = f"Deposit to {portal_group_name or bank_account_name or 'Bank Account'}"
         elif d.deposit_type == "retailer":
             desc = f"Deposit to Retailer: {retailer_name or 'Retailer'}"
         elif d.deposit_type == "staff":
@@ -527,7 +527,7 @@ def get_staff_ledger(
             "status": d.status,
             "retailer_name": retailer_name,
             "store_name": None,
-            "portal_name": portal_name,
+            "bank_account_name": bank_account_name,
             "portal_group_name": portal_group_name,
             "bank_name": bank_name,
             "deposit_type": d.deposit_type,
@@ -559,7 +559,7 @@ def get_staff_ledger(
             "status": tx["status"],
             "retailer_name": tx["retailer_name"],
             "store_name": tx["store_name"],
-            "portal_name": tx["portal_name"],
+            "bank_account_name": tx["bank_account_name"],
             "portal_group_name": tx["portal_group_name"],
             "bank_name": tx["bank_name"],
             "deposit_type": tx["deposit_type"],

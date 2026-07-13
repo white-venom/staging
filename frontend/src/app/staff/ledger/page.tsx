@@ -125,7 +125,7 @@ export default function StaffLedgerPage() {
         totalAmount: Number(c.total_amount),
         date: getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
         displayName,
-        displayPortal: c.portal_name || "Cash"
+        displayBankAccount: c.bank_account_name || "Cash"
       };
     }),
     ...deposits
@@ -160,7 +160,7 @@ export default function StaffLedgerPage() {
         totalAmount: Number(d.amount),
         date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
         displayName,
-        displayPortal: d.deposit_type === "staff" ? "Staff Handover" : (d.deposit_type || "Deposit")
+        displayBankAccount: d.deposit_type === "staff" ? "Staff Handover" : (d.deposit_type || "Deposit")
       };
     })
   ]
@@ -204,13 +204,13 @@ export default function StaffLedgerPage() {
     // Search filter
     const searchLower = searchQuery.toLowerCase();
     const nameMatch = item.displayName?.toLowerCase().includes(searchLower) || false;
-    const portalMatch = item.displayPortal?.toLowerCase().includes(searchLower) || false;
+    const bankAccountMatch = item.displayBankAccount?.toLowerCase().includes(searchLower) || false;
     const amountMatch = String(item.totalAmount).includes(searchLower);
     const storeMatch = item.store_name?.toLowerCase().includes(searchLower) || item.storeName?.toLowerCase().includes(searchLower) || false;
     const remarksMatch = item.remarks?.toLowerCase().includes(searchLower) || false;
     const refMatch = item.reference_no?.toLowerCase().includes(searchLower) || item.referenceNo?.toLowerCase().includes(searchLower) || false;
     
-    return nameMatch || portalMatch || amountMatch || storeMatch || remarksMatch || refMatch;
+    return nameMatch || bankAccountMatch || amountMatch || storeMatch || remarksMatch || refMatch;
   });
 
   // Apply sorting
@@ -414,7 +414,7 @@ export default function StaffLedgerPage() {
                               {item.displayName}
                             </h3>
                             <div className="text-xs text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1 mt-0.5">
-                              <span className="text-blue-500">{item.displayPortal}</span>
+                              <span className="text-blue-500">{item.displayBankAccount}</span>
                               <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                               <span>{getUtcDate(item.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}</span>
                             </div>
@@ -485,7 +485,7 @@ export default function StaffLedgerPage() {
                                   shareCollectionEntry(
                                     {
                                       retailer_name: item.retailerName || item.retailer_name,
-                                      portal_name: item.portalName || item.portal_name,
+                                      bank_account_name: item.bankAccountName || item.bank_account_name,
                                       portal_group_name: item.portalGroupName || item.portal_group_name,
                                       store_name: item.store_name,
                                       total_amount: item.totalAmount,

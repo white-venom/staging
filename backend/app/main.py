@@ -11,6 +11,7 @@ from app.core.security import get_password_hash
 from app.core.config import settings
 from app.routers.auth import router as auth_router
 from app.routers.portals import router as portals_router
+from app.routers.bank_accounts import router as bank_accounts_router
 from app.routers.retailers import router as retailers_router
 from app.routers.attendance import router as attendance_router
 from app.routers.collections import router as collections_router
@@ -210,6 +211,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Register Router Modules
 app.include_router(auth_router)
 app.include_router(portals_router)
+app.include_router(bank_accounts_router)
 app.include_router(retailers_router)
 app.include_router(attendance_router)
 app.include_router(collections_router)

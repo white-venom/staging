@@ -96,7 +96,7 @@ export default function MobileOverview({
   userDirectory,
   staffComplianceLogs
 }: MobileOverviewProps) {
-  const { retailerDirectory, portalDirectory, showToastNotification } = useAdmin();
+  const { retailerDirectory, bankAccountDirectory, showToastNotification } = useAdmin();
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = useState(false);
   const [isRecentLedgerExpanded, setIsRecentLedgerExpanded] = useState(true);
@@ -219,7 +219,7 @@ export default function MobileOverview({
         denominations: c.denominations,
         retailer_id: c.retailer_id,
         store_id: c.store_id,
-        portal_id: c.portal_id
+        bank_account_id: c.bank_account_id
       })),
       ...(deposits || []).map(d => ({
         id: d.id,
@@ -234,7 +234,7 @@ export default function MobileOverview({
         balance: d.balance_snapshot,
         denominations: d.denominations,
         deposit_type: d.depositType,
-        portal_id: d.portal_id,
+        bank_account_id: d.bank_account_id,
         retailer_id: d.retailer_id,
         recipient_staff_id: d.recipient_staff_id,
         paymentMode: d.paymentMode
@@ -272,7 +272,7 @@ export default function MobileOverview({
   const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
   const [selectedNewStoreId, setSelectedNewStoreId] = useState("");
   const [availableStores, setAvailableStores] = useState<any[]>([]);
-  const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
+  const [selectedNewBankAccountId, setSelectedNewBankAccountId] = useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
   const [selectedNewToOffice, setSelectedNewToOffice] = useState(false);
   const [selectedNewDepositType, setSelectedNewDepositType] = useState("");
@@ -326,7 +326,7 @@ export default function MobileOverview({
     
     setSelectedNewRetailerId(item.retailer_id || item.retailerId || "");
     setSelectedNewStoreId(item.store_id || item.storeId || "");
-    setSelectedNewPortalId(item.portal_id || item.portalId || "");
+    setSelectedNewBankAccountId(item.bank_account_id || item.bankAccountId || "");
     setSelectedNewRemarks(item.remarks || "");
     
     if (isDeposit) {
@@ -365,14 +365,14 @@ export default function MobileOverview({
     
     try {
       if (editingIsDeposit) {
-        const portalId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewPortalId : null;
+        const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewBankAccountId : null;
         const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
         const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
         const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
         await api.updateDeposit(editingCollection.id, {
           deposit_type: selectedNewDepositType,
-          portal_id: portalId || null,
+          bank_account_id: bankAccountId || null,
           retailer_id: retailerId || null,
           recipient_staff_id: recipientStaffId || null,
           to_office: toOffice,
@@ -397,7 +397,7 @@ export default function MobileOverview({
 
         await api.updateCollection(editingCollection.id, {
           retailer_id: selectedNewRetailerId || null,
-          portal_id: selectedNewPortalId || null,
+          bank_account_id: selectedNewBankAccountId || null,
           store_id: selectedNewStoreId || null,
           total_amount: computedCollectionTotal,
           collection_date: selectedNewDate || getISTDateString(),
@@ -1169,19 +1169,19 @@ export default function MobileOverview({
                     </div>
                   )}
 
-                  {/* Portal Select */}
+                  {/* BankAccount Select */}
                   <div className="space-y-0.5">
-                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Portal Channel</label>
+                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">BankAccount Channel</label>
                     <InlineSelect
-                      value={selectedNewPortalId}
-                      onChange={setSelectedNewPortalId}
+                      value={selectedNewBankAccountId}
+                      onChange={setSelectedNewBankAccountId}
                       options={[
                         { value: "", label: "None / Cash" },
-                        ...portalDirectory
+                        ...bankAccountDirectory
                           .flatMap((group: any) => {
-                            const firstOnlinePortal = (group.portals || []).find((p: any) => p.show_in_online_payment);
-                            if (!firstOnlinePortal) return [];
-                            return [{ value: String(firstOnlinePortal.id), label: group.name }];
+                            const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
+                            if (!firstOnlineBankAccount) return [];
+                            return [{ value: String(firstOnlineBankAccount.id), label: group.name }];
                           })
                       ]}
                       placeholder="None / Cash"
@@ -1316,20 +1316,20 @@ export default function MobileOverview({
                   {/* Target Fields depending on deposit type */}
                   {selectedNewDepositType === "portal" && (
                     <div className="space-y-0.5">
-                      <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Target Portal</label>
+                      <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Target BankAccount</label>
                       <InlineSelect
-                        value={selectedNewPortalId}
-                        onChange={setSelectedNewPortalId}
+                        value={selectedNewBankAccountId}
+                        onChange={setSelectedNewBankAccountId}
                         options={[
-                          { value: "", label: "Select Portal Bank Account" },
-                          ...portalDirectory
+                          { value: "", label: "Select Bank Account" },
+                          ...bankAccountDirectory
                             .flatMap((group: any) => {
-                              const firstPortal = (group.portals || [])[0];
-                              if (!firstPortal) return [];
-                              return [{ value: String(firstPortal.id), label: group.name }];
+                              const firstBankAccount = (group.bankAccounts || [])[0];
+                              if (!firstBankAccount) return [];
+                              return [{ value: String(firstBankAccount.id), label: group.name }];
                             })
                         ]}
-                        placeholder="Select Portal Bank Account"
+                        placeholder="Select Bank Account"
                       />
                     </div>
                   )}
@@ -1382,19 +1382,19 @@ export default function MobileOverview({
                   {selectedNewDepositType === "virtual" && (
                     <>
                       <div className="space-y-0.5">
-                        <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Source Portal</label>
+                        <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Source BankAccount</label>
                         <InlineSelect
-                          value={selectedNewPortalId}
-                          onChange={setSelectedNewPortalId}
+                          value={selectedNewBankAccountId}
+                          onChange={setSelectedNewBankAccountId}
                           options={[
-                            { value: "", label: "Select Portal Bank Account" },
-                            ...portalDirectory.flatMap((group: any) => {
-                              const firstPortal = (group.portals || [])[0];
-                              if (!firstPortal) return [];
-                              return [{ value: String(firstPortal.id), label: group.name }];
+                            { value: "", label: "Select Bank Account" },
+                            ...bankAccountDirectory.flatMap((group: any) => {
+                              const firstBankAccount = (group.bankAccounts || [])[0];
+                              if (!firstBankAccount) return [];
+                              return [{ value: String(firstBankAccount.id), label: group.name }];
                             })
                           ]}
-                          placeholder="Select Portal Bank Account"
+                          placeholder="Select Bank Account"
                         />
                       </div>
 

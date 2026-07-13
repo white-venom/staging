@@ -27,11 +27,11 @@ export default function CollectionsTab({
   const [dateTo, setDateTo] = React.useState("");
   const [staffFilter, setStaffFilter] = React.useState("all");
   const [retailerFilter, setRetailerFilter] = React.useState("all");
-  const [portalFilter, setPortalFilter] = React.useState("all");
+  const [bankAccountFilter, setBankAccountFilter] = React.useState("all");
   const [searchQuery, setSearchQuery] = React.useState("");
   const [sortBy, setSortBy] = React.useState("date-desc");
 
-  const { retailerDirectory, portalDirectory, userDirectory } = useAdmin();
+  const { retailerDirectory, bankAccountDirectory, userDirectory } = useAdmin();
 
   const [isEditCollectionModalOpen, setIsEditCollectionModalOpen] = React.useState(false);
   const [editingCollection, setEditingCollection] = React.useState<any | null>(null);
@@ -39,7 +39,7 @@ export default function CollectionsTab({
   const [selectedNewRetailerId, setSelectedNewRetailerId] = React.useState("");
   const [selectedNewStoreId, setSelectedNewStoreId] = React.useState("");
   const [availableStores, setAvailableStores] = React.useState<any[]>([]);
-  const [selectedNewPortalId, setSelectedNewPortalId] = React.useState("");
+  const [selectedNewBankAccountId, setSelectedNewBankAccountId] = React.useState("");
   const [selectedNewRemarks, setSelectedNewRemarks] = React.useState("");
   const [isSavingCollection, setIsSavingCollection] = React.useState(false);
   
@@ -82,7 +82,7 @@ export default function CollectionsTab({
     setEditingCollection(item);
     setSelectedNewRetailerId(item.retailer_id || item.retailerId || "");
     setSelectedNewStoreId(item.store_id || item.storeId || "");
-    setSelectedNewPortalId(item.portal_id || item.portalId || "");
+    setSelectedNewBankAccountId(item.bank_account_id || item.bankAccountId || "");
     setSelectedNewRemarks(item.remarks || "");
     
     const den = item.denominations || {};
@@ -120,7 +120,7 @@ export default function CollectionsTab({
 
       await api.updateCollection(editingCollection.id, {
         retailer_id: selectedNewRetailerId || null,
-        portal_id: selectedNewPortalId || null,
+        bank_account_id: selectedNewBankAccountId || null,
         store_id: selectedNewStoreId || null,
         total_amount: computedCollectionTotal,
         remarks: selectedNewRemarks || "",
@@ -139,7 +139,7 @@ export default function CollectionsTab({
   // Get unique lists
   const staffList = Array.from(new Set((collections || []).map(c => c.staffName).filter(Boolean))).sort();
   const retailerList = Array.from(new Set((collections || []).map(c => c.retailerName).filter(Boolean))).sort();
-  const portalList = Array.from(new Set((collections || []).map(c => c.portalName).filter(Boolean))).sort();
+  const bankAccountList = Array.from(new Set((collections || []).map(c => c.bankAccountName).filter(Boolean))).sort();
 
   // Apply Filter Logic
   let filtered = (collections || []).map(c => ({
@@ -151,7 +151,7 @@ export default function CollectionsTab({
     const q = searchQuery.toLowerCase();
     filtered = filtered.filter(c => 
       (c.retailerName || "").toLowerCase().includes(q) || 
-      (c.portalName || "").toLowerCase().includes(q) ||
+      (c.bankAccountName || "").toLowerCase().includes(q) ||
       (c.store_name || "").toLowerCase().includes(q) ||
       (c.remarks || "").toLowerCase().includes(q) ||
       (c.staff || "").toLowerCase().includes(q) ||
@@ -161,7 +161,7 @@ export default function CollectionsTab({
 
   if (staffFilter !== "all") filtered = filtered.filter(c => c.staff === staffFilter);
   if (retailerFilter !== "all") filtered = filtered.filter(c => c.retailerName === retailerFilter);
-  if (portalFilter !== "all") filtered = filtered.filter(c => c.portalName === portalFilter);
+  if (bankAccountFilter !== "all") filtered = filtered.filter(c => c.bankAccountName === bankAccountFilter);
 
   if (dateFrom) filtered = filtered.filter(c => c.date >= dateFrom);
   if (dateTo) filtered = filtered.filter(c => c.date.split(' ')[0] <= dateTo);
@@ -253,13 +253,13 @@ export default function CollectionsTab({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">Portal</label>
+            <label className="text-[10px] font-black uppercase text-slate-400 tracking-wide">BankAccount</label>
             <InlineSelect 
-              value={portalFilter}
-              onChange={setPortalFilter}
+              value={bankAccountFilter}
+              onChange={setBankAccountFilter}
               options={[
                 { value: "all", label: "All Portals" },
-                ...portalList.map(p => ({ value: p, label: p }))
+                ...bankAccountList.map(p => ({ value: p, label: p }))
               ]}
               placeholder="All Portals"
             />
@@ -605,19 +605,19 @@ export default function CollectionsTab({
                   </div>
                 )}
 
-                {/* Portal Select */}
+                {/* BankAccount Select */}
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Portal Channel</label>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">BankAccount Channel</label>
                   <InlineSelect
-                    value={selectedNewPortalId}
-                    onChange={setSelectedNewPortalId}
+                    value={selectedNewBankAccountId}
+                    onChange={setSelectedNewBankAccountId}
                     options={[
                       { value: "", label: "None / Cash" },
-                      ...portalDirectory
+                      ...bankAccountDirectory
                         .flatMap((group: any) => {
-                          const firstOnlinePortal = (group.portals || []).find((p: any) => p.show_in_online_payment);
-                          if (!firstOnlinePortal) return [];
-                          return [{ value: String(firstOnlinePortal.id), label: group.name }];
+                          const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
+                          if (!firstOnlineBankAccount) return [];
+                          return [{ value: String(firstOnlineBankAccount.id), label: group.name }];
                         })
                     ]}
                     placeholder="None / Cash"

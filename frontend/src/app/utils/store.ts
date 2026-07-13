@@ -18,7 +18,7 @@ export interface DenominationCounts {
   note_10: number;
   coins: number;
   online_amount: number;
-  online_portal_id?: string;
+  online_bank_account_id?: string;
 }
 
 export interface AttendanceState {
@@ -34,7 +34,7 @@ export interface CollectionItem {
   store_id?: string;
   store_name?: string;
   retailerName: string;
-  portalName: string;
+  bankAccountName: string;
   portalGroupName?: string;
   staffName?: string;
   totalAmount: number;
@@ -48,17 +48,17 @@ export interface CollectionItem {
 
 export interface DepositItem {
   id: string;
-  portal_id?: string;
+  bank_account_id?: string;
   retailer_id?: string;
   recipient_staff_id?: string;
   depositType: "portal" | "retailer" | "staff" | "virtual";
-  targetName: string; // Portal bank, retailer name, or staff recipient name
+  targetName: string; // Bank account name, retailer name, or staff recipient name
   amount: number;
   paymentMode: "cash" | "online";
   denominations?: DenominationCounts;
   status: "pending" | "verified";
   remarks?: string;
-  portalName?: string;
+  bankAccountName?: string;
   bankName?: string;
   date: string;
   retailer_ledger_token?: string;
