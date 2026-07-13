@@ -807,7 +807,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 <p className="text-[10px] text-slate-500 font-bold mt-0.5">
                   Period: {dateFrom || "Start"} to {dateTo || "End"}
                 </p>
-                <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN")}</p>
+                <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
               </div>
               <div className="text-right">
                 <span className="text-[9px] font-black text-slate-404 uppercase tracking-widest block">Net Balance</span>

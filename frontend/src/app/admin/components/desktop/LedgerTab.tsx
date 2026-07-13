@@ -602,7 +602,7 @@ export default function LedgerTab({
                     <div style="text-align:center; padding-bottom: 16px; border-bottom: 1px solid #e2e8f0;">
                       <h1>Do-It Services</h1>
                       <p>Official Ledger Report &mdash; ${partyName}</p>
-                      <p>Generated: ${new Date().toLocaleString('en-IN')}</p>
+                      <p>Generated: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
                     </div>
                     <div class="summary">
                       <div><span class="label">Total Debit (Out)</span><span class="value red">&#8377;${totalDebit.toLocaleString()}.00</span></div>

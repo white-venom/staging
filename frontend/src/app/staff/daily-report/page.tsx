@@ -421,7 +421,7 @@ export default function DailyReportPage() {
                 {/* Centered Report Title bar at bottom */}
                 <div className="border-t border-slate-200 bg-slate-50/50 py-1.5 text-center relative z-10">
                   <span className="text-[9px] font-black text-slate-955 uppercase tracking-widest">
-                    Detailed Cash Report - {new Date(selectedDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric' })}
+                    Detailed Cash Report - {new Date(selectedDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', timeZone: "Asia/Kolkata" })}
                   </span>
                 </div>
               </div>
@@ -479,7 +479,7 @@ export default function DailyReportPage() {
                     {reportItems.length === 0 ? (
                       <tr>
                         <td colSpan={7} className="py-6 text-center text-[10px] text-slate-400 font-bold bg-white italic">
-                          No transaction records found for {new Date(selectedDate).toLocaleDateString(undefined, { dateStyle: 'medium' })}.
+                          No transaction records found for {new Date(selectedDate).toLocaleDateString("en-IN", { dateStyle: 'medium', timeZone: "Asia/Kolkata" })}.
                         </td>
                       </tr>
                     ) : (

@@ -529,7 +529,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                     Statement Period: {startDate === endDate ? startDate : `${startDate} to ${endDate}`}
                   </p>
                 )}
-                <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN")}</p>
+                <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
               </div>
               <div className="text-right">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Net Balance</span>
