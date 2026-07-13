@@ -270,11 +270,11 @@ def submit_collection(
 
         # 3. Simulate Email Alert (Task 110: Auto-Verify)
         if retailer and retailer.email:
-            secure_link = f"https://doitservice.com/public/ledger/{retailer.ledger_token}"
+            secure_link = f"https://crediiflow.in/public/ledger/{retailer.ledger_token}"
             print("\n" + "="*80)
             print("[SMTP EMAIL DISPATCH SIMULATOR] TO RETAILER (AUTO-VERIFIED)")
             print(f"   ↳ Recipient: {retailer.retailer_name} <{retailer.email}>")
-            print(f"   ↳ Subject: Collection Receipt - DO IT SERVICES (Ref: {db_collection.id.hex[:8]})")
+            print(f"   ↳ Subject: Collection Receipt - CrediiFlow (Ref: {db_collection.id.hex[:8]})")
             print(f"   ↳ Body Preview:")
             print(f"     Dear Partner,")
             print(f"     We have successfully received your payment collection of ₹{db_collection.total_amount:.2f} today.")
@@ -406,7 +406,7 @@ def verify_collection(
         # Respect opening balance
         prev_balance = Decimal(str(collection.retailer.opening_to_take or 0))
     
-    # Collections reduce what they owe DO IT SERVICES (credit)
+    # Collections reduce what they owe CrediiFlow (credit)
     # Raw signed running total (see submit_collection for the same convention)
     new_balance = prev_balance + collection.total_amount
 
@@ -436,11 +436,11 @@ def verify_collection(
     # 3. Simulate Email Alert with Secure Public Token
     retailer = collection.retailer
     if retailer and retailer.email:
-        secure_link = f"https://doitservice.com/public/ledger/{retailer.ledger_token}"
+        secure_link = f"https://crediiflow.in/public/ledger/{retailer.ledger_token}"
         print("\n" + "="*80)
         print("[SMTP EMAIL DISPATCH SIMULATOR] TO RETAILER")
         print(f"   ↳ Recipient: {retailer.retailer_name} <{retailer.email}>")
-        print(f"   ↳ Subject: Collection Receipt - DO IT SERVICES (Ref: {collection.id.hex[:8]})")
+        print(f"   ↳ Subject: Collection Receipt - CrediiFlow (Ref: {collection.id.hex[:8]})")
         print(f"   ↳ Body Preview:")
         print(f"     Dear Partner,")
         print(f"     We have successfully received and verified your payment collection of ₹{collection.total_amount:.2f} today.")

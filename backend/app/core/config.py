@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173,https://do-it-services.vercel.app,https://do-it-services-sujeet-kansals-projects.vercel.app,https://app.crediiflow.in,https://do-it-services.crediiflow.in"
 
     # App Settings
-    PROJECT_NAME: str = "DO IT SERVICES Operations Platform"
+    PROJECT_NAME: str = "CrediiFlow Operations Platform"
 
     # Cloudflare R2 configurations
     R2_ACCESS_KEY_ID: Optional[str] = None

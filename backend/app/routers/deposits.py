@@ -148,8 +148,8 @@ def submit_deposit(
             db_deposit.balance_snapshot = new_balance
         
         elif dt == "portal":
-            # BankAccount deposits reduce what DO IT SERVICES owes to the portal
-            # Assets increase (from DO IT perspective, we have less cash but less debt)
+            # BankAccount deposits reduce what CrediiFlow owes to the portal
+            # Assets increase (from CrediiFlow's perspective, we have less cash but less debt)
             # Actually, Portal.balance = Assets - Liabilities.
             # Depositing money to them increases the balance (closer to zero if negative).
             if bank_account:
@@ -296,7 +296,7 @@ def submit_deposit(
             try:
                 import os
                 from app.services.whatsapp import send_whatsapp_message
-                frontend_url = os.getenv("FRONTEND_BASE_URL", "https://doitservice.com")
+                frontend_url = os.getenv("FRONTEND_BASE_URL", "https://crediiflow.in")
                 secure_link = f"{frontend_url}/public/ledger/{retailer.ledger_token}"
                 background_tasks.add_task(
                     send_whatsapp_message,

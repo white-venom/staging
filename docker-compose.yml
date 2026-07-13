@@ -1,7 +1,7 @@
 version: '3.8'
 
 networks:
-  doit_network:
+  crediiflow_network:
     driver: bridge
 
 volumes:
@@ -15,7 +15,7 @@ volumes:
 services:
   db:
     image: postgres:16-alpine
-    container_name: doit_db
+    container_name: crediiflow_db
     restart: always
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-doit_production}
@@ -26,7 +26,7 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     networks:
-      - doit_network
+      - crediiflow_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-doit_admin} -d ${POSTGRES_DB:-doit_production}"]
       interval: 10s
@@ -37,7 +37,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: doit_backend
+    container_name: crediiflow_backend
     restart: always
     ports:
       - "8000:8000"
@@ -52,7 +52,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - doit_network
+      - crediiflow_network
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/docs || exit 1"]
       interval: 15s
@@ -63,7 +63,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: doit_frontend
+    container_name: crediiflow_frontend
     restart: always
     ports:
       - "3000:3000"
@@ -71,7 +71,7 @@ services:
       - PORT=3000
       - HOSTNAME=0.0.0.0
     networks:
-      - doit_network
+      - crediiflow_network
     depends_on:
       - backend
     healthcheck:
@@ -84,7 +84,7 @@ services:
     build:
       context: ./superadmin-frontend
       dockerfile: Dockerfile
-    container_name: doit_superadmin_frontend
+    container_name: crediiflow_superadmin_frontend
     restart: always
     ports:
       - "3001:3001"
@@ -93,7 +93,7 @@ services:
       - HOSTNAME=0.0.0.0
       - NEXT_PUBLIC_API_URL=https://api.crediiflow.in
     networks:
-      - doit_network
+      - crediiflow_network
     depends_on:
       - backend
 
@@ -101,7 +101,7 @@ services:
     build:
       context: ./landing-page
       dockerfile: Dockerfile
-    container_name: doit_landing_page
+    container_name: crediiflow_landing_page
     restart: always
     ports:
       - "3002:3002"
@@ -109,7 +109,7 @@ services:
       - PORT=3002
       - HOSTNAME=0.0.0.0
     networks:
-      - doit_network
+      - crediiflow_network
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3002/ || exit 1"]
       interval: 15s
@@ -118,7 +118,7 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: doit_nginx
+    container_name: crediiflow_nginx
     restart: always
     ports:
       - "80:80"
@@ -133,4 +133,4 @@ services:
       - superadmin-frontend
       - landing-page
     networks:
-      - doit_network
+      - crediiflow_network

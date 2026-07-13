@@ -21,7 +21,7 @@ function LocationName({ lat, lon }: { lat: number; lon: number }) {
           {
             headers: {
               "Accept-Language": "en",
-              "User-Agent": "DoItServices/1.0"
+              "User-Agent": "CrediiFlow/1.0"
             }
           }
         );

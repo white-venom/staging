@@ -49,7 +49,7 @@ class OfflineDatabase extends Dexie {
   retailers!: Table<CachedRetailer>;
 
   constructor() {
-    super("DoItServicesOfflineDB");
+    super("CrediiFlowOfflineDB");
     this.version(1).stores({
       collections: "++id, synced, date",
       deposits: "++id, synced, date",

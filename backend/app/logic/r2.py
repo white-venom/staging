@@ -51,7 +51,7 @@ def upload_image_to_r2(image_data: bytes, filename: str, content_type: str = "im
         )
         
         # Construct public URL
-        # e.g., https://static.doitservices.in or https://pub-xxx.r2.dev
+        # e.g., https://static.crediiflow.in or https://pub-xxx.r2.dev
         if settings.R2_PUBLIC_URL:
             public_base = settings.R2_PUBLIC_URL.rstrip("/")
             return f"{public_base}/{filename}"
