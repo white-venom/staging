@@ -79,11 +79,11 @@ export default function MobileFilterDrawer({
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center">
       <div 
-        className="absolute inset-0 bg-slate-955/40 backdrop-blur-sm animate-in fade-in duration-200"
+        className="absolute inset-0 bg-slate-950/40"
         onClick={onClose}
       />
       
-      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-lg p-3 shadow-2xl animate-in fade-in duration-150 border-t border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-sm p-3 border-t border-slate-100 dark:border-slate-800 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between mb-3 shrink-0">
           <div>
@@ -92,7 +92,7 @@ export default function MobileFilterDrawer({
           </div>
           <button 
             onClick={onClose}
-            className="w-7 h-7 bg-slate-100 dark:bg-slate-805 rounded-full flex items-center justify-center text-slate-500 cursor-pointer"
+            className="w-7 h-7 bg-slate-100 dark:bg-slate-800 rounded-sm flex items-center justify-center text-slate-500 cursor-pointer transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -118,7 +118,7 @@ export default function MobileFilterDrawer({
 
           {/* 1b. Store Filter (Dynamic) */}
           {filters.retailerId !== "all" && availableFilterStores.length > 0 && (
-            <div className="space-y-1 animate-in fade-in duration-200">
+            <div className="space-y-1">
               <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
                 <Store className="w-3 h-3" /> Store
               </label>
@@ -152,7 +152,7 @@ export default function MobileFilterDrawer({
 
           {/* 2b. Bank/Account Filter (Dynamic) */}
           {filters.portalId !== "all" && availableFilterBanks.length > 0 && (
-            <div className="space-y-1 animate-in fade-in duration-200">
+            <div className="space-y-1">
               <label className="text-[8px] font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
                 <Globe className="w-3 h-3" /> Bank Account / Branch
               </label>
@@ -194,10 +194,10 @@ export default function MobileFilterDrawer({
                         : [...filters.selectedTypes, t.id];
                       setFilters({ ...filters, selectedTypes: next });
                     }}
-                    className={`px-2.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider border cursor-pointer transition-all duration-200 ${
+                    className={`px-2.5 py-1 rounded-sm text-[9px] font-black uppercase tracking-wider border cursor-pointer transition-colors ${
                       isActive 
-                        ? "bg-blue-100 dark:bg-blue-955/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800 font-bold"
-                        : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100"
+                        ? "bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800 font-bold"
+                        : "bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100"
                     }`}
                   >
                     {t.label}
@@ -281,13 +281,13 @@ export default function MobileFilterDrawer({
               });
               onClose();
             }}
-            className="flex-1 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-[9px] font-bold uppercase text-slate-500 tracking-wider cursor-pointer"
+            className="flex-1 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-sm text-[9px] font-bold uppercase text-slate-500 tracking-wider cursor-pointer transition-colors"
           >
             Reset
           </button>
           <button 
             onClick={onClose}
-            className="flex-1 py-1.5 bg-blue-600 rounded-lg text-[9px] font-bold uppercase text-white tracking-wider shadow-sm active:scale-95 transition-transform cursor-pointer"
+            className="flex-1 py-1.5 bg-blue-600 rounded-sm text-[9px] font-bold uppercase text-white tracking-wider transition-colors cursor-pointer"
           >
             Apply
           </button>
