@@ -1064,7 +1064,7 @@ export default function StaffDashboard() {
               </div>
 
               <form onSubmit={handleSaveEdit} className="space-y-2">
-                <div className="space-y-1 max-h-[40vh] overflow-y-auto pr-1">
+                <div className="rounded-sm border border-slate-200 dark:border-slate-800 max-h-[40vh] overflow-y-auto">
                   {[
                     { label: "₹500 Notes", key: "note_500", val: 500 },
                     { label: "₹200 Notes", key: "note_200", val: 200 },
@@ -1073,61 +1073,61 @@ export default function StaffDashboard() {
                     { label: "₹20 Notes", key: "note_20", val: 20 },
                     { label: "₹10 Notes", key: "note_10", val: 10 },
                   ].map(note => (
-                    <div key={note.key} className="flex items-center justify-between text-[11px] py-0.5">
-                      <span className="font-bold text-slate-500">{note.label}</span>
-                      <div className="flex items-center gap-2">
-                        <input autoComplete="one-time-code"
-                          type="number"
-                          inputMode="numeric"
-                          value={editDenoms[note.key] === 0 ? "" : editDenoms[note.key]}
-                          onChange={(e) => {
-                            const v = e.target.value === "" ? 0 : parseInt(e.target.value);
-                            setEditDenoms((prev: any) => ({ ...prev, [note.key]: isNaN(v) ? 0 : v }));
-                          }}
-                          className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-xs font-mono font-bold tabular-nums"
-                          placeholder="0"
-                        />
-                        <span className={`w-14 text-right font-bold font-mono tabular-nums ${(editDenoms[note.key] || 0) < 0 ? 'text-red-600 dark:text-red-500' : 'text-slate-500'}`}>
-                          ₹{((editDenoms[note.key] || 0) * note.val).toLocaleString()}
-                        </span>
-                      </div>
+                    <div key={note.key} className="flex items-center gap-2 justify-between px-2 py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">{note.label}</span>
+                      <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
+                      <input autoComplete="one-time-code"
+                        type="number"
+                        inputMode="numeric"
+                        value={editDenoms[note.key] === 0 ? "" : editDenoms[note.key]}
+                        onChange={(e) => {
+                          const v = e.target.value === "" ? 0 : parseInt(e.target.value);
+                          setEditDenoms((prev: any) => ({ ...prev, [note.key]: isNaN(v) ? 0 : v }));
+                        }}
+                        className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-xs font-mono font-extrabold tabular-nums"
+                        placeholder="0"
+                      />
+                      <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                      <span className={`text-xs font-black text-right w-16 font-mono tabular-nums ${(editDenoms[note.key] || 0) < 0 ? 'text-red-600 dark:text-red-500' : 'text-slate-700 dark:text-slate-300'}`}>
+                        ₹{((editDenoms[note.key] || 0) * note.val).toLocaleString()}
+                      </span>
                     </div>
                   ))}
 
-                  <div className="flex items-center justify-between text-[11px] py-0.5">
-                    <span className="font-bold text-slate-500">Coins Sum</span>
-                    <div className="flex items-center gap-2">
-                      <input autoComplete="one-time-code"
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        value={editDenoms.coins || ""}
-                        onChange={(e) => {
-                          let v = e.target.value === "" ? 0 : parseFloat(e.target.value);
-                          setEditDenoms((prev: any) => ({ ...prev, coins: isNaN(v) ? 0 : v }));
-                        }}
-                        className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-xs font-mono font-bold tabular-nums"
-                      />
-                      <span className="w-14 text-right text-slate-500 font-bold font-mono tabular-nums">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
-                    </div>
+                  <div className="flex items-center gap-2 justify-between px-2 py-0.5 border-b border-slate-100 dark:border-slate-800/40">
+                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">Coins</span>
+                    <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
+                    <input autoComplete="one-time-code"
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      value={editDenoms.coins || ""}
+                      onChange={(e) => {
+                        let v = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                        setEditDenoms((prev: any) => ({ ...prev, coins: isNaN(v) ? 0 : v }));
+                      }}
+                      className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-xs font-mono font-extrabold tabular-nums"
+                    />
+                    <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                    <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px] py-0.5">
-                    <span className="font-bold text-slate-500">UPI Online</span>
-                    <div className="flex items-center gap-2">
-                      <input autoComplete="one-time-code"
-                        type="number"
-                        inputMode="decimal"
-                        value={editDenoms.online_amount || ""}
-                        onChange={(e) => {
-                          const v = e.target.value === "" ? 0 : parseInt(e.target.value);
-                          setEditDenoms((prev: any) => ({ ...prev, online_amount: isNaN(v) ? 0 : v }));
-                        }}
-                        className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-xs font-mono font-bold tabular-nums"
-                        min="0"
-                      />
-                      <span className="w-14 text-right text-slate-500 font-bold font-mono tabular-nums">₹{Number(editDenoms.online_amount || 0).toLocaleString()}</span>
-                    </div>
+                  <div className="flex items-center gap-2 justify-between px-2 py-0.5">
+                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">Online</span>
+                    <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">+</span>
+                    <input autoComplete="one-time-code"
+                      type="number"
+                      inputMode="decimal"
+                      value={editDenoms.online_amount || ""}
+                      onChange={(e) => {
+                        const v = e.target.value === "" ? 0 : parseInt(e.target.value);
+                        setEditDenoms((prev: any) => ({ ...prev, online_amount: isNaN(v) ? 0 : v }));
+                      }}
+                      className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-xs font-mono font-extrabold tabular-nums"
+                      min="0"
+                    />
+                    <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                    <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">₹{Number(editDenoms.online_amount || 0).toLocaleString()}</span>
                   </div>
                 </div>
 
