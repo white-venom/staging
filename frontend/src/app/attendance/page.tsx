@@ -262,13 +262,13 @@ export default function AttendancePage() {
   const isSubmitDisabled = !uploadedImageBase64 || isLocating || !!locationError || !gpsCoords;
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-100 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-black">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-b border-slate-200/50 dark:border-slate-800/80">
+      <div className="sticky top-0 z-50 bg-white/70 dark:bg-slate-900/70 border-b border-slate-200/50 dark:border-slate-800/80">
         <div className="w-full max-w-md mx-auto px-2 h-12 flex items-center justify-between">
           <button 
             onClick={() => router.push("/staff")}
-            className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 transition-colors active:scale-95 border border-slate-200/40 dark:border-slate-700/50"
+            className="w-8 h-8 flex items-center justify-center rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 transition-colors border border-slate-200/40 dark:border-slate-700/50"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -280,20 +280,18 @@ export default function AttendancePage() {
       </div>
 
       <div className="w-full max-w-md mx-auto px-2 py-4">
-        <div className="bg-slate-900 rounded-lg p-3 shadow-xl relative overflow-hidden text-left border border-slate-700/50">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8"></div>
-
-          <div className="relative z-10">
+        <div className="bg-slate-900 rounded-sm p-3 relative text-left border border-slate-700/50">
+          <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-md shadow-inner border border-white/5">
+                <div className="p-1.5 bg-white/10 rounded-sm border border-white/5">
                   <Clock className="w-3.5 h-3.5 text-blue-300" />
                 </div>
                 <h2 className="text-[9px] font-black uppercase tracking-wider text-white/80">
                   Duty Status (Attendance)
                 </h2>
               </div>
-              <span className={`text-[8px] uppercase tracking-wide font-black px-2 py-1 rounded-full backdrop-blur-md border ${attendance.isCheckedIn
+              <span className={`text-[8px] uppercase tracking-wide font-black px-2 py-1 rounded-sm border ${attendance.isCheckedIn
                   ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
                   : "bg-white/10 text-slate-300 border-white/20"
                 }`}>
@@ -304,7 +302,7 @@ export default function AttendancePage() {
             {/* Attendance form below */}
             {attendance.isCheckedIn ? (
               <form onSubmit={handleCheckOutSubmit} className="space-y-3">
-                <div className="grid grid-cols-2 gap-2 bg-black/40 p-2.5 rounded-lg border border-white/5 backdrop-blur-md">
+                <div className="grid grid-cols-2 gap-2 bg-black/40 p-2.5 rounded-sm border border-white/5">
                   <div>
                     <span className="text-[7.5px] text-slate-400 font-bold uppercase tracking-widest block mb-0.5">Started At</span>
                     <span className="font-black text-sm text-white tracking-tight">{attendance.startKm} <span className="text-[9px] text-slate-500">KM</span></span>
@@ -316,7 +314,7 @@ export default function AttendancePage() {
                 </div>
 
                 {kmError && (
-                  <p className="text-[9px] text-red-200 bg-red-950/80 px-3 py-1.5 rounded-lg border border-red-500/30 text-center font-bold">
+                  <p className="text-[9px] text-red-200 bg-red-950/80 px-3 py-1.5 rounded-sm border border-red-500/30 text-center font-bold">
                     {kmError}
                   </p>
                 )}
@@ -324,16 +322,17 @@ export default function AttendancePage() {
                 <div className="flex flex-col gap-2.5">
                   <input autoComplete="one-time-code"
                     type="number"
+                    inputMode="numeric"
                     placeholder="Enter Ending KM"
                     value={endKmInput}
                     onChange={(e) => setEndKmInput(e.target.value)}
-                    className="w-full px-3 py-2 bg-black/30 border border-white/10 focus:border-blue-500/50 rounded-lg focus:outline-none text-xs text-white font-bold placeholder-slate-600 transition-colors shadow-inner"
+                    className="w-full px-3 py-2 bg-black/30 border border-white/10 focus:border-blue-500/50 rounded-sm focus:outline-none text-xs text-white font-bold placeholder-slate-600 transition-colors"
                     required
                   />
 
                   {/* Upload image capture element */}
                   {!uploadedImageBase64 ? (
-                    <label className="flex flex-col items-center justify-center border border-dashed border-slate-700/80 hover:border-blue-500/50 bg-black/20 hover:bg-black/30 p-4 rounded-lg cursor-pointer transition-all duration-300 group">
+                    <label className="flex flex-col items-center justify-center border border-dashed border-slate-700/80 hover:border-blue-500/50 bg-black/20 hover:bg-black/30 p-4 rounded-sm cursor-pointer transition-colors group">
                       <Camera className="w-6 h-6 text-slate-400 group-hover:text-blue-400 mb-1.5 transition-colors" />
                       <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-blue-300 uppercase select-none">Capture Ending Odometer</span>
                       <input
@@ -346,16 +345,16 @@ export default function AttendancePage() {
                       />
                     </label>
                   ) : (
-                    <div className="relative rounded-lg overflow-hidden border border-slate-700/50 group">
+                    <div className="relative rounded-sm overflow-hidden border border-slate-700/50 group">
                       <img src={uploadedImageBase64} alt="Meter Preview" className="w-full h-28 object-cover" />
                       <button
                         type="button"
                         onClick={() => setUploadedImageBase64(null)}
-                        className="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded shadow-lg text-[8px] font-black uppercase tracking-wider px-2 backdrop-blur-md border border-red-500/20 active:scale-95 transition-transform"
+                        className="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded text-[8px] font-black uppercase tracking-wider px-2 border border-red-500/20 "
                       >
                         Retake
                       </button>
-                      <div className="absolute bottom-1 left-1 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded text-[7.5px] font-black uppercase tracking-wider text-slate-300 border border-white/5 flex items-center gap-1">
+                      <div className="absolute bottom-1 left-1 bg-black/70 px-2 py-0.5 rounded text-[7.5px] font-black uppercase tracking-wider text-slate-300 border border-white/5 flex items-center gap-1">
                         <svg className="w-2.5 h-2.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                         <span>Watermark Overlay Succeeded</span>
                       </div>
@@ -364,21 +363,21 @@ export default function AttendancePage() {
 
                   {/* Geolocation status and strict warning warnings */}
                   {isLocating && (
-                    <div className="flex items-center justify-center gap-1.5 p-2 bg-blue-950/40 border border-blue-900/40 text-[8px] font-black uppercase tracking-wider text-blue-400 rounded-lg animate-pulse">
+                    <div className="flex items-center justify-center gap-1.5 p-2 bg-blue-950/40 border border-blue-900/40 text-[8px] font-black uppercase tracking-wider text-blue-400 rounded-sm">
                       <span className="w-1 h-1 bg-blue-400 rounded-full animate-ping"></span>
                       <span>Fetching High Accuracy live GPS...</span>
                     </div>
                   )}
 
                   {locationError && (
-                    <div className="p-2 bg-red-950/40 border border-red-900/40 rounded-lg text-center">
+                    <div className="p-2 bg-red-950/40 border border-red-900/40 rounded-sm text-center">
                       <p className="text-[8px] text-red-400 font-black uppercase tracking-wider mb-1.5 flex items-center justify-center gap-1">
-                        <span className="flex items-center gap-0.5 justify-center"><svg className="w-3 h-3 text-amber-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span>GPS Locked:</span></span> {locationError}
+                        <span className="flex items-center gap-0.5 justify-center"><svg className="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span>GPS Locked:</span></span> {locationError}
                       </p>
                       <button
                         type="button"
                         onClick={fetchLiveGPS}
-                        className="text-[8px] font-black uppercase text-blue-400 hover:text-blue-300 tracking-wider bg-blue-950/20 border border-blue-900/30 px-2.5 py-1 rounded-md transition-all active:scale-95"
+                        className="text-[8px] font-black uppercase text-blue-400 hover:text-blue-300 tracking-wider bg-blue-950/20 border border-blue-900/30 px-2.5 py-1 rounded-md transition-colors"
                       >
                         Retry Fetching Location
                       </button>
@@ -386,7 +385,7 @@ export default function AttendancePage() {
                   )}
 
                   {gpsCoords && (
-                    <div className="flex items-center gap-1.5 p-2 bg-emerald-950/20 border border-emerald-900/30 text-[8px] font-black uppercase tracking-wider text-emerald-400 rounded-lg">
+                    <div className="flex items-center gap-1.5 p-2 bg-emerald-950/20 border border-emerald-900/30 text-[8px] font-black uppercase tracking-wider text-emerald-400 rounded-sm">
                       <MapPin className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                       <span className="leading-tight">
                         GPS Logged: {gpsCoords.latitude.toFixed(6)}, {gpsCoords.longitude.toFixed(6)} (±{gpsCoords.accuracy.toFixed(1)}m)
@@ -397,7 +396,7 @@ export default function AttendancePage() {
                   <button
                     type="submit"
                     disabled={isSubmitDisabled}
-                    className={`w-full py-2.5 text-white rounded-lg text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] shadow-md border border-white/10 ${
+                    className={`w-full py-2.5 text-white rounded-sm text-[9px] font-black uppercase tracking-[0.2em] transition-colors border border-white/10 ${
                       isSubmitDisabled
                         ? "bg-slate-800 text-slate-500 border-slate-700/40 cursor-not-allowed opacity-50"
                         : "bg-blue-600 hover:bg-blue-500"
@@ -415,16 +414,17 @@ export default function AttendancePage() {
                 <div className="flex flex-col gap-2.5">
                   <input autoComplete="one-time-code"
                     type="number"
+                    inputMode="numeric"
                     placeholder="Current Odometer KM"
                     value={startKmInput}
                     onChange={(e) => setStartKmInput(e.target.value)}
-                    className="w-full px-3 py-2 bg-black/30 border border-white/10 focus:border-blue-500/50 rounded-lg focus:outline-none text-xs text-white font-bold placeholder-slate-650 transition-colors shadow-inner"
+                    className="w-full px-3 py-2 bg-black/30 border border-white/10 focus:border-blue-500/50 rounded-sm focus:outline-none text-xs text-white font-bold placeholder-slate-600 transition-colors"
                     required
                   />
 
                   {/* Upload image capture element */}
                   {!uploadedImageBase64 ? (
-                    <label className="flex flex-col items-center justify-center border border-dashed border-slate-700/80 hover:border-blue-500/50 bg-black/20 hover:bg-black/30 p-4 rounded-lg cursor-pointer transition-all duration-300 group">
+                    <label className="flex flex-col items-center justify-center border border-dashed border-slate-700/80 hover:border-blue-500/50 bg-black/20 hover:bg-black/30 p-4 rounded-sm cursor-pointer transition-colors group">
                       <Camera className="w-6 h-6 text-slate-400 group-hover:text-blue-400 mb-1.5 transition-colors" />
                       <span className="text-[9px] font-black tracking-widest text-slate-400 group-hover:text-blue-300 uppercase select-none">Capture Starting Odometer</span>
                       <input
@@ -437,16 +437,16 @@ export default function AttendancePage() {
                       />
                     </label>
                   ) : (
-                    <div className="relative rounded-lg overflow-hidden border border-slate-700/50 group">
+                    <div className="relative rounded-sm overflow-hidden border border-slate-700/50 group">
                       <img src={uploadedImageBase64} alt="Meter Preview" className="w-full h-28 object-cover" />
                       <button
                         type="button"
                         onClick={() => setUploadedImageBase64(null)}
-                        className="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded shadow-lg text-[8px] font-black uppercase tracking-wider px-2 backdrop-blur-md border border-red-500/20 active:scale-95 transition-transform"
+                        className="absolute top-1 right-1 bg-red-600/90 hover:bg-red-500 text-white p-1 rounded text-[8px] font-black uppercase tracking-wider px-2 border border-red-500/20 "
                       >
                         Retake
                       </button>
-                      <div className="absolute bottom-1 left-1 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded text-[7.5px] font-black uppercase tracking-wider text-slate-300 border border-white/5 flex items-center gap-1">
+                      <div className="absolute bottom-1 left-1 bg-black/70 px-2 py-0.5 rounded text-[7.5px] font-black uppercase tracking-wider text-slate-300 border border-white/5 flex items-center gap-1">
                         <svg className="w-2.5 h-2.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
                         <span>Watermark Overlay Succeeded</span>
                       </div>
@@ -455,21 +455,21 @@ export default function AttendancePage() {
 
                   {/* Geolocation status and warnings */}
                   {isLocating && (
-                    <div className="flex items-center justify-center gap-1.5 p-2 bg-blue-950/40 border border-blue-900/40 text-[8px] font-black uppercase tracking-wider text-blue-400 rounded-lg animate-pulse">
+                    <div className="flex items-center justify-center gap-1.5 p-2 bg-blue-950/40 border border-blue-900/40 text-[8px] font-black uppercase tracking-wider text-blue-400 rounded-sm">
                       <span className="w-1 h-1 bg-blue-400 rounded-full animate-ping"></span>
                       <span>Fetching High Accuracy live GPS...</span>
                     </div>
                   )}
 
                   {locationError && (
-                    <div className="p-2 bg-red-950/40 border border-red-900/40 rounded-lg text-center">
+                    <div className="p-2 bg-red-950/40 border border-red-900/40 rounded-sm text-center">
                       <p className="text-[8px] text-red-400 font-black uppercase tracking-wider mb-1.5 flex items-center justify-center gap-1">
-                        <span className="flex items-center gap-0.5 justify-center"><svg className="w-3 h-3 text-amber-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span>GPS Locked:</span></span> {locationError}
+                        <span className="flex items-center gap-0.5 justify-center"><svg className="w-3 h-3 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span>GPS Locked:</span></span> {locationError}
                       </p>
                       <button
                         type="button"
                         onClick={fetchLiveGPS}
-                        className="text-[8px] font-black uppercase text-blue-400 hover:text-blue-300 tracking-wider bg-blue-950/20 border border-blue-900/30 px-2.5 py-1 rounded-md transition-all active:scale-95"
+                        className="text-[8px] font-black uppercase text-blue-400 hover:text-blue-300 tracking-wider bg-blue-950/20 border border-blue-900/30 px-2.5 py-1 rounded-md transition-colors"
                       >
                         Retry Fetching Location
                       </button>
@@ -477,7 +477,7 @@ export default function AttendancePage() {
                   )}
 
                   {gpsCoords && (
-                    <div className="flex items-center gap-1.5 p-2 bg-emerald-950/20 border border-emerald-900/30 text-[8px] font-black uppercase tracking-wider text-emerald-400 rounded-lg">
+                    <div className="flex items-center gap-1.5 p-2 bg-emerald-950/20 border border-emerald-900/30 text-[8px] font-black uppercase tracking-wider text-emerald-400 rounded-sm">
                       <MapPin className="w-3 h-3 text-emerald-500 flex-shrink-0" />
                       <span className="leading-tight">
                         GPS Logged: {gpsCoords.latitude.toFixed(6)}, {gpsCoords.longitude.toFixed(6)} (±{gpsCoords.accuracy.toFixed(1)}m)
@@ -488,7 +488,7 @@ export default function AttendancePage() {
                   <button
                     type="submit"
                     disabled={isSubmitDisabled}
-                    className={`w-full py-2.5 text-white rounded-lg text-[9px] font-black uppercase tracking-[0.2em] transition-all active:scale-[0.98] shadow-md border border-white/10 ${
+                    className={`w-full py-2.5 text-white rounded-sm text-[9px] font-black uppercase tracking-[0.2em] transition-colors border border-white/10 ${
                       isSubmitDisabled
                         ? "bg-slate-800 text-slate-500 border-slate-700/40 cursor-not-allowed opacity-50"
                         : "bg-blue-600 hover:bg-blue-500"
