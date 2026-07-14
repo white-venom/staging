@@ -405,16 +405,16 @@ function NewCollectionContent() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
-      <div className="flex-1 w-full max-w-md mx-auto px-2 py-3 flex flex-col gap-2.5 select-none pb-24">
-        
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="flex-1 w-full max-w-md mx-auto px-2 py-2 flex flex-col gap-1.5 select-none pb-20">
+
         {/* Navigation block */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/staff")}
               type="button"
-              className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-md cursor-pointer"
+              className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-sm cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
@@ -426,24 +426,24 @@ function NewCollectionContent() {
 
           <div className="flex items-center gap-1.5">
             {/* Live Network Indicators */}
-            <div className={`p-1 rounded-md flex items-center justify-center border ${
-              isOnline 
-                ? "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-emerald-600" 
-                : "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/30 text-amber-500 animate-pulse"
+            <div className={`p-1 rounded-sm flex items-center justify-center border ${
+              isOnline
+                ? "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-emerald-600"
+                : "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/30 text-amber-500"
             }`}>
               {isOnline ? <Wifi className="w-3.5 h-3.5" /> : <WifiOff className="w-3.5 h-3.5" />}
             </div>
           </div>
         </div>
 
-        <form onSubmit={handleFormSubmit} className="space-y-3">
-          
+        <form onSubmit={handleFormSubmit} className="space-y-2">
+
           {/* SOURCE TYPE SELECTOR */}
-          <div className="p-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex gap-1">
+          <div className="rounded-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex gap-px overflow-hidden">
             <button
               type="button"
               onClick={() => setSourceType("retailer")}
-              className={`flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all ${sourceType === "retailer" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-655"}`}
+              className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider transition-colors ${sourceType === "retailer" ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950" : "bg-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}`}
             >
               Retailer
             </button>
@@ -458,7 +458,7 @@ function NewCollectionContent() {
                 }));
                 setShowOnlineBankAccount(false);
               }}
-              className={`flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all ${sourceType === "staff" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-655"}`}
+              className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider transition-colors ${sourceType === "staff" ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950" : "bg-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}`}
             >
               Staff
             </button>
@@ -473,7 +473,7 @@ function NewCollectionContent() {
                 }));
                 setShowOnlineBankAccount(false);
               }}
-              className={`flex-1 py-1 rounded-md text-[9px] font-black uppercase tracking-wider transition-all ${sourceType === "office" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-400 hover:text-slate-655"}`}
+              className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider transition-colors ${sourceType === "office" ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950" : "bg-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}`}
             >
               Super Distributor
             </button>
@@ -481,14 +481,14 @@ function NewCollectionContent() {
 
           {/* DYNAMIC SOURCE INPUT */}
           {sourceType !== "office" && (
-            <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+            <div className="p-2 rounded-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
               {sourceType === "retailer" && (
                 <div className="space-y-2">
                   <div>
                     <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 mb-1">
                       Select Retailer
                     </label>
-                    
+
                     <InlineSelect
                       value={selectedRetailer?.id || ""}
                       onChange={(val) => {
@@ -502,10 +502,10 @@ function NewCollectionContent() {
                   </div>
 
                     {selectedRetailer && (
-                      <div className="space-y-2 mt-2">
-                        <div className="p-2 bg-slate-50 dark:bg-slate-950 rounded-lg border border-slate-200 dark:border-slate-800/60 flex items-center gap-1.5">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                          <div className="text-[10px]">
+                      <div className="space-y-1.5 mt-1.5">
+                        <div className="p-1.5 bg-slate-50 dark:bg-slate-950 rounded-sm border border-slate-200 dark:border-slate-800/60 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400 shrink-0" />
+                          <div className="text-[10px] leading-tight">
                             <span className="font-extrabold text-slate-700 dark:text-slate-300">{selectedRetailer.name}</span>
                             <span className="text-slate-400 dark:text-slate-500 block text-[8px] mt-0.5 font-bold">Phone: {selectedRetailer.phone}</span>
                           </div>
@@ -517,28 +517,28 @@ function NewCollectionContent() {
                             const bal = selectedRetailer.net_balance || 0;
                             const toGive = bal < 0 ? Math.abs(bal) : 0;
                             const toTake = bal > 0 ? bal : 0;
-                            
+
                             if (toGive === 0 && toTake === 0) {
                               return (
-                                <div className="flex-1 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg">
-                                  <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block">Balance</span>
-                                  <span className="text-[10px] font-black text-slate-600 dark:text-slate-500">Settled</span>
+                                <div className="flex-1 px-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-sm flex items-center justify-between">
+                                  <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Balance</span>
+                                  <span className="text-[10px] font-black text-slate-600 dark:text-slate-500 font-mono">Settled</span>
                                 </div>
                               );
                             }
-                            
+
                             return (
                               <>
                                 {toGive > 0 && (
-                                  <div className="flex-1 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-lg">
-                                    <span className="text-[7px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest block">To Give</span>
-                                    <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400">₹{toGive.toLocaleString()}</span>
+                                  <div className="flex-1 px-2 py-1 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-sm flex items-center justify-between">
+                                    <span className="text-[7px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest">To Give</span>
+                                    <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 font-mono tabular-nums">₹{toGive.toLocaleString()}</span>
                                   </div>
                                 )}
                                 {toTake > 0 && (
-                                  <div className="flex-1 px-2.5 py-1.5 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-lg">
-                                    <span className="text-[7px] font-black text-red-600 dark:text-red-500 uppercase tracking-widest block">To Take</span>
-                                    <span className="text-[10px] font-black text-red-700 dark:text-red-400">₹{toTake.toLocaleString()}</span>
+                                  <div className="flex-1 px-2 py-1 bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-sm flex items-center justify-between">
+                                    <span className="text-[7px] font-black text-red-600 dark:text-red-500 uppercase tracking-widest">To Take</span>
+                                    <span className="text-[10px] font-black text-red-700 dark:text-red-400 font-mono tabular-nums">₹{toTake.toLocaleString()}</span>
                                   </div>
                                 )}
                               </>
@@ -547,7 +547,7 @@ function NewCollectionContent() {
                         </div>
 
                         {/* Select Shop (Branch) inside selectedRetailer block */}
-                        <div className="mt-2">
+                        <div>
                           <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 mb-1">
                             Select Shop (Branch)
                           </label>
@@ -585,15 +585,15 @@ function NewCollectionContent() {
           )}
 
           {/* Currency Breakdowns calculator with matching locks */}
-          <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <div className="flex items-center gap-1.5 mb-2">
+          <div className="rounded-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center gap-1.5 px-2 py-1.5 border-b border-slate-100 dark:border-slate-800/60">
               <Coins className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
               <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 Counting Details (Notes)
               </h2>
             </div>
 
-            <div className="space-y-1.5">
+            <div>
               {[
                 { label: "₹500 Notes", key: "note_500", multiplier: 500 },
                 { label: "₹200 Notes", key: "note_200", multiplier: 200 },
@@ -603,55 +603,55 @@ function NewCollectionContent() {
                 { label: "₹10 Notes", key: "note_10", multiplier: 10 },
                 { label: "Coins / ₹1", key: "coins", multiplier: 1 },
               ].map((n) => (
-                <div key={n.key} className="flex items-center gap-2 justify-between py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-20 text-left">
-                      {n.label}
-                    </span>
-                  </div>
+                <div key={n.key} className="flex items-center gap-2 justify-between px-2 py-1 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">
+                    {n.label}
+                  </span>
 
-                  <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">&times;</span>
+                  <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
 
                   {/* Input box */}
                   <input autoComplete="one-time-code"
                     type="number"
+                    inputMode="numeric"
                     value={denominations[n.key as keyof DenominationCounts] === 0 ? "" : denominations[n.key as keyof DenominationCounts]}
                     onChange={(e) => handleDenomChange(n.key as keyof DenominationCounts, e.target.value)}
-                    className="w-14 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 focus:outline-none rounded text-center text-xs text-slate-800 dark:text-slate-200 font-extrabold"
+                    className="w-14 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 focus:outline-none rounded-sm text-right text-xs text-slate-800 dark:text-slate-200 font-mono font-extrabold tabular-nums"
                     placeholder="0"
                   />
 
-                  <span className="text-slate-300 dark:text-slate-650 text-[9px] font-bold">＝</span>
+                  <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
 
                   {/* Line total */}
-                  <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-16">
+                  <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-16 font-mono tabular-nums">
                     ₹{(Number(denominations[n.key as keyof DenominationCounts] || 0) * n.multiplier).toLocaleString()}
                   </span>
                 </div>
               ))}
 
               {sourceType === "retailer" && (
-                <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-200 dark:border-slate-800">
+                <div className="flex flex-col gap-1.5 px-2 py-1.5 border-t border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-2 justify-between">
-                    <span 
-                      className="text-[11px] font-black text-slate-600 dark:text-slate-300 w-24 cursor-pointer"
+                    <span
+                      className="text-[11px] font-black text-slate-600 dark:text-slate-300 w-16 cursor-pointer"
                       onClick={() => setShowOnlineBankAccount(true)}
                     >
                       Online (UPI)
                     </span>
-                    <span className="text-slate-355 dark:text-slate-600 text-xs font-bold">+</span>
+                    <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">+</span>
                     <input autoComplete="one-time-code"
                       type="number"
+                      inputMode="decimal"
                       placeholder="₹0.00"
                       value={denominations.online_amount || ""}
                       onChange={(e) => handleDenomChange("online_amount", e.target.value)}
                       onKeyDown={(e) => handleNoNegativeKeyDown(e, true)}
-                      className="w-28 px-2 py-1 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded text-center text-xs text-slate-800 dark:text-slate-200 font-extrabold"
+                      className="w-28 px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-sm text-right text-xs text-slate-800 dark:text-slate-200 font-mono font-extrabold tabular-nums"
                       min="0"
                     />
                   </div>
                   {(showOnlineBankAccount || denominations.online_amount > 0) && (
-                    <div className="mt-0.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div>
                       <InlineSelect
                         value={denominations.online_bank_account_id || ""}
                         onChange={(val) => {
@@ -674,23 +674,18 @@ function NewCollectionContent() {
           </div>
 
           {/* Difference Calculator Card */}
-          <div className="p-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+          <div className="rounded-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
             <button
               type="button"
               onClick={() => setIsCalcOpen(!isCalcOpen)}
-              className="w-full flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300"
+              className="w-full flex items-center justify-between px-2 py-1.5 text-[10px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300"
             >
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs">🧮</span>
-                <span>Difference Calculator</span>
-              </div>
-              <span className="text-xs transition-transform duration-200" style={{ transform: isCalcOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                ▼
-              </span>
+              <span>Difference Calculator</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isCalcOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isCalcOpen && (
-              <div className="space-y-2 pt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="px-2 pb-2 space-y-2 border-t border-slate-100 dark:border-slate-800/60 pt-2">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-0.5">
                     <label className="text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500">
@@ -698,10 +693,11 @@ function NewCollectionContent() {
                     </label>
                     <input autoComplete="one-time-code"
                       type="number"
+                      inputMode="decimal"
                       placeholder="e.g. 26000"
                       value={calcTarget}
                       onChange={(e) => setCalcTarget(e.target.value === "" ? "" : parseFloat(e.target.value))}
-                      className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-800 dark:text-slate-200 font-extrabold"
+                      className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-right text-xs text-slate-800 dark:text-slate-200 font-mono font-extrabold tabular-nums"
                     />
                   </div>
                   <div className="space-y-0.5">
@@ -710,15 +706,16 @@ function NewCollectionContent() {
                     </label>
                     <input autoComplete="one-time-code"
                       type="number"
+                      inputMode="decimal"
                       placeholder="e.g. 24000"
                       value={calcPaid === "" ? totalCollectionAmount : calcPaid}
                       onChange={(e) => setCalcPaid(e.target.value === "" ? "" : parseFloat(e.target.value))}
-                      className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-xs text-slate-800 dark:text-slate-200 font-extrabold"
+                      className="w-full px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-right text-xs text-slate-800 dark:text-slate-200 font-mono font-extrabold tabular-nums"
                     />
                   </div>
                 </div>
 
-                <div className="p-2 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
+                <div className="p-1.5 bg-slate-50 dark:bg-slate-950 rounded-sm border border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
                   <span className="text-[9px] font-black text-slate-500 uppercase">
                     Remaining to Pay
                   </span>
@@ -727,9 +724,9 @@ function NewCollectionContent() {
                     const remaining = calcTarget && calcTarget !== 0 ? calcTarget - currentPaid : 0;
                     const isNegative = remaining < 0;
                     return (
-                      <span className={`text-sm font-black ${isNegative ? 'text-red-500' : 'text-indigo-600 dark:text-indigo-400'}`}>
-                        {isNegative 
-                          ? `-₹${Math.abs(remaining).toLocaleString("en-IN")}` 
+                      <span className={`text-sm font-black font-mono tabular-nums ${isNegative ? 'text-red-600 dark:text-red-500' : 'text-slate-800 dark:text-slate-200'}`}>
+                        {isNegative
+                          ? `-₹${Math.abs(remaining).toLocaleString("en-IN")}`
                           : `₹${remaining.toLocaleString("en-IN")}`}
                       </span>
                     );
@@ -740,22 +737,22 @@ function NewCollectionContent() {
           </div>
 
           {/* Clean minimal total sum display */}
-          <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div className="p-2 rounded-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div>
               <span className="text-[8px] uppercase font-black tracking-wider text-slate-400 dark:text-slate-500">
                 Total Amount
               </span>
-              <div className="text-[9px] text-slate-505 dark:text-slate-400 mt-0.5 font-bold">
+              <div className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5 font-bold font-mono tabular-nums">
                 Cash: ₹{totalCashAmount.toLocaleString()} | UPI: ₹{denominations.online_amount.toLocaleString()}
               </div>
             </div>
             <div className="text-right">
-                <span className={`text-lg font-black ${totalCollectionAmount < 0 ? 'text-red-500' : totalCollectionAmount === 0 ? 'text-amber-500' : 'text-slate-850 dark:text-white'}`}>
+                <span className={`text-lg font-black font-mono tabular-nums ${totalCollectionAmount < 0 ? 'text-red-600 dark:text-red-500' : totalCollectionAmount === 0 ? 'text-slate-500 dark:text-slate-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
                   ₹{totalCollectionAmount.toLocaleString()}
                 </span>
                 {totalCollectionAmount <= 0 && (
-                  <p className="text-[8px] font-bold text-amber-500 mt-0.5">
-                    {totalCollectionAmount === 0 ? "⇄ Note exchange (zero net)" : "↓ Net outflow"}
+                  <p className="text-[8px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                    {totalCollectionAmount === 0 ? "Note exchange (zero net)" : "Net outflow"}
                   </p>
                 )}
               </div>
@@ -773,13 +770,13 @@ function NewCollectionContent() {
                   type="date"
                   value={collectionDate}
                   onChange={(e) => setCollectionDate(e.target.value)}
-                  className="w-full px-3 py-2 pr-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 font-bold cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                  className="w-full px-3 py-1.5 pr-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-sm focus:outline-none text-xs text-slate-800 dark:text-slate-200 font-bold cursor-pointer appearance-none [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                 />
                 <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
               </div>
             ) : (
               /* Admin has disabled date change — show today's date as fixed display */
-              <div className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg text-xs text-slate-500 dark:text-slate-400 font-bold select-none">
+              <div className="w-full px-3 py-1.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-sm text-xs text-slate-500 dark:text-slate-400 font-bold select-none">
                 {(() => {
                   const [y, m, d] = collectionDate.split("-");
                   return `${d}/${m}/${y}`;
@@ -800,14 +797,14 @@ function NewCollectionContent() {
                 placeholder="Type remark..."
                 value={remarks}
                 onChange={(e) => setRemarks(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold"
+                className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-sm focus:outline-none text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 rounded-lg text-xs font-bold transition-all cursor-pointer shadow disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 rounded-sm text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {editId ? "Update Cash In Entry" : "Submit Cash In Entry"}
           </button>
@@ -820,7 +817,7 @@ function NewCollectionContent() {
 export default function NewCollection() {
   return (
     <React.Suspense fallback={
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-955 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
         <div className="text-slate-400 dark:text-slate-500 text-xs font-semibold">Loading...</div>
       </div>
     }>
