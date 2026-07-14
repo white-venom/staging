@@ -159,7 +159,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
       `}</style>
 
       {/* Mobile Header with Logo and Hamburger Button */}
-      <header className="sticky top-0 z-40 bg-[#0d1b3e] border-b border-blue-900/40 px-3 py-2 flex items-center justify-between no-print shadow-md">
+      <header className="sticky top-0 z-40 bg-[#0d1b3e] border-b border-blue-900/40 px-3 py-2 flex items-center justify-between no-print">
         <div className="flex items-center gap-2">
           <img 
             src="/logo.png" 
@@ -173,7 +173,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
           {/* Hamburger Button */}
           <button
             onClick={() => setIsMenuOpen(true)}
-            className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-slate-200 hover:bg-white/10 active:scale-90 transition-transform cursor-pointer"
+            className="w-8 h-8 bg-white/5 border border-white/10 rounded-sm flex items-center justify-center text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
           >
             <Menu className="w-4.5 h-4.5" />
           </button>
@@ -181,7 +181,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
       </header>
 
       {/* Page Content */}
-      <main id="printable-area" className="px-2 pt-2.5 animate-in fade-in duration-500">
+      <main id="printable-area" className="px-2 pt-2.5">
         {children}
       </main>
 
@@ -190,15 +190,15 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
         <div className="fixed inset-0 z-50 no-print flex">
           {/* Backdrop overlay */}
           <div 
-            className="absolute inset-0 bg-slate-955/40 backdrop-blur-xs animate-in fade-in duration-300"
+            className="absolute inset-0 bg-slate-950/40"
             onClick={() => setIsMenuOpen(false)}
           />
 
           {/* Drawer Content */}
-          <div className="relative ml-auto w-56 max-w-[80vw] h-full bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.3)] p-3 flex flex-col justify-between animate-in slide-in-from-right duration-300">
+          <div className="relative ml-auto w-56 max-w-[80vw] h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 p-3 flex flex-col justify-between">
             <div className="flex flex-col flex-1 min-h-0">
               {/* Drawer Header */}
-              <div className="flex items-center justify-between p-3 bg-[#0d1b3e] border border-blue-900/40 rounded-xl mb-3 text-white shadow-md flex-shrink-0">
+              <div className="flex items-center justify-between p-3 bg-[#0d1b3e] border border-blue-900/40 rounded-sm mb-3 text-white flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <img src="/logo.png" alt="CrediiFlow Logo" className="h-6.5 w-auto object-contain" />
                   <span className="text-[9px] font-black text-blue-200 uppercase tracking-widest">Admin</span>
@@ -221,8 +221,8 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
                       href={item.href}
                       onClick={() => setIsMenuOpen(false)}
                       className={`
-                        w-full p-2 rounded-lg flex items-center gap-2.5 transition-all duration-200 active:scale-[0.98]
-                        ${isActive ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black shadow-lg' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold'}
+                        w-full p-2 rounded-sm flex items-center gap-2.5 transition-colors
+                        ${isActive ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold'}
                       `}
                     >
                       <div className="flex-shrink-0">
@@ -239,7 +239,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2 flex-shrink-0">
               <div>
                 <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Logged in as</p>
-                <p className="text-[10px] font-black text-slate-705 dark:text-slate-200 mt-0.5 truncate">{currentUser?.name || "Administrator"}</p>
+                <p className="text-[10px] font-black text-slate-700 dark:text-slate-200 mt-0.5 truncate">{currentUser?.name || "Administrator"}</p>
                 <p className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{currentUser?.role || "Admin"}</p>
               </div>
               <button
@@ -247,7 +247,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
                   setIsMenuOpen(false);
                   setShowProfileModal(true);
                 }}
-                className="w-full py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-750 rounded-lg font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform cursor-pointer"
+                className="w-full py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-sm font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <User className="w-3 h-3" />
                 Edit Profile
@@ -262,7 +262,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
                     if (result === "show-ios-modal") setShowIOSModal(true);
                     else if (result === "dismissed") alert("To install: tap the browser 3-dot menu → Install App.");
                   }}
-                  className="w-full py-1.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-lg font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform cursor-pointer border border-blue-100 dark:border-blue-900/30"
+                  className="w-full py-1.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-sm font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer border border-blue-100 dark:border-blue-900/30"
                 >
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -272,7 +272,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
               )}
               <button
                 onClick={handleLogout}
-                className="w-full py-1.5 bg-red-50 text-red-650 dark:bg-red-900/10 dark:text-red-500 rounded-lg font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform cursor-pointer"
+                className="w-full py-1.5 bg-red-50 text-red-600 dark:bg-red-900/10 dark:text-red-500 rounded-sm font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3 h-3" />
                 Log Out
@@ -284,8 +284,8 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
 
       {/* PROFILE UPDATE DIALOG */}
       {showProfileModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-3">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-sm p-4 space-y-2.5 animate-slide-up shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-3">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm p-4 space-y-2.5">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
               <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Edit My Profile</h3>
               <button onClick={() => setShowProfileModal(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer">
@@ -295,22 +295,22 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
             <form onSubmit={handleUpdateProfile} className="space-y-2 text-[10px] font-bold">
               <div className="space-y-0.5">
                 <label className="text-[8px] font-black text-slate-400 uppercase ml-1">Full Name</label>
-                <input autoComplete="one-time-code" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
+                <input autoComplete="one-time-code" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm focus:outline-none dark:text-white" required />
               </div>
               <div className="space-y-0.5">
                 <label className="text-[8px] font-black text-slate-400 uppercase ml-1">Phone Number</label>
-                <input autoComplete="one-time-code" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
+                <input autoComplete="one-time-code" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm focus:outline-none dark:text-white" required />
               </div>
               <div className="space-y-0.5">
                 <label className="text-[8px] font-black text-slate-400 uppercase ml-1">New Password</label>
-                <input autoComplete="new-password" type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" />
+                <input autoComplete="new-password" type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm focus:outline-none dark:text-white" />
                 <p className="text-[8px] text-slate-400 font-bold ml-1 mt-0.5">Leave blank to keep current</p>
               </div>
-              <button type="submit" disabled={isUpdatingProfile} className="w-full py-2 bg-slate-900 text-white dark:bg-white dark:text-slate-955 rounded-lg font-black hover:bg-slate-800 transition-colors uppercase tracking-wider text-[9px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>
+              <button type="submit" disabled={isUpdatingProfile} className="w-full py-2 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-sm font-black hover:bg-slate-800 transition-colors uppercase tracking-wider text-[9px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>
               <button
                 type="button"
                 onClick={handleDeleteAccount}
-                className="w-full py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20 text-red-650 dark:text-red-500 rounded-lg font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform cursor-pointer"
+                className="w-full py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/10 dark:hover:bg-red-900/20 text-red-600 dark:text-red-500 rounded-sm font-black uppercase tracking-widest text-[8px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 Delete My Account
               </button>
@@ -324,10 +324,10 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
 
       {/* Global Toast */}
       {showToast && (
-        <div className="fixed top-4 left-4 right-4 z-[9999] animate-slide-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-2xl flex items-center justify-between gap-3">
+        <div className="fixed top-4 left-4 right-4 z-[9999]">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-sm flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 bg-green-500/10 text-green-600 rounded-lg flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 bg-green-500/10 text-green-600 rounded-sm flex items-center justify-center shrink-0">
                 <CheckCircle2 className="w-4.5 h-4.5" />
               </div>
               <div className="min-w-0">
@@ -335,7 +335,7 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
                 <p className="text-[10px] font-bold text-slate-800 dark:text-white mt-0.5 break-words">{toastMessage}</p>
               </div>
             </div>
-            <button onClick={() => setShowToast(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md text-slate-400 shrink-0">
+            <button onClick={() => setShowToast(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-sm text-slate-400 shrink-0">
               <X className="w-4 h-4" />
             </button>
           </div>

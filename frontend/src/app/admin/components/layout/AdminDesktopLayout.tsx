@@ -201,11 +201,10 @@ export default function AdminDesktopLayout({ children }: { children: React.React
 
   return (
     <div className={`flex min-h-screen ${theme === "dark" ? "dark bg-slate-950 text-slate-100" : "bg-[#f8fafc] text-slate-900"}`}>
-      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-150 dark:border-slate-800 p-6 flex flex-col fixed h-full z-20 transition-all shadow-sm">
+      <aside className="w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-6 flex flex-col fixed h-full z-20 transition-colors">
         <div className="mb-6">
-          <div className="w-full h-18 bg-slate-950 rounded-xl flex items-center justify-center shadow-2xl shadow-black/40 p-3 border border-white/5 relative overflow-hidden group">
-             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent -translate-x-full animate-shimmer"></div>
-             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.2)] transition-transform duration-500 group-hover:scale-110" />
+          <div className="w-full h-18 bg-slate-950 rounded-sm flex items-center justify-center p-3 border border-white/5">
+             <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
           </div>
         </div>
 
@@ -214,10 +213,10 @@ export default function AdminDesktopLayout({ children }: { children: React.React
             <button
               key={lnk.id}
               onClick={() => router.push(lnk.path)}
-              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-extrabold transition-all text-left cursor-pointer ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-sm text-sm font-extrabold transition-colors text-left cursor-pointer ${
                 (activeTab === lnk.id || (lnk.id === "overview" && activeTab === "admin"))
-                  ? "bg-slate-100 dark:bg-slate-800 text-slate-850 dark:text-slate-50" 
-                  : "text-slate-500 hover:text-slate-850 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-950/40"
+                  ? "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-50" 
+                  : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-950/40"
               }`}
             >
               <lnk.icon className={`w-4.5 h-4.5 ${(activeTab === lnk.id || (lnk.id === "overview" && activeTab === "admin")) ? "text-[#1e40af] dark:text-blue-400" : "text-slate-400"}`} />
@@ -226,7 +225,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
           ))}
         </nav>
 
-        <div className="border-t border-slate-150 dark:border-slate-800 pt-5 flex flex-col gap-2">
+        <div className="border-t border-slate-200 dark:border-slate-800 pt-5 flex flex-col gap-2">
           {/* PWA Install Button - shown when app is not already installed as standalone */}
           {!isStandalone && (
             <button
@@ -241,7 +240,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                   alert("To install: click the browser address bar install icon (⊕) or the 3-dot menu → Install App.");
                 }
               }}
-              className="flex items-center gap-2.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-lg w-full"
+              className="flex items-center gap-2.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 text-sm font-extrabold transition-colors px-2 py-1 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-sm w-full"
             >
               <svg className="w-4.5 h-4.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -251,14 +250,14 @@ export default function AdminDesktopLayout({ children }: { children: React.React
           )}
           <button
             onClick={() => setShowProfileModal(true)}
-            className="flex items-center gap-2.5 text-slate-500 hover:text-slate-850 dark:hover:text-slate-100 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 rounded-lg w-fit"
+            className="flex items-center gap-2.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 text-sm font-extrabold transition-colors px-2 py-1 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 rounded-sm w-fit"
           >
             <User className="w-4.5 h-4.5 text-slate-400" />
             Edit Profile
           </button>
           <button
             onClick={() => { resetStore(); router.push("/"); }}
-            className="flex items-center gap-2.5 text-red-600 hover:text-red-700 text-sm font-extrabold transition-all px-2 py-1 cursor-pointer hover:bg-red-50/50 rounded-lg w-fit"
+            className="flex items-center gap-2.5 text-red-600 hover:text-red-700 text-sm font-extrabold transition-colors px-2 py-1 cursor-pointer hover:bg-red-50/50 rounded-sm w-fit"
           >
             <LogOut className="w-4.5 h-4.5" />
             Sign Out
@@ -278,8 +277,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
 
       {/* RETAILER REGISTER DRAWER */}
       {showRetailerDrawer && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 animate-slide-up shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Register New Retailer Store</h3>
               <button onClick={() => setShowRetailerDrawer(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
@@ -287,42 +286,44 @@ export default function AdminDesktopLayout({ children }: { children: React.React
               </button>
             </div>
             <form onSubmit={handleAddRetailer} className="space-y-4 text-xs font-semibold">
-              <input autoComplete="one-time-code" type="text" placeholder="Store Name" value={retailerName} onChange={(e) => setRetailerName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" required />
-              <input autoComplete="one-time-code" type="tel" placeholder="Phone" value={retailerPhone} onChange={(e) => setRetailerPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg" required />
-              <input autoComplete="one-time-code" type="text" placeholder="Area" value={retailerArea} onChange={(e) => setRetailerArea(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg" />
-              <input autoComplete="one-time-code" type="email" placeholder="Retailer Email" value={retailerEmail} onChange={(e) => setRetailerEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg" />
-              <input autoComplete="one-time-code" type="text" placeholder="Category (e.g. Supermarket, Wholesaler)" value={retailerCategory} onChange={(e) => setRetailerCategory(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-955 rounded-lg" />
+              <input autoComplete="one-time-code" type="text" placeholder="Store Name" value={retailerName} onChange={(e) => setRetailerName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" required />
+              <input autoComplete="one-time-code" type="tel" placeholder="Phone" value={retailerPhone} onChange={(e) => setRetailerPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" required />
+              <input autoComplete="one-time-code" type="text" placeholder="Area" value={retailerArea} onChange={(e) => setRetailerArea(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" />
+              <input autoComplete="one-time-code" type="email" placeholder="Retailer Email" value={retailerEmail} onChange={(e) => setRetailerEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" />
+              <input autoComplete="one-time-code" type="text" placeholder="Category (e.g. Supermarket, Wholesaler)" value={retailerCategory} onChange={(e) => setRetailerCategory(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-red-500 uppercase ml-1">To Take</label>
-                  <input autoComplete="one-time-code" 
-                    type="number" 
-                    placeholder="Enter Amount" 
-                    value={retailerToTake} 
-                    onChange={(e) => setRetailerToTake(e.target.value)} 
+                  <input autoComplete="one-time-code"
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="Enter Amount"
+                    value={retailerToTake}
+                    onChange={(e) => setRetailerToTake(e.target.value)}
                     onFocus={e => {
                       if (Number(e.target.value) === 0) setRetailerToTake("");
                       e.target.select();
                     }}
-                    className="w-full px-3 py-2 border border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10 rounded-lg font-bold text-red-600 focus:outline-none" 
+                    className="w-full px-3 py-2 border border-red-100 dark:border-red-900/30 bg-red-50/30 dark:bg-red-900/10 rounded-sm text-right font-mono tabular-nums font-bold text-red-600 focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-emerald-500 uppercase ml-1">To Give</label>
-                  <input autoComplete="one-time-code" 
-                    type="number" 
-                    placeholder="Enter Amount" 
-                    value={retailerToGive} 
-                    onChange={(e) => setRetailerToGive(e.target.value)} 
+                  <input autoComplete="one-time-code"
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="Enter Amount"
+                    value={retailerToGive}
+                    onChange={(e) => setRetailerToGive(e.target.value)}
                     onFocus={e => {
                       if (Number(e.target.value) === 0) setRetailerToGive("");
                       e.target.select();
                     }}
-                    className="w-full px-3 py-2 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-lg font-bold text-emerald-600 focus:outline-none" 
+                    className="w-full px-3 py-2 border border-emerald-100 dark:border-emerald-900/30 bg-emerald-50/30 dark:bg-emerald-900/10 rounded-sm text-right font-mono tabular-nums font-bold text-emerald-600 focus:outline-none"
                   />
                 </div>
               </div>
-              <button type="submit" className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl font-bold">Create Store</button>
+              <button type="submit" className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-sm font-bold">Create Store</button>
             </form>
           </div>
         </div>
@@ -330,8 +331,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
 
       {/* PORTAL REGISTER DRAWER */}
       {showPortalDrawer && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 animate-slide-up shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Register BankAccount</h3>
               <button onClick={() => setShowPortalDrawer(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
@@ -342,7 +343,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
               <div className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">BankAccount Name</label>
-                  <input autoComplete="one-time-code" type="text" placeholder="e.g. RevaPay" value={pGroupName} onChange={(e) => setPGroupName(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg font-bold" required />
+                  <input autoComplete="one-time-code" type="text" placeholder="e.g. RevaPay" value={pGroupName} onChange={(e) => setPGroupName(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm font-bold" required />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Opening Balance (₹)</label>
@@ -351,7 +352,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                     placeholder="Enter Opening Balance (negative if To Give)" 
                     value={pBalance} 
                     onChange={(e) => setPGroupBalance(e.target.value)} 
-                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg font-bold focus:outline-none" 
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm font-bold focus:outline-none" 
                   />
                 </div>
                 <div className="flex items-center gap-2 px-1 py-1">
@@ -360,14 +361,14 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                     id="pOnline"
                     checked={pOnline} 
                     onChange={(e) => setPGroupOnline(e.target.checked)} 
-                    className="w-4 h-4 rounded text-blue-650 focus:ring-blue-500 border-slate-300 dark:border-slate-800 dark:bg-slate-955 cursor-pointer"
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
                   />
                   <label htmlFor="pOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
                     Online
                   </label>
                 </div>
               </div>
-              <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors text-xs uppercase tracking-wider">Register BankAccount</button>
+              <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-sm font-bold hover:bg-blue-700 transition-colors text-xs uppercase tracking-wider">Register BankAccount</button>
             </form>
           </div>
         </div>
@@ -375,16 +376,16 @@ export default function AdminDesktopLayout({ children }: { children: React.React
 
       {/* Global Toast */}
       {showToast && (
-        <div className="fixed top-6 right-6 z-[9999] animate-slide-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl shadow-2xl flex items-center gap-4">
-            <div className="w-10 h-10 bg-green-500/10 text-green-600 rounded-xl flex items-center justify-center">
+        <div className="fixed top-6 right-6 z-[9999]">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-sm flex items-center gap-4">
+            <div className="w-10 h-10 bg-green-500/10 text-green-600 rounded-sm flex items-center justify-center">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">System Notification</p>
               <p className="text-xs font-bold text-slate-800 dark:text-white mt-0.5">{toastMessage}</p>
             </div>
-            <button onClick={() => setShowToast(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400">
+            <button onClick={() => setShowToast(false)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-sm text-slate-400">
                <X className="w-4 h-4" />
             </button>
           </div>
@@ -393,8 +394,8 @@ export default function AdminDesktopLayout({ children }: { children: React.React
 
       {/* PROFILE UPDATE DIALOG */}
       {showProfileModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 animate-slide-up shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Edit My Profile</h3>
               <button onClick={() => setShowProfileModal(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer">
@@ -404,22 +405,22 @@ export default function AdminDesktopLayout({ children }: { children: React.React
             <form onSubmit={handleUpdateProfile} className="space-y-4 text-xs font-semibold">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Full Name</label>
-                <input autoComplete="one-time-code" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
+                <input autoComplete="one-time-code" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm focus:outline-none dark:text-white" required />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Phone Number</label>
-                <input autoComplete="one-time-code" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" required />
+                <input autoComplete="one-time-code" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm focus:outline-none dark:text-white" required />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">New Password</label>
-                <input autoComplete="new-password" type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-lg focus:outline-none dark:text-white" />
+                <input autoComplete="new-password" type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm focus:outline-none dark:text-white" />
                 <p className="text-[9px] text-slate-400 font-bold ml-1 mt-0.5">Leave blank to keep current password (min 6 chars)</p>
               </div>
-              <button type="submit" disabled={isUpdatingProfile} className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-955 rounded-xl font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider text-[10px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>
+              <button type="submit" disabled={isUpdatingProfile} className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-sm font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider text-[10px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>
               <button
                 type="button"
                 onClick={handleDeleteAccount}
-                className="w-full py-2 bg-red-50 hover:bg-red-105 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 rounded-xl font-black transition-colors uppercase tracking-wider text-[9px] cursor-pointer"
+                className="w-full py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 rounded-sm font-black transition-colors uppercase tracking-wider text-[9px] cursor-pointer"
               >
                 Delete My Account
               </button>
@@ -431,12 +432,6 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       {/* iOS PWA Install Instructions Modal */}
       {showIOSModal && <PWAInstallModal onClose={() => setShowIOSModal(false)} />}
 
-      <style jsx global>{`
-        @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        .animate-shimmer { animation: shimmer 3s infinite linear; }
-        @keyframes slide-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-        .animate-slide-in { animation: slide-in 0.4s ease-out forwards; }
-      `}</style>
     </div>
   );
 }
