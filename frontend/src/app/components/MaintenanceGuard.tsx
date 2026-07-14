@@ -98,24 +98,19 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-slate-300 dark:border-slate-700 border-t-slate-700 dark:border-t-slate-300 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (isTenantNotFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 relative overflow-hidden select-none font-sans text-slate-800">
-        {/* Ambient Blur Spheres */}
-        <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] left-[-20%] w-[70%] h-[70%] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none" />
-
-        <div className="w-full max-w-lg relative z-10 flex flex-col items-center text-center gap-8 px-6 py-12 bg-white/85 backdrop-blur-xl border border-slate-200/80 rounded-[2.5rem] shadow-[0_40px_120px_-20px_rgba(15,23,42,0.08)]">
-          {/* Alert Icon Area */}
-          <div className="relative w-24 h-24 bg-gradient-to-tr from-amber-500 to-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/25">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 select-none">
+        <div className="w-full max-w-md flex flex-col items-center text-center gap-4 px-6 py-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm">
+          <div className="w-14 h-14 bg-red-600 rounded-sm flex items-center justify-center">
             <svg
-              className="w-12 h-12 text-white"
+              className="w-7 h-7 text-white"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -130,24 +125,24 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
             </svg>
           </div>
 
-          <div className="space-y-4">
-            <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-red-600 to-amber-600 bg-clip-text text-transparent uppercase">
-              BankAccount Inactive
+          <div className="space-y-3">
+            <h1 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100 uppercase">
+              Bank Account Inactive
             </h1>
-            <p className="text-slate-600 text-sm leading-relaxed max-w-md">
-              This organization bankAccount link is no longer active. The subdomain may have been changed, suspended, or deleted.
+            <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
+              This organization bank account link is no longer active. The subdomain may have been changed, suspended, or deleted.
             </p>
-            <p className="text-red-650 font-bold text-xs uppercase tracking-widest mt-4">
+            <p className="text-red-600 dark:text-red-400 font-bold text-xs uppercase tracking-widest mt-3">
               Please contact your administrator for the new login link.
             </p>
           </div>
 
-          <div className="w-full h-[1px] bg-slate-200/60 my-2" />
+          <div className="w-full h-px bg-slate-200 dark:bg-slate-800" />
 
           {/* Superadmin link */}
-          <div className="text-xs text-slate-500">
+          <div className="text-xs text-slate-500 dark:text-slate-400">
             Are you a Super Admin?{" "}
-            <a href="https://superadmin.crediiflow.in" className="text-indigo-650 hover:text-indigo-700 hover:underline font-semibold transition-colors duration-150">
+            <a href="https://superadmin.crediiflow.in" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold transition-colors">
               Access Console Here
             </a>
           </div>
@@ -159,16 +154,11 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
   // If maintenance is enabled and the user is NOT an admin, show maintenance screen
   if (isMaintenance && currentUser?.role !== "admin") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 relative overflow-hidden select-none font-sans text-slate-800">
-        {/* Ambient Blur Spheres */}
-        <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-600/10 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] left-[-20%] w-[70%] h-[70%] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none" />
-
-        <div className="w-full max-w-lg relative z-10 flex flex-col items-center text-center gap-8 px-6 py-12 bg-white/85 backdrop-blur-xl border border-slate-200/80 rounded-[2.5rem] shadow-[0_40px_120px_-20px_rgba(15,23,42,0.08)]">
-          {/* Maintenance Icon Area */}
-          <div className="relative w-24 h-24 bg-gradient-to-tr from-indigo-600 to-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/25">
+      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 select-none">
+        <div className="w-full max-w-md flex flex-col items-center text-center gap-4 px-6 py-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm">
+          <div className="w-14 h-14 bg-slate-800 dark:bg-slate-700 rounded-sm flex items-center justify-center">
             <svg
-              className="w-12 h-12 text-white animate-spin"
+              className="w-7 h-7 text-white animate-spin"
               style={{ animationDuration: "12s" }}
               fill="none"
               stroke="currentColor"
@@ -190,14 +180,14 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
             </svg>
           </div>
 
-          <div className="space-y-4">
-            <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent uppercase">
+          <div className="space-y-3">
+            <h1 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100 uppercase">
               Under Maintenance
             </h1>
-            <p className="text-slate-600 text-sm leading-relaxed max-w-md">
+            <p className="text-slate-600 dark:text-slate-400 text-xs leading-relaxed">
               {tenantName} is currently undergoing scheduled system upgrades. We are optimizing our services to bring you a better experience.
             </p>
-            <p className="text-indigo-600 font-bold text-xs uppercase tracking-widest mt-4">
+            <p className="text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-widest mt-3">
               We regret the inconvenience caused.
             </p>
           </div>
