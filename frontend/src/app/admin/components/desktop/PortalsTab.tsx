@@ -38,7 +38,7 @@ export default function PortalsTab({
   };
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
@@ -47,13 +47,13 @@ export default function PortalsTab({
             placeholder="Search Portals (e.g. RevaPay)..."
             value={portalSearch}
             onChange={(e) => setPortalSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none shadow-sm"
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-semibold placeholder-slate-400 focus:outline-none focus:border-slate-500 dark:focus:border-slate-400"
           />
         </div>
 
         <button
           onClick={() => setShowPortalDrawer(true)}
-          className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer transition-all"
+          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 text-xs font-bold rounded-sm flex items-center gap-1.5 cursor-pointer transition-colors"
         >
           <Plus className="w-4 h-4" /> Register Portal
         </button>
@@ -63,9 +63,9 @@ export default function PortalsTab({
         <button
           type="button"
           onClick={() => setFilterOnline("all")}
-          className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 transition-all ${
+          className={`px-3 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-wider shrink-0 transition-colors ${
             filterOnline === "all"
-              ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-955 font-black shadow-sm"
+              ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950"
               : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 cursor-pointer"
           }`}
         >
@@ -74,9 +74,9 @@ export default function PortalsTab({
         <button
           type="button"
           onClick={() => setFilterOnline("online")}
-          className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider shrink-0 transition-all border ${
+          className={`px-3 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-wider shrink-0 transition-colors border ${
             filterOnline === "online"
-              ? "bg-indigo-605 border-indigo-600 text-white shadow-sm font-black"
+              ? "bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100 text-white dark:text-slate-950"
               : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 cursor-pointer"
           }`}
         >
@@ -84,7 +84,7 @@ export default function PortalsTab({
         </button>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 gap-3">
         {portalDirectory
           .filter(p => (p.name || "").toLowerCase().includes(portalSearch.toLowerCase()))
           .filter(group => filterOnline === "all" || group.show_in_online_payment === true)
@@ -92,18 +92,18 @@ export default function PortalsTab({
             <div
               key={group.id}
               onClick={() => openGroupLedger(group)}
-              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:border-slate-350 dark:hover:border-slate-700 transition-all flex flex-col justify-between cursor-pointer active:scale-[0.99]"
+              className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm hover:border-slate-300 dark:hover:border-slate-700 transition-colors flex flex-col justify-between cursor-pointer"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
-                    <Globe className="w-5.5 h-5.5" />
+                  <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-sm">
+                    <Globe className="w-5 h-5" />
                   </div>
                   <div>
                     <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                       {group.name}
                       {group.show_in_online_payment && (
-                        <span className="px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black rounded uppercase">Online</span>
+                        <span className="px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[7px] font-black rounded-sm uppercase">Online</span>
                       )}
                     </h3>
                     <p className="text-[9px] font-bold text-slate-400 mt-0.5">{(group.bankAccounts || []).length} Accounts</p>
@@ -113,7 +113,7 @@ export default function PortalsTab({
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Portal Balance</span>
-                    <span className={`text-xs font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                    <span className={`text-xs font-black font-mono tabular-nums ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
                       {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
                     </span>
                   </div>
@@ -124,7 +124,7 @@ export default function PortalsTab({
                       setSelectedPortal(group);
                       setIsAccountsPanelOpen(true);
                     }}
-                    className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-indigo-650 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
+                    className="p-2 rounded-sm bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer"
                   >
                     <Edit className="w-3.5 h-3.5" />
                   </button>
@@ -135,7 +135,7 @@ export default function PortalsTab({
       </div>
 
       {portalDirectory.length === 0 && (
-        <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 border-dashed dark:border-slate-800">
+        <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-sm border border-slate-200 border-dashed dark:border-slate-800">
           <Globe className="w-8 h-8 text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-bold text-slate-500">No Portals Found</p>
           <p className="text-[10px] text-slate-400 mt-1">Register a portal first.</p>

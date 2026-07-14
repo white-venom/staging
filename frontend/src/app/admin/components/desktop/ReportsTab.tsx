@@ -109,63 +109,63 @@ export default function ReportsTab({ collections, deposits }: ReportsTabProps) {
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in pb-20">
+    <div className="space-y-3 pb-20">
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
-              <TrendingUp className="w-5 h-5" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-sm">
+              <TrendingUp className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-full uppercase tracking-tighter">Live Cash In</span>
+            <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-sm uppercase tracking-tighter">Live Cash In</span>
           </div>
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Total Cash In</p>
-          <h3 className="text-2xl font-black text-slate-800 dark:text-white mt-1">
+          <h3 className="text-xl font-black text-slate-800 dark:text-white mt-1 font-mono tabular-nums">
             ₹{totalCollected.toLocaleString()}
           </h3>
         </div>
 
-        <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg">
-              <FileText className="w-5 h-5" />
+        <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-sm">
+              <FileText className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-full uppercase tracking-tighter">Coverage</span>
+            <span className="text-[10px] font-black text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-sm uppercase tracking-tighter">Coverage</span>
           </div>
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Serviced Stores</p>
-          <h3 className="text-2xl font-black text-slate-800 dark:text-white mt-1">
+          <h3 className="text-xl font-black text-slate-800 dark:text-white mt-1 font-mono tabular-nums">
             {activeRetailers}
           </h3>
         </div>
 
-        <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-2 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-lg">
-              <BarChart className="w-5 h-5" />
+        <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-1.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-sm">
+              <BarChart className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-full uppercase tracking-tighter">ATV</span>
+            <span className="text-[10px] font-black text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-sm uppercase tracking-tighter">ATV</span>
           </div>
           <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Avg Cash In/Shop</p>
-          <h3 className="text-2xl font-black text-slate-800 dark:text-white mt-1">
+          <h3 className="text-xl font-black text-slate-800 dark:text-white mt-1 font-mono tabular-nums">
             ₹{avgValue.toFixed(0)}
           </h3>
         </div>
       </div>
 
       {/* Professional Report Sections */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
         {reportSections.map((section, idx) => (
-          <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
+          <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3 space-y-2">
             <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide flex items-center gap-2">
-              <div className={`w-1 h-3 rounded-full ${section.title.includes('GST') ? 'bg-blue-500' : section.title.includes('Daily') ? 'bg-emerald-500' : 'bg-purple-500'}`} />
+              <div className={`w-1 h-3 rounded-sm ${section.title.includes('GST') ? 'bg-blue-500' : section.title.includes('Daily') ? 'bg-emerald-500' : 'bg-purple-500'}`} />
               {section.title}
             </h4>
-            
-            <div className="space-y-3">
+
+            <div className="space-y-1.5">
               {section.reports.map((report, rIdx) => (
-                <div key={rIdx} className="group flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl hover:border-slate-300 dark:hover:border-slate-700 transition-all cursor-pointer">
+                <div key={rIdx} className="group flex items-center justify-between p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-sm hover:border-slate-300 dark:hover:border-slate-700 transition-colors cursor-pointer">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">
+                    <div className="p-1.5 bg-white dark:bg-slate-900 rounded-sm border border-slate-100 dark:border-slate-800 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-slate-100 transition-colors">
                       <report.icon className="w-4 h-4" />
                     </div>
                     <div>
@@ -173,12 +173,12 @@ export default function ReportsTab({ collections, deposits }: ReportsTabProps) {
                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wide mt-0.5">{report.formats}</p>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={(e) => {
                        e.stopPropagation();
                        report.type ? handleExport(report.type) : alert("Report generator for " + report.name + " is being prepared. It will use local balance data to generate PDF.");
                     }}
-                    className={`p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity ${report.color === 'blue' ? 'bg-blue-600 text-white' : report.color === 'emerald' ? 'bg-emerald-600 text-white' : 'bg-purple-600 text-white'}`}
+                    className={`p-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity ${report.color === 'blue' ? 'bg-blue-600 text-white' : report.color === 'emerald' ? 'bg-emerald-600 text-white' : 'bg-purple-600 text-white'}`}
                   >
                     <Download className="w-4 h-4" />
                   </button>
