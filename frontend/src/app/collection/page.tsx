@@ -603,7 +603,7 @@ function NewCollectionContent() {
                 { label: "₹10 Notes", key: "note_10", multiplier: 10 },
                 { label: "Coins / ₹1", key: "coins", multiplier: 1 },
               ].map((n) => (
-                <div key={n.key} className="flex items-center gap-2 justify-between px-2 py-1 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                <div key={n.key} className="flex items-center gap-2 justify-between px-2 py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
                   <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">
                     {n.label}
                   </span>
@@ -616,7 +616,7 @@ function NewCollectionContent() {
                     inputMode="numeric"
                     value={denominations[n.key as keyof DenominationCounts] === 0 ? "" : denominations[n.key as keyof DenominationCounts]}
                     onChange={(e) => handleDenomChange(n.key as keyof DenominationCounts, e.target.value)}
-                    className="w-14 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 focus:outline-none rounded-sm text-right text-xs text-slate-800 dark:text-slate-200 font-mono font-extrabold tabular-nums"
+                    className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-right text-xs text-slate-800 dark:text-slate-200 font-mono font-extrabold tabular-nums"
                     placeholder="0"
                   />
 
@@ -646,7 +646,7 @@ function NewCollectionContent() {
                       value={denominations.online_amount || ""}
                       onChange={(e) => handleDenomChange("online_amount", e.target.value)}
                       onKeyDown={(e) => handleNoNegativeKeyDown(e, true)}
-                      className="w-28 px-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-sm text-right text-xs text-slate-800 dark:text-slate-200 font-mono font-extrabold tabular-nums"
+                      className="w-28 px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-right text-xs text-slate-800 dark:text-slate-200 font-mono font-extrabold tabular-nums"
                       min="0"
                     />
                   </div>
