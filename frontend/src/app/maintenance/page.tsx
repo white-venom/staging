@@ -44,129 +44,54 @@ export default function MaintenancePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 relative overflow-hidden select-none font-sans text-slate-800">
-      
-      {/* ── DYNAMIC LIVING BACKGROUND ── */}
-      <div className="absolute inset-0 z-0">
-        <div 
-          className="absolute inset-0 bg-cover bg-center animate-background-pan"
-          style={{ 
-            backgroundImage: "url('/images/silk-bg.png')",
-            filter: 'brightness(1.05) contrast(0.95) opacity-40',
-            width: '120%',
-            height: '120%',
-            top: '-10%',
-            left: '-10%'
-          }}
-        />
-        
-        {/* Floating Particles Overlay */}
-        <div className="absolute inset-0 z-10 pointer-events-none opacity-30">
-           {[...Array(15)].map((_, i) => (
-             <div 
-               key={i}
-               className="absolute w-1 h-1 bg-indigo-500 rounded-full animate-float-particle"
-               style={{
-                 top: `${Math.random() * 100}%`,
-                 left: `${Math.random() * 100}%`,
-                 animationDelay: `${Math.random() * 8}s`,
-                 animationDuration: `${12 + Math.random() * 18}s`,
-                 opacity: Math.random() * 0.4
-               }}
-             />
-           ))}
-        </div>
+    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-950 select-none">
+      <div className="w-full max-w-[420px] flex flex-col gap-4">
 
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-50 via-slate-50/40 to-transparent z-20" />
-      </div>
+        <div className="bg-white dark:bg-slate-900 rounded-sm border border-slate-200 dark:border-slate-800 p-6 text-center">
+          <img
+            src="/logo.png"
+            alt="CrediiFlow Logo"
+            className="h-10 w-auto object-contain mx-auto mb-4"
+          />
 
-      <style>{`
-        @keyframes backgroundPan {
-          0% { transform: scale(1) translate(0, 0); }
-          50% { transform: scale(1.08) translate(-1.5%, -1.5%); }
-          100% { transform: scale(1) translate(0, 0); }
-        }
-        @keyframes float-particle {
-          0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
-          25% { opacity: 0.6; }
-          75% { opacity: 0.6; }
-          100% { transform: translateY(-80vh) translateX(40px) scale(0.6); opacity: 0; }
-        }
-        .animate-background-pan { animation: backgroundPan 30s ease-in-out infinite; }
-        .animate-float-particle { animation: float-particle linear infinite; }
-        .animate-scale-in { animation: scaleIn 0.8s cubic-bezier(.16,1,.3,1) forwards; }
-        @keyframes scaleIn  { from { opacity:0; transform:scale(0.96); } to { opacity:1; transform:scale(1); } }
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-shimmer { animation: shimmer 2.5s infinite linear; }
-      `}</style>
-
-      {/* Decorative Aura Blurs */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px] animate-pulse"></div>
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/5 rounded-full blur-[120px]"></div>
-
-      {/* Main Card */}
-      <div className="w-full max-w-[450px] relative z-10 flex flex-col gap-6 animate-scale-in">
-        
-        {/* Glassmorphic Container */}
-        <div className="bg-white/80 backdrop-blur-2xl rounded-[2.5rem] shadow-[0_40px_100px_-20px_rgba(15,23,42,0.08)] p-10 pt-24 relative border border-slate-200/80 overflow-visible text-center">
-          
-          {/* Pulsing Logo Rectangle */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-24 flex items-center justify-center pointer-events-none">
-            {/* Glowing Aura */}
-            <div className="absolute inset-0 bg-indigo-600/15 rounded-3xl blur-2xl animate-pulse"></div>
-            
-            {/* Main Rectangular Logo Container */}
-            <div className="relative w-40 h-16 bg-white rounded-2xl shadow-[0_15px_45px_rgba(15,23,42,0.08)] border border-slate-200/60 overflow-hidden flex items-center justify-center p-2">
-               <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-slate-900/5 to-transparent -translate-x-full animate-shimmer"></div>
-               <img 
-                 src="/logo.png" 
-                 alt="CrediiFlow Logo" 
-                 className="w-full h-full object-contain drop-shadow-[0_0_15px_rgba(0,0,0,0.05)] animate-pulse" 
-               />
-            </div>
-          </div>
-
-          <div className="mb-6 space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 text-amber-700 rounded-full text-[9px] font-black uppercase tracking-wider mb-2">
+          <div className="mb-4 space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-400 rounded-sm text-[9px] font-black uppercase tracking-wider">
               <ShieldAlert className="w-3.5 h-3.5" />
-              <span>SYSTEM UNDER MAINTENANCE</span>
+              <span>System Under Maintenance</span>
             </div>
-            <h2 className="text-2xl font-black text-slate-800 uppercase tracking-tight">Scheduled Optimization</h2>
-            <p className="text-xs text-slate-500 font-bold leading-relaxed max-w-[300px] mx-auto">
+            <h2 className="text-lg font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">Scheduled Optimization</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-bold leading-relaxed max-w-[300px] mx-auto">
               We are currently optimizing database structures and upgrading security. We will be back online shortly.
             </p>
           </div>
 
           {/* Progress Bar & Status updates */}
-          <div className="bg-slate-50 border border-slate-100 p-5 rounded-2xl space-y-3 mb-6">
+          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-3 rounded-sm space-y-2 mb-4">
             <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider">
-              <span className="text-indigo-600">{currentStep}</span>
-              <span className="text-slate-500">{progress}%</span>
+              <span className="text-slate-600 dark:text-slate-300">{currentStep}</span>
+              <span className="text-slate-500 font-mono tabular-nums">{progress}%</span>
             </div>
-            <div className="h-2 w-full bg-slate-200/50 rounded-full overflow-hidden border border-slate-200/30">
-              <div 
-                className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500 rounded-full transition-all duration-1000 ease-out" 
+            <div className="h-1.5 w-full bg-slate-200 dark:bg-slate-800 rounded-sm overflow-hidden">
+              <div
+                className="h-full bg-emerald-600"
                 style={{ width: `${progress}%` }}
               />
             </div>
           </div>
 
           {/* Interactive Check Button */}
-          <div className="space-y-4">
+          <div className="space-y-2">
             <button
               onClick={handleRefreshStatus}
               disabled={isRefreshing}
-              className="w-full py-4.5 bg-indigo-650 hover:bg-indigo-600 disabled:opacity-50 text-white rounded-2xl text-xs font-black shadow-lg shadow-indigo-600/15 active:scale-[0.98] transition-all flex items-center justify-center gap-3 cursor-pointer border border-transparent uppercase tracking-wider"
+              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 disabled:opacity-50 text-white dark:text-slate-950 rounded-sm text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
               <span>{isRefreshing ? "Checking Status..." : "Check System Status"}</span>
             </button>
-            
+
             {showNotification && (
-              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-2 animate-scale-in">
+              <div className="p-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/30 text-emerald-800 dark:text-emerald-400 rounded-sm text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-2">
                 <Check className="w-4 h-4 text-emerald-600" />
                 <span>Services are stabilizing, retry in a minute</span>
               </div>
@@ -174,28 +99,25 @@ export default function MaintenancePage() {
           </div>
 
           {/* Support Contacts */}
-          <div className="mt-8 pt-6 border-t border-slate-200/80 flex justify-center gap-6 text-[10px] font-black text-slate-500 uppercase tracking-wider">
-            <a href="mailto:support@crediiflow.in" className="flex items-center gap-2 hover:text-indigo-600 transition-colors">
-              <Mail className="w-4 h-4 text-slate-500" />
+          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800 flex justify-center gap-6 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+            <a href="mailto:support@crediiflow.in" className="flex items-center gap-1.5 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+              <Mail className="w-3.5 h-3.5" />
               <span>Email Support</span>
             </a>
-            <span className="text-slate-200">|</span>
-            <a href="tel:+917900671145" className="flex items-center gap-2 hover:text-indigo-600 transition-colors">
-              <PhoneCall className="w-4 h-4 text-slate-500" />
+            <span className="text-slate-300 dark:text-slate-700">|</span>
+            <a href="tel:+917900671145" className="flex items-center gap-1.5 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
+              <PhoneCall className="w-3.5 h-3.5" />
               <span>Call Helpline</span>
             </a>
           </div>
-
         </div>
 
         {/* Footer */}
-        <div className="text-center opacity-65 space-y-1">
+        <div className="text-center space-y-0.5">
           <p className="text-[9px] font-black tracking-widest text-slate-500 uppercase">CrediiFlow Core Infrastructure v3.0</p>
           <p className="text-[8px] font-bold text-slate-400 uppercase">Secure Redundant Service Cluster</p>
         </div>
-
       </div>
-
     </div>
   );
 }
