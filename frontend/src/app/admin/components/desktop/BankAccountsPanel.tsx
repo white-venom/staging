@@ -155,8 +155,8 @@ export default function BankAccountsPanel({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-6 animate-slide-up shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-md p-6 space-y-6 overflow-hidden flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
           <div>
             <h3 className="text-sm font-black text-slate-800 dark:border-slate-100">
@@ -168,7 +168,7 @@ export default function BankAccountsPanel({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"
+            className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -180,20 +180,20 @@ export default function BankAccountsPanel({
             <span className="text-[10px] uppercase font-black text-indigo-500 tracking-wide flex items-center gap-2">
               <Globe className="w-3 h-3" /> Portal Settings
             </span>
-            <div className="p-4 bg-indigo-50/30 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-2xl space-y-4">
+            <div className="p-4 bg-indigo-50/30 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/30 rounded-sm space-y-4">
               <div>
                 <label className="block text-[9px] text-slate-400 uppercase font-black mb-1">Portal Name</label>
                 <input autoComplete="one-time-code"
                   type="text"
                   value={editingPortalName}
                   onChange={e => setEditingPortalName(e.target.value)}
-                  className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none"
                 />
               </div>
-              <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-[11px] mb-2 flex items-center justify-between">
+              <div className="bg-white dark:bg-slate-900 p-3 rounded-sm border border-slate-100 dark:border-slate-800 text-[11px] mb-2 flex items-center justify-between">
                 <div>
                   <span className="text-slate-400 block mb-0.5">Current Balance</span>
-                  <span className={`font-black ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
+                  <span className={`font-black font-mono tabular-nums ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
                     {group.balance < 0 ? '-' : ''}₹{Math.abs(group.balance || 0).toLocaleString()}
                   </span>
                 </div>
@@ -210,7 +210,7 @@ export default function BankAccountsPanel({
                       isGroupLedger: true
                     });
                   }}
-                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-105 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-bold rounded cursor-pointer"
+                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-bold rounded cursor-pointer"
                 >
                   Ledger
                 </button>
@@ -219,6 +219,7 @@ export default function BankAccountsPanel({
                 <label className="block text-[9px] text-slate-500 uppercase font-black mb-1">Adjust Balance (₹)</label>
                 <input autoComplete="one-time-code"
                   type="number"
+                  inputMode="decimal"
                   placeholder="e.g. +1000 to add, -1000 to subtract"
                   value={editingPortalBalanceAdjustment}
                   onChange={e => setEditingPortalBalanceAdjustment(e.target.value)}
@@ -226,7 +227,7 @@ export default function BankAccountsPanel({
                     if (Number(e.target.value) === 0) setEditingPortalBalanceAdjustment("");
                     e.target.select();
                   }}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none"
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400"
                 />
               </div>
               <div className="flex items-center gap-2 px-1 py-1">
@@ -235,7 +236,7 @@ export default function BankAccountsPanel({
                   id="editPortalOnline"
                   checked={editPortalOnline}
                   onChange={(e) => setEditPortalOnline(e.target.checked)}
-                  className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
+                  className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
                 />
                 <label htmlFor="editPortalOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
                   Online
@@ -243,14 +244,14 @@ export default function BankAccountsPanel({
               </div>
               <button
                 onClick={handleUpdatePortal}
-                className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-lg shadow-indigo-600/20 cursor-pointer"
+                className="w-full py-2.5 bg-indigo-600 text-white rounded-sm text-[10px] font-black uppercase tracking-wider cursor-pointer"
               >
                 Save Portal Settings
               </button>
               <button
                 type="button"
                 onClick={handleDeletePortal}
-                className="w-full mt-2 py-2 border border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-950/10 text-red-650 rounded-xl text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors"
+                className="w-full mt-2 py-2 border border-red-200 dark:border-red-900/30 hover:bg-red-50 dark:hover:bg-red-950/10 text-red-600 rounded-sm text-[10px] font-black uppercase tracking-wider cursor-pointer transition-colors"
               >
                 Delete Portal
               </button>
@@ -264,7 +265,7 @@ export default function BankAccountsPanel({
             {accounts.length > 0 ? (
               <div className="space-y-2">
                 {accounts.map((acc) => (
-                  <div key={acc.id} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl group">
+                  <div key={acc.id} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm group">
                     <div className="flex items-center justify-between mb-2">
                       {editingAccId === acc.id ? (
                         <input autoComplete="one-time-code"
@@ -290,14 +291,14 @@ export default function BankAccountsPanel({
                               setEditAccIfsc(acc.ifsc_code || "");
                               setEditAccOnline(!!acc.show_in_online_payment);
                             }}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-blue-650 transition-all"
+                            className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-blue-600 transition-colors"
                           >
                             <Edit className="w-3 h-3" />
                           </button>
                         )}
                         <button
                           onClick={() => handleDeleteAccount(acc.id, acc.bank_account_name)}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 transition-all"
+                          className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 transition-colors"
                         >
                           <Trash2 className="w-3 h-3" />
                         </button>
@@ -333,12 +334,12 @@ export default function BankAccountsPanel({
                         <div className="text-slate-400">Bank</div>
                         <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.bank_name || "N/A"}</div>
                         <div className="text-slate-400">A/C No</div>
-                        <div className="text-slate-707 dark:text-slate-300 font-bold">{acc.bank_account_no || "N/A"}</div>
+                        <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.bank_account_no || "N/A"}</div>
                         <div className="text-slate-400">IFSC</div>
-                        <div className="text-slate-707 dark:text-slate-300 font-bold">{acc.ifsc_code || "N/A"}</div>
-                        <div className="text-slate-400 font-bold text-indigo-650 dark:text-indigo-400">Balance</div>
-                        <div className="flex items-center justify-between text-indigo-650 dark:text-indigo-400 font-black">
-                           <span>₹{Number(acc.balance || 0).toLocaleString()}</span>
+                        <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.ifsc_code || "N/A"}</div>
+                        <div className="text-slate-400 font-bold text-indigo-600 dark:text-indigo-400">Balance</div>
+                        <div className="flex items-center justify-between text-indigo-600 dark:text-indigo-400 font-black">
+                           <span className="font-mono tabular-nums">₹{Number(acc.balance || 0).toLocaleString()}</span>
                            <button
                              type="button"
                              onClick={() => {
@@ -363,7 +364,7 @@ export default function BankAccountsPanel({
                 ))}
               </div>
             ) : (
-              <div className="text-center py-6 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
+              <div className="text-center py-6 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-sm">
                 <p className="text-[10px] text-slate-400 font-bold">No accounts registered for this portal</p>
               </div>
             )}
@@ -377,7 +378,7 @@ export default function BankAccountsPanel({
                 placeholder="Account Label (e.g. Primary, ICICI Main)"
                 value={newAccName}
                 onChange={(e) => setNewAccName(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none"
                 required
               />
               <div className="grid grid-cols-2 gap-3">
@@ -386,14 +387,14 @@ export default function BankAccountsPanel({
                   placeholder="Bank Name"
                   value={newAccBank}
                   onChange={(e) => setNewAccBank(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none"
                 />
                 <input autoComplete="one-time-code"
                   type="text"
                   placeholder="Account No"
                   value={newAccNo}
                   onChange={(e) => setNewAccNo(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none"
                 />
               </div>
               <input autoComplete="one-time-code"
@@ -401,12 +402,12 @@ export default function BankAccountsPanel({
                 placeholder="IFSC Code"
                 value={newAccIfsc}
                 onChange={(e) => setNewAccIfsc(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={isCreatingAcc}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-sm text-xs font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
               >
                 <Plus className="w-4 h-4" /> {isCreatingAcc ? "Adding..." : "Register Bank Account"}
               </button>
