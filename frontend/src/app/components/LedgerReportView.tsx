@@ -52,19 +52,19 @@ const renderDenominations = (denom: any) => {
   if (notes.length === 0 && !hasCoins) return null;
   
   return (
-    <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2 mt-2">
+    <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-sm border border-slate-100 dark:border-slate-800 space-y-2 mt-2">
       <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Cash Denominations</span>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-350 font-medium">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
         {notes.map(n => (
-          <div key={n.label} className="flex justify-between border-b border-slate-100 dark:border-slate-850 pb-0.5 animate-fade-in">
+          <div key={n.label} className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-0.5">
             <span>₹{n.label} × {n.count}</span>
-            <span className="font-mono font-bold text-slate-850 dark:text-slate-100">₹{parseInt(n.label) * n.count}</span>
+            <span className="font-mono font-bold text-slate-800 dark:text-slate-100">₹{parseInt(n.label) * n.count}</span>
           </div>
         ))}
         {hasCoins && (
-          <div className="flex justify-between border-b border-slate-100 dark:border-slate-850 pb-0.5 animate-fade-in">
+          <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-0.5">
             <span>Coins</span>
-            <span className="font-mono font-bold text-slate-850 dark:text-slate-100">₹{parseFloat(denom.coins.toString()).toFixed(2)}</span>
+            <span className="font-mono font-bold text-slate-800 dark:text-slate-100">₹{parseFloat(denom.coins.toString()).toFixed(2)}</span>
           </div>
         )}
       </div>
@@ -367,12 +367,12 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-800 font-sans pb-24">
       {/* 1. Header with back arrow */}
-      <div className="bg-indigo-600 dark:bg-indigo-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shadow-md">
+      <div className="bg-indigo-600 dark:bg-indigo-700 px-4 py-3 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-3">
           {onBack && (
             <button 
               onClick={onBack} 
-              className="p-1 rounded-full hover:bg-indigo-500 text-white transition-colors cursor-pointer"
+              className="p-1 rounded-sm hover:bg-indigo-500 text-white transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -384,17 +384,17 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         </div>
         
         {publicLink && !isPublic && (
-          <div className="flex items-center gap-1.5 animate-fade-in">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={handleCopyLink}
-              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
               title={isCopied ? "Copied Link" : "Copy Portal Link"}
             >
               {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
             </button>
             <button
               onClick={handleShare}
-              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
               title="Share Portal Link"
             >
               <Share2 className="w-4 h-4" />
@@ -406,11 +406,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
       <div className="flex-1 w-full max-w-lg mx-auto px-4 py-4 space-y-4">
         {/* Retailer Actions (Admin Only / Non-Public) */}
         {!isPublic && (onEditRetailer || onDeleteRetailer || onManageStores || phone) && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm flex items-center justify-around gap-2">
+          <div className="bg-white border border-slate-200 rounded-sm p-3 flex items-center justify-around gap-2">
             {phone && (
               <a
                 href={`tel:${phone}`}
-                className="flex-1 py-2 px-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-700 text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 border border-slate-100"
+                className="flex-1 py-2 px-3 bg-slate-50 hover:bg-slate-100 rounded-sm text-slate-700 text-xs font-bold flex flex-col items-center gap-1 transition-colors border border-slate-100"
               >
                 <Phone className="w-4 h-4 text-slate-500" />
                 <span>Call</span>
@@ -419,7 +419,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             {onEditRetailer && (
               <button
                 onClick={onEditRetailer}
-                className="flex-1 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 border border-blue-100/50 cursor-pointer"
+                className="flex-1 py-2 px-3 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-sm text-xs font-bold flex flex-col items-center gap-1 transition-colors border border-blue-100/50 cursor-pointer"
               >
                 <Edit2 className="w-4 h-4" />
                 <span>Edit Profile</span>
@@ -428,7 +428,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             {onManageStores && (
               <button
                 onClick={onManageStores}
-                className="flex-1 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 border border-indigo-100/50 cursor-pointer"
+                className="flex-1 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-sm text-xs font-bold flex flex-col items-center gap-1 transition-colors border border-indigo-100/50 cursor-pointer"
               >
                 <Store className="w-4 h-4" />
                 <span>Stores</span>
@@ -437,7 +437,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             {onDeleteRetailer && title.toLowerCase().trim() !== "cms" && (
               <button
                 onClick={onDeleteRetailer}
-                className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl text-xs font-bold flex flex-col items-center gap-1 transition-all active:scale-95 border border-red-100/50 cursor-pointer"
+                className="flex-1 py-2 px-3 bg-red-50 hover:bg-red-100 text-red-500 rounded-sm text-xs font-bold flex flex-col items-center gap-1 transition-colors border border-red-100/50 cursor-pointer"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete</span>
@@ -447,7 +447,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         )}
         {/* 2. Start Date & End Date controls */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-sm px-3 py-2">
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
               <span className="text-[8px] text-slate-400 font-black uppercase">Start Date</span>
@@ -459,7 +459,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-2 shadow-sm">
+          <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-sm px-3 py-2">
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
               <span className="text-[8px] text-slate-400 font-black uppercase">End Date</span>
@@ -482,7 +482,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               placeholder="Search Entries..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-3 py-2.5 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none shadow-sm"
+              className="w-full bg-white border border-slate-200 rounded-sm pl-9 pr-3 py-2.5 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none"
             />
           </div>
           
@@ -491,7 +491,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value as any)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none pr-8 shadow-sm"
+                className="w-full bg-white border border-slate-200 rounded-sm px-3 py-2.5 text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none pr-8"
               >
                 <option value="all">ALL ENTRIES</option>
                 <option value="debit">GAVE</option>
@@ -504,7 +504,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none pr-8 shadow-sm"
+                className="w-full bg-white border border-slate-200 rounded-sm px-3 py-2.5 text-xs font-black text-slate-800 focus:outline-none cursor-pointer appearance-none pr-8"
               >
                 <option value="date-desc">LATEST FIRST</option>
                 <option value="date-asc">OLDEST FIRST</option>
@@ -533,7 +533,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               </div>
               <div className="text-right">
                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Net Balance</span>
-                <span className="text-base font-black text-slate-900">
+                <span className="text-base font-black text-slate-900 font-mono tabular-nums">
                   ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
                 </span>
               </div>
@@ -541,22 +541,22 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           </div>
 
           {/* 4. Net Balance Card */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col gap-3">
             {outstandingBalance !== undefined && (
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <span className="text-xs font-black text-slate-900 uppercase">Current Outstanding</span>
-                <span className={`text-base font-black ${outstandingBalance < 0 ? "text-emerald-600" : outstandingBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
+                <span className={`text-base font-black font-mono tabular-nums ${outstandingBalance < 0 ? "text-emerald-600" : outstandingBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
                   {outstandingBalance < 0 ? "-" : ""}₹ {Math.abs(outstandingBalance).toLocaleString("en-IN")}
                 </span>
               </div>
             )}
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500">Net Balance (Period)</span>
-              <span className={`text-base font-extrabold ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
+              <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
                 ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
               </span>
             </div>
-            
+
             <div className="border-t border-slate-100 pt-3 grid grid-cols-3 gap-2 text-center">
               <div>
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
@@ -564,17 +564,17 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               </div>
               <div>
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-red-500">You Gave</span>
-                <span className="text-xs font-bold text-red-500 mt-0.5 block">₹ {stats.youGave.toLocaleString("en-IN")}</span>
+                <span className="text-xs font-bold text-red-500 mt-0.5 block font-mono tabular-nums">₹ {stats.youGave.toLocaleString("en-IN")}</span>
               </div>
               <div>
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-emerald-600">You Got</span>
-                <span className="text-xs font-bold text-emerald-600 mt-0.5 block">₹ {stats.youGot.toLocaleString("en-IN")}</span>
+                <span className="text-xs font-bold text-emerald-600 mt-0.5 block font-mono tabular-nums">₹ {stats.youGot.toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>
 
           {/* 5. Transactions Table */}
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="bg-white border border-slate-200 rounded-sm overflow-hidden">
             {filteredTransactions.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 font-bold">
                 No ledger transactions found in the selected date range.
@@ -599,7 +599,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                           <span className="text-sm font-extrabold text-slate-800 shrink-0">{formattedIST.date}</span>
                           <span className="text-[10px] font-bold text-slate-400 mt-0.5">{formattedIST.time}</span>
                         </div>
-                        <span className="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-full uppercase tracking-wider self-start mt-1">
+                        <span className="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-sm uppercase tracking-wider self-start mt-1 font-mono tabular-nums">
                           Bal. ₹{Math.round(tx.running_balance).toLocaleString("en-IN")}
                         </span>
                       </div>
@@ -624,19 +624,19 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                           </div>
                         )}
                         {tx.remarks && (
-                          <div className="text-xs text-slate-450 font-medium mt-0.5">
+                          <div className="text-xs text-slate-500 font-medium mt-0.5">
                             Remark: <span className="italic">{tx.remarks}</span>
                           </div>
                         )}
                         {tx.reference_no && (
-                          <div className="text-xs text-slate-450 font-medium mt-0.5">
+                          <div className="text-xs text-slate-500 font-medium mt-0.5">
                             Ref: {tx.reference_no}
                           </div>
                         )}
                       </div>
                       
                       {/* Right: Gave (Debit) vs Got (Credit) numeric columns */}
-                      <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono text-base">
+                      <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono tabular-nums text-base">
                         {/* Gave Column */}
                         <div className="w-22 font-black text-red-500">
                           {isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
@@ -656,11 +656,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
       </div>
 
       {/* 6. Footer Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3.5 px-4 flex gap-3 shadow-2xl z-40 max-w-lg mx-auto rounded-t-2xl">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3.5 px-4 flex gap-3 z-40 max-w-lg mx-auto rounded-t-sm">
         <button
           onClick={handleDownloadPDF}
           disabled={isDownloading || filteredTransactions.length === 0}
-          className="flex-1 py-3 px-4 rounded-xl border border-indigo-500 text-indigo-600 hover:bg-indigo-50 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+          className="flex-1 py-3 px-4 rounded-sm border border-indigo-500 text-indigo-600 hover:bg-indigo-50 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
         >
           <FileDown className="w-4 h-4" />
           {isDownloading ? "Downloading..." : "DOWNLOAD"}
@@ -669,7 +669,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         <button
           onClick={handleShare}
           disabled={filteredTransactions.length === 0}
-          className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-indigo-500/25 transition-all disabled:opacity-50"
+          className="flex-1 py-3 px-4 rounded-sm bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
         >
           <Share2 className="w-4 h-4" />
           SHARE
@@ -681,11 +681,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         <div className="fixed inset-0 z-50 flex items-end justify-center select-none">
           {/* Backdrop */}
           <div 
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/60"
             onClick={() => setSelectedEntryForDetails(null)}
           />
           {/* Content */}
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl p-6 shadow-2xl space-y-4 animate-slide-up border-t border-slate-200 dark:border-slate-800 pb-8 z-10">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-t-sm p-6 space-y-4 border-t border-slate-200 dark:border-slate-800 pb-8 z-10">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div>
                 <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">
@@ -705,20 +705,20 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
             {/* Details Content */}
             <div className="space-y-3.5 text-slate-700 dark:text-slate-300 max-h-[50vh] overflow-y-auto pr-1">
-              <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</span>
-                <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-sm ${
                   selectedEntryForDetails.transaction_type === "credit" 
                     ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" 
-                    : "bg-red-50 dark:bg-red-955/20 text-red-500 dark:text-red-400"
+                    : "bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400"
                 }`}>
                   {cleanDescription(selectedEntryForDetails.description, selectedEntryForDetails)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</span>
-                <span className={`text-base font-extrabold ${
+                <span className={`text-base font-extrabold font-mono tabular-nums ${
                   selectedEntryForDetails.transaction_type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                 }`}>
                   ₹ {selectedEntryForDetails.amount.toLocaleString("en-IN")}
@@ -726,9 +726,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               </div>
 
               {selectedEntryForDetails.store_name && (
-                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Store Name</span>
-                  <span className="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-wider">
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
                     {selectedEntryForDetails.store_name}
                   </span>
                 </div>
@@ -739,9 +739,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 <>
                   {/* Show Online Bank Account Name if payment was online */}
                   {(selectedEntryForDetails.bank_account_name || selectedEntryForDetails.portal_name) && (
-                    <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-3.5 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex justify-between items-center text-xs">
+                    <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-3.5 rounded-sm border border-emerald-100/50 dark:border-emerald-900/20 flex justify-between items-center text-xs">
                       <span className="font-bold text-emerald-700 dark:text-emerald-400">Online Bank Account</span>
-                      <span className="font-extrabold text-emerald-650 dark:text-emerald-400 uppercase tracking-wider">
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
                         {hideBankNames
                           ? (selectedEntryForDetails.portal_name || "Portal")
                           : (selectedEntryForDetails.portal_name
@@ -763,7 +763,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               {selectedEntryForDetails.transaction_type === "debit" && 
                (selectedEntryForDetails.deposit_type === "retailer" || selectedEntryForDetails.deposit_type === "staff" || !hideBankNames || selectedEntryForDetails.portal_name) && 
                (selectedEntryForDetails.bank_account_name || selectedEntryForDetails.portal_name || selectedEntryForDetails.bank_name) && (
-                 <div className="bg-indigo-50/50 dark:bg-indigo-950/15 p-3.5 rounded-xl border border-indigo-100/50 dark:border-indigo-900/30 space-y-2 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
+                 <div className="bg-indigo-50/50 dark:bg-indigo-950/15 p-3.5 rounded-sm border border-indigo-100/50 dark:border-indigo-900/30 space-y-2 text-xs text-indigo-700 dark:text-indigo-300 font-medium">
                    <span className="text-[10px] font-black text-indigo-400 dark:text-indigo-550 uppercase tracking-widest block">Transfer Target</span>
                    {(selectedEntryForDetails.bank_account_name || selectedEntryForDetails.portal_name) && (
                      <div className="flex justify-between border-b border-indigo-100/20 dark:border-indigo-900/10 pb-1">
@@ -790,16 +790,16 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               )}
 
               {selectedEntryForDetails.remarks && (
-                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-xs">
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800 text-xs">
                   <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Remarks</span>
-                  <p className="italic font-medium text-slate-600 dark:text-slate-350">{selectedEntryForDetails.remarks}</p>
+                  <p className="italic font-medium text-slate-600 dark:text-slate-400">{selectedEntryForDetails.remarks}</p>
                 </div>
               )}
 
               {selectedEntryForDetails.reference_no && (
-                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 text-xs flex justify-between items-center">
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800 text-xs flex justify-between items-center">
                   <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Reference No.</span>
-                  <span className="font-mono font-bold text-slate-650 dark:text-slate-300">{selectedEntryForDetails.reference_no}</span>
+                  <span className="font-mono font-bold text-slate-600 dark:text-slate-300">{selectedEntryForDetails.reference_no}</span>
                 </div>
               )}
             </div>
@@ -823,7 +823,7 @@ ${entry.store_name ? `Store: ${entry.store_name}\n` : ''}${entry.bank_account_na
                     alert("Receipt summary copied!");
                   }
                 }}
-                className="flex-1 py-3 px-2 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-100 dark:border-emerald-900/30"
+                className="flex-1 py-3 px-2 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-sm text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer border border-emerald-100 dark:border-emerald-900/30"
               >
                 <Share2 className="w-4 h-4" />
                 <span>Share Receipt</span>
@@ -838,7 +838,7 @@ ${entry.store_name ? `Store: ${entry.store_name}\n` : ''}${entry.bank_account_na
                         setSelectedEntryForDetails(null);
                         onEditEntry(entry);
                       }}
-                      className="flex-1 py-3 px-2 bg-blue-50 dark:bg-blue-955/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer border border-blue-100 dark:border-blue-900/30"
+                      className="flex-1 py-3 px-2 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-sm text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer border border-blue-100 dark:border-blue-900/30"
                     >
                       <Edit2 className="w-4 h-4" />
                       <span>Edit</span>
@@ -851,7 +851,7 @@ ${entry.store_name ? `Store: ${entry.store_name}\n` : ''}${entry.bank_account_na
                         setSelectedEntryForDetails(null);
                         onDeleteEntry(entry);
                       }}
-                      className="flex-1 py-3 px-2 bg-red-50 dark:bg-red-955/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer border border-red-100 dark:border-red-900/30"
+                      className="flex-1 py-3 px-2 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 dark:text-red-400 rounded-sm text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer border border-red-100 dark:border-red-900/30"
                     >
                       <Trash2 className="w-4 h-4" />
                       <span>Delete</span>
