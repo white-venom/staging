@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from sqlalchemy import select, or_
 
 # Set up module path resolution
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database.db import MasterSessionLocal, get_tenant_session
 from app.database.master_models import Tenant
