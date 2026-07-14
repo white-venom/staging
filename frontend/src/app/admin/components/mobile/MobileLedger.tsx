@@ -416,17 +416,17 @@ export default function MobileLedger() {
   };
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-1.5">
       {/* Header Section */}
-      <div className="flex items-center justify-between px-1.5">
+      <div className="flex items-center justify-between px-1">
         <div>
           <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tighter">Ledger</h2>
           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">{filteredLedger.length} Records Found</p>
         </div>
         <div className="flex gap-1.5">
-          <button 
+          <button
             onClick={() => setIsExportOpen(true)}
-            className="w-7 h-7 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-md flex items-center justify-center text-slate-505 shadow-xs active:scale-90 transition-transform"
+            className="w-7 h-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm flex items-center justify-center text-slate-500 transition-colors"
           >
             <Download className="w-4 h-4" />
           </button>
@@ -434,28 +434,28 @@ export default function MobileLedger() {
       </div>
 
       {/* Search & Filter Bar */}
-      <div className="flex gap-1.5 px-1.5">
+      <div className="flex gap-1.5 px-1">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-          <input autoComplete="one-time-code" 
-            type="text" 
+          <input autoComplete="one-time-code"
+            type="text"
             placeholder="Search transactions..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-md text-xs font-bold shadow-xs focus:outline-none"
+            className="w-full pl-8 pr-2 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-400"
           />
         </div>
-        <button 
+        <button
           onClick={() => setIsFilterOpen(true)}
-          className={`p-1.5 rounded-md border transition-all active:scale-90 ${isFilterOpen ? 'bg-blue-650 border-blue-650 text-white shadow-md' : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-500'}`}
+          className={`p-1.5 rounded-sm border transition-colors ${isFilterOpen ? 'bg-slate-900 dark:bg-slate-100 border-slate-900 dark:border-slate-100 text-white dark:text-slate-950' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500'}`}
         >
           <Filter className="w-3.5 h-3.5" />
         </button>
       </div>
 
       {isAnyFilterActive && (
-        <div className="flex justify-end px-1.5">
-          <button 
+        <div className="flex justify-end px-1">
+          <button
             onClick={() => {
               const today = getTodayDateString();
               setFilters({
@@ -471,7 +471,7 @@ export default function MobileLedger() {
               });
               setSearch("");
             }}
-            className="text-[9px] font-black uppercase text-red-500 bg-red-50 dark:bg-red-955/20 border border-red-200 dark:border-red-800 rounded-md px-2.5 py-1 active:scale-95 transition-all cursor-pointer"
+            className="text-[9px] font-black uppercase text-red-600 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-sm px-2.5 py-1 transition-colors cursor-pointer"
           >
             Clear All Filters
           </button>
@@ -479,16 +479,16 @@ export default function MobileLedger() {
       )}
 
       {/* Transaction List (Table Format) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-xs mb-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse min-w-[500px]">
+          <table className="w-full text-left text-xs border-collapse min-w-[500px]">
             <thead>
-              <tr className="bg-slate-50 dark:bg-slate-955 text-[11px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-200 dark:border-slate-800">
-                <th className="py-2.5 px-2.5 border-r border-slate-100 dark:border-slate-800 w-24">Date & Time</th>
-                <th className="py-2.5 px-2.5 border-r border-slate-100 dark:border-slate-800">Description</th>
-                <th className="py-2.5 px-2.5 border-r border-slate-100 dark:border-slate-800 text-center w-16">Type</th>
-                <th className="py-2.5 px-2.5 border-r border-slate-100 dark:border-slate-800 text-right w-20 bg-slate-100/50 dark:bg-slate-800/50">Received</th>
-                <th className="py-2.5 px-2.5 text-right bg-blue-50/20 dark:bg-blue-950/5 w-20">Staff</th>
+              <tr className="bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 w-24">Date & Time</th>
+                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800">Description</th>
+                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 text-center w-16">Type</th>
+                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 text-right w-20 bg-slate-100/50 dark:bg-slate-800/50">Received</th>
+                <th className="py-1.5 px-2 text-right bg-blue-50/20 dark:bg-blue-950/5 w-20">Staff</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -500,17 +500,17 @@ export default function MobileLedger() {
                 const txAmount = getTxAmount(item);
                 return (
                 <React.Fragment key={item.id || idx}>
-                 <tr className={`hover:bg-slate-50 dark:hover:bg-slate-850/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedLedgerId(prev => prev === (item.id || idx) ? null : (item.id || idx))}>
-                   <td className="py-2.5 px-2.5 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400">
-                     <div className="flex flex-col text-[13px]">
+                 <tr className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/60' : ''}`} onClick={() => setExpandedLedgerId(prev => prev === (item.id || idx) ? null : (item.id || idx))}>
+                   <td className="py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 font-bold text-slate-400">
+                     <div className="flex flex-col text-xs">
                        <span className="whitespace-nowrap">{item.date.split(" ")[0].split("-").reverse().join("-")}</span>
-                       <span className="text-xs font-bold opacity-60">
+                       <span className="text-[10px] font-bold opacity-60">
                          {item.date.split(" ")[1]}
                        </span>
                      </div>
                    </td>
-                   <td className="py-2.5 px-2.5 border-r border-slate-50 dark:border-slate-800">
-                     <div className="flex flex-col gap-1 text-[13.5px]">
+                   <td className="py-1.5 px-2 border-r border-slate-50 dark:border-slate-800">
+                     <div className="flex flex-col gap-1 text-xs">
                        <div className="flex items-center justify-between gap-1.5">
                          <div className="flex items-center gap-1.5 flex-wrap">
                            <span className="font-black text-slate-800 dark:text-slate-100 uppercase">
@@ -525,10 +525,10 @@ export default function MobileLedger() {
                              <button
                                type="button"
                                onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [item.id]: !prev[item.id] })); }}
-                               className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                               className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded-sm hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
                                title="View Remark"
                              >
-                               <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                               <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform ${cmsRemarksExpanded[item.id] ? 'rotate-180' : ''}`} />
                              </button>
                            )}
                          </div>
@@ -541,53 +541,53 @@ export default function MobileLedger() {
                                  shareDepositEntry(item, item.staff || 'Staff');
                                }
                              }}
-                             className="p-0.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-955/20 dark:text-emerald-400 rounded hover:bg-emerald-100 transition-colors cursor-pointer active:scale-95"
+                             className="p-0.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 rounded-sm hover:bg-emerald-100 transition-colors cursor-pointer"
                              title="Share Entry"
                            >
                              <Share2 className="w-3.5 h-3.5" />
                            </button>
                            <button
                              onClick={() => handleStartEditCollection(item)}
-                             className="p-0.5 bg-blue-50 text-blue-600 dark:bg-blue-955/20 dark:text-blue-400 rounded hover:bg-blue-100 transition-colors cursor-pointer active:scale-95 transition-transform"
+                             className="p-0.5 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-sm hover:bg-blue-100 transition-colors cursor-pointer"
                              title="Edit Entry"
                            >
                              <Edit2 className="w-3.5 h-3.5" />
                            </button>
                            <button
                              onClick={() => handleDeleteEntry(item)}
-                             className="p-0.5 bg-red-50 text-red-650 dark:bg-red-955/20 dark:text-red-400 rounded hover:bg-red-100 transition-colors cursor-pointer active:scale-95 transition-transform"
+                             className="p-0.5 bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 rounded-sm hover:bg-red-100 transition-colors cursor-pointer"
                              title="Delete Entry"
                            >
                              <Trash2 className="w-3.5 h-3.5" />
                            </button>
-                           <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                           <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                          </div>
                        </div>
                        {item.remarks && cmsRemarksExpanded[item.id] && (
-                         <div className="mt-0.5 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-955/40 rounded border border-slate-200/50 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-400 max-w-[200px] break-words">
+                         <div className="mt-0.5 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded-sm border border-slate-200/50 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-400 max-w-[200px] break-words">
                            <span className="text-xs uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
                            <span className="italic">{item.remarks}</span>
                          </div>
                        )}
                      </div>
                    </td>
-                   <td className="py-2.5 px-2.5 border-r border-slate-50 dark:border-slate-800 text-center">
-                      <span className={`text-[11px] font-black uppercase px-1.5 py-0.5 rounded-md ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                   <td className="py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-center">
+                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded-sm ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
                          {item.type === 'collection' ? 'Cash In' : 'Cash Out'}
                       </span>
                    </td>
-                   <td className={`py-2.5 px-2.5 border-r border-slate-50 dark:border-slate-800 text-right font-black text-[13.5px] ${item.type === 'collection' ? 'text-emerald-700 bg-emerald-50/10' : 'text-red-700 bg-red-50/10'}`}>
+                   <td className={`py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${item.type === 'collection' ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
                      {item.type === 'collection' ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
                    </td>
-                   <td className="py-2.5 px-2.5 text-right font-black text-slate-500 uppercase text-xs">
+                   <td className="py-1.5 px-2 text-right font-black text-slate-500 uppercase text-xs">
                      {item.staff || 'Admin'}
                    </td>
                  </tr>
                  {isExpanded && (
                    <tr key={`${item.id || idx}-exp`} className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
-                     <td colSpan={5} className="px-3 pb-2.5 pt-1.5 text-xs">
+                     <td colSpan={5} className="px-3 pb-2 pt-1.5 text-xs">
                        <span className="text-xs font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
-                       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs font-bold text-slate-600 dark:text-slate-300">
+                       <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs font-bold text-slate-600 dark:text-slate-300 font-mono tabular-nums">
                          {Number(den.note_500 || 0) !== 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
                          {Number(den.note_200 || 0) !== 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
                          {Number(den.note_100 || 0) !== 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
@@ -597,8 +597,8 @@ export default function MobileLedger() {
                          {Number(den.coins || 0) !== 0 && <span>Coins = ₹{Number(den.coins).toFixed(2)}</span>}
                          {Number(den.online_amount || 0) !== 0 && <span>UPI = ₹{Number(den.online_amount).toLocaleString()}</span>}
                        </div>
-                       <div className="mt-1 text-xs font-bold text-slate-500 italic">{numberToWordsIndian(txAmount)} Rupees</div>
-                       {item.remarks && <div className="mt-1 text-xs font-bold text-slate-500"><span className="font-black uppercase text-slate-400 text-xs">Remark: </span>{item.remarks}</div>}
+                       <div className="mt-1 text-xs font-bold text-slate-500 italic font-sans">{numberToWordsIndian(txAmount)} Rupees</div>
+                       {item.remarks && <div className="mt-1 text-xs font-bold text-slate-500 font-sans"><span className="font-black uppercase text-slate-400 text-xs">Remark: </span>{item.remarks}</div>}
                      </td>
                    </tr>
                  )}
@@ -624,25 +624,25 @@ export default function MobileLedger() {
       {/* Export Options Bottom Sheet */}
       {isExportOpen && (
         <div className="fixed inset-0 z-[110] flex items-end justify-center">
-          <div className="absolute inset-0 bg-slate-955/20 backdrop-blur-xs" onClick={() => setIsExportOpen(false)} />
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-lg p-3 animate-in slide-in-from-bottom-full duration-255">
+          <div className="absolute inset-0 bg-slate-950/20" onClick={() => setIsExportOpen(false)} />
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-sm p-3">
             <div className="flex items-center justify-between mb-2">
                 <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Export Ledger</h3>
-                <button onClick={() => setIsExportOpen(false)} className="w-7 h-7 bg-slate-105 dark:bg-slate-800 rounded-md flex items-center justify-center text-slate-500 cursor-pointer"><X className="w-4 h-4" /></button>
+                <button onClick={() => setIsExportOpen(false)} className="w-7 h-7 bg-slate-100 dark:bg-slate-800 rounded-sm flex items-center justify-center text-slate-500 cursor-pointer transition-colors"><X className="w-4 h-4" /></button>
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
-               <button 
+            <div className="grid grid-cols-2 gap-2">
+               <button
                  onClick={handleExportCSV}
-                 className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg flex flex-col items-center gap-1.5 border border-slate-100 dark:border-slate-700 active:scale-95 transition-transform"
+                 className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-sm flex flex-col items-center gap-1.5 border border-slate-200 dark:border-slate-700 transition-colors"
                >
-                 <div className="w-8 h-8 bg-emerald-500/10 text-emerald-600 rounded-md flex items-center justify-center"><TableIcon className="w-4.5 h-4.5" /></div>
+                 <div className="w-8 h-8 bg-emerald-500/10 text-emerald-600 rounded-sm flex items-center justify-center"><TableIcon className="w-4.5 h-4.5" /></div>
                  <span className="text-[8px] font-black uppercase text-slate-600 dark:text-slate-300">Excel Format</span>
                </button>
-               <button 
+               <button
                  onClick={() => { window.print(); setIsExportOpen(false); }}
-                 className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg flex flex-col items-center gap-1.5 border border-slate-100 dark:border-slate-700 active:scale-95 transition-transform"
+                 className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-sm flex flex-col items-center gap-1.5 border border-slate-200 dark:border-slate-700 transition-colors"
                >
-                 <div className="w-8 h-8 bg-red-500/10 text-red-600 rounded-md flex items-center justify-center"><FileText className="w-4.5 h-4.5" /></div>
+                 <div className="w-8 h-8 bg-red-500/10 text-red-600 rounded-sm flex items-center justify-center"><FileText className="w-4.5 h-4.5" /></div>
                  <span className="text-[8px] font-black uppercase text-slate-600 dark:text-slate-300">PDF Document</span>
                </button>
             </div>
@@ -651,20 +651,20 @@ export default function MobileLedger() {
       )}
 
       {isEditCollectionModalOpen && editingCollection && (
-        <div className="fixed inset-0 bg-slate-955/60 backdrop-blur-xs z-[120] flex items-center justify-center p-3">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-md p-3 space-y-2.5 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/60 z-[120] flex items-center justify-center p-3">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-md p-3 space-y-2 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-              <h3 className="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">
                 {editingIsDeposit ? "Edit Cash Out Entry" : "Edit Cash In Entry"}
               </h3>
-              <button 
-                onClick={() => setIsEditCollectionModalOpen(false)} 
-                className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
+              <button
+                onClick={() => setIsEditCollectionModalOpen(false)}
+                className="p-1 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <form onSubmit={handleSaveCollectionEdit} className="space-y-2.5">
+            <form onSubmit={handleSaveCollectionEdit} className="space-y-2">
               
               {!editingIsDeposit ? (
                 // Collection Form Fields
@@ -684,11 +684,11 @@ export default function MobileLedger() {
                   </div>
 
                   {(availableStores.length > 0 || editingCollection?.store_name) && (
-                    <div className="space-y-0.5 animate-in fade-in duration-200">
+                    <div className="space-y-0.5">
                       <div className="flex justify-between items-center px-0.5">
                         <label className="text-[8px] text-slate-400 font-black uppercase block">Parent Store (Shop/Branch)</label>
                         {editingCollection?.store_name && (
-                          <span className="text-[8px] text-amber-505 font-black">
+                          <span className="text-[8px] text-amber-500 font-black">
                             (Original: {editingCollection.store_name})
                           </span>
                         )}
@@ -731,7 +731,7 @@ export default function MobileLedger() {
                   </div>
 
                   {/* Denominations editor for Collection – staff-style full-row layout */}
-                  <div className="border border-slate-100 dark:border-slate-800 rounded-lg p-3 bg-slate-50/50 dark:bg-slate-950/50 space-y-1">
+                  <div className="border border-slate-100 dark:border-slate-800 rounded-sm p-3 bg-slate-50/50 dark:bg-slate-950/50 space-y-1">
                     <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">Counting Details (Notes)</span>
                     <div className="space-y-1">
                       {[
@@ -745,15 +745,16 @@ export default function MobileLedger() {
                       ].map(item => (
                         <div key={item.key} className="flex items-center gap-2 justify-between py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
                           <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">{item.label}</span>
-                          <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">&times;</span>
+                          <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
                           <input autoComplete="one-time-code"
                             type="number"
+                            inputMode={item.key === "coins" ? "decimal" : "numeric"}
                             value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || ""}
                             onChange={(e) => {
                               const val = item.key === "coins" ? (parseFloat(e.target.value) || 0) : (parseInt(e.target.value) || 0);
                               setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
                             }}
-                            className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-center text-xs font-black outline-none focus:border-slate-400"
+                            className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-black outline-none focus:border-slate-500 dark:focus:border-slate-400"
                           />
                           <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
                           <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0">
@@ -764,15 +765,16 @@ export default function MobileLedger() {
                       {/* UPI / Online Amount row */}
                       <div className="flex items-center gap-2 justify-between pt-1.5 border-t border-slate-200 dark:border-slate-800">
                         <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">UPI / Online</span>
-                        <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">+</span>
+                        <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">+</span>
                         <input autoComplete="one-time-code"
                           type="number"
+                          inputMode="decimal"
                           value={selectedNewDenoms.online_amount || ""}
                           onChange={(e) => {
                             const val = Math.max(0, parseFloat(e.target.value) || 0);
                             setSelectedNewDenoms(prev => ({ ...prev, online_amount: val }));
                           }}
-                          className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-center text-xs font-black outline-none focus:border-slate-400"
+                          className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-black outline-none focus:border-slate-500 dark:focus:border-slate-400"
                         />
                         <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
                         <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0">
@@ -783,7 +785,7 @@ export default function MobileLedger() {
                     {/* Live total */}
                     <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
                       <span className="text-[8px] uppercase font-black tracking-wider text-slate-400">Total Amount</span>
-                      <span className="text-sm font-black text-slate-800 dark:text-white">₹{(
+                      <span className="text-sm font-black text-slate-800 dark:text-white font-mono tabular-nums">₹{(
                         selectedNewDenoms.note_500 * 500 +
                         selectedNewDenoms.note_200 * 200 +
                         selectedNewDenoms.note_100 * 100 +
@@ -803,7 +805,7 @@ export default function MobileLedger() {
                       type="date"
                       value={selectedNewDate}
                       onChange={(e) => setSelectedNewDate(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -814,7 +816,7 @@ export default function MobileLedger() {
                     <textarea
                       value={selectedNewRemarks}
                       onChange={(e) => setSelectedNewRemarks(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       rows={1.5}
                       placeholder="Remarks..."
                     />
@@ -845,7 +847,7 @@ export default function MobileLedger() {
                           }
                         }
                       }}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                     >
                       <option value="portal">Cash Out</option>
                       <option value="retailer">Retailer Payout</option>
@@ -899,9 +901,9 @@ export default function MobileLedger() {
                           id="editToOfficeCheckboxMobile"
                           checked={selectedNewToOffice}
                           onChange={(e) => setSelectedNewToOffice(e.target.checked)}
-                          className="w-3.5 h-3.5 text-blue-650 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                          className="w-3.5 h-3.5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="editToOfficeCheckboxMobile" className="text-[9px] font-black text-slate-700 dark:text-slate-350">Handover to Main Office Cashier</label>
+                        <label htmlFor="editToOfficeCheckboxMobile" className="text-[9px] font-black text-slate-700 dark:text-slate-400">Handover to Main Office Cashier</label>
                       </div>
 
                       {!selectedNewToOffice && (
@@ -945,7 +947,7 @@ export default function MobileLedger() {
                         <select
                           value={selectedNewVirtualTargetType}
                           onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
-                          className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                          className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                         >
                           <option value="retailer">Retailer</option>
                           <option value="staff">Staff Member</option>
@@ -993,7 +995,7 @@ export default function MobileLedger() {
                       <select
                         value={selectedNewPaymentMode}
                         onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       >
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
@@ -1006,9 +1008,10 @@ export default function MobileLedger() {
                     <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Amount</label>
                     <input autoComplete="one-time-code"
                       type="number"
+                      inputMode="decimal"
                       value={selectedNewAmount}
                       onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1020,7 +1023,7 @@ export default function MobileLedger() {
                       type="date"
                       value={selectedNewDate}
                       onChange={(e) => setSelectedNewDate(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1032,7 +1035,7 @@ export default function MobileLedger() {
                       type="text"
                       value={selectedNewRefNo}
                       onChange={(e) => setSelectedNewRefNo(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       placeholder="Optional"
                     />
                   </div>
@@ -1043,7 +1046,7 @@ export default function MobileLedger() {
                     <textarea
                       value={selectedNewRemarks}
                       onChange={(e) => setSelectedNewRemarks(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       rows={1.5}
                       placeholder="Remarks..."
                     />
@@ -1055,14 +1058,14 @@ export default function MobileLedger() {
                 <button
                   type="button"
                   onClick={() => setIsEditCollectionModalOpen(false)}
-                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-705 dark:text-slate-200 rounded-md text-[10px] font-black transition-all cursor-pointer"
+                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-[10px] font-black transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingCollection}
-                  className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-sm text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-3 h-3" />
                   {isSavingCollection ? "Saving..." : "Save Entry"}
