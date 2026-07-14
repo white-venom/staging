@@ -186,11 +186,11 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
   const activeCheckout = selectedUserId === "global" ? autoCheckoutTime : (autoCheckoutTime || globalSettings.autoCheckoutTime);
 
   return (
-    <div className="space-y-6 animate-fade-in pb-10">
+    <div className="space-y-6 pb-10">
       <div className="grid md:grid-cols-12 gap-6">
         
         {/* LATE PENALTY SETTINGS */}
-        <div className="md:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6 h-fit">
+        <div className="md:col-span-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-6 h-fit">
           <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <Settings2 className="w-5 h-5 text-blue-600" />
             <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Late Policy Config</h3>
@@ -201,7 +201,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                 <select 
                   value={selectedUserId} 
                   onChange={e => setSelectedUserId(e.target.value)} 
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none cursor-pointer text-slate-700 dark:text-slate-200"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none appearance-none cursor-pointer text-slate-700 dark:text-slate-200"
                 >
                   <option value="global">Global Settings (All Staff)</option>
                   {staffMembers.map(m => (
@@ -211,7 +211,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                   ))}
                 </select>
                 {selectedUserId !== "global" && (
-                  <p className="text-[9px] text-slate-450 dark:text-slate-500 mt-1 font-semibold">
+                  <p className="text-[9px] text-slate-500 dark:text-slate-500 mt-1 font-semibold">
                     * Clear fields to inherit global settings.
                   </p>
                 )}
@@ -223,7 +223,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                   value={lateThreshold} 
                   onChange={e => setLateThreshold(e.target.value)} 
                   placeholder={globalSettings.lateThreshold}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none" 
                 />
                 {isInheritedThreshold && (
                   <span className="text-[9px] text-emerald-600 font-bold block mt-1">
@@ -233,12 +233,13 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
              </div>
              <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Penalty Amount (₹)</label>
-                <input autoComplete="one-time-code" 
-                  type="number" 
-                  value={latePenalty} 
-                  onChange={e => setLatePenalty(e.target.value === "" ? "" : Number(e.target.value))} 
+                <input autoComplete="one-time-code"
+                  type="number"
+                  inputMode="decimal"
+                  value={latePenalty}
+                  onChange={e => setLatePenalty(e.target.value === "" ? "" : Number(e.target.value))}
                   placeholder={String(globalSettings.latePenalty)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
+                  className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400"
                 />
                 {isInheritedPenalty && (
                   <span className="text-[9px] text-emerald-600 font-bold block mt-1">
@@ -253,7 +254,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                   value={autoCheckoutTime} 
                   onChange={e => setAutoCheckoutTime(e.target.value)} 
                   placeholder={globalSettings.autoCheckoutTime}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none" 
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none" 
                 />
                 {isInheritedCheckout && (
                   <span className="text-[9px] text-emerald-600 font-bold block mt-1">
@@ -264,12 +265,12 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
              <button 
                type="submit" 
                disabled={isSavingSettings}
-               className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase tracking-wide transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-blue-600/20"
+               className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-sm text-[10px] font-black uppercase tracking-wide transition-colors disabled:opacity-50 cursor-pointer"
              >
                {isSavingSettings ? "Saving..." : "Save Configuration"}
              </button>
           </form>
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl">
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-sm">
              <p className="text-[10px] text-amber-700 dark:text-amber-400 font-bold leading-relaxed">
                {selectedUserId === "global" ? "Staff" : "This staff member"} checking in after {activeThreshold} will automatically be flagged for a ₹{activePenalty} penalty for admin review. Staff who forget to check out will be auto checked out at {activeCheckout}.
              </p>
@@ -277,22 +278,22 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
         </div>
 
         {/* PENDING PENALTY APPROVALS */}
-        <div className="md:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4">
+        <div className="md:col-span-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
              <div className="flex items-center gap-2">
                 <ShieldAlert className="w-5 h-5 text-red-600" />
                 <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Pending Penalty Reviews</h3>
              </div>
-             <span className="text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full font-black">
+             <span className="text-[10px] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-sm font-black">
                {pendingPenalties.length} ACTION REQUIRED
              </span>
           </div>
           
           <div className="space-y-3 min-h-[300px]">
             {pendingPenalties.map(p => (
-              <div key={p.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl group transition-all hover:border-red-200 shadow-sm">
+              <div key={p.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm group transition-colors hover:border-red-200">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-600">
+                  <div className="w-10 h-10 rounded-sm bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-600">
                     {(p.staff_name || "ST").substring(0, 2).toUpperCase()}
                   </div>
                   <div className="flex flex-col">
@@ -304,19 +305,19 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                 </div>
                 <div className="flex items-center gap-6">
                   <div className="text-right">
-                    <span className="text-xs font-black text-red-600 block">₹{p.penalty_amount}</span>
+                    <span className="text-xs font-black text-red-600 font-mono tabular-nums block">₹{p.penalty_amount}</span>
                     <span className="text-[8px] text-slate-400 font-bold uppercase">Late Fine</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
                       onClick={() => handleProcessPenalty(p.id, true)}
-                      className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-all text-[10px] font-black uppercase cursor-pointer"
+                      className="px-3 py-1.5 bg-emerald-500 text-white rounded-sm hover:bg-emerald-600 transition-colors text-[10px] font-black uppercase cursor-pointer"
                     >
                       Approve
                     </button>
                     <button 
                       onClick={() => handleProcessPenalty(p.id, false)}
-                      className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 transition-all text-[10px] font-black uppercase cursor-pointer"
+                      className="px-3 py-1.5 bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-sm hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors text-[10px] font-black uppercase cursor-pointer"
                     >
                       Dismiss
                     </button>
@@ -326,7 +327,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
             ))}
             {pendingPenalties.length === 0 && (
               <div className="flex flex-col items-center justify-center py-20 opacity-40">
-                <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/20 rounded-full flex items-center justify-center mb-4">
+                <div className="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/20 rounded-sm flex items-center justify-center mb-4">
                   <Check className="w-8 h-8 text-emerald-500" />
                 </div>
                 <p className="text-sm font-black uppercase tracking-[0.2em] text-slate-400">All penalties reviewed</p>
@@ -340,13 +341,13 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
       </div>
 
       {/* TODAY'S SHIFTS & ODOMETER VERIFICATION */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2">
             <UserCheck className="w-5 h-5 text-blue-600" />
             <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Today's Staff Shifts & Odometer Logs</h3>
           </div>
-          <span className="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-full font-black uppercase tracking-wider">
+          <span className="text-[10px] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 px-2.5 py-1 rounded-sm font-black uppercase tracking-wider">
             {todayAttendance.length} Shifts Today
           </span>
         </div>
@@ -355,11 +356,11 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
           {todayAttendance.map((att) => (
             <div 
               key={att.id} 
-              className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-[2rem] flex flex-col gap-4 shadow-sm hover:border-blue-100 dark:hover:border-blue-900/40 transition-all"
+              className="p-5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm flex flex-col gap-4 hover:border-blue-100 dark:hover:border-blue-900/40 transition-colors"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/60 pb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center text-xs font-black text-white shadow-inner">
+                  <div className="w-10 h-10 rounded-sm bg-blue-600 flex items-center justify-center text-xs font-black text-white">
                     {(att.staff_name || "ST").substring(0, 2).toUpperCase()}
                   </div>
                   <div>
@@ -371,14 +372,14 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className={`text-[9px] uppercase tracking-wider font-black px-2.5 py-1 rounded-full border ${
+                  <span className={`text-[9px] uppercase tracking-wider font-black px-2.5 py-1 rounded-sm border ${
                     att.status === 'active'
-                      ? 'bg-blue-500/10 text-blue-500 border-blue-500/20 animate-pulse'
+                      ? 'bg-blue-500/10 text-blue-500 border-blue-500/20'
                       : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
                   }`}>
                     {att.status === 'active' ? 'Active Shift' : 'Completed'}
                   </span>
-                  <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-full font-bold flex items-center gap-1 border border-slate-200/50 dark:border-slate-700/50">
+                  <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2.5 py-1 rounded-sm font-bold flex items-center gap-1 border border-slate-200/50 dark:border-slate-700/50">
                     <Clock className="w-3 h-3" /> {att.duration}
                   </span>
                 </div>
@@ -386,17 +387,17 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
 
               <div className="grid md:grid-cols-2 gap-4">
                 {/* START KM DETAILS */}
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-sm border border-slate-200/60 dark:border-slate-800/80 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                   <div className="space-y-1.5 flex-1">
                     <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block">Check-In Mileage</span>
-                    <span className="font-black text-base text-slate-800 dark:text-slate-100 tracking-tight">{(att.start_km || 0).toLocaleString()} <span className="text-[10px] text-slate-400">KM</span></span>
+                    <span className="font-black text-base text-slate-800 dark:text-slate-100 tracking-tight font-mono tabular-nums">{(att.start_km || 0).toLocaleString()} <span className="text-[10px] text-slate-400">KM</span></span>
                     <span className="text-[9px] text-slate-500 font-medium block">Time: {att.start_time || 'N/A'}</span>
                     {att.start_latitude && (
                       <a 
                         href={`https://www.google.com/maps/search/?api=1&query=${att.start_latitude},${att.start_longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors mt-1 max-w-[200px]"
+                        className="inline-flex items-center gap-1.5 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-sm border border-blue-100 dark:border-blue-900/30 transition-colors mt-1 max-w-[200px]"
                         title="Click to view on Google Maps"
                       >
                         <MapPin className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" />
@@ -407,26 +408,26 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                   {att.start_km_image_url ? (
                     <button 
                       onClick={() => setActiveLightboxImage(`${API_BASE_URL}${att.start_km_image_url}`)}
-                      className="w-full sm:w-24 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 group relative flex-shrink-0 cursor-pointer shadow-sm active:scale-95 transition-transform"
+                      className="w-full sm:w-24 h-16 rounded-sm overflow-hidden border border-slate-200 dark:border-slate-800 group relative flex-shrink-0 cursor-pointer transition-colors"
                     >
-                      <img src={`${API_BASE_URL}${att.start_km_image_url}`} alt="Start KM Odometer" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                      <img src={`${API_BASE_URL}${att.start_km_image_url}`} alt="Start KM Odometer" className="w-full h-full object-cover transition-colors" />
                       <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <span className="text-[8px] font-black text-white uppercase tracking-wider">Inspect</span>
                       </div>
                     </button>
                   ) : (
-                    <div className="w-full sm:w-24 h-16 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900 flex-shrink-0">
+                    <div className="w-full sm:w-24 h-16 rounded-sm border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900 flex-shrink-0">
                       <span className="text-[8px] text-slate-400 font-bold uppercase">No Photo</span>
                     </div>
                   )}
                 </div>
 
                 {/* END KM DETAILS */}
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-sm border border-slate-200/60 dark:border-slate-800/80 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
                   <div className="space-y-1.5 flex-1">
                     <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest block">Check-Out Mileage</span>
                     <span className="font-black text-base text-slate-800 dark:text-slate-100 tracking-tight">
-                      {att.end_km ? `${att.end_km.toLocaleString()} KM` : <span className="text-slate-400 italic">Pending</span>}
+                      {att.end_km ? <span className="font-mono tabular-nums">{att.end_km.toLocaleString()} KM</span> : <span className="text-slate-400 italic">Pending</span>}
                     </span>
                     <span className="text-[9px] text-slate-500 font-medium block">Time: {att.end_time || 'N/A'}</span>
                     {att.end_latitude ? (
@@ -434,7 +435,7 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                         href={`https://www.google.com/maps/search/?api=1&query=${att.end_latitude},${att.end_longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-900/30 shadow-sm transition-colors mt-1 max-w-[200px]"
+                        className="inline-flex items-center gap-1.5 text-[9px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 px-2.5 py-1 rounded-sm border border-blue-100 dark:border-blue-900/30 transition-colors mt-1 max-w-[200px]"
                         title="Click to view on Google Maps"
                       >
                         <MapPin className="w-2.5 h-2.5 text-blue-500 flex-shrink-0" />
@@ -447,15 +448,15 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
                   {att.end_km_image_url ? (
                     <button 
                       onClick={() => setActiveLightboxImage(`${API_BASE_URL}${att.end_km_image_url}`)}
-                      className="w-full sm:w-24 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 group relative flex-shrink-0 cursor-pointer shadow-sm active:scale-95 transition-transform"
+                      className="w-full sm:w-24 h-16 rounded-sm overflow-hidden border border-slate-200 dark:border-slate-800 group relative flex-shrink-0 cursor-pointer transition-colors"
                     >
-                      <img src={`${API_BASE_URL}${att.end_km_image_url}`} alt="End KM Odometer" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                      <img src={`${API_BASE_URL}${att.end_km_image_url}`} alt="End KM Odometer" className="w-full h-full object-cover transition-colors" />
                       <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <span className="text-[8px] font-black text-white uppercase tracking-wider">Inspect</span>
                       </div>
                     </button>
                   ) : (
-                    <div className="w-full sm:w-24 h-16 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900 flex-shrink-0">
+                    <div className="w-full sm:w-24 h-16 rounded-sm border border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center bg-slate-50 dark:bg-slate-900 flex-shrink-0">
                       <span className="text-[8px] text-slate-400 font-bold uppercase">{att.status === 'active' ? 'Pending' : 'No Photo'}</span>
                     </div>
                   )}
@@ -477,14 +478,14 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
       {/* LIGHTBOX VERIFICATION DIALOG */}
       {activeLightboxImage && (
         <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80"
           onClick={() => setActiveLightboxImage(null)}
         >
-          <div className="relative max-w-3xl max-h-[85vh] w-full overflow-hidden rounded-[2rem] border border-white/10 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="relative max-w-3xl max-h-[85vh] w-full overflow-hidden rounded-sm border border-white/10" onClick={(e) => e.stopPropagation()}>
             <img src={activeLightboxImage} alt="Odometer Verification" className="w-full h-full object-contain" />
             <button 
               onClick={() => setActiveLightboxImage(null)}
-              className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white rounded-full p-2.5 backdrop-blur-sm cursor-pointer shadow-lg active:scale-95 transition-transform"
+              className="absolute top-4 right-4 bg-black/60 hover:bg-black/80 text-white rounded-sm p-2.5 cursor-pointer transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -494,8 +495,8 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
 
       {/* ADDITIONAL FEATURES PLACEHOLDER */}
       <div className="grid md:grid-cols-3 gap-6">
-        <div className="p-6 bg-indigo-600 rounded-[2rem] text-white space-y-4 shadow-xl shadow-indigo-600/20">
-           <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+        <div className="p-6 bg-indigo-600 rounded-sm text-white space-y-4">
+           <div className="w-12 h-12 bg-white/20 rounded-sm flex items-center justify-center">
              <Calendar className="w-6 h-6" />
            </div>
            <div>
@@ -507,8 +508,8 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
            </p>
         </div>
 
-        <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] space-y-4 shadow-sm">
-           <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-2xl flex items-center justify-center">
+        <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm space-y-4">
+           <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-sm flex items-center justify-center">
              <UserCheck className="w-6 h-6" />
            </div>
            <div>
@@ -520,8 +521,8 @@ export default function AttendanceTab({ showToastNotification }: AttendanceTabPr
            </p>
         </div>
 
-        <div className="p-6 bg-emerald-600 rounded-[2rem] text-white space-y-4 shadow-xl shadow-emerald-600/20">
-           <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+        <div className="p-6 bg-emerald-600 rounded-sm text-white space-y-4">
+           <div className="w-12 h-12 bg-white/20 rounded-sm flex items-center justify-center">
              <Sparkles className="w-6 h-6" />
            </div>
            <div>
