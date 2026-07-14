@@ -318,15 +318,15 @@ export default function WalletTransferTab() {
 
   return (
     <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20">
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-6">
         {/* Tab switcher */}
-        <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+        <div className="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-sm">
           <button
             type="button"
             onClick={() => setActiveTab("virtual")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-black uppercase tracking-wide rounded-lg transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-black uppercase tracking-wide rounded-sm transition-colors ${
               activeTab === "virtual"
-                ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                ? "bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400"
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             }`}
           >
@@ -336,9 +336,9 @@ export default function WalletTransferTab() {
           <button
             type="button"
             onClick={() => setActiveTab("portal_to_portal")}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-black uppercase tracking-wide rounded-lg transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-[10px] font-black uppercase tracking-wide rounded-sm transition-colors ${
               activeTab === "portal_to_portal"
-                ? "bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400 shadow-sm"
+                ? "bg-white dark:bg-slate-700 text-violet-600 dark:text-violet-400"
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             }`}
           >
@@ -395,7 +395,7 @@ export default function WalletTransferTab() {
                   type="date"
                   value={ptpDate}
                   onChange={e => setPtpDate(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200 cursor-pointer"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200 cursor-pointer"
                   required
                 />
               </div>
@@ -403,10 +403,11 @@ export default function WalletTransferTab() {
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Amount (₹)</label>
                 <input autoComplete="one-time-code"
                   type="number"
+                  inputMode="decimal"
                   value={ptpAmount}
                   onChange={e => setPtpAmount(e.target.value)}
                   placeholder="e.g. 50000"
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
+                  className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 text-slate-700 dark:text-slate-200"
                   min="1"
                   required
                 />
@@ -418,13 +419,13 @@ export default function WalletTransferTab() {
                   value={ptpRemarks}
                   onChange={e => setPtpRemarks(e.target.value)}
                   placeholder="e.g. Monthly settlement"
-                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
+                  className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isPortalTransferring}
-                className="w-full py-3 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-600"
+                className="w-full py-3 text-white rounded-sm text-xs font-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-600"
               >
                 {isPortalTransferring ? "Processing Transfer..." : "Transfer Between Accounts"}
               </button>
@@ -443,7 +444,7 @@ export default function WalletTransferTab() {
           <select
             value={vDirection}
             onChange={(e) => setVDirection(e.target.value as "load" | "refund")}
-            className="text-xs font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg px-2 py-1 outline-none cursor-pointer"
+            className="text-xs font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-sm px-2 py-1 outline-none cursor-pointer"
           >
             <option value="load">Virtual Transfer</option>
             <option value="refund">Move to Distributor</option>
@@ -498,7 +499,7 @@ export default function WalletTransferTab() {
               type="date"
               value={vDate}
               onChange={e => setVDate(e.target.value)}
-              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200 text-left cursor-pointer"
+              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200 text-left cursor-pointer"
               required
             />
           </div>
@@ -507,10 +508,11 @@ export default function WalletTransferTab() {
             <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Amount to Load (₹)</label>
             <input autoComplete="one-time-code"
               type="number"
+              inputMode="decimal"
               value={vAmount}
               onChange={e => setVAmount(e.target.value)}
               placeholder="e.g. 15000"
-              className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none text-slate-700 dark:text-slate-200"
+              className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 text-slate-700 dark:text-slate-200"
               min="1"
               required
             />
@@ -519,7 +521,7 @@ export default function WalletTransferTab() {
           <button
             type="submit"
             disabled={isTransferring}
-            className={`w-full py-3 text-white rounded-xl text-xs font-black shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+            className={`w-full py-3 text-white rounded-sm text-xs font-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
               vDirection === 'load' 
                 ? 'bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600' 
                 : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
@@ -536,10 +538,10 @@ export default function WalletTransferTab() {
         )}
       </div>
       {/* RECENT ENTRIES VIEW */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4 col-span-1">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-4 col-span-1">
 
         <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-          <History className="w-5 h-5 text-blue-650" />
+          <History className="w-5 h-5 text-blue-600" />
           <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
             Recent Virtual Transfers
           </h3>
@@ -547,7 +549,7 @@ export default function WalletTransferTab() {
 
         <div className="space-y-3">
           {recentVirtualTransfers.length === 0 ? (
-            <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-505 font-bold italic animate-pulse">
+            <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-400 font-bold italic">
               No recent virtual transfers found.
             </div>
           ) : (
@@ -568,7 +570,7 @@ export default function WalletTransferTab() {
                     onClick={() => {
                       setSelectedDepositId(tx.id);
                     }}
-                    className="py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors cursor-pointer rounded-lg px-2"
+                    className="py-3 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors cursor-pointer rounded-sm px-2"
                   >
                     {/* Left: Date & Time */}
                     <div className="flex flex-col min-w-0">
@@ -577,12 +579,12 @@ export default function WalletTransferTab() {
                     </div>
                     
                     {/* Middle: Narration */}
-                    <div className="flex-1 px-4 text-xs font-semibold text-slate-705 dark:text-slate-300 min-w-0">
+                    <div className="flex-1 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 min-w-0">
                       <div className="flex flex-col gap-0.5">
-                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider self-start ${
+                        <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider self-start ${
                           isRefund
-                            ? 'bg-red-100 dark:bg-red-955 text-red-700 dark:text-red-300'
-                            : 'bg-emerald-100 dark:bg-emerald-955/40 text-emerald-700 dark:text-emerald-400'
+                            ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300'
+                            : 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400'
                         }`}>
                           {isRefund ? 'Move to Dist' : 'Virtual Load'}
                         </span>
@@ -598,7 +600,7 @@ export default function WalletTransferTab() {
                     </div>
                     
                     {/* Right: Amount */}
-                    <div className={`text-right font-mono text-xs font-black shrink-0 ${
+                    <div className={`text-right font-mono tabular-nums text-xs font-black shrink-0 ${
                       isRefund ? "text-red-500" : "text-emerald-600 dark:text-emerald-400"
                     }`}>
                       {isRefund ? "-" : "+"} ₹{Math.round(tx.amount || 0).toLocaleString("en-IN")}
@@ -614,7 +616,7 @@ export default function WalletTransferTab() {
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
           <a
             href="/admin/virtual-ledger"
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wide text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/30 transition-all"
+            className="w-full flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-sm text-xs font-black uppercase tracking-wide text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 border border-blue-100 dark:border-blue-900/30 transition-colors"
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
             View All Virtual Transfers
@@ -624,8 +626,8 @@ export default function WalletTransferTab() {
 
       {/* Audit Drawer/Modal */}
       {selectedDepositId && currentSelection && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 select-none animate-slide-up shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 no-print">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm p-6 space-y-4 select-none">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-xs font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
                 Audit Virtual Transfer Entry
@@ -641,7 +643,7 @@ export default function WalletTransferTab() {
             </div>
 
             <div className="space-y-4 text-left">
-              <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-sm border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-black text-slate-400 uppercase">Target (Bank/BankAccount)</span>
                   <span className="text-xs font-black text-slate-900 dark:text-white uppercase">{currentSelection.targetName}</span>
@@ -652,7 +654,7 @@ export default function WalletTransferTab() {
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
                   <span className="text-[10px] font-black text-slate-400 uppercase">Amount</span>
-                  <span className="text-sm font-black text-red-600">₹{currentSelection.amount.toLocaleString()}.00</span>
+                  <span className="text-sm font-black text-red-600 font-mono tabular-nums">₹{currentSelection.amount.toLocaleString()}.00</span>
                 </div>
               </div>
 
@@ -661,13 +663,13 @@ export default function WalletTransferTab() {
                   onClick={() => {
                     handleStartEditDeposit(currentSelection);
                   }}
-                  className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-sm text-xs font-bold flex items-center justify-center gap-2"
                 >
                   <Edit className="w-4 h-4" /> Edit Entry
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="w-full py-3 border border-red-200 text-red-600 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-red-50 transition-colors"
+                  className="w-full py-3 border border-red-200 text-red-600 rounded-sm text-xs font-bold flex items-center justify-center gap-2 hover:bg-red-50 transition-colors"
                 >
                   <Trash2 className="w-4 h-4" /> Delete Entry
                 </button>
@@ -679,15 +681,15 @@ export default function WalletTransferTab() {
 
       {/* Edit Modal */}
       {isEditCollectionModalOpen && editingCollection && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto text-left">
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter">
                 Edit Virtual Transfer Entry
               </h3>
               <button 
                 onClick={() => setIsEditCollectionModalOpen(false)} 
-                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
+                className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -717,7 +719,7 @@ export default function WalletTransferTab() {
                         }
                       }
                     }}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                   >
                     <option value="portal">Cash Out</option>
                     <option value="retailer">Retailer Payout</option>
@@ -770,9 +772,9 @@ export default function WalletTransferTab() {
                         id="editToOfficeCheckbox"
                         checked={selectedNewToOffice}
                         onChange={(e) => setSelectedNewToOffice(e.target.checked)}
-                        className="w-4 h-4 text-blue-650 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                        className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                       />
-                      <label htmlFor="editToOfficeCheckbox" className="text-xs font-bold text-slate-700 dark:text-slate-355">Handover to Main Office Cashier</label>
+                      <label htmlFor="editToOfficeCheckbox" className="text-xs font-bold text-slate-700 dark:text-slate-400">Handover to Main Office Cashier</label>
                     </div>
 
                     {!selectedNewToOffice && (
@@ -820,7 +822,7 @@ export default function WalletTransferTab() {
                       <select
                         value={selectedNewVirtualTargetType}
                         onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       >
                         <option value="retailer">Retailer</option>
                         <option value="staff">Staff Member</option>
@@ -866,9 +868,10 @@ export default function WalletTransferTab() {
                   <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Amount</label>
                   <input autoComplete="one-time-code"
                     type="number"
+                    inputMode="decimal"
                     value={selectedNewAmount}
                     onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                     required
                   />
                 </div>
@@ -880,7 +883,7 @@ export default function WalletTransferTab() {
                     type="date"
                     value={selectedNewDate}
                     onChange={(e) => setSelectedNewDate(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                     required
                   />
                 </div>
@@ -892,7 +895,7 @@ export default function WalletTransferTab() {
                     type="text"
                     value={selectedNewRefNo}
                     onChange={(e) => setSelectedNewRefNo(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                     placeholder="Optional"
                   />
                 </div>
@@ -903,7 +906,7 @@ export default function WalletTransferTab() {
                   <textarea
                     value={selectedNewRemarks}
                     onChange={(e) => setSelectedNewRemarks(e.target.value)}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                     rows={2}
                     placeholder="Remarks..."
                   />
@@ -914,14 +917,14 @@ export default function WalletTransferTab() {
                 <button
                   type="button"
                   onClick={() => setIsEditCollectionModalOpen(false)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-xs font-bold transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingCollection}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-sm text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {isSavingCollection ? "Saving..." : "Save Entry"}
