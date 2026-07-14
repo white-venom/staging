@@ -238,7 +238,7 @@ export default function AdministrationTab({
         {/* Left Column: Staff & Retailer */}
         <div className="space-y-6">
           {/* Add Staff Form */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-6">
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <UserPlus className="w-5 h-5 text-indigo-600" />
               <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Add Staff</h3>
@@ -247,31 +247,31 @@ export default function AdministrationTab({
             <form onSubmit={handleCreateUser} className="space-y-4">
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Full Name</label>
-                <input autoComplete="one-time-code" type="text" value={uName} onChange={e => setUName(e.target.value)} placeholder="e.g. Rahul Sharma" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input autoComplete="one-time-code" type="text" value={uName} onChange={e => setUName(e.target.value)} placeholder="e.g. Rahul Sharma" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" required />
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Phone Number</label>
-                <input autoComplete="one-time-code" type="tel" value={uPhone} onChange={e => setUPhone(e.target.value)} placeholder="e.g. 9917128864" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input autoComplete="one-time-code" type="tel" value={uPhone} onChange={e => setUPhone(e.target.value)} placeholder="e.g. 9917128864" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" required />
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">System Role</label>
-                <select value={uRole} onChange={e => setURole(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none appearance-none">
+                <select value={uRole} onChange={e => setURole(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none appearance-none">
                   <option value="staff">Field Staff (Cash In/Out Ops)</option>
                   <option value="admin">Master Admin (Full Access)</option>
                 </select>
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Initial Password</label>
-                <input autoComplete="new-password" type="password" value={uPassword} onChange={e => setUPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                <input autoComplete="new-password" type="password" value={uPassword} onChange={e => setUPassword(e.target.value)} placeholder="••••••••" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" required />
               </div>
-              <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-200 dark:shadow-none transition-all active:scale-[0.98]">
+              <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-sm text-xs font-black transition-colors">
                 Create Account
               </button>
             </form>
           </div>
 
           {/* Register New Retailer Form */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-6">
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <Edit className="w-5 h-5 text-amber-600" />
               <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Register New Retailer</h3>
@@ -280,27 +280,27 @@ export default function AdministrationTab({
             <form onSubmit={handleCreateRetailer} className="space-y-4">
                <div>
                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Retailer Name</label>
-                 <input autoComplete="one-time-code" type="text" value={retName} onChange={e => setRetName(e.target.value)} placeholder="e.g. Gupta General Store" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                 <input autoComplete="one-time-code" type="text" value={retName} onChange={e => setRetName(e.target.value)} placeholder="e.g. Gupta General Store" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" required />
                </div>
                <div className="grid grid-cols-2 gap-4">
                  <div>
                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Phone Number</label>
-                   <input autoComplete="one-time-code" type="tel" value={retPhone} onChange={e => setRetPhone(e.target.value)} placeholder="9876543210" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                   <input autoComplete="one-time-code" type="tel" value={retPhone} onChange={e => setRetPhone(e.target.value)} placeholder="9876543210" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" required />
                  </div>
                  <div>
                    <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Area</label>
-                   <input autoComplete="one-time-code" type="text" value={retArea} onChange={e => setRetArea(e.target.value)} placeholder="Area" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                   <input autoComplete="one-time-code" type="text" value={retArea} onChange={e => setRetArea(e.target.value)} placeholder="Area" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" />
                  </div>
                </div>
                <div>
                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Email</label>
-                 <input autoComplete="one-time-code" type="email" value={retEmail} onChange={e => setRetEmail(e.target.value)} placeholder="Email Address" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                 <input autoComplete="one-time-code" type="email" value={retEmail} onChange={e => setRetEmail(e.target.value)} placeholder="Email Address" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" />
                </div>
                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-red-500 uppercase">To Take</label>
                     <input autoComplete="one-time-code" 
-                      type="number" 
+                      type="number" inputMode="decimal" 
                       min="0"
                       value={retToTake} 
                       onChange={e => setRetToTake(e.target.value)} 
@@ -308,13 +308,13 @@ export default function AdministrationTab({
                         if (Number(e.target.value) === 0) setRetToTake("");
                         e.target.select();
                       }}
-                      className="w-full px-3 py-2 bg-red-50/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold text-red-600 focus:outline-none" 
+                      className="w-full px-3 py-2 bg-red-50/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-sm text-right font-mono tabular-nums text-xs font-bold text-red-600 focus:outline-none" 
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-emerald-500 uppercase">To Give</label>
                     <input autoComplete="one-time-code" 
-                      type="number" 
+                      type="number" inputMode="decimal" 
                       min="0"
                       value={retToGive} 
                       onChange={e => setRetToGive(e.target.value)} 
@@ -322,11 +322,11 @@ export default function AdministrationTab({
                         if (Number(e.target.value) === 0) setRetToGive("");
                         e.target.select();
                       }}
-                      className="w-full px-3 py-2 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none" 
+                      className="w-full px-3 py-2 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-sm text-right font-mono tabular-nums text-xs font-bold text-emerald-600 focus:outline-none" 
                     />
                   </div>
                </div>
-               <button type="submit" className="w-full py-3 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl text-xs font-black shadow-lg transition-all active:scale-[0.98]">
+               <button type="submit" className="w-full py-3 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-sm text-xs font-black transition-colors">
                   Register Retailer
                </button>
              </form>
@@ -339,7 +339,7 @@ export default function AdministrationTab({
         {/* Right Column: BankAccount/Bank & Users Directory */}
         <div className="space-y-6">
           {/* Register BankAccount & Bank Form */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-6">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-6">
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <Globe className="w-5 h-5 text-indigo-600" />
               <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Register BankAccount & Bank</h3>
@@ -350,13 +350,13 @@ export default function AdministrationTab({
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-l-2 border-indigo-500 pl-2">add bankAccount details</span>
                 <div>
                   <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">BankAccount Name</label>
-                  <input autoComplete="one-time-code" type="text" value={pName} onChange={e => setPName(e.target.value)} placeholder="e.g. RevaPay" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" required />
+                  <input autoComplete="one-time-code" type="text" value={pName} onChange={e => setPName(e.target.value)} placeholder="e.g. RevaPay" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-red-500 uppercase">To Take</label>
                     <input autoComplete="one-time-code" 
-                      type="number" 
+                      type="number" inputMode="decimal" 
                       value={pToTake} 
                       onChange={e => setPToTake(e.target.value)} 
                       onFocus={e => {
@@ -364,13 +364,13 @@ export default function AdministrationTab({
                         e.target.select();
                       }}
                       placeholder="To Take" 
-                      className="w-full px-3 py-2 bg-red-50/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl text-xs font-bold text-red-600 focus:outline-none" 
+                      className="w-full px-3 py-2 bg-red-50/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-sm text-right font-mono tabular-nums text-xs font-bold text-red-600 focus:outline-none" 
                     />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-black text-emerald-500 uppercase">To Give</label>
                     <input autoComplete="one-time-code" 
-                      type="number" 
+                      type="number" inputMode="decimal" 
                       value={pToGive} 
                       onChange={e => setPToGive(e.target.value)} 
                       onFocus={e => {
@@ -378,7 +378,7 @@ export default function AdministrationTab({
                         e.target.select();
                       }}
                       placeholder="To Give" 
-                      className="w-full px-3 py-2 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-xl text-xs font-bold text-emerald-600 focus:outline-none" 
+                      className="w-full px-3 py-2 bg-emerald-50/30 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-sm text-right font-mono tabular-nums text-xs font-bold text-emerald-600 focus:outline-none" 
                     />
                   </div>
                 </div>
@@ -388,7 +388,7 @@ export default function AdministrationTab({
                     id="adminPortalOnline"
                     checked={pOnline} 
                     onChange={(e) => setPGroupOnline(e.target.checked)} 
-                    className="w-4 h-4 rounded text-indigo-650 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
+                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-200 dark:border-slate-800 dark:bg-slate-950 cursor-pointer"
                   />
                   <label htmlFor="adminPortalOnline" className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider cursor-pointer select-none">
                     Online
@@ -401,37 +401,37 @@ export default function AdministrationTab({
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Account Label</label>
-                    <input autoComplete="one-time-code" type="text" value={bAccName} onChange={e => setBAccName(e.target.value)} placeholder="e.g. ICICI Primary" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                    <input autoComplete="one-time-code" type="text" value={bAccName} onChange={e => setBAccName(e.target.value)} placeholder="e.g. ICICI Primary" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Bank Name</label>
-                    <input autoComplete="one-time-code" type="text" value={bBankName} onChange={e => setBBankName(e.target.value)} placeholder="ICICI Bank" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                    <input autoComplete="one-time-code" type="text" value={bBankName} onChange={e => setBBankName(e.target.value)} placeholder="ICICI Bank" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Branch Name</label>
-                    <input autoComplete="one-time-code" type="text" value={bBranchName} onChange={e => setBBranchName(e.target.value)} placeholder="e.g. Civil Lines" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                    <input autoComplete="one-time-code" type="text" value={bBranchName} onChange={e => setBBranchName(e.target.value)} placeholder="e.g. Civil Lines" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" />
                   </div>
                   <div>
                     <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Account No</label>
-                    <input autoComplete="one-time-code" type="text" value={bAccNo} onChange={e => setBAccNo(e.target.value)} placeholder="Account Number" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                    <input autoComplete="one-time-code" type="text" value={bAccNo} onChange={e => setBAccNo(e.target.value)} placeholder="Account Number" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">IFSC Code</label>
-                  <input autoComplete="one-time-code" type="text" value={bIfsc} onChange={e => setBIfsc(e.target.value)} placeholder="IFSC Code" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold focus:outline-none" />
+                  <input autoComplete="one-time-code" type="text" value={bIfsc} onChange={e => setBIfsc(e.target.value)} placeholder="IFSC Code" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" />
                 </div>
               </div>
 
-              <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all active:scale-[0.98]">
+              <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-sm text-xs font-black transition-colors">
                 Register BankAccount & Bank
               </button>
             </form>
           </div>
 
           {/* USERS DIRECTORY */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50">
               <div className="flex items-center gap-2">
                 <ShieldAlert className="w-4 h-4 text-indigo-600" />
@@ -454,7 +454,7 @@ export default function AdministrationTab({
                       <td className="px-6 py-3 font-bold text-slate-700 dark:text-slate-300">{u.name}</td>
                       <td className="px-6 py-3 text-slate-500 font-medium">{u.phone}</td>
                       <td className="px-6 py-3">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                        <span className={`px-2 py-0.5 rounded-sm text-[9px] font-black uppercase ${
                           u.role === 'admin' ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'
                         }`}>
                           {u.role}
@@ -476,7 +476,7 @@ export default function AdministrationTab({
         </div>
 
         {/* Entry Window Settings Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-5">
           <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <Clock className="w-5 h-5 text-purple-600" />
             <div>
@@ -492,11 +492,12 @@ export default function AdministrationTab({
               <div className="flex items-center gap-3">
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="1"
                   value={editWindow}
                   onChange={e => setEditWindow(e.target.value)}
                   disabled={editPermanent}
-                  className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                   placeholder="e.g. 5"
                 />
                 <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -519,11 +520,12 @@ export default function AdministrationTab({
               <div className="flex items-center gap-3">
                 <input
                   type="number"
+                  inputMode="numeric"
                   min="1"
                   value={deleteWindow}
                   onChange={e => setDeleteWindow(e.target.value)}
                   disabled={deletePermanent}
-                  className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                   placeholder="e.g. 5"
                 />
                 <label className="flex items-center gap-1.5 cursor-pointer select-none">
@@ -560,7 +562,7 @@ export default function AdministrationTab({
           <button
             onClick={handleSaveWindowSettings}
             disabled={savingWindows}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-[0.98] disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-sm text-xs font-black transition-colors disabled:opacity-60"
           >
             <Save className="w-4 h-4" />
             {savingWindows ? "Saving..." : "Save Window Settings"}
@@ -568,7 +570,7 @@ export default function AdministrationTab({
         </div>
 
         {/* Opening Cash in Hand / Old Balance Settings Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-5">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-5">
           <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <Globe className="w-5 h-5 text-emerald-600" />
             <div>
@@ -582,23 +584,24 @@ export default function AdministrationTab({
               <label className="block text-[10px] text-slate-400 uppercase font-bold">Opening Balance (₹)</label>
               <input
                 type="number"
+                inputMode="decimal"
                 value={openingCashInHand}
                 onChange={e => setOpeningCashInHand(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold focus:outline-none"
+                className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-sm font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400"
                 placeholder="e.g. 50000"
               />
             </div>
-            
+
             <div className="text-[10px] text-slate-400 flex items-center gap-1.5 min-h-[1.5rem]">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span>Currently set: <strong className="text-slate-700 dark:text-slate-350">₹{Number(openingCashInHand || 0).toLocaleString()}</strong></span>
+              <span>Currently set: <strong className="text-slate-700 dark:text-slate-400 font-mono tabular-nums">₹{Number(openingCashInHand || 0).toLocaleString()}</strong></span>
             </div>
           </div>
 
           <button
             onClick={handleSaveOpeningCash}
             disabled={savingOpeningCash}
-            className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md transition-all active:scale-[0.98] disabled:opacity-60"
+            className="w-full flex items-center justify-center gap-2 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-sm text-xs font-black transition-colors disabled:opacity-60"
           >
             <Save className="w-4 h-4" />
             {savingOpeningCash ? "Saving..." : "Save Opening Balance"}
