@@ -801,30 +801,30 @@ export default function StaffDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-100 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-950 dark:to-black transition-colors duration-200">
-      <div className="flex-1 w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-6 select-none pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <div className="flex-1 w-full max-w-md mx-auto px-2 py-2 flex flex-col gap-1.5 select-none pb-20">
 
         {/* Sync Success notification toast */}
         {syncStatusMsg && (
-          <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center gap-2 animate-pulse shadow-sm">
-            <Sparkles className="w-4 h-4 flex-shrink-0" />
+          <div className="p-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-900/40 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 rounded-sm flex items-center justify-center gap-2">
+            <Sparkles className="w-3.5 h-3.5 flex-shrink-0" />
             <span className="uppercase tracking-wider">{syncStatusMsg}</span>
           </div>
         )}
 
-        {/* REPLICATED ADMIN HEADER */}
-        <header className="bg-[#0d1b3e] border border-blue-900/40 rounded-[1.5rem] p-3 shadow-md flex items-center justify-between">
+        {/* Header */}
+        <header className="bg-[#0d1b3e] border border-blue-900/40 rounded-sm p-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo.png" 
-              alt="CrediiFlow Logo" 
+            <img
+              src="/logo.png"
+              alt="CrediiFlow Logo"
               className="h-8 w-auto object-contain"
             />
             <div className="flex items-center gap-1.5 ml-1">
               {isOnline ? (
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" title="Online"></div>
+                <div className="w-2 h-2 rounded-full bg-emerald-500" title="Online"></div>
               ) : (
-                <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]" title="Offline"></div>
+                <div className="w-2 h-2 rounded-full bg-amber-500" title="Offline"></div>
               )}
               <span className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">Staff Panel</span>
             </div>
@@ -834,7 +834,7 @@ export default function StaffDashboard() {
             {currentUser?.role === "admin" && (
               <button
                 onClick={() => router.push("/admin")}
-                className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-blue-300 active:scale-90 transition-transform cursor-pointer hover:bg-white/10"
+                className="w-10 h-10 bg-white/5 border border-white/10 rounded-sm flex items-center justify-center text-blue-300 cursor-pointer hover:bg-white/10 transition-colors"
                 title="Admin Dashboard"
               >
                 <ArrowUpRight className="w-5 h-5" />
@@ -842,14 +842,14 @@ export default function StaffDashboard() {
             )}
             <button
               onClick={() => router.push("/staff/daily-report")}
-              className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-blue-300 active:scale-90 transition-transform cursor-pointer hover:bg-white/10"
+              className="w-10 h-10 bg-white/5 border border-white/10 rounded-sm flex items-center justify-center text-blue-300 cursor-pointer hover:bg-white/10 transition-colors"
               title="Daily Report"
             >
               <FileText className="w-5 h-5" />
             </button>
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="w-10 h-10 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-slate-200 active:scale-90 transition-transform cursor-pointer hover:bg-white/10"
+              className="w-10 h-10 bg-white/5 border border-white/10 rounded-sm flex items-center justify-center text-slate-200 cursor-pointer hover:bg-white/10 transition-colors"
             >
               <Menu className="w-5 h-5" />
             </button>
@@ -860,39 +860,39 @@ export default function StaffDashboard() {
         {isSidebarOpen && (
           <div className="fixed inset-0 z-50 flex">
             {/* Backdrop overlay */}
-            <div 
-              className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-300"
+            <div
+              className="absolute inset-0 bg-slate-950/40"
               onClick={() => setIsSidebarOpen(false)}
             />
 
             {/* Drawer Content */}
-            <div className="relative ml-auto w-64 max-w-[80vw] h-full bg-white dark:bg-slate-900 border-l border-slate-100 dark:border-slate-800 shadow-[0_0_50px_rgba(0,0,0,0.3)] p-6 flex flex-col justify-between animate-in slide-in-from-right duration-300">
+            <div className="relative ml-auto w-64 max-w-[80vw] h-full bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 p-4 flex flex-col justify-between">
               <div>
                 {/* Drawer Header */}
-                <div className="flex items-center justify-between p-3.5 bg-[#0d1b3e] border border-blue-900/40 rounded-2xl mb-6 text-white shadow-md">
+                <div className="flex items-center justify-between p-2 bg-[#0d1b3e] border border-blue-900/40 rounded-sm mb-4 text-white">
                   <div className="flex items-center gap-2">
                     <img src="/logo.png" alt="CrediiFlow Logo" className="h-7 w-auto object-contain" />
                     <span className="text-[10px] font-bold text-blue-200 uppercase tracking-widest">Staff Panel</span>
                   </div>
                   <button
                     onClick={() => setIsSidebarOpen(false)}
-                    className="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
+                    className="w-8 h-8 bg-white/5 border border-white/10 rounded-sm flex items-center justify-center text-slate-200 hover:bg-white/10 transition-colors cursor-pointer"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
 
                 {/* Navigation Items list */}
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <button
                     onClick={() => {
                       setIsSidebarOpen(false);
                       router.push("/attendance");
                     }}
-                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
+                    className="w-full p-2.5 rounded-sm flex items-center gap-3 transition-colors text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
                   >
                     <div className="flex-shrink-0">
-                      <Clock className="w-5 h-5" />
+                      <Clock className="w-4 h-4" />
                     </div>
                     <span className="text-xs tracking-wider uppercase">{attendance.isCheckedIn ? "Check Out" : "Check In"}</span>
                   </button>
@@ -901,10 +901,10 @@ export default function StaffDashboard() {
                       setIsSidebarOpen(false);
                       router.push("/staff/ledger");
                     }}
-                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
+                    className="w-full p-2.5 rounded-sm flex items-center gap-3 transition-colors text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
                   >
                     <div className="flex-shrink-0">
-                      <FileText className="w-5 h-5" />
+                      <FileText className="w-4 h-4" />
                     </div>
                     <span className="text-xs tracking-wider uppercase">Ledger</span>
                   </button>
@@ -913,10 +913,10 @@ export default function StaffDashboard() {
                       setIsSidebarOpen(false);
                       router.push("/staff/daily-report");
                     }}
-                    className="w-full p-4 rounded-2xl flex items-center gap-4 transition-all duration-200 active:scale-[0.98] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
+                    className="w-full p-2.5 rounded-sm flex items-center gap-3 transition-colors text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 font-bold"
                   >
                     <div className="flex-shrink-0">
-                      <FileText className="w-5 h-5" />
+                      <FileText className="w-4 h-4" />
                     </div>
                     <span className="text-xs tracking-wider uppercase">Daily Report</span>
                   </button>
@@ -924,7 +924,7 @@ export default function StaffDashboard() {
               </div>
 
               {/* Drawer Footer */}
-              <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-2">
                 <div>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Logged in as</p>
                   <p className="text-xs font-black text-slate-700 dark:text-slate-200 mt-1 truncate">{currentUser?.name || "Staff Member"}</p>
@@ -940,7 +940,7 @@ export default function StaffDashboard() {
                       if (result === "show-ios-modal") setShowIOSModal(true);
                       else if (result === "dismissed") alert("To install: tap the browser 3-dot menu → Add to Home Screen.");
                     }}
-                    className="w-full py-3.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform cursor-pointer border border-blue-100 dark:border-blue-900/30"
+                    className="w-full py-2.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-sm font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 cursor-pointer border border-blue-100 dark:border-blue-900/30 transition-colors"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -950,7 +950,7 @@ export default function StaffDashboard() {
                 )}
                 <button
                   onClick={handleLogout}
-                  className="w-full py-4 bg-red-50 text-red-600 dark:bg-red-900/10 dark:text-red-500 rounded-2xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 active:scale-[0.98] transition-transform cursor-pointer"
+                  className="w-full py-2.5 bg-red-50 text-red-600 dark:bg-red-900/10 dark:text-red-500 rounded-sm font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 cursor-pointer transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Log Out Securely
@@ -982,34 +982,34 @@ export default function StaffDashboard() {
           coins={coins}
         />
 
-        <div className="mt-4 mb-2">
+        <div className="mt-1.5">
           <NavigationGrid isCheckedIn={attendance.isCheckedIn} router={router} onClickLink={() => {}} />
         </div>
 
         {/* Offline Queues */}
         {(offlineCollections.length > 0 || offlineDeposits.length > 0) && (
-          <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 space-y-2 shadow-sm">
+          <div className="p-2 rounded-sm bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <CloudLightning className="w-3.5 h-3.5 text-amber-500 animate-bounce" />
+                <CloudLightning className="w-3.5 h-3.5 text-amber-500" />
                 <span className="text-[9px] font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
                   Waiting List ({offlineCollections.length + offlineDeposits.length})
                 </span>
               </div>
-              <span className="text-[8px] uppercase font-bold text-amber-600 dark:text-amber-500 animate-pulse flex items-center gap-1 bg-amber-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900/40">
+              <span className="text-[8px] uppercase font-bold text-amber-600 dark:text-amber-500 flex items-center gap-1 bg-amber-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-sm border border-amber-200 dark:border-amber-900/40">
                 <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Waiting...
               </span>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               {offlineCollections.map((col, index) => (
-                <div key={index} className="py-1.5 px-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between shadow-sm">
+                <div key={index} className="py-1 px-2 rounded-sm bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between">
                   <div>
                     <span className="font-black text-slate-800 dark:text-slate-200">{col.retailerName}</span>
                     <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash In • {col.date}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-800 dark:text-slate-100">₹{col.totalAmount.toLocaleString()}</span>
+                    <span className="font-black text-slate-800 dark:text-slate-100 font-mono tabular-nums">₹{col.totalAmount.toLocaleString()}</span>
                     <button
                       type="button"
                       onClick={() => handleDeleteOfflineItem("collection", col.id)}
@@ -1023,13 +1023,13 @@ export default function StaffDashboard() {
               ))}
 
               {offlineDeposits.map((dep, index) => (
-                <div key={index} className="py-1.5 px-2 rounded-lg bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between shadow-sm">
+                <div key={index} className="py-1 px-2 rounded-sm bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between">
                   <div>
                     <span className="font-black text-slate-800 dark:text-slate-200">{dep.targetName}</span>
                     <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash Out • {dep.date}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-800 dark:text-slate-100">₹{dep.amount.toLocaleString()}</span>
+                    <span className="font-black text-slate-800 dark:text-slate-100 font-mono tabular-nums">₹{dep.amount.toLocaleString()}</span>
                     <button
                       type="button"
                       onClick={() => handleDeleteOfflineItem("deposit", dep.id)}
@@ -1045,9 +1045,9 @@ export default function StaffDashboard() {
           </div>
         )}
 
-        {/* PREMIUM HISTORY LEDGER */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-2 px-1">
+        {/* HISTORY LEDGER */}
+        <div className="mt-1.5">
+          <div className="flex items-center justify-between mb-1.5 px-1">
             <div className="flex items-center gap-2">
               <h3 className="text-[9px] font-black uppercase tracking-wider text-slate-400">
                 Recent Cash Ledger
@@ -1055,7 +1055,7 @@ export default function StaffDashboard() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as any)}
-                className="bg-transparent border-none text-[8px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider focus:outline-none cursor-pointer"
+                className="bg-transparent border-none text-[8px] font-black text-slate-500 dark:text-slate-500 uppercase tracking-wider focus:outline-none cursor-pointer"
               >
                 <option value="date-desc">LATEST FIRST</option>
                 <option value="date-asc">OLDEST FIRST</option>
@@ -1065,12 +1065,12 @@ export default function StaffDashboard() {
             </div>
             <button
               onClick={() => router.push("/staff/ledger")}
-              className="text-[8px] font-black uppercase tracking-widest text-blue-500 hover:text-blue-600 transition-colors flex items-center gap-1 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-full border border-blue-100 dark:border-blue-900/30 shadow-sm"
+              className="text-[8px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-700 transition-colors flex items-center gap-1 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-sm border border-blue-100 dark:border-blue-900/30"
             >
               View All <ArrowUpRight className="w-2.5 h-2.5" />
             </button>
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
              {(() => {
                const sorted = [...combinedLedger].sort((a, b) => {
                  const timeA = new Date(a.date.replace(' ', 'T')).getTime();
@@ -1095,13 +1095,13 @@ export default function StaffDashboard() {
                return (
                  <div
                    key={c.id}
-                   className={`rounded-lg border flex flex-col shadow-sm transition-all ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/80 border-blue-200/60 dark:border-blue-900/30' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:shadow-md cursor-pointer'}`}
+                   className={`rounded-sm border flex flex-col ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/80 border-blue-200/60 dark:border-blue-900/30' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 cursor-pointer'}`}
                    onClick={() => setExpandedHomeId(prev => prev === c.id ? null : c.id)}
                  >
                    {/* Main row */}
-                   <div className="p-2 flex items-center justify-between">
+                   <div className="p-1.5 flex items-center justify-between">
                      <div className="flex items-center gap-2">
-                       <div className={`w-7 h-7 rounded bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center transition-colors shadow-inner flex-shrink-0 ${c.type === 'collection' ? 'group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20' : 'group-hover:bg-red-50 dark:group-hover:bg-red-900/20'}`}>
+                       <div className={`w-7 h-7 rounded-sm bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center flex-shrink-0`}>
                          {c.type === 'collection' ? (
                            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                          ) : (
@@ -1121,53 +1121,53 @@ export default function StaffDashboard() {
                                  e.stopPropagation();
                                  setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }));
                                }}
-                               className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer inline-flex items-center justify-center"
+                               className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-sm transition-colors cursor-pointer inline-flex items-center justify-center"
                                title="View Remark"
                              >
-                               <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[c.id] ? 'rotate-180 text-indigo-500' : ''}`} />
+                               <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform ${cmsRemarksExpanded[c.id] ? 'rotate-180' : ''}`} />
                              </button>
                            )}
                          </div>
                          {c.remarks && cmsRemarksExpanded[c.id] && (
-                           <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-955/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400">
+                           <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded-sm border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-600 dark:text-slate-400">
                              <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
                              <span className="italic">{c.remarks || "no remark"}</span>
                            </div>
                          )}
                          <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                           <span className="text-blue-500">{c.type === 'collection' ? (c.bankAccountName || "Handover") : (c.depositType || 'Deposit')}</span>
+                           <span className="text-blue-600 dark:text-blue-400">{c.type === 'collection' ? (c.bankAccountName || "Handover") : (c.depositType || 'Deposit')}</span>
                            <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                            <span>{c.date}</span>
                          </div>
                        </div>
                      </div>
                      <div className="text-right flex-shrink-0 ml-2 flex items-center gap-1.5">
-                       <span className={`text-xs font-black tracking-tight block ${c.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
+                       <span className={`text-xs font-black tracking-tight font-mono tabular-nums block ${c.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
                          {c.type === 'collection' ? '+' : '-'}₹{c.totalAmount.toLocaleString()}
                        </span>
-                       <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                       <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                      </div>
                    </div>
 
                    {/* Balance row */}
-                   <div className="grid grid-cols-2 gap-1 bg-slate-50/50 dark:bg-slate-950/50 mx-2 mb-2 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800/50">
+                   <div className="grid grid-cols-2 gap-1 bg-slate-50/50 dark:bg-slate-950/50 mx-1.5 mb-1.5 p-1.5 rounded-sm border border-slate-100 dark:border-slate-800/50">
                      <div className="flex flex-col">
                        <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
-                       <span className="text-[9px] font-bold text-slate-500">₹{snapshots.prev.toLocaleString()}</span>
+                       <span className="text-[9px] font-bold text-slate-500 font-mono tabular-nums">₹{snapshots.prev.toLocaleString()}</span>
                      </div>
                      <div className="flex flex-col text-right">
                        <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
-                       <span className="text-[9px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                       <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 font-mono tabular-nums">₹{snapshots.next.toLocaleString()}</span>
                      </div>
                    </div>
 
                    {/* Expanded panel */}
                    {isExpanded && (
-                     <div className="border-t border-slate-100 dark:border-slate-800 mx-2 mb-2 pt-2" onClick={e => e.stopPropagation()}>
+                     <div className="border-t border-slate-100 dark:border-slate-800 mx-1.5 mb-1.5 pt-1.5" onClick={e => e.stopPropagation()}>
                        {/* Denomination breakdown */}
                        <div className="mb-1.5">
                          <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
-                         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-300">
+                         <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-300 font-mono tabular-nums">
                            {Number(den.note_500 || 0) !== 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
                            {Number(den.note_200 || 0) !== 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
                            {Number(den.note_100 || 0) !== 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
@@ -1190,7 +1190,7 @@ export default function StaffDashboard() {
                                shareDepositEntry({ deposit_type: c.depositType, target_name: c.targetName, bank_account_name: c.bankAccountName, amount: c.totalAmount, denominations: c.denominations, created_at: c.created_at || c.date, remarks: c.remarks }, currentUser.name, currentUser.id);
                              }
                            }}
-                           className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 active:scale-95 transition-transform"
+                           className="flex-1 flex items-center justify-center gap-1 py-1 rounded-sm bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 transition-colors"
                          >
                            <Share2 className="w-2.5 h-2.5" /> Share
                          </button>
@@ -1205,12 +1205,12 @@ export default function StaffDashboard() {
                                    // popup, so the two windows match.
                                    router.push(c.type === "collection" ? `/collection?editId=${c.id}` : `/deposit?editId=${c.id}`);
                                  }}
-                                 className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-955/20 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
+                                 className="flex-1 flex items-center justify-center gap-1 py-1 rounded-sm bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 transition-colors"
                                >
                                  <Edit2 className="w-2.5 h-2.5" /> Edit
                                </button>
                              ) : (
-                               <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-md border border-slate-100/10">
+                               <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-sm border border-slate-100/10">
                                  Edit expired
                                </div>
                              )}
@@ -1235,18 +1235,18 @@ export default function StaffDashboard() {
                                      alert('Delete failed: ' + err.message);
                                    }
                                  }}
-                                 className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 active:scale-95 transition-transform"
+                                 className="flex-1 flex items-center justify-center gap-1 py-1 rounded-sm bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 transition-colors"
                                >
                                  <Trash2 className="w-2.5 h-2.5" /> Delete
                                </button>
                              ) : (
-                               <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-md border border-slate-100/10">
+                               <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-sm border border-slate-100/10">
                                  Delete expired
                                </div>
                              )}
                            </>
                          ) : (
-                           <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50 dark:bg-slate-800/50 rounded-md border border-slate-100 dark:border-slate-800">
+                           <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50 dark:bg-slate-800/50 rounded-sm border border-slate-100 dark:border-slate-800">
                              Action window expired
                            </div>
                          )}
@@ -1257,7 +1257,7 @@ export default function StaffDashboard() {
                );
              })}
              {combinedLedger.length === 0 && (
-               <div className="text-center py-5 bg-white/50 dark:bg-slate-900/50 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 shadow-sm">
+               <div className="text-center py-5 bg-white/50 dark:bg-slate-900/50 rounded-sm border border-dashed border-slate-300 dark:border-slate-700">
                  <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">No recent entries</p>
                </div>
              )}
@@ -1279,12 +1279,12 @@ export default function StaffDashboard() {
       {editingItem && (() => {
         const isCol = editingItem.type === "collection";
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div 
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/40">
+            <div
               className="absolute inset-0"
               onClick={() => setEditingItem(null)}
             />
-            <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xs max-h-[85vh] overflow-y-auto p-4 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col gap-3 text-slate-800 dark:text-slate-100">
+            <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-xs max-h-[85vh] overflow-y-auto p-3 flex flex-col gap-2 text-slate-800 dark:text-slate-100">
               <div>
                 <h3 className="text-xs font-black uppercase tracking-wider">
                   {isCol ? "Edit Cash In Entry" : "Edit Cash Out Entry"}
@@ -1292,8 +1292,8 @@ export default function StaffDashboard() {
                 <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">Update counts and remarks</p>
               </div>
 
-              <form onSubmit={handleSaveEdit} className="space-y-3">
-                <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">
+              <form onSubmit={handleSaveEdit} className="space-y-2">
+                <div className="space-y-1 max-h-[40vh] overflow-y-auto pr-1">
                   {[
                     { label: "₹500 Notes", key: "note_500", val: 500 },
                     { label: "₹200 Notes", key: "note_200", val: 200 },
@@ -1302,57 +1302,60 @@ export default function StaffDashboard() {
                     { label: "₹20 Notes", key: "note_20", val: 20 },
                     { label: "₹10 Notes", key: "note_10", val: 10 },
                   ].map(note => (
-                    <div key={note.key} className="flex items-center justify-between text-[11px]">
+                    <div key={note.key} className="flex items-center justify-between text-[11px] py-0.5">
                       <span className="font-bold text-slate-500">{note.label}</span>
-                      <div className="flex items-center gap-2.5">
+                      <div className="flex items-center gap-2">
                         <input autoComplete="one-time-code"
                           type="number"
+                          inputMode="numeric"
                           value={editDenoms[note.key] === 0 ? "" : editDenoms[note.key]}
                           onChange={(e) => {
                             const v = e.target.value === "" ? 0 : parseInt(e.target.value);
                             setEditDenoms((prev: any) => ({ ...prev, [note.key]: isNaN(v) ? 0 : v }));
                           }}
-                          className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
+                          className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-xs font-mono font-bold tabular-nums"
                           placeholder="0"
                         />
-                        <span className={`w-14 text-right font-bold ${(editDenoms[note.key] || 0) < 0 ? 'text-red-500' : 'text-slate-500'}`}>
+                        <span className={`w-14 text-right font-bold font-mono tabular-nums ${(editDenoms[note.key] || 0) < 0 ? 'text-red-600 dark:text-red-500' : 'text-slate-500'}`}>
                           ₹{((editDenoms[note.key] || 0) * note.val).toLocaleString()}
                         </span>
                       </div>
                     </div>
                   ))}
 
-                  <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center justify-between text-[11px] py-0.5">
                     <span className="font-bold text-slate-500">Coins Sum</span>
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2">
                       <input autoComplete="one-time-code"
                         type="number"
+                        inputMode="decimal"
                         step="0.01"
                         value={editDenoms.coins || ""}
                         onChange={(e) => {
                           let v = e.target.value === "" ? 0 : parseFloat(e.target.value);
                           setEditDenoms((prev: any) => ({ ...prev, coins: isNaN(v) ? 0 : v }));
                         }}
-                        className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200/80 rounded text-xs font-bold"
+                        className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-xs font-mono font-bold tabular-nums"
                       />
-                      <span className="w-14 text-right text-slate-500 font-bold">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
+                      <span className="w-14 text-right text-slate-500 font-bold font-mono tabular-nums">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-[11px]">
+                  <div className="flex items-center justify-between text-[11px] py-0.5">
                     <span className="font-bold text-slate-500">UPI Online</span>
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2">
                       <input autoComplete="one-time-code"
                         type="number"
+                        inputMode="decimal"
                         value={editDenoms.online_amount || ""}
                         onChange={(e) => {
                           const v = e.target.value === "" ? 0 : parseInt(e.target.value);
                           setEditDenoms((prev: any) => ({ ...prev, online_amount: isNaN(v) ? 0 : v }));
                         }}
-                        className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200/80 rounded text-xs font-bold"
+                        className="w-14 px-1.5 py-0.5 text-right bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none rounded-sm text-xs font-mono font-bold tabular-nums"
                         min="0"
                       />
-                      <span className="w-14 text-right text-slate-500 font-bold">₹{Number(editDenoms.online_amount || 0).toLocaleString()}</span>
+                      <span className="w-14 text-right text-slate-500 font-bold font-mono tabular-nums">₹{Number(editDenoms.online_amount || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -1362,19 +1365,19 @@ export default function StaffDashboard() {
                   <textarea
                     value={editRemarks}
                     onChange={(e) => setEditRemarks(e.target.value)}
-                    className="w-full p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs focus:outline-none focus:border-slate-400 font-bold"
+                    className="w-full p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-xs focus:outline-none focus:border-slate-400 font-bold"
                     rows={2}
                     placeholder="Enter remarks..."
                   />
                 </div>
 
-                <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center justify-between bg-slate-100 dark:bg-slate-900 p-2 rounded-sm border border-slate-200 dark:border-slate-800">
                   <div>
                     <span className="text-[7.5px] font-black uppercase text-slate-400 tracking-wider">Total Amount</span>
                     {isCol && (() => {
                       const tot = editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount;
                       if (tot < 0) return (
-                        <div className="flex items-center gap-1 mt-0.5 text-amber-500">
+                        <div className="flex items-center gap-1 mt-0.5 text-red-600 dark:text-red-500">
                           <AlertTriangle className="w-3 h-3 shrink-0" />
                           <p className="text-[8px] font-bold">Negative total — note exchange mode</p>
                         </div>
@@ -1382,7 +1385,7 @@ export default function StaffDashboard() {
                       return null;
                     })()}
                   </div>
-                  <span className={`text-sm font-black ${isCol && (editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount) < 0 ? 'text-red-500' : ''}`}>
+                  <span className={`text-sm font-black font-mono tabular-nums ${isCol && (editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount) < 0 ? 'text-red-600 dark:text-red-500' : 'text-slate-800 dark:text-slate-200'}`}>
                     ₹{(
                       editDenoms.note_500 * 500 +
                       editDenoms.note_200 * 200 +
@@ -1400,14 +1403,14 @@ export default function StaffDashboard() {
                   <button
                     type="button"
                     onClick={() => setEditingItem(null)}
-                    className="flex-1 py-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-xs font-bold rounded-lg active:scale-[0.98] transition-all cursor-pointer"
+                    className="flex-1 py-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-xs font-bold rounded-sm transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSaving}
-                    className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 text-xs font-bold rounded-lg active:scale-[0.98] transition-all cursor-pointer"
+                    className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 text-xs font-bold rounded-sm transition-colors cursor-pointer"
                   >
                     {isSaving ? "Saving..." : "Save"}
                   </button>
@@ -1682,46 +1685,44 @@ function SummaryBlocks({
   coins
 }: any) {
   return (
-    <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-md relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-full blur-2xl pointer-events-none -mr-8 -mt-8" />
-
-      <div className="flex items-center gap-2 mb-3 relative z-10">
-        <div className="p-1 bg-emerald-50 dark:bg-emerald-950/50 rounded-md border border-emerald-100 dark:border-emerald-900/30">
+    <div className="p-2 rounded-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="p-1 bg-emerald-50 dark:bg-emerald-950/50 rounded-sm border border-emerald-100 dark:border-emerald-900/30">
           <Coins className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-500" />
         </div>
         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400">Cash Summary</span>
       </div>
 
       {/* 4-column formula grid */}
-      <div className="grid grid-cols-4 gap-1.5 relative z-10">
+      <div className="grid grid-cols-4 gap-1">
         {/* Old Balance */}
-        <div className="p-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-lg flex flex-col">
+        <div className="p-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-sm flex flex-col">
           <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Old Bal</span>
-          <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5">₹{oldBalance.toLocaleString()}</span>
+          <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5 font-mono tabular-nums">₹{oldBalance.toLocaleString()}</span>
         </div>
         {/* Today In */}
-        <div className="p-2 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-lg flex flex-col">
+        <div className="p-1.5 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-sm flex flex-col">
           <span className="text-[6.5px] font-black text-emerald-600 uppercase tracking-widest">+ Today In</span>
-          <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5">₹{todayIn.toLocaleString()}</span>
+          <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5 font-mono tabular-nums">₹{todayIn.toLocaleString()}</span>
         </div>
         {/* Today Out */}
-        <div className="p-2 bg-red-50/60 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-lg flex flex-col">
+        <div className="p-1.5 bg-red-50/60 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-sm flex flex-col">
           <span className="text-[6.5px] font-black text-red-600 uppercase tracking-widest">- Today Out</span>
-          <span className="text-[10px] font-black text-red-700 dark:text-red-400 mt-0.5">₹{todayOut.toLocaleString()}</span>
+          <span className="text-[10px] font-black text-red-700 dark:text-red-400 mt-0.5 font-mono tabular-nums">₹{todayOut.toLocaleString()}</span>
         </div>
         {/* Net */}
-        <div className={`p-2 rounded-lg flex flex-col border ${
+        <div className={`p-1.5 rounded-sm flex flex-col border ${
           netBalance < 0
             ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30'
-            : 'bg-blue-50/60 dark:bg-blue-950/20 border-blue-100 dark:border-blue-900/30'
+            : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800'
         }`}>
           <span className={`text-[6.5px] font-black uppercase tracking-widest ${
-            netBalance < 0 ? 'text-red-600' : 'text-blue-600'
+            netBalance < 0 ? 'text-red-600' : 'text-slate-500'
           }`}>
             = Net
           </span>
-          <span className={`text-[10px] font-black mt-0.5 ${
-            netBalance < 0 ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'
+          <span className={`text-[10px] font-black mt-0.5 font-mono tabular-nums ${
+            netBalance < 0 ? 'text-red-700 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'
           }`}>
             ₹{netBalance.toLocaleString()}
           </span>
@@ -1729,19 +1730,19 @@ function SummaryBlocks({
       </div>
 
       {/* Cash / Online split */}
-      <div className="grid grid-cols-2 gap-1.5 mt-2 relative z-10">
-        <div className="flex flex-col px-2 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+      <div className="grid grid-cols-2 gap-1 mt-1">
+        <div className="flex flex-col px-2 py-1 rounded-sm bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
           <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Cash Notes</span>
-          <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5">₹{totalCashNotes.toLocaleString()}</span>
+          <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5 font-mono tabular-nums">₹{totalCashNotes.toLocaleString()}</span>
         </div>
-        <div className="flex flex-col px-2 py-1.5 rounded-lg bg-blue-50/50 dark:bg-blue-950/10 border border-blue-100 dark:border-blue-900/20">
-          <span className="text-[7px] font-black text-blue-500 uppercase tracking-widest">Online / UPI</span>
-          <span className="text-[10px] font-black text-blue-700 dark:text-blue-400 mt-0.5">₹{totalOnline.toLocaleString()}</span>
+        <div className="flex flex-col px-2 py-1 rounded-sm bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Online / UPI</span>
+          <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5 font-mono tabular-nums">₹{totalOnline.toLocaleString()}</span>
         </div>
       </div>
 
       {/* Denomination Breakdown toggle */}
-      <div className="pt-2 relative z-10">
+      <div className="pt-1.5">
         <button
           onClick={() => setShowNotesBreakdown(!showNotesBreakdown)}
           className="w-full flex items-center justify-between text-xs font-black text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 focus:outline-none transition-colors"
@@ -1751,7 +1752,7 @@ function SummaryBlocks({
         </button>
 
         {showNotesBreakdown && (
-          <div className="grid grid-cols-2 gap-1.5 mt-2 text-[11px] font-medium">
+          <div className="grid grid-cols-2 gap-1 mt-1.5 text-[11px] font-medium">
             {[
               { value: "500", count: note500 },
               { value: "200", count: note200 },
@@ -1760,18 +1761,18 @@ function SummaryBlocks({
               { value: "20",  count: note20 },
               { value: "10",  count: note10 },
             ].map((note) => (
-              <div key={note.value} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 py-1.5 px-2 rounded-lg border border-slate-100 dark:border-slate-800/60">
+              <div key={note.value} className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 py-1 px-2 rounded-sm border border-slate-100 dark:border-slate-800/60">
                 <span className="text-slate-400 font-bold">₹{note.value}</span>
-                <span className={`font-black px-1.5 py-0.5 rounded border ${
+                <span className={`font-black px-1.5 py-0.5 rounded-sm font-mono tabular-nums ${
                   note.count < 0
-                    ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/40'
-                    : 'text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 border-slate-200/50 dark:border-slate-800'
+                    ? 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30'
+                    : 'text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900'
                 }`}>{note.count}</span>
               </div>
             ))}
-            <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-100 dark:border-slate-800/60 mt-0.5">
+            <div className="col-span-2 flex items-center justify-between bg-slate-50 dark:bg-slate-950 px-2 py-1 rounded-sm border border-slate-100 dark:border-slate-800/60">
               <span className="text-slate-400 font-black uppercase tracking-widest text-[8px]">Coins</span>
-              <span className={`font-black text-xs ${coins < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>₹{coins.toFixed(2)}</span>
+              <span className={`font-black text-xs font-mono tabular-nums ${coins < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>₹{coins.toFixed(2)}</span>
             </div>
           </div>
         )}
@@ -1782,7 +1783,7 @@ function SummaryBlocks({
 
 function NavigationGrid({ isCheckedIn, router, onClickLink }: any) {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-1.5">
       <button
         onClick={() => {
           if (!isCheckedIn) {
@@ -1792,9 +1793,9 @@ function NavigationGrid({ isCheckedIn, router, onClickLink }: any) {
           if (onClickLink) onClickLink();
           router.push("/collection");
         }}
-        className={`relative overflow-hidden p-2 rounded-lg bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-500/50 hover:shadow-md text-left transition-all duration-300 group shadow-sm flex items-center gap-2 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
+        className={`p-2 rounded-sm bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-500/50 text-left transition-colors flex items-center gap-2 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
       >
-        <div className="w-8 h-8 rounded bg-[#00a86b] dark:bg-emerald-600 flex items-center justify-center flex-shrink-0 text-white shadow-sm">
+        <div className="w-8 h-8 rounded-sm bg-[#00a86b] dark:bg-emerald-600 flex items-center justify-center flex-shrink-0 text-white">
           <PlusCircle className="w-4.5 h-4.5" strokeWidth={2.5} />
         </div>
         <div>
@@ -1812,9 +1813,9 @@ function NavigationGrid({ isCheckedIn, router, onClickLink }: any) {
           if (onClickLink) onClickLink();
           router.push("/deposit");
         }}
-        className={`relative overflow-hidden p-2 rounded-lg bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/50 hover:shadow-md text-left transition-all duration-300 group shadow-sm flex items-center gap-2 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
+        className={`p-2 rounded-sm bg-white dark:bg-slate-900 border border-red-200 dark:border-red-500/50 text-left transition-colors flex items-center gap-2 ${!isCheckedIn ? "opacity-40 grayscale cursor-not-allowed" : ""}`}
       >
-        <div className="w-8 h-8 rounded bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0 text-red-500 dark:text-red-400">
+        <div className="w-8 h-8 rounded-sm bg-red-100 dark:bg-red-900/40 flex items-center justify-center flex-shrink-0 text-red-500 dark:text-red-400">
           <ArrowUpRight className="w-4.5 h-4.5" strokeWidth={2.5} />
         </div>
         <div>
