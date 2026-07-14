@@ -766,21 +766,21 @@ export default function DashboardPage() {
                   <tbody className="divide-y divide-slate-100 text-slate-755">
                     <tr>
                       <td className="px-3.5 py-2 font-bold text-slate-900">doit_frontend</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">do-it-services-frontend:latest</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">crediiflow-frontend:latest</td>
                       <td className="px-3.5 py-2 font-mono text-slate-500">doit_frontend</td>
                       <td className="px-3.5 py-2 font-mono text-slate-500">{"3000 -> 3000"}</td>
                       <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
                     </tr>
                     <tr>
                       <td className="px-3.5 py-2 font-bold text-slate-900">doit_backend</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">do-it-services-backend:latest</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">crediiflow-backend:latest</td>
                       <td className="px-3.5 py-2 font-mono text-slate-500">doit_backend</td>
                       <td className="px-3.5 py-2 font-mono text-slate-500">{"8000 -> 8000"}</td>
                       <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
                     </tr>
                     <tr>
                       <td className="px-3.5 py-2 font-bold text-slate-900">doit_superadmin_frontend</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">do-it-services-superadmin-frontend:latest</td>
+                      <td className="px-3.5 py-2 font-mono text-slate-500">crediiflow-superadmin-frontend:latest</td>
                       <td className="px-3.5 py-2 font-mono text-slate-500">doit_superadmin_frontend</td>
                       <td className="px-3.5 py-2 font-mono text-slate-500">{"3001 -> 3001"}</td>
                       <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
