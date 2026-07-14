@@ -73,7 +73,7 @@ export default function InlineDatePicker({ value, onChange, label, type }: Inlin
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-slate-50 dark:bg-slate-800 p-4 rounded-2xl w-full text-left active:scale-[0.98] transition-transform flex items-center justify-between"
+        className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 p-2.5 rounded-sm w-full text-left flex items-center justify-between"
       >
         <div>
           <p className="text-[7px] font-black text-slate-400 uppercase mb-1">{label}</p>
@@ -88,8 +88,8 @@ export default function InlineDatePicker({ value, onChange, label, type }: Inlin
 
       {/* Dropdown Picker */}
       {isOpen && (
-        <div 
-          className="absolute left-0 right-0 mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-xl z-50 p-4 space-y-3 animate-in fade-in zoom-in-95 duration-150 text-left"
+        <div
+          className="absolute left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-sm z-50 p-3 space-y-2 text-left"
         >
           {/* Header with Month & Year Dropdowns */}
           <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -97,7 +97,7 @@ export default function InlineDatePicker({ value, onChange, label, type }: Inlin
               <select
                 value={selectedMonthForDays}
                 onChange={(e) => setSelectedMonthForDays(parseInt(e.target.value))}
-                className="text-xs font-black bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer"
+                className="text-xs font-black bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-sm px-2 py-1.5 outline-none cursor-pointer"
               >
                 {MONTHS_FULL.map((m, idx) => (
                   <option key={m} value={idx + 1}>{m}</option>
@@ -107,7 +107,7 @@ export default function InlineDatePicker({ value, onChange, label, type }: Inlin
               <select
                 value={expandedYear}
                 onChange={(e) => setExpandedYear(parseInt(e.target.value))}
-                className="text-xs font-black bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer"
+                className="text-xs font-black bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-sm px-2 py-1.5 outline-none cursor-pointer"
               >
                 {years.map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -118,7 +118,7 @@ export default function InlineDatePicker({ value, onChange, label, type }: Inlin
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="text-[9px] font-black text-slate-400 hover:text-slate-600 dark:hover:text-slate-250 uppercase px-2 py-1 rounded-lg cursor-pointer"
+              className="text-[9px] font-black text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 uppercase px-2 py-1 rounded-sm cursor-pointer transition-colors"
             >
               Close
             </button>
@@ -144,12 +144,12 @@ export default function InlineDatePicker({ value, onChange, label, type }: Inlin
                   key={day}
                   type="button"
                   onClick={() => handleDaySelect(expandedYear, selectedMonthForDays, day)}
-                  className={`py-1.5 text-xs font-bold rounded-xl transition-all active:scale-90 flex items-center justify-center cursor-pointer ${
+                  className={`py-1.5 text-xs font-bold rounded-sm transition-colors flex items-center justify-center cursor-pointer ${
                     isSelected
-                      ? "bg-blue-600 text-white shadow-md font-black"
+                      ? "bg-blue-600 text-white font-black"
                       : isToday
-                      ? "border border-blue-500 text-blue-600 dark:text-blue-450 font-black hover:bg-slate-50 dark:hover:bg-slate-800"
-                      : "text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800"
+                      ? "border border-blue-500 text-blue-600 dark:text-blue-400 font-black hover:bg-slate-50 dark:hover:bg-slate-800"
+                      : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
                   }`}
                 >
                   {day}
