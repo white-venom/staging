@@ -6,17 +6,20 @@ networks:
 
 volumes:
   postgres_data:
-    driver: local
+    name: do-it-services_postgres_data
+    external: true
   letsencrypt_certs:
     driver: local
   certbot_www:
-    driver: local
+    name: do-it-services_certbot_www
+    external: true
 
 services:
   db:
     image: postgres:16-alpine
     container_name: crediiflow_db
     restart: always
+    command: postgres -c max_connections=400 -c shared_buffers=256MB
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-doit_production}
       POSTGRES_USER: ${POSTGRES_USER:-doit_admin}
