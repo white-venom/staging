@@ -344,7 +344,7 @@ ${dateFormatted}`;
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/staff")}
-              className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-md cursor-pointer"
+              className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-sm cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
@@ -363,13 +363,13 @@ ${dateFormatted}`;
             placeholder="Filter by retailer or bankAccount..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-[11px] text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold shadow-sm"
+            className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-sm focus:outline-none text-[11px] text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold"
           />
         </div>
 
         {/* Date Filters */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 shadow-sm">
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1">
             <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
               <span className="text-[7.5px] text-slate-400 font-black uppercase">Date From</span>
@@ -381,7 +381,7 @@ ${dateFormatted}`;
               />
             </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 shadow-sm">
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1">
             <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
               <span className="text-[7.5px] text-slate-400 font-black uppercase">Date To</span>
@@ -402,8 +402,8 @@ ${dateFormatted}`;
               <RefreshCw className="w-5 h-5 animate-spin text-slate-400" />
             </div>
           ) : Object.keys(groupedCollections).length === 0 ? (
-            <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold">
-              <Calendar className="w-4 h-4 text-slate-350 mx-auto mb-1" />
+            <div className="p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold">
+              <Calendar className="w-4 h-4 text-slate-300 mx-auto mb-1" />
               No matching collection records found.
             </div>
           ) : (
@@ -418,11 +418,11 @@ ${dateFormatted}`;
                   return (
                     <div
                       key={c.id}
-                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden shadow-sm transition-all"
+                      className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm overflow-hidden transition-colors"
                     >
                       <div
                         onClick={() => toggleExpand(c.id)}
-                        className="p-2 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-955/40 transition-colors"
+                        className="p-2 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950/40 transition-colors"
                       >
                          <div>
                           <div className="flex items-center gap-1">
@@ -437,7 +437,7 @@ ${dateFormatted}`;
                                   e.stopPropagation();
                                   setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }));
                                 }}
-                                className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-all cursor-pointer inline-flex items-center justify-center"
+                                className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors cursor-pointer inline-flex items-center justify-center"
                                 title="View Remark"
                               >
                                 <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[c.id] ? 'rotate-180 text-indigo-500' : ''}`} />
@@ -445,7 +445,7 @@ ${dateFormatted}`;
                             )}
                           </div>
                           {c.retailer_name?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[c.id] && (
-                            <div className="mt-1 px-1.5 py-0.5 bg-slate-55/40 dark:bg-slate-955/40 rounded border border-slate-200/50 dark:border-slate-800 text-[10px] font-medium text-slate-605 dark:text-slate-400">
+                            <div className="mt-1 px-1.5 py-0.5 bg-slate-50/40 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[10px] font-medium text-slate-600 dark:text-slate-400">
                               <span className="text-[8.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
                               <span className="italic">{c.remarks || "no remark"}</span>
                             </div>
@@ -459,7 +459,7 @@ ${dateFormatted}`;
 
                         <div className="flex items-center gap-2">
                           <div className="text-right">
-                            <span className="text-[13px] font-black text-emerald-600 dark:text-emerald-500 block">
+                            <span className="text-[13px] font-black text-emerald-600 dark:text-emerald-500 block font-mono tabular-nums">
                               +₹{c.total_amount?.toLocaleString()}
                             </span>
                           </div>
@@ -468,7 +468,7 @@ ${dateFormatted}`;
                               e.stopPropagation();
                               handleShareEntry(c);
                             }}
-                            className="p-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/80 active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                            className="p-1 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700/80 transition-colors cursor-pointer flex items-center justify-center"
                             title="Share Entry"
                           >
                             <Share2 className="w-3 h-3" />
@@ -479,10 +479,10 @@ ${dateFormatted}`;
 
                       {/* Expanded notes structures summary */}
                       {isExpanded && (
-                        <div className="px-2.5 pb-2.5 pt-1.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 space-y-2 text-[10px] font-bold text-slate-650 dark:text-slate-400">
+                        <div className="px-2.5 pb-2.5 pt-1.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50 space-y-2 text-[10px] font-bold text-slate-600 dark:text-slate-400">
                           <div>
                             <span className="text-[8px] uppercase font-black text-slate-400 block mb-0.5">Cash Breakdown:</span>
-                            <div className="grid grid-cols-2 gap-1 text-slate-700 dark:text-slate-300">
+                            <div className="grid grid-cols-2 gap-1 text-slate-700 dark:text-slate-300 font-mono tabular-nums">
                               {denoms.note_500 !== 0 && <div>₹500 Notes: <span className="font-extrabold">{denoms.note_500}</span></div>}
                               {denoms.note_200 !== 0 && <div>₹200 Notes: <span className="font-extrabold">{denoms.note_200}</span></div>}
                               {denoms.note_100 !== 0 && <div>₹100 Notes: <span className="font-extrabold">{denoms.note_100}</span></div>}
@@ -518,7 +518,7 @@ ${dateFormatted}`;
                                       e.stopPropagation();
                                       router.push(`/collection?editId=${c.id}`);
                                     }}
-                                    className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-[9px] font-bold"
+                                    className="flex items-center gap-1 px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-sm hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-[9px] font-bold"
                                   >
                                     <Edit2 className="w-3 h-3" />
                                     Edit
@@ -527,7 +527,7 @@ ${dateFormatted}`;
                                 {canDelete && (
                                   <button
                                     onClick={(e) => handleDelete(c.id, e)}
-                                    className="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 text-red-650 dark:text-red-400 rounded-md hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-[9px] font-bold"
+                                    className="flex items-center gap-1 px-2 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-[9px] font-bold"
                                   >
                                     <Trash2 className="w-3 h-3" />
                                     Delete
@@ -548,12 +548,12 @@ ${dateFormatted}`;
       </div>
       {/* Edit Modal */}
       {editingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/40 transition-colors">
           <div 
             className="absolute inset-0"
             onClick={() => setEditingItem(null)}
           />
-          <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl w-full max-w-xs max-h-[85vh] overflow-y-auto p-4 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col gap-3 text-slate-800 dark:text-slate-100">
+          <div className="relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-xs max-h-[85vh] overflow-y-auto p-4 transition-colors flex flex-col gap-3 text-slate-800 dark:text-slate-100">
             <div>
               <h3 className="text-xs font-black uppercase tracking-wider">Edit Cash In Entry</h3>
               <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold">Update counts and remarks</p>
@@ -574,15 +574,16 @@ ${dateFormatted}`;
                     <div className="flex items-center gap-2.5">
                       <input autoComplete="one-time-code"
                         type="number"
+                        inputMode="numeric"
                         value={editDenoms[note.key] === 0 ? "" : editDenoms[note.key]}
                         onChange={(e) => {
                           const v = e.target.value === "" ? 0 : parseInt(e.target.value);
                           setEditDenoms((prev: any) => ({ ...prev, [note.key]: isNaN(v) ? 0 : v }));
                         }}
-                        className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
+                        className="w-14 px-1.5 py-0.5 text-right font-mono tabular-nums bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold outline-none focus:border-slate-500 dark:focus:border-slate-400"
                         placeholder="0"
                       />
-                      <span className={`w-14 text-right font-bold ${ (editDenoms[note.key] || 0) < 0 ? 'text-red-500' : 'text-slate-500'}`}>₹{((editDenoms[note.key] || 0) * note.val).toLocaleString()}</span>
+                      <span className={`w-14 text-right font-bold font-mono tabular-nums ${ (editDenoms[note.key] || 0) < 0 ? 'text-red-500' : 'text-slate-500'}`}>₹{((editDenoms[note.key] || 0) * note.val).toLocaleString()}</span>
                     </div>
                   </div>
                 ))}
@@ -593,14 +594,15 @@ ${dateFormatted}`;
                     <input autoComplete="one-time-code"
                       type="number"
                       step="0.01"
+                      inputMode="decimal"
                       value={editDenoms.coins || ""}
                       onChange={(e) => {
                         const v = e.target.value === "" ? 0 : parseFloat(e.target.value);
                         setEditDenoms((prev: any) => ({ ...prev, coins: isNaN(v) ? 0 : v }));
                       }}
-                      className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200/80 rounded text-xs font-bold"
+                      className="w-14 px-1.5 py-0.5 text-right font-mono tabular-nums bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold outline-none focus:border-slate-500 dark:focus:border-slate-400"
                     />
-                    <span className="w-14 text-right text-slate-500 font-bold">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
+                    <span className="w-14 text-right text-slate-500 font-bold font-mono tabular-nums">₹{Number(editDenoms.coins || 0).toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -609,15 +611,16 @@ ${dateFormatted}`;
                   <div className="flex items-center gap-2.5">
                     <input autoComplete="one-time-code"
                       type="number"
+                      inputMode="decimal"
                       value={editDenoms.online_amount || ""}
                       onChange={(e) => {
                         const v = e.target.value === "" ? 0 : parseInt(e.target.value);
                         setEditDenoms((prev: any) => ({ ...prev, online_amount: isNaN(v) ? 0 : v }));
                       }}
-                      className="w-14 px-1.5 py-0.5 text-center bg-slate-50 dark:bg-slate-950 border border-slate-200/80 rounded text-xs font-bold"
+                      className="w-14 px-1.5 py-0.5 text-right font-mono tabular-nums bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold outline-none focus:border-slate-500 dark:focus:border-slate-400"
                       min="0"
                     />
-                    <span className="w-14 text-right text-slate-500 font-bold">₹{Number(editDenoms.online_amount || 0).toLocaleString()}</span>
+                    <span className="w-14 text-right text-slate-500 font-bold font-mono tabular-nums">₹{Number(editDenoms.online_amount || 0).toLocaleString()}</span>
                   </div>
                 </div>
               </div>
@@ -627,13 +630,13 @@ ${dateFormatted}`;
                 <textarea
                   value={editRemarks}
                   onChange={(e) => setEditRemarks(e.target.value)}
-                  className="w-full p-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs focus:outline-none focus:border-slate-400 font-bold"
+                  className="w-full p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 font-bold"
                   rows={2}
                   placeholder="Enter remarks..."
                 />
               </div>
 
-              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-lg border border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-950 p-2 rounded-sm border border-slate-200 dark:border-slate-800">
                 <div>
                   <span className="text-[7.5px] font-black uppercase text-slate-400 tracking-wider">Total Amount</span>
                   {(() => {
@@ -647,7 +650,7 @@ ${dateFormatted}`;
                     return null;
                   })()}
                 </div>
-                <span className={`text-sm font-black ${ (editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount) < 0 ? 'text-red-500' : '' }`}>
+                <span className={`text-sm font-black font-mono tabular-nums ${ (editDenoms.note_500 * 500 + editDenoms.note_200 * 200 + editDenoms.note_100 * 100 + editDenoms.note_50 * 50 + editDenoms.note_20 * 20 + editDenoms.note_10 * 10 + editDenoms.coins + editDenoms.online_amount) < 0 ? 'text-red-500' : '' }`}>
                   ₹{(
                     editDenoms.note_500 * 500 +
                     editDenoms.note_200 * 200 +
@@ -665,14 +668,14 @@ ${dateFormatted}`;
                 <button
                   type="button"
                   onClick={() => setEditingItem(null)}
-                  className="flex-1 py-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-xs font-bold rounded-lg active:scale-[0.98] transition-all cursor-pointer"
+                  className="flex-1 py-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950 text-xs font-bold rounded-sm transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 text-xs font-bold rounded-lg active:scale-[0.98] transition-all cursor-pointer"
+                  className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 text-xs font-bold rounded-sm transition-colors cursor-pointer"
                 >
                   {isSaving ? "Saving..." : "Save"}
                 </button>
