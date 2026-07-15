@@ -492,7 +492,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-28 md:pb-20">
       {/* LEDGER VIEW CARD */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-6 space-y-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-4">
         <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
           <History className="w-5 h-5 text-blue-600" />
           <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
@@ -502,8 +502,8 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
 
         {/* Start & End Date controls */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 shadow-xs">
-            <Calendar className="w-4 h-4 text-slate-450 shrink-0" />
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2">
+            <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
               <span className="text-[8px] text-slate-400 font-black uppercase">Start Date</span>
               <input autoComplete="one-time-code"
@@ -514,8 +514,8 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 shadow-xs">
-            <Calendar className="w-4 h-4 text-slate-455 shrink-0" />
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2">
+            <Calendar className="w-4 h-4 text-slate-500 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
               <span className="text-[8px] text-slate-400 font-black uppercase">End Date</span>
               <input autoComplete="one-time-code"
@@ -537,7 +537,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
               placeholder="Search Entries..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 rounded-xl pl-9 pr-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 placeholder-slate-405 focus:outline-none shadow-xs"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-9 pr-3 py-2 text-xs font-semibold text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none"
             />
           </div>
 
@@ -545,7 +545,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full bg-slate-55 dark:bg-slate-955 border border-slate-200 dark:border-slate-850 rounded-xl px-3 py-2 text-xs font-black text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer appearance-none pr-8 shadow-xs"
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-2 text-xs font-black text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer appearance-none pr-8"
             >
               <option value="date-desc">LATEST FIRST</option>
               <option value="date-asc">OLDEST FIRST</option>
@@ -568,12 +568,12 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
               let colorClasses = "";
               if (t.color === "blue") {
                 colorClasses = isActive 
-                  ? "bg-blue-100 dark:bg-blue-955/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800"
-                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
+                  ? "bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800"
+                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
               } else if (t.color === "purple") {
                 colorClasses = isActive 
-                  ? "bg-purple-100 dark:bg-purple-955/80 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-800"
-                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-450 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
+                  ? "bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-800"
+                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
               }
               
               return (
@@ -589,7 +589,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       }
                     });
                   }}
-                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border cursor-pointer transition-all duration-200 ${colorClasses}`}
+                  className={`px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider border cursor-pointer transition-colors ${colorClasses}`}
                 >
                   {t.label}
                 </button>
@@ -599,7 +599,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
             <button
               type="button"
               onClick={() => setSelectedTypes(["virtual-transfer", "move-to-dist"])}
-              className="px-2.5 py-1.5 rounded-full text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-955/20 transition-colors ml-auto cursor-pointer"
+              className="px-2.5 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors ml-auto cursor-pointer"
             >
               Select All
             </button>
@@ -609,10 +609,10 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
         {/* SCREEN LEDGER VIEW (With Pagination) */}
         <div className="space-y-4 text-slate-800 dark:text-slate-200">
           {/* Net Balance Card */}
-          <div className="bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl p-4 flex flex-col gap-3 shadow-xs">
+          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500">Net Balance</span>
-              <span className={`text-base font-extrabold ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`}>
+              <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`}>
                 ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
               </span>
             </div>
@@ -620,27 +620,27 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
             <div className="border-t border-slate-200 dark:border-slate-800 pt-3 grid grid-cols-3 gap-2 text-center">
               <div>
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-305 mt-0.5 block">{stats.entriesCount} Entries</span>
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5 block">{stats.entriesCount} Entries</span>
               </div>
               <div>
                 <span className="text-[8px] font-black text-rose-500 uppercase tracking-wider block">Total Gave</span>
-                <span className="text-xs font-bold text-rose-500 mt-0.5 block">₹ {stats.totalGave.toLocaleString("en-IN")}</span>
+                <span className="text-xs font-bold text-rose-500 mt-0.5 block font-mono tabular-nums">₹ {stats.totalGave.toLocaleString("en-IN")}</span>
               </div>
               <div>
-                <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-555 uppercase tracking-wider block">Total Got</span>
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block">₹ {stats.totalGot.toLocaleString("en-IN")}</span>
+                <span className="text-[8px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">Total Got</span>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 block font-mono tabular-nums">₹ {stats.totalGot.toLocaleString("en-IN")}</span>
               </div>
             </div>
           </div>
 
           {/* Transactions Table */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-2xl overflow-hidden shadow-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm overflow-hidden">
             {paginatedTransfers.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-505 font-bold italic">
+              <div className="p-8 text-center text-xs text-slate-400 dark:text-slate-400 font-bold italic">
                 No ledger transactions found matching the selected filters.
               </div>
             ) : (
-              <div className="divide-y divide-slate-100 dark:divide-slate-850">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {paginatedTransfers.map((tx: any) => {
                   const formatted = formatIST(tx.rawRecord?.created_at || tx.date);
                   const isGot = tx.type === "cash-in" || tx.type === "move-to-dist";
@@ -655,10 +655,10 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                     badgeColor = "bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300";
                   } else if (tx.type === "virtual-transfer") {
                     badgeLabel = "Virtual Transfer";
-                    badgeColor = "bg-blue-100 dark:bg-blue-955 text-blue-700 dark:text-blue-300";
+                    badgeColor = "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300";
                   } else {
                     badgeLabel = "Move to Dist";
-                    badgeColor = "bg-purple-100 dark:bg-purple-955 text-purple-700 dark:text-purple-300";
+                    badgeColor = "bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300";
                   }
 
                   return (
@@ -669,40 +669,40 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                         setEditAmount(tx.amount || 0);
                         setEditRef(tx.reference_no || "");
                       }}
-                      className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-955/20 transition-colors cursor-pointer"
+                      className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors cursor-pointer"
                     >
                       {/* Left: Date & Running Balance */}
                       <div className="flex flex-col gap-1 min-w-0 max-w-[125px] shrink-0">
                         <div className="flex flex-col leading-tight">
                           <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 shrink-0">{formatted.date}</span>
-                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-505 mt-0.5">{formatted.time}</span>
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 mt-0.5">{formatted.time}</span>
                         </div>
-                        <span className="text-[10px] font-black text-slate-505 dark:text-slate-400 bg-slate-50 dark:bg-slate-955 border border-slate-200/60 dark:border-slate-800 px-2 py-0.5 rounded-full uppercase tracking-wider self-start mt-1">
+                        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 px-2 py-0.5 rounded-sm uppercase tracking-wider self-start mt-1 font-mono tabular-nums">
                           Bal. ₹{Math.round(tx.balance_snapshot || 0).toLocaleString("en-IN")}
                         </span>
                       </div>
                       
                       {/* Middle: Description */}
-                      <div className="flex-1 px-4 text-xs font-semibold text-slate-705 dark:text-slate-300 break-words whitespace-pre-wrap">
+                      <div className="flex-1 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 break-words whitespace-pre-wrap">
                         <div className="flex flex-col gap-0.5">
-                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider self-start ${badgeColor}`}>
+                          <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider self-start ${badgeColor}`}>
                             {badgeLabel}
                           </span>
-                          <div className={`text-xs font-black flex items-center gap-1 mt-1 ${isGot ? 'text-emerald-700 dark:text-emerald-450' : 'text-rose-700 dark:text-rose-450'}`}>
+                          <div className={`text-xs font-black flex items-center gap-1 mt-1 ${isGot ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                             <span className="truncate max-w-[80px]" title={tx.narrationFrom}>{tx.narrationFrom}</span>
-                            <span className="text-slate-450">→</span>
+                            <span className="text-slate-500">→</span>
                             <span className="truncate max-w-[80px]" title={tx.narrationTo}>{tx.narrationTo}</span>
                           </div>
-                          <div className="text-[10px] text-slate-400 dark:text-slate-550 font-bold mt-1">
+                          <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1">
                             Staff: <span className="uppercase">{tx.staffName || 'Admin'}</span>
                           </div>
                           {tx.remarks && (
-                            <div className="text-[10px] text-slate-450 dark:text-slate-450 font-medium mt-0.5">
+                            <div className="text-[10px] text-slate-500 dark:text-slate-500 font-medium mt-0.5">
                               Remark: <span className="italic">{tx.remarks}</span>
                             </div>
                           )}
                           {tx.reference_no && (
-                            <div className="text-[10px] text-slate-400 dark:text-slate-455 font-medium mt-0.5">
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
                               Ref: {tx.reference_no}
                             </div>
                           )}
@@ -710,7 +710,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       </div>
                       
                       {/* Right: Gave (Debit) vs Got (Credit) columns */}
-                      <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono text-xs">
+                      <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono tabular-nums text-xs">
                         {/* Gave Column */}
                         <div className="w-22 font-black text-rose-500">
                           {!isGot ? `₹ ${Math.round(tx.amount || 0).toLocaleString("en-IN")}` : "—"}
@@ -740,7 +740,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 type="button"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-55 dark:hover:bg-slate-950/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="px-3 py-1.5 rounded-sm border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
               >
                 Previous
               </button>
@@ -754,10 +754,10 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       <button
                         type="button"
                         onClick={() => setCurrentPage(p)}
-                        className={`px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
+                        className={`px-3 py-1.5 rounded-sm border transition-colors cursor-pointer ${
                           currentPage === p
-                            ? "bg-blue-600 border-blue-650 text-white font-bold"
-                            : "border-slate-200 dark:border-slate-850 hover:bg-slate-50 dark:hover:bg-slate-950/20 text-slate-600"
+                            ? "bg-blue-600 border-blue-600 text-white font-bold"
+                            : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/20 text-slate-600"
                         }`}
                       >
                         {p}
@@ -769,7 +769,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 type="button"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-55 dark:hover:bg-slate-955/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
+                className="px-3 py-1.5 rounded-sm border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-950/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-colors"
               >
                 Next
               </button>
@@ -778,11 +778,11 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
         )}
 
         {/* Footer Buttons for PDF & Share */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-3.5 px-4 flex gap-3 shadow-2xl z-40 max-w-lg mx-auto rounded-t-2xl md:relative md:bg-transparent md:border-t-0 md:py-0 md:px-0 md:shadow-none md:max-w-none md:rounded-none no-print">
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-3.5 px-4 flex gap-3 z-40 max-w-lg mx-auto rounded-t-sm md:relative md:bg-transparent md:border-t-0 md:py-0 md:px-0 md:shadow-none md:max-w-none md:rounded-none no-print">
           <button
             onClick={handleDownloadPDF}
             disabled={isDownloading || filteredTransfers.length === 0}
-            className="flex-1 py-3 px-4 rounded-xl border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-955/20 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50"
+            className="flex-1 py-3 px-4 rounded-sm border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
           >
             <FileDown className="w-4 h-4" />
             {isDownloading ? "Downloading..." : "DOWNLOAD"}
@@ -791,7 +791,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
           <button
             onClick={handleShare}
             disabled={filteredTransfers.length === 0}
-            className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-550 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all disabled:opacity-50"
+            className="flex-1 py-3 px-4 rounded-sm bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
           >
             <Share2 className="w-4 h-4" />
             SHARE
@@ -810,17 +810,17 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
               </div>
               <div className="text-right">
-                <span className="text-[9px] font-black text-slate-404 uppercase tracking-widest block">Net Balance</span>
-                <span className="text-base font-black text-slate-900">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Net Balance</span>
+                <span className="text-base font-black text-slate-900 font-mono tabular-nums">
                   ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
                 </span>
               </div>
             </div>
 
-            <div className="bg-slate-55 border border-slate-200 rounded-2xl p-4 flex flex-col gap-3 mb-4">
+            <div className="bg-slate-50 border border-slate-200 rounded-sm p-4 flex flex-col gap-3 mb-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-500">Net Balance</span>
-                <span className={`text-base font-extrabold ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600" : "text-slate-500"}`}>
+                <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600" : "text-slate-500"}`}>
                   ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
                 </span>
               </div>
@@ -832,16 +832,16 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 </div>
                 <div>
                   <span className="text-[8px] font-black text-rose-500 uppercase tracking-wider block">Total Gave</span>
-                  <span className="text-xs font-bold text-rose-500 mt-0.5 block">₹ {stats.totalGave.toLocaleString("en-IN")}</span>
+                  <span className="text-xs font-bold text-rose-500 mt-0.5 block font-mono tabular-nums">₹ {stats.totalGave.toLocaleString("en-IN")}</span>
                 </div>
                 <div>
                   <span className="text-[8px] font-black text-emerald-600 uppercase tracking-wider block">Total Got</span>
-                  <span className="text-xs font-bold text-emerald-600 mt-0.5 block">₹ {stats.totalGot.toLocaleString("en-IN")}</span>
+                  <span className="text-xs font-bold text-emerald-600 mt-0.5 block font-mono tabular-nums">₹ {stats.totalGot.toLocaleString("en-IN")}</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden divide-y divide-slate-100">
+            <div className="bg-white border border-slate-200 rounded-sm overflow-hidden divide-y divide-slate-100">
               {filteredTransfers.map((tx: any) => {
                 const formatted = formatIST(tx.rawRecord?.created_at || tx.date);
                 const isGot = tx.type === "cash-in" || tx.type === "move-to-dist";
@@ -851,15 +851,15 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                     <div className="flex flex-col gap-1 w-32 shrink-0">
                       <span className="text-xs font-bold text-slate-800">{formatted.date}</span>
                       <span className="text-[9px] text-slate-400">{formatted.time}</span>
-                      <span className="text-[9px] text-slate-500 font-bold">Bal: ₹{Math.round(tx.balance_snapshot || 0).toLocaleString()}</span>
+                      <span className="text-[9px] text-slate-500 font-bold font-mono tabular-nums">Bal: ₹{Math.round(tx.balance_snapshot || 0).toLocaleString()}</span>
                     </div>
                     <div className="flex-1 px-4 text-xs font-medium text-slate-700">
-                      <div className="font-bold uppercase text-[9px] text-slate-450">{tx.type.replace("-", " ")}</div>
+                      <div className="font-bold uppercase text-[9px] text-slate-500">{tx.type.replace("-", " ")}</div>
                       <div className="font-black text-slate-800">{tx.narrationFrom} → {tx.narrationTo}</div>
                       {tx.remarks && <div className="italic text-[10px] text-slate-400">Remark: {tx.remarks}</div>}
                       {tx.reference_no && <div className="text-[10px] text-slate-400">Ref: {tx.reference_no}</div>}
                     </div>
-                    <div className="flex items-center gap-3 w-40 shrink-0 text-right font-mono text-xs">
+                    <div className="flex items-center gap-3 w-40 shrink-0 text-right font-mono tabular-nums text-xs">
                       <div className="w-20 text-rose-500 font-bold">{!isGot ? `₹${Math.round(tx.amount || 0).toLocaleString()}` : "—"}</div>
                       <div className="w-20 text-emerald-600 font-bold">{isGot ? `₹${Math.round(tx.amount || 0).toLocaleString()}` : "—"}</div>
                     </div>
@@ -873,8 +873,8 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
 
       {/* Audit Drawer/Modal */}
       {selectedDepositId && currentSelectionTx && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4 no-print">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-4 select-none animate-slide-up shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4 no-print">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm p-6 space-y-4 select-none">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-xs font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
                 Audit Ledger Entry
@@ -884,14 +884,14 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                   setSelectedDepositId(null);
                   setIsEditMode(false);
                 }}
-                className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-505 cursor-pointer"
+                className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-4 text-left">
-              <div className="p-4 bg-slate-50 dark:bg-slate-955 rounded-xl border border-slate-100 dark:border-slate-800">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-sm border border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-black text-slate-400 uppercase">Narration</span>
                   <span className="text-xs font-black text-slate-900 dark:text-white uppercase truncate max-w-[180px]">{currentSelectionTx.narrationFrom} → {currentSelectionTx.narrationTo}</span>
@@ -902,7 +902,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 </div>
                 <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
                   <span className="text-[10px] font-black text-slate-400 uppercase">Amount</span>
-                  <span className="text-sm font-black text-rose-600">₹{currentSelectionTx.amount.toLocaleString()}.00</span>
+                  <span className="text-sm font-black text-rose-600 font-mono tabular-nums">₹{currentSelectionTx.amount.toLocaleString()}.00</span>
                 </div>
               </div>
 
@@ -910,11 +910,12 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 <form onSubmit={handleEdit} className="space-y-4">
                   <div>
                     <label className="text-[10px] font-black text-slate-400 uppercase mb-1 block">Correction Amount (₹)</label>
-                    <input autoComplete="one-time-code" 
-                      type="number" 
+                    <input autoComplete="one-time-code"
+                      type="number"
+                      inputMode="decimal"
                       value={editAmount}
                       onChange={(e) => setEditAmount(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold outline-none focus:border-slate-500 dark:focus:border-slate-400"
                     />
                   </div>
                   <div>
@@ -923,12 +924,12 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       type="text" 
                       value={editRef}
                       onChange={(e) => setEditRef(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold outline-none"
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold">Save Changes</button>
-                    <button type="button" onClick={() => setIsEditMode(false)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">Cancel</button>
+                    <button type="submit" className="flex-1 py-2 bg-blue-600 text-white rounded-sm text-xs font-bold">Save Changes</button>
+                    <button type="button" onClick={() => setIsEditMode(false)} className="px-4 py-2 bg-slate-100 text-slate-600 rounded-sm text-xs font-bold">Cancel</button>
                   </div>
                 </form>
               ) : (
@@ -937,13 +938,13 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                     onClick={() => {
                       handleStartEditDeposit(currentSelectionTx);
                     }}
-                    className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-xl text-xs font-bold flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-950 rounded-sm text-xs font-bold flex items-center justify-center gap-2"
                   >
                     <Edit className="w-4 h-4" /> Edit Entry
                   </button>
                   <button 
                     onClick={handleDelete}
-                    className="w-full py-3 border border-red-200 text-red-650 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-red-50 transition-colors"
+                    className="w-full py-3 border border-red-200 text-red-600 rounded-sm text-xs font-bold flex items-center justify-center gap-2 hover:bg-red-50 transition-colors"
                   >
                     <Trash2 className="w-4 h-4" /> Delete Entry
                   </button>
@@ -956,15 +957,15 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
 
       {/* Edit Modal */}
       {isEditCollectionModalOpen && editingCollection && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto text-left">
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-sm font-black text-slate-808 dark:text-slate-100 uppercase tracking-tighter">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter">
                 {editingIsDeposit ? "Edit Payout / Deposit Entry" : "Edit Cash In (Collection) Entry"}
               </h3>
               <button 
                 onClick={() => setIsEditCollectionModalOpen(false)} 
-                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
+                className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1009,7 +1010,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           placeholder="None / Cash"
                         />
                       ) : (
-                        <div className="text-[11px] text-slate-400 italic px-3 py-2 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
+                        <div className="text-[11px] text-slate-400 italic px-3 py-2 bg-slate-50 dark:bg-slate-950/40 rounded-sm border border-dashed border-slate-200 dark:border-slate-800">
                           No stores available for this retailer
                         </div>
                       )}
@@ -1034,55 +1035,69 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                     />
                   </div>
 
-                  <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-950/50 space-y-2">
-                    <span className="text-[9px] text-slate-400 font-black uppercase block">Denominations</span>
-                    <div className="grid grid-cols-2 gap-2 text-[10px]">
-                      {[
-                        { label: "₹500 Notes", key: "note_500", factor: 500 },
-                        { label: "₹200 Notes", key: "note_200", factor: 200 },
-                        { label: "₹100 Notes", key: "note_100", factor: 100 },
-                        { label: "₹50 Notes", key: "note_50", factor: 50 },
-                        { label: "₹20 Notes", key: "note_20", factor: 20 },
-                        { label: "₹10 Notes", key: "note_10", factor: 10 },
-                      ].map(item => (
-                        <div key={item.key} className="flex flex-col gap-0.5">
-                          <label className="text-[8px] font-bold text-slate-400">{item.label}</label>
-                          <input autoComplete="one-time-code"
-                            type="number"
-                            value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
-                              setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
-                            }}
-                            className="px-2 py-1 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold"
-                          />
-                        </div>
-                      ))}
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-[8px] font-bold text-slate-400">Coins Sum</label>
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-sm">
+                    <div className="px-2 py-1.5 border-b border-slate-100 dark:border-slate-800/60">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Counting Details (Notes)</span>
+                    </div>
+                    {[
+                      { label: "₹500 Notes", key: "note_500", factor: 500 },
+                      { label: "₹200 Notes", key: "note_200", factor: 200 },
+                      { label: "₹100 Notes", key: "note_100", factor: 100 },
+                      { label: "₹50 Notes", key: "note_50", factor: 50 },
+                      { label: "₹20 Notes", key: "note_20", factor: 20 },
+                      { label: "₹10 Notes", key: "note_10", factor: 10 },
+                    ].map(item => (
+                      <div key={item.key} className="flex items-center gap-2 justify-between px-2 py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">{item.label}</span>
+                        <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
                         <input autoComplete="one-time-code"
                           type="number"
-                          step="0.01"
-                          value={selectedNewDenoms.coins}
+                          inputMode="numeric"
+                          value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0}
                           onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setSelectedNewDenoms(prev => ({ ...prev, coins: val }));
+                            const val = parseInt(e.target.value) || 0;
+                            setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
                           }}
-                          className="px-2 py-1 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold"
+                          className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-extrabold focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none"
                         />
+                        <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                        <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                          ₹{(Number(selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0) * item.factor).toLocaleString()}
+                        </span>
                       </div>
-                      <div className="flex flex-col gap-0.5">
-                        <label className="text-[8px] font-bold text-slate-400">UPI / Online Amount</label>
-                        <input autoComplete="one-time-code"
-                          type="number"
-                          value={selectedNewDenoms.online_amount}
-                          onChange={(e) => {
-                            const val = Math.max(0, parseFloat(e.target.value) || 0);
-                            setSelectedNewDenoms(prev => ({ ...prev, online_amount: val }));
-                          }}
-                          className="px-2 py-1 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold"
-                        />
-                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 justify-between px-2 py-0.5 border-b border-slate-100 dark:border-slate-800/40">
+                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">Coins</span>
+                      <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
+                      <input autoComplete="one-time-code"
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={selectedNewDenoms.coins}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setSelectedNewDenoms(prev => ({ ...prev, coins: val }));
+                        }}
+                        className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-extrabold focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none"
+                      />
+                      <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                      <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">₹{Number(selectedNewDenoms.coins || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 justify-between px-2 py-0.5">
+                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">Online</span>
+                      <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">+</span>
+                      <input autoComplete="one-time-code"
+                        type="number"
+                        inputMode="decimal"
+                        value={selectedNewDenoms.online_amount}
+                        onChange={(e) => {
+                          const val = Math.max(0, parseFloat(e.target.value) || 0);
+                          setSelectedNewDenoms(prev => ({ ...prev, online_amount: val }));
+                        }}
+                        className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-extrabold focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none"
+                      />
+                      <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                      <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">₹{Number(selectedNewDenoms.online_amount || 0).toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -1100,7 +1115,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                         selectedNewDenoms.coins +
                         selectedNewDenoms.online_amount
                       ).toLocaleString("en-IN")}`}
-                      className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-black text-slate-800 dark:text-slate-100"
+                      className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-right font-mono tabular-nums text-xs font-black text-slate-800 dark:text-slate-100"
                       readOnly
                     />
                   </div>
@@ -1110,7 +1125,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                     <textarea
                       value={selectedNewRemarks}
                       onChange={(e) => setSelectedNewRemarks(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       rows={2}
                       placeholder="Remarks..."
                     />
@@ -1120,7 +1135,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 // Deposit Form Fields (Cash Out, Virtual Transfers)
                 <div className="space-y-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] text-slate-405 font-bold uppercase block ml-1">Deposit/Payout Type</label>
+                    <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Deposit/Payout Type</label>
                     <select
                       value={selectedNewDepositType === "virtual" ? (selectedNewPaymentMode === "refund" ? "virtual-refund" : "virtual-load") : selectedNewDepositType}
                       onChange={(e) => {
@@ -1140,7 +1155,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           }
                         }
                       }}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                     >
                       <option value="portal">Cash Out</option>
                       <option value="retailer">Retailer Payout</option>
@@ -1193,9 +1208,9 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           id="editToOfficeCheckbox"
                           checked={selectedNewToOffice}
                           onChange={(e) => setSelectedNewToOffice(e.target.checked)}
-                          className="w-4 h-4 text-blue-650 bg-slate-100 border-slate-305 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="editToOfficeCheckbox" className="text-xs font-bold text-slate-700 dark:text-slate-355">Handover to Main Office Cashier</label>
+                        <label htmlFor="editToOfficeCheckbox" className="text-xs font-bold text-slate-700 dark:text-slate-400">Handover to Main Office Cashier</label>
                       </div>
 
                       {!selectedNewToOffice && (
@@ -1243,7 +1258,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                         <select
                           value={selectedNewVirtualTargetType}
                           onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
-                          className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                         >
                           <option value="retailer">Retailer</option>
                           <option value="staff">Staff Member</option>
@@ -1288,9 +1303,10 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Amount</label>
                     <input autoComplete="one-time-code"
                       type="number"
+                      inputMode="decimal"
                       value={selectedNewAmount}
                       onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1301,7 +1317,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       type="date"
                       value={selectedNewDate}
                       onChange={(e) => setSelectedNewDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1312,7 +1328,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       type="text"
                       value={selectedNewRefNo}
                       onChange={(e) => setSelectedNewRefNo(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-855 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       placeholder="Optional"
                     />
                   </div>
@@ -1322,7 +1338,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                     <textarea
                       value={selectedNewRemarks}
                       onChange={(e) => setSelectedNewRemarks(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       rows={2}
                       placeholder="Remarks..."
                     />
@@ -1334,14 +1350,14 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 <button
                   type="button"
                   onClick={() => setIsEditCollectionModalOpen(false)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-705 dark:text-slate-202 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-xs font-bold transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingCollection}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-sm text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {isSavingCollection ? "Saving..." : "Save Entry"}
