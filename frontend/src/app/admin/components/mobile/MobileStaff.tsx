@@ -140,7 +140,7 @@ export default function MobileStaff() {
     <div className="space-y-2">
       {/* Toast */}
       {toast && (
-        <div className="fixed top-14 left-4 right-4 z-[200] bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-lg shadow-xl animate-in slide-in-from-top-3 duration-200">
+        <div className="fixed top-14 left-4 right-4 z-[200] bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold uppercase tracking-wider px-4 py-2.5 rounded-sm">
           {toast}
         </div>
       )}
@@ -148,7 +148,7 @@ export default function MobileStaff() {
       {/* Header */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <Link href="/admin" className="p-1.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-md text-slate-500 active:scale-95 transition-transform">
+          <Link href="/admin" className="p-1.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-sm text-slate-500 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
@@ -158,7 +158,7 @@ export default function MobileStaff() {
         </div>
         <button 
           onClick={handleToggleAddForm}
-          className={`w-8 h-8 rounded-lg shadow flex items-center justify-center active:scale-90 transition-transform bg-blue-600 text-white shadow-blue-500/30`}
+          className={`w-8 h-8 rounded-sm flex items-center justify-center transition-colors bg-blue-600 text-white`}
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -166,13 +166,13 @@ export default function MobileStaff() {
 
       {/* Add/Edit Staff Modal Popup */}
       {showAddForm && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-2 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-3 w-full max-w-xs space-y-2.5 shadow-2xl animate-in zoom-in-95 duration-200 relative overflow-hidden">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-2 bg-slate-900/60">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3 w-full max-w-xs space-y-2.5 relative overflow-hidden">
             <div className="flex items-center justify-between">
-              <p className="text-[9px] font-bold text-blue-605 uppercase tracking-wider border-l-2 border-blue-500 pl-1.5">
+              <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wider border-l-2 border-blue-500 pl-1.5">
                 {editingUser ? "Edit Account" : "New Account"}
               </p>
-              <button type="button" onClick={handleToggleAddForm} className="p-1 bg-slate-50 dark:bg-slate-800 rounded-md active:scale-90 text-slate-500 transition-transform cursor-pointer">
+              <button type="button" onClick={handleToggleAddForm} className="p-1 bg-slate-50 dark:bg-slate-800 rounded-sm text-slate-500 transition-colors cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -184,7 +184,7 @@ export default function MobileStaff() {
                   value={uName}
                   onChange={e => setUName(e.target.value)}
                   placeholder="e.g. Rahul Sharma"
-                  className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+                  className="w-full px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400"
                   required
                 />
               </div>
@@ -198,7 +198,7 @@ export default function MobileStaff() {
                       value={uPhone}
                       onChange={e => setUPhone(e.target.value)}
                       placeholder="9876543210"
-                      className="w-full pl-7 pr-2 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+                      className="w-full pl-7 pr-2 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400"
                       required
                     />
                   </div>
@@ -226,7 +226,7 @@ export default function MobileStaff() {
                     value={uPassword}
                     onChange={e => setUPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full pl-7 pr-8 py-1.5 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500/20"
+                    className="w-full pl-7 pr-8 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400"
                     required={!editingUser}
                   />
                   <button
@@ -235,7 +235,7 @@ export default function MobileStaff() {
                       e.preventDefault();
                       setShowPassword(v => !v);
                     }}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center z-10 text-slate-400 cursor-pointer active:scale-90 bg-transparent"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center z-10 text-slate-400 cursor-pointer bg-transparent"
                   >
                     {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
@@ -244,7 +244,7 @@ export default function MobileStaff() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-2 bg-blue-600 text-white rounded-md text-xs font-bold uppercase tracking-wider shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                className="w-full py-2 bg-blue-600 text-white rounded-sm text-xs font-bold uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
               >
                 {submitting ? "Saving..." : editingUser ? "Save Changes" : "Create Account"}
               </button>
@@ -254,15 +254,15 @@ export default function MobileStaff() {
       )}
 
       {/* Staff List */}
-      <div className="divide-y divide-slate-100 dark:divide-slate-850 pb-20">
+      <div className="divide-y divide-slate-100 dark:divide-slate-800 pb-20">
         {loadingUsers ? (
           <div className="py-8 flex flex-col items-center gap-2">
-            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full animate-spin" />
             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Loading staff...</p>
           </div>
         ) : users.length === 0 ? (
-          <div className="py-8 text-center bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-lg">
-            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-2 opacity-50">
+          <div className="py-8 text-center bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-sm">
+            <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-sm flex items-center justify-center mx-auto mb-2 opacity-50">
               <Users className="w-6 h-6 text-slate-400" />
             </div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">No users found</p>
@@ -273,7 +273,7 @@ export default function MobileStaff() {
               key={u.id}
               className="bg-white dark:bg-slate-900 py-2 px-2 flex items-center gap-3 hover:bg-slate-50/50 dark:hover:bg-slate-950/20 border-b border-slate-50 dark:border-slate-900/50"
             >
-              <div className={`w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold ${u.role === 'admin' ? 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
+              <div className={`w-7 h-7 rounded-sm flex items-center justify-center text-xs font-bold ${u.role === 'admin' ? 'bg-indigo-100 dark:bg-indigo-950/50 text-indigo-600' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
                 {u.name?.[0]?.toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
@@ -289,20 +289,20 @@ export default function MobileStaff() {
                 <button
                   type="button"
                   onClick={() => handleOpenLedger(u)}
-                  className="px-1.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer transition-transform active:scale-90"
+                  className="px-1.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer transition-colors"
                 >
                   Ledger
                 </button>
                 <button
                   onClick={() => handleStartEdit(u)}
-                  className="w-7 h-7 bg-blue-50 dark:bg-blue-950/30 text-blue-500 rounded-md flex items-center justify-center active:scale-90 transition-transform cursor-pointer"
+                  className="w-7 h-7 bg-blue-50 dark:bg-blue-950/30 text-blue-500 rounded-sm flex items-center justify-center transition-colors cursor-pointer"
                 >
                   <Edit className="w-3.5 h-3.5" />
                 </button>
                 {u.role !== 'admin' && (
                   <button
                     onClick={() => handleDeleteUser(u.id, u.name)}
-                    className="w-7 h-7 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-md flex items-center justify-center active:scale-90 transition-transform cursor-pointer"
+                    className="w-7 h-7 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-sm flex items-center justify-center transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -316,8 +316,8 @@ export default function MobileStaff() {
       {isLedgerModalOpen && ledgerStaff && (
         <div className="fixed inset-0 bg-slate-950 z-50 overflow-y-auto select-none">
           {loadingLedger ? (
-            <div className="min-h-screen bg-slate-955 flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-slate-700 border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (
             <LedgerReportView 
