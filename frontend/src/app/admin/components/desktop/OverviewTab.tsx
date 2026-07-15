@@ -536,16 +536,16 @@ export default function OverviewTab({
   });
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       {/* Top Summary Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Khatabook Summary Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden animate-fade-in flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm overflow-hidden flex flex-col justify-between">
           <div className="flex divide-x divide-slate-100 dark:divide-slate-800 flex-1 items-center">
             {/* You will Give (Hum Denge) */}
             <div className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-1">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">You will give</span>
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-500 tracking-tight">
+              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-500 tracking-tight font-mono tabular-nums">
                 ₹{(totalToGive || 0).toLocaleString()}
               </span>
             </div>
@@ -553,7 +553,7 @@ export default function OverviewTab({
             {/* You will Get (Hum Lenge) */}
             <div className="flex-1 p-6 flex flex-col items-center justify-center text-center space-y-1">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">You will get</span>
-              <span className="text-2xl font-black text-red-600 dark:text-red-500 tracking-tight">
+              <span className="text-2xl font-black text-red-600 dark:text-red-500 tracking-tight font-mono tabular-nums">
                 ₹{(totalToTake || 0).toLocaleString()}
               </span>
             </div>
@@ -572,14 +572,14 @@ export default function OverviewTab({
         </div>
         
         {/* Staff Live Status & Cash Tracker Card */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 animate-fade-in flex flex-col gap-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-5 flex flex-col gap-4">
           {/* Header (Clickable to collapse/expand entire list) */}
           <div 
             onClick={() => setIsStaffTrackingExpanded(!isStaffTrackingExpanded)}
             className="flex items-center justify-between cursor-pointer group"
           >
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-50 dark:bg-blue-955 text-blue-600 dark:text-blue-400 rounded-lg">
+              <div className="p-1.5 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-sm">
                 <Users className="w-4 h-4" />
               </div>
               <div>
@@ -598,14 +598,14 @@ export default function OverviewTab({
                   const isActive = staff.compliance?.status === "Active Duty";
                   const isExpanded = !!expandedStaffNames[staff.name];
                   return (
-                    <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/20 dark:bg-slate-900/10 space-y-2.5">
+                    <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-sm p-3 bg-slate-50/20 dark:bg-slate-900/10 space-y-2.5">
                       {/* Header Row (Clickable to toggle individual collapse) */}
                       <div 
                         onClick={() => toggleStaffExpanded(staff.name)}
                         className="flex items-center justify-between cursor-pointer group"
                       >
                         <div className="flex items-center gap-2">
-                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-350 dark:bg-slate-700'}`} />
+                          <span className={`w-1.5 h-1.5 rounded-sm ${isActive ? 'bg-emerald-500' : 'bg-slate-400 dark:bg-slate-700'}`} />
                           <span className="text-[11px] font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {staff.name}
                           </span>
@@ -617,26 +617,26 @@ export default function OverviewTab({
                       </div>
 
                       {/* Formula: Old + Today In - Today Out = Net */}
-                      <div className="grid grid-cols-4 gap-1.5">
-                        <div className="p-1.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 rounded-lg flex flex-col">
+                      <div className="grid grid-cols-4 gap-1.5 font-mono tabular-nums">
+                        <div className="p-1.5 bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 rounded-sm flex flex-col">
                           <span className="text-[6px] font-black uppercase text-slate-400 tracking-wide">Old Bal</span>
                           <span className={`text-[9px] font-black mt-0.5 ${(staff as any).oldBalance < 0 ? 'text-red-600' : 'text-slate-600 dark:text-slate-300'}`}>
                             ₹{((staff as any).oldBalance || 0).toLocaleString()}
                           </span>
                         </div>
-                        <div className="p-1.5 bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-100/40 dark:border-emerald-900/10 rounded-lg flex flex-col">
+                        <div className="p-1.5 bg-emerald-50/30 dark:bg-emerald-950/10 border border-emerald-100/40 dark:border-emerald-900/10 rounded-sm flex flex-col">
                           <span className="text-[6px] font-black uppercase text-emerald-600 tracking-wide">+ Today In</span>
                           <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5">
                             ₹{staff.collectedToday.toLocaleString()}
                           </span>
                         </div>
-                        <div className="p-1.5 bg-red-50/30 dark:bg-red-950/10 border border-red-100/40 dark:border-red-900/10 rounded-lg flex flex-col">
+                        <div className="p-1.5 bg-red-50/30 dark:bg-red-950/10 border border-red-100/40 dark:border-red-900/10 rounded-sm flex flex-col">
                           <span className="text-[6px] font-black uppercase text-red-600 tracking-wide">- Today Out</span>
                           <span className="text-[9px] font-black text-red-700 dark:text-red-400 mt-0.5">
                             ₹{staff.depositedToday.toLocaleString()}
                           </span>
                         </div>
-                        <div className={`p-1.5 rounded-lg flex flex-col border ${
+                        <div className={`p-1.5 rounded-sm flex flex-col border ${
                           (staff as any).netBalance < 0
                             ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30'
                             : 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-100/50 dark:border-blue-900/20'
@@ -654,7 +654,7 @@ export default function OverviewTab({
 
                       {/* Collapsible Details */}
                       {isExpanded && (
-                        <div className="border-t border-slate-100 dark:border-slate-800/80 pt-2.5 space-y-2.5 animate-fade-in">
+                        <div className="border-t border-slate-100 dark:border-slate-800/80 pt-2.5 space-y-2.5">
                           <div className="flex items-center justify-between text-[9px]">
                             <span className="font-bold text-slate-400 uppercase tracking-wide">Shift Status</span>
                             <span className="font-extrabold text-slate-700 dark:text-slate-300">
@@ -751,7 +751,7 @@ export default function OverviewTab({
                             return (
                               <div className="border-t border-slate-100 dark:border-slate-800/40 pt-2">
                                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block mb-1.5">Cash in Hand Breakdown</span>
-                                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                                <div className="grid grid-cols-2 gap-x-3 gap-y-1 font-mono tabular-nums">
                                   {denItems.map(d => (
                                     <div key={d.label} className="flex items-center justify-between text-[9px]">
                                       <span className="font-bold text-slate-500 dark:text-slate-400">{d.label} × {d.count}</span>
@@ -778,7 +778,7 @@ export default function OverviewTab({
                             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Outings</span>
                             <button
                               onClick={() => staff.visitedStores.length > 0 && setActiveModalStaff({ name: staff.name, visitedStores: staff.visitedStores })}
-                              className={`flex items-center gap-1 font-black uppercase tracking-wide text-[9px] px-2 py-1.5 rounded-lg transition-all ${
+                              className={`flex items-center gap-1 font-black uppercase tracking-wide text-[9px] px-2 py-1.5 rounded-sm transition-colors ${
                                 staff.visitedStores.length > 0 
                                 ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/80 cursor-pointer" 
                                 : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-900/20 cursor-not-allowed"
@@ -802,25 +802,25 @@ export default function OverviewTab({
       
       {/* Stores Visited Modal Popup */}
       {activeModalStaff && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl animate-fade-in relative">
+        <div className="fixed inset-0 bg-slate-950/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-md p-6 space-y-4 relative">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <div className="flex items-center gap-2">
-                <Store className="w-5 h-5 text-blue-600 dark:text-blue-450" />
+                <Store className="w-5 h-5 text-blue-600 dark:text-blue-500" />
                 <div>
                   <h3 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight">
                     Stores Visited Today
                   </h3>
-                  <p className="text-[9px] font-bold text-slate-455 dark:text-slate-555">
+                  <p className="text-[9px] font-bold text-slate-500 dark:text-slate-500">
                     {activeModalStaff.name.toUpperCase()}&apos;S ACTIVE OUTINGS
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => { setActiveModalStaff(null); setExpandedVisitedStoreId(null); }}
-                className="p-1.5 rounded-lg bg-slate-105 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+                className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 <X className="w-4.5 h-4.5" />
               </button>
@@ -868,8 +868,8 @@ export default function OverviewTab({
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                         <div className="text-right">
-                          <span className="font-black text-emerald-600 dark:text-emerald-450 text-xs block">+₹{item.amount.toLocaleString()}</span>
-                          <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-black uppercase tracking-wider ${
+                          <span className="font-black text-emerald-600 dark:text-emerald-500 text-xs block font-mono tabular-nums">+₹{item.amount.toLocaleString()}</span>
+                          <span className={`px-1.5 py-0.5 rounded-sm text-[7px] font-black uppercase tracking-wider ${
                             item.status === 'verified'
                             ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30'
                             : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-100 dark:border-amber-900/30'
@@ -884,14 +884,14 @@ export default function OverviewTab({
                       <div className="px-3 pb-3 pt-1 border-t border-slate-100 dark:border-slate-800/60" onClick={e => e.stopPropagation()}>
                         {/* Remarks */}
                         {item.remarks && (
-                          <div className="mb-2 px-2 py-1 bg-slate-50 dark:bg-slate-800/40 rounded-lg border border-slate-100 dark:border-slate-800">
+                          <div className="mb-2 px-2 py-1 bg-slate-50 dark:bg-slate-800/40 rounded-sm border border-slate-100 dark:border-slate-800">
                             <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block mb-0.5">Remark</span>
                             <span className="text-[9px] font-semibold text-slate-600 dark:text-slate-300 italic">{item.remarks}</span>
                           </div>
                         )}
                         {/* Denominations */}
                         <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider block mb-1.5">Cash Breakdown</span>
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-300">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[9px] font-bold text-slate-600 dark:text-slate-300 font-mono tabular-nums">
                           {Number(den.note_500 || 0) !== 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
                           {Number(den.note_200 || 0) !== 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
                           {Number(den.note_100 || 0) !== 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
@@ -915,13 +915,13 @@ export default function OverviewTab({
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Total Visited Today</span>
-                <span className="text-xs font-black text-slate-700 dark:text-slate-350">
+                <span className="text-xs font-black text-slate-700 dark:text-slate-400">
                   {activeModalStaff.visitedStores.length} Stores
                 </span>
               </div>
               <button
                 onClick={() => { setActiveModalStaff(null); setExpandedVisitedStoreId(null); }}
-                className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-[10px] font-black rounded-xl hover:bg-slate-850 dark:hover:bg-slate-100 transition-all cursor-pointer"
+                className="px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-[10px] font-black rounded-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Close Window
               </button>
@@ -932,26 +932,25 @@ export default function OverviewTab({
 
       {/* Today's Activity Heading */}
       <div className="flex items-center gap-2 mb-2 px-1">
-        <div className="w-1 h-4 bg-blue-600 rounded-full" />
+        <div className="w-1 h-4 bg-blue-600 rounded-sm" />
         <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-wide">Today&apos;s Activity</h2>
       </div>
 
       {/* KPI Summary Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-        
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3">
+
         {/* Total Collection */}
-        <div className="p-5 bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-800 text-white rounded-2xl shadow-lg shadow-emerald-900/15 border border-emerald-500/20 hover:scale-[1.03] active:scale-95 transition-all relative overflow-hidden flex flex-col justify-between min-h-[140px]">
-          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-white/5 rounded-full blur-xl" />
+        <div className="p-4 bg-emerald-700 text-white rounded-sm flex flex-col justify-between min-h-[110px]">
           <div className="flex items-start justify-between w-full">
-            <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center shadow-inner">
-              <TrendingUp className="w-4.5 h-4.5 text-emerald-100" />
+            <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-emerald-100" />
             </div>
-             <span className="text-[8px] font-black uppercase tracking-wide text-emerald-100/70 bg-emerald-900/30 px-2 py-0.5 rounded-full border border-emerald-500/10">
+             <span className="text-[8px] font-black uppercase tracking-wide text-emerald-100/70 bg-emerald-900/30 px-2 py-0.5 rounded-sm">
                Today&apos;s Collection
              </span>
           </div>
           <div className="mt-4">
-            <span className="text-xl md:text-2xl font-black block tracking-tight text-white">
+            <span className="text-xl md:text-2xl font-black block tracking-tight text-white font-mono tabular-nums">
               ₹{(totalCollectedAmount || 0).toLocaleString()}
             </span>
             <span className="text-[10px] text-emerald-100/80 font-bold block mt-1 tracking-wide">
@@ -961,18 +960,17 @@ export default function OverviewTab({
         </div>
 
         {/* Total Deposits */}
-        <div className="p-5 bg-gradient-to-br from-red-600 via-red-700 to-red-900 text-white rounded-2xl shadow-lg shadow-red-950/15 border border-red-500/20 hover:scale-[1.03] active:scale-95 transition-all relative overflow-hidden flex flex-col justify-between min-h-[140px]">
-          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-white/5 rounded-full blur-xl" />
+        <div className="p-4 bg-red-700 text-white rounded-sm flex flex-col justify-between min-h-[110px]">
           <div className="flex items-start justify-between w-full">
-            <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center shadow-inner">
-              <FileText className="w-4.5 h-4.5 text-red-100" />
+            <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-red-100" />
             </div>
-             <span className="text-[8px] font-black uppercase tracking-wide text-red-100/70 bg-red-950/30 px-2 py-0.5 rounded-full border border-red-500/10">
+             <span className="text-[8px] font-black uppercase tracking-wide text-red-100/70 bg-red-950/30 px-2 py-0.5 rounded-sm">
                Today&apos;s Deposits
              </span>
           </div>
           <div className="mt-4">
-            <span className="text-xl md:text-2xl font-black block tracking-tight text-white">
+            <span className="text-xl md:text-2xl font-black block tracking-tight text-white font-mono tabular-nums">
               ₹{(totalDepositedAmount || 0).toLocaleString()}
             </span>
             <span className="text-[10px] text-red-100/80 font-bold block mt-1 tracking-wide">
@@ -982,21 +980,20 @@ export default function OverviewTab({
         </div>
 
         {/* Net Cash */}
-        <div 
+        <div
           onClick={() => setIsRangeModalOpen(true)}
-          className="p-5 bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-800 text-white rounded-2xl shadow-lg shadow-blue-900/15 border border-blue-500/20 hover:scale-[1.03] active:scale-95 transition-all relative overflow-hidden flex flex-col justify-between min-h-[140px] cursor-pointer group"
+          className="p-4 bg-blue-700 text-white rounded-sm flex flex-col justify-between min-h-[110px] cursor-pointer group"
         >
-          <div className="absolute -right-6 -bottom-6 w-20 h-20 bg-white/5 rounded-full blur-xl" />
           <div className="flex items-start justify-between w-full">
-            <div className="w-9 h-9 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center shadow-inner">
-              <CheckCircle2 className="w-4.5 h-4.5 text-blue-100" />
+            <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center">
+              <CheckCircle2 className="w-4 h-4 text-blue-100" />
             </div>
-            <span className="text-[8px] font-black uppercase tracking-wide text-blue-100/70 bg-blue-950/30 px-2 py-0.5 rounded-full border border-blue-500/10 flex items-center gap-1 group-hover:bg-blue-900/60 transition-colors">
+            <span className="text-[8px] font-black uppercase tracking-wide text-blue-100/70 bg-blue-950/30 px-2 py-0.5 rounded-sm flex items-center gap-1 group-hover:bg-blue-900/60 transition-colors">
               Net Cash <Calendar className="w-2.5 h-2.5" />
             </span>
           </div>
           <div className="mt-4">
-            <span className="text-xl md:text-2xl font-black block tracking-tight text-white">
+            <span className="text-xl md:text-2xl font-black block tracking-tight text-white font-mono tabular-nums">
               ₹{(netCashBalance || 0).toLocaleString()}
             </span>
              <span className="text-[10px] text-blue-100/85 font-bold block mt-1 tracking-wide group-hover:underline">
@@ -1060,10 +1057,10 @@ export default function OverviewTab({
         }).slice(0, 10);
 
         return (
-          <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm space-y-4">
+          <div className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm space-y-4">
             <div 
               onClick={() => setIsRecentLedgerExpanded(!isRecentLedgerExpanded)}
-              className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-3 cursor-pointer group select-none"
+              className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3 cursor-pointer group select-none"
             >
               <div className="flex items-center gap-2">
                 <BarChart2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -1073,14 +1070,14 @@ export default function OverviewTab({
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-2.5 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase outline-none cursor-pointer"
+                  className="px-2.5 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase outline-none cursor-pointer"
                 >
                   <option value="date-desc">LATEST FIRST</option>
                   <option value="date-asc">OLDEST FIRST</option>
                   <option value="amount-desc">AMOUNT: HIGH-LOW</option>
                   <option value="amount-asc">AMOUNT: LOW-HIGH</option>
                 </select>
-                <span className="text-[9px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded-full font-bold border border-blue-200/60 dark:border-blue-900/40">
+                <span className="text-[9px] bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-400 px-2.5 py-1 rounded-sm font-bold border border-blue-200/60 dark:border-blue-900/40">
                   Latest 10 Entries
                 </span>
                 <ChevronDown className={`w-4 h-4 text-slate-400 transform transition-transform duration-200 ${isRecentLedgerExpanded ? 'rotate-180' : ''}`} />
@@ -1088,10 +1085,10 @@ export default function OverviewTab({
             </div>
 
             {isRecentLedgerExpanded && (
-              <div className="overflow-x-auto animate-in fade-in duration-200">
+              <div className="overflow-x-auto">
               <table className="w-full text-left text-[11px] border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-950 text-[9px] font-black uppercase tracking-tight text-slate-400 border-b border-slate-200 dark:border-slate-850">
+                  <tr className="bg-slate-50 dark:bg-slate-950 text-[9px] font-black uppercase tracking-tight text-slate-400 border-b border-slate-200 dark:border-slate-800">
                     <th className="px-4 py-2.5">Date & Time</th>
                     <th className="px-4 py-2.5">Party / Target Account</th>
                     <th className="px-4 py-2.5">Logged By</th>
@@ -1112,10 +1109,10 @@ export default function OverviewTab({
                       return (
                         <React.Fragment key={item.id}>
                           <tr 
-                            className={`hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/70 dark:bg-slate-950/50' : ''}`}
+                            className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/70 dark:bg-slate-950/50' : ''}`}
                             onClick={() => setExpandedLedgerRowId(prev => prev === item.id ? null : item.id)}
                           >
-                            <td className="px-4 py-3 font-semibold text-slate-450 dark:text-slate-500 whitespace-nowrap">
+                            <td className="px-4 py-3 font-semibold text-slate-500 dark:text-slate-500 whitespace-nowrap">
                               {(() => {
                                 if (!item.date) return "N/A";
                                 try {
@@ -1146,12 +1143,12 @@ export default function OverviewTab({
                                     className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
                                     title="View Remark"
                                   >
-                                    <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-505' : ''}`} />
+                                    <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-500' : ''}`} />
                                   </button>
                                 )}
                               </div>
                               {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
-                                <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words block">
+                                <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-600 dark:text-slate-400 max-w-[250px] break-words block">
                                   <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
                                   <span className="italic">{item.remarks || "no remark"}</span>
                                 </div>
@@ -1160,17 +1157,17 @@ export default function OverviewTab({
                             <td className="px-4 py-3 font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
                               {item.staff}
                             </td>
-                            <td className={`px-4 py-3 text-right font-black ${item.type === 'collection' ? 'text-emerald-600 bg-emerald-50/5 dark:bg-emerald-950/2' : 'text-red-600 bg-red-50/5 dark:bg-red-950/2'}`}>
+                            <td className={`px-4 py-3 text-right font-black font-mono tabular-nums ${item.type === 'collection' ? 'text-emerald-600 bg-emerald-50/5 dark:bg-emerald-950/2' : 'text-red-600 bg-red-50/5 dark:bg-red-950/2'}`}>
                               <div className="flex items-center justify-end gap-1.5">
                                 <span>{item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}</span>
                                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                               </div>
                               {item.balance !== undefined && item.balance !== null && (
-                                <div className={`text-[9px] font-bold mt-0.5 uppercase ${
-                                  Number(item.balance) < 0 
-                                    ? 'text-emerald-600 dark:text-emerald-500' 
-                                    : Number(item.balance) > 0 
-                                      ? 'text-red-600 dark:text-red-400' 
+                                <div className={`text-[9px] font-bold mt-0.5 uppercase font-mono tabular-nums ${
+                                  Number(item.balance) < 0
+                                    ? 'text-emerald-600 dark:text-emerald-500'
+                                    : Number(item.balance) > 0
+                                      ? 'text-red-600 dark:text-red-400'
                                       : 'text-slate-400'
                                 }`}>
                                   Due: {Number(item.balance) < 0 ? '-' : ''}₹{Math.abs(Number(item.balance)).toLocaleString()}
@@ -1184,7 +1181,7 @@ export default function OverviewTab({
                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                   <div>
                                     <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 font-mono tabular-nums">
                                       {Number(den.note_500 || 0) !== 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
                                       {Number(den.note_200 || 0) !== 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
                                       {Number(den.note_100 || 0) !== 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
@@ -1196,7 +1193,7 @@ export default function OverviewTab({
                                       {!Number(den.note_500) && !Number(den.note_200) && !Number(den.note_100) && !Number(den.note_50) && !Number(den.note_20) && !Number(den.note_10) && !Number(den.coins) && !Number(den.online_amount) && <span className="text-slate-400 italic">No breakdown</span>}
                                     </div>
                                     <div className="mt-1.5 text-[10px] font-bold text-slate-500 italic">{numberToWordsIndian(item.amount)} Rupees</div>
-                                    {item.remarks && <div className="mt-1 text-[9px] text-slate-550 dark:text-slate-400"><span className="font-extrabold uppercase">Remark:</span> {item.remarks}</div>}
+                                    {item.remarks && <div className="mt-1 text-[9px] text-slate-500 dark:text-slate-400"><span className="font-extrabold uppercase">Remark:</span> {item.remarks}</div>}
                                   </div>
                                   <div className="flex items-center gap-1.5 mt-2 md:mt-0">
                                     <button
@@ -1207,7 +1204,7 @@ export default function OverviewTab({
                                           shareDepositEntry({ deposit_type: item.deposit_type, target_name: item.party, amount: item.amount, denominations: item.denominations, created_at: item.created_at || item.date, remarks: item.remarks, recipient_staff_id: item.recipient_staff_id }, item.staff);
                                         }
                                       }}
-                                      className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-wider rounded-lg border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 transition-all cursor-pointer flex items-center gap-1"
+                                      className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-[9px] font-black uppercase tracking-wider rounded-sm border border-emerald-100 dark:border-emerald-900/30 hover:bg-emerald-100 transition-colors cursor-pointer flex items-center gap-1"
                                       title="Share"
                                     >
                                       <Share2 className="w-3.5 h-3.5" /> Share
@@ -1217,7 +1214,7 @@ export default function OverviewTab({
                                         e.stopPropagation();
                                         handleStartEditCollection(item);
                                       }}
-                                      className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase tracking-wider rounded-lg border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all cursor-pointer flex items-center gap-1"
+                                      className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[9px] font-black uppercase tracking-wider rounded-sm border border-blue-100 dark:border-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer flex items-center gap-1"
                                     >
                                       <Edit className="w-3.5 h-3.5" /> Edit
                                     </button>
@@ -1237,7 +1234,7 @@ export default function OverviewTab({
                                           }
                                         }
                                       }}
-                                      className="px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[9px] font-black uppercase tracking-wider rounded-lg border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 transition-all cursor-pointer flex items-center gap-1"
+                                      className="px-3 py-1 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[9px] font-black uppercase tracking-wider rounded-sm border border-red-100 dark:border-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer flex items-center gap-1"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" /> Delete
                                     </button>
@@ -1261,8 +1258,8 @@ export default function OverviewTab({
       {/* Recent Activity Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Recent Collections Panel */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex-1">
-            <div className="px-5 py-3 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm overflow-hidden flex-1">
+            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
               <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Recent Collections</h2>
             </div>
             <div className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -1271,12 +1268,12 @@ export default function OverviewTab({
                  const isExpanded = expandedCollectionId === c.id;
                  const den = c.denominations || {};
                  return (
-                   <div key={idx} className={`flex flex-col gap-2 group border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/70 dark:bg-slate-950/50' : 'hover:bg-slate-50/50 dark:hover:bg-slate-850/10'}`} onClick={() => setExpandedCollectionId(prev => prev === c.id ? null : c.id)}>
+                   <div key={idx} className={`flex flex-col gap-2 group border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/70 dark:bg-slate-950/50' : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/10'}`} onClick={() => setExpandedCollectionId(prev => prev === c.id ? null : c.id)}>
                      <div className="p-4 flex flex-col gap-3">
                        <div className="flex items-center justify-between text-[11px]">
                          <div className="flex flex-col">
                             <div className="flex items-center gap-1.5">
-                              <span className="font-extrabold text-slate-850 dark:text-slate-100">
+                              <span className="font-extrabold text-slate-800 dark:text-slate-100">
                                 {c.retailerName?.toLowerCase().startsWith("cms")
                                   ? `${c.retailerName} - ${c.store_name || "Cash"}`
                                   : c.retailerName}
@@ -1285,7 +1282,7 @@ export default function OverviewTab({
                                 <button
                                   type="button"
                                   onClick={(e) => { e.stopPropagation(); setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] })); }}
-                                  className="p-0.5 bg-slate-50 dark:bg-slate-850 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
+                                  className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
                                   title="View Remark"
                                 >
                                   <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[c.id] ? 'rotate-180 text-indigo-500' : ''}`} />
@@ -1293,7 +1290,7 @@ export default function OverviewTab({
                               )}
                             </div>
                             {c.retailerName?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[c.id] && (
-                              <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-605 dark:text-slate-400 max-w-[250px] break-words block">
+                              <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-600 dark:text-slate-400 max-w-[250px] break-words block">
                                 <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
                                 <span className="italic">{c.remarks || "no remark"}</span>
                               </div>
@@ -1301,11 +1298,11 @@ export default function OverviewTab({
                             <span className="text-[9px] text-slate-400 font-bold uppercase">{c.date}</span>
                          </div>
                          <div className="flex items-center gap-2">
-                           <span className="font-black text-emerald-600 text-sm">+₹{(c.totalAmount || 0).toLocaleString()}</span>
+                           <span className="font-black text-emerald-600 text-sm font-mono tabular-nums">+₹{(c.totalAmount || 0).toLocaleString()}</span>
                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                              <button
                                onClick={() => shareCollectionEntry({ retailer_name: c.retailerName, bank_account_name: c.bankAccountName, store_name: c.store_name, total_amount: c.totalAmount, denominations: c.denominations, created_at: c.rawRecord?.created_at || c.date, remarks: c.remarks }, c.staffName || 'Staff')}
-                               className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                               className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-sm hover:bg-emerald-100 transition-colors cursor-pointer"
                                title="Share"
                              >
                                <Share2 className="w-3 h-3" />
@@ -1315,7 +1312,7 @@ export default function OverviewTab({
                                  e.stopPropagation();
                                  handleStartEditCollection(c);
                                }}
-                               className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                               className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-sm hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
                              >
                                <Edit className="w-3 h-3" />
                              </button>
@@ -1330,7 +1327,7 @@ export default function OverviewTab({
                                    }
                                  }
                                }}
-                               className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                               className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
                              >
                                <Trash2 className="w-3 h-3" />
                              </button>
@@ -1339,10 +1336,10 @@ export default function OverviewTab({
                          </div>
                        </div>
                        
-                       <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                       <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-sm border border-slate-100 dark:border-slate-800/50">
                          <div className="flex flex-col">
                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Opening</span>
-                           <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">₹{snapshots.prev.toLocaleString()}</span>
+                           <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 font-mono tabular-nums">₹{snapshots.prev.toLocaleString()}</span>
                          </div>
                          <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Collector</span>
@@ -1350,14 +1347,14 @@ export default function OverviewTab({
                          </div>
                          <div className="flex flex-col text-right">
                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Closing</span>
-                           <span className="text-[10px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                           <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 font-mono tabular-nums">₹{snapshots.next.toLocaleString()}</span>
                          </div>
                        </div>
                      </div>
                      {isExpanded && (
                        <div className="px-4 pb-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
                          <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1 mt-2">Cash Breakdown</span>
-                         <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                         <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 font-mono tabular-nums">
                            {Number(den.note_500 || 0) !== 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
                            {Number(den.note_200 || 0) !== 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
                            {Number(den.note_100 || 0) !== 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
@@ -1379,8 +1376,8 @@ export default function OverviewTab({
           </div>
 
           {/* Recent Deposits Panel */}
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm flex-1">
-            <div className="px-5 py-3 border-b border-slate-150 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm overflow-hidden flex-1">
+            <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
               <h2 className="text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-wide">Recent Deposits</h2>
             </div>
             <div className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -1389,19 +1386,19 @@ export default function OverviewTab({
                  const isExpanded = expandedDepositId === d.id;
                  const den = d.denominations || {};
                  return (
-                   <div key={idx} className={`flex flex-col group border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/70 dark:bg-slate-950/50' : 'hover:bg-slate-50/50 dark:hover:bg-slate-850/10'}`} onClick={() => setExpandedDepositId(prev => prev === d.id ? null : d.id)}>
+                   <div key={idx} className={`flex flex-col group border-b border-slate-50 dark:border-slate-800 last:border-0 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/70 dark:bg-slate-950/50' : 'hover:bg-slate-50/50 dark:hover:bg-slate-800/10'}`} onClick={() => setExpandedDepositId(prev => prev === d.id ? null : d.id)}>
                      <div className="p-4 flex flex-col gap-3">
                        <div className="flex items-center justify-between text-[11px]">
                          <div className="flex flex-col">
-                           <span className="font-extrabold text-slate-850 dark:text-slate-100">{d.targetName}</span>
+                           <span className="font-extrabold text-slate-800 dark:text-slate-100">{d.targetName}</span>
                            <span className="text-[9px] text-slate-400 font-bold uppercase">{d.date}</span>
                          </div>
                          <div className="flex items-center gap-2">
-                           <span className="font-black text-red-600 text-sm">-₹{(d.amount || 0).toLocaleString()}</span>
+                           <span className="font-black text-red-600 text-sm font-mono tabular-nums">-₹{(d.amount || 0).toLocaleString()}</span>
                            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                              <button
                                onClick={() => shareDepositEntry({ deposit_type: d.depositType, target_name: d.targetName, portal_name: d.bankAccountName, amount: d.amount, denominations: d.denominations, created_at: d.created_at || d.date, remarks: d.remarks, recipient_staff_id: d.recipient_staff_id || d.recipientStaffId }, d.staffName || 'Staff')}
-                               className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                               className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-sm hover:bg-emerald-100 transition-colors cursor-pointer"
                                title="Share"
                              >
                                <Share2 className="w-3 h-3" />
@@ -1411,7 +1408,7 @@ export default function OverviewTab({
                                  e.stopPropagation();
                                  handleStartEditCollection(d);
                                }}
-                               className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
+                               className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-sm hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors cursor-pointer"
                              >
                                <Edit className="w-3 h-3" />
                              </button>
@@ -1426,7 +1423,7 @@ export default function OverviewTab({
                                    }
                                  }
                                }}
-                               className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
+                               className="p-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-sm hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors cursor-pointer"
                              >
                                <Trash2 className="w-3 h-3" />
                              </button>
@@ -1435,10 +1432,10 @@ export default function OverviewTab({
                          </div>
                        </div>
       
-                       <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50">
+                       <div className="grid grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950/50 p-2.5 rounded-sm border border-slate-100 dark:border-slate-800/50">
                          <div className="flex flex-col">
                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Opening</span>
-                           <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">₹{snapshots.prev.toLocaleString()}</span>
+                           <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 font-mono tabular-nums">₹{snapshots.prev.toLocaleString()}</span>
                          </div>
                          <div className="flex flex-col border-x border-slate-200 dark:border-slate-800 px-3">
                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Deposited By</span>
@@ -1446,14 +1443,14 @@ export default function OverviewTab({
                          </div>
                          <div className="flex flex-col text-right">
                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-wide">Closing</span>
-                           <span className="text-[10px] font-black text-slate-800 dark:text-slate-200">₹{snapshots.next.toLocaleString()}</span>
+                           <span className="text-[10px] font-black text-slate-800 dark:text-slate-200 font-mono tabular-nums">₹{snapshots.next.toLocaleString()}</span>
                          </div>
                        </div>
                      </div>
                      {isExpanded && (
                        <div className="px-4 pb-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
                          <span className="text-[8px] font-black uppercase text-slate-400 tracking-wider block mb-1 mt-2">Cash Breakdown</span>
-                         <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300">
+                         <div className="grid grid-cols-3 gap-x-4 gap-y-0.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 font-mono tabular-nums">
                            {Number(den.note_500 || 0) !== 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
                            {Number(den.note_200 || 0) !== 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
                            {Number(den.note_100 || 0) !== 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
@@ -1476,15 +1473,15 @@ export default function OverviewTab({
         </div>
       {/* Edit Collection/Deposit Modal */}
       {isEditCollectionModalOpen && editingCollection && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto animate-fade-in text-left">
+        <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto text-left">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-tighter">
                 {editingIsDeposit ? "Edit Cash Out (Deposit) Entry" : "Edit Cash In (Collection) Entry"}
               </h3>
               <button 
                 onClick={() => setIsEditCollectionModalOpen(false)} 
-                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
+                className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1509,7 +1506,7 @@ export default function OverviewTab({
                   </div>
 
                   {(availableStores.length > 0 || editingCollection?.store_name) && (
-                    <div className="space-y-1 animate-in fade-in duration-200">
+                    <div className="space-y-1">
                       <div className="flex justify-between items-center px-1">
                         <label className="text-[10px] text-slate-400 font-bold uppercase block">Parent Store (Shop/Branch)</label>
                         {editingCollection?.store_name && (
@@ -1529,7 +1526,7 @@ export default function OverviewTab({
                           placeholder="None / Cash"
                         />
                       ) : (
-                        <div className="text-[11px] text-slate-400 italic px-3 py-2 bg-slate-50 dark:bg-slate-950/40 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
+                        <div className="text-[11px] text-slate-400 italic px-3 py-2 bg-slate-50 dark:bg-slate-950/40 rounded-sm border border-dashed border-slate-200 dark:border-slate-800">
                           No stores available for this retailer
                         </div>
                       )}
@@ -1556,55 +1553,69 @@ export default function OverviewTab({
                   </div>
 
                   {/* Denominations editor for Collection */}
-                  <div className="border border-slate-100 dark:border-slate-800 rounded-xl p-3 bg-slate-50/50 dark:bg-slate-950/50 space-y-2">
-                    <span className="text-[10px] text-slate-400 font-bold uppercase block">Denominations</span>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      {[
-                        { label: "₹500 Notes", key: "note_500", factor: 500 },
-                        { label: "₹200 Notes", key: "note_200", factor: 200 },
-                        { label: "₹100 Notes", key: "note_100", factor: 100 },
-                        { label: "₹50 Notes", key: "note_50", factor: 50 },
-                        { label: "₹20 Notes", key: "note_20", factor: 20 },
-                        { label: "₹10 Notes", key: "note_10", factor: 10 },
-                      ].map(item => (
-                        <div key={item.key} className="flex flex-col gap-1">
-                          <label className="text-[9px] font-bold text-slate-400">{item.label}</label>
-                          <input autoComplete="one-time-code"
-                            type="number"
-                            value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0}
-                            onChange={(e) => {
-                              const val = parseInt(e.target.value) || 0;
-                              setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
-                            }}
-                            className="px-2 py-1 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
-                          />
-                        </div>
-                      ))}
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-400">Coins Sum</label>
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-sm">
+                    <div className="px-2 py-1.5 border-b border-slate-100 dark:border-slate-800/60">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Counting Details (Notes)</span>
+                    </div>
+                    {[
+                      { label: "₹500 Notes", key: "note_500", factor: 500 },
+                      { label: "₹200 Notes", key: "note_200", factor: 200 },
+                      { label: "₹100 Notes", key: "note_100", factor: 100 },
+                      { label: "₹50 Notes", key: "note_50", factor: 50 },
+                      { label: "₹20 Notes", key: "note_20", factor: 20 },
+                      { label: "₹10 Notes", key: "note_10", factor: 10 },
+                    ].map(item => (
+                      <div key={item.key} className="flex items-center gap-2 justify-between px-2 py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">{item.label}</span>
+                        <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
                         <input autoComplete="one-time-code"
                           type="number"
-                          step="0.01"
-                          value={selectedNewDenoms.coins}
+                          inputMode="numeric"
+                          value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0}
                           onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setSelectedNewDenoms(prev => ({ ...prev, coins: val }));
+                            const val = parseInt(e.target.value) || 0;
+                            setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
                           }}
-                          className="px-2 py-1 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
+                          className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-extrabold focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none"
                         />
+                        <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                        <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                          ₹{(Number(selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0) * item.factor).toLocaleString()}
+                        </span>
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[9px] font-bold text-slate-400">UPI / Online Amount</label>
-                        <input autoComplete="one-time-code"
-                          type="number"
-                          value={selectedNewDenoms.online_amount}
-                          onChange={(e) => {
-                            const val = parseFloat(e.target.value) || 0;
-                            setSelectedNewDenoms(prev => ({ ...prev, online_amount: val }));
-                          }}
-                          className="px-2 py-1 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-xs font-bold"
-                        />
-                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 justify-between px-2 py-0.5 border-b border-slate-100 dark:border-slate-800/40">
+                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">Coins</span>
+                      <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
+                      <input autoComplete="one-time-code"
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={selectedNewDenoms.coins}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setSelectedNewDenoms(prev => ({ ...prev, coins: val }));
+                        }}
+                        className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-extrabold focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none"
+                      />
+                      <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                      <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">₹{Number(selectedNewDenoms.coins || 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 justify-between px-2 py-0.5">
+                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">Online</span>
+                      <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">+</span>
+                      <input autoComplete="one-time-code"
+                        type="number"
+                        inputMode="decimal"
+                        value={selectedNewDenoms.online_amount}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setSelectedNewDenoms(prev => ({ ...prev, online_amount: val }));
+                        }}
+                        className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-extrabold focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none"
+                      />
+                      <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                      <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">₹{Number(selectedNewDenoms.online_amount || 0).toLocaleString()}</span>
                     </div>
                   </div>
 
@@ -1623,7 +1634,7 @@ export default function OverviewTab({
                         selectedNewDenoms.coins +
                         selectedNewDenoms.online_amount
                       ).toLocaleString()}`}
-                      className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-black text-slate-800 dark:text-slate-100"
+                      className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-right font-mono tabular-nums text-xs font-black text-slate-800 dark:text-slate-100"
                       readOnly
                     />
                   </div>
@@ -1635,7 +1646,7 @@ export default function OverviewTab({
                       type="date"
                       value={selectedNewDate}
                       onChange={(e) => setSelectedNewDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1646,7 +1657,7 @@ export default function OverviewTab({
                     <textarea
                       value={selectedNewRemarks}
                       onChange={(e) => setSelectedNewRemarks(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       rows={2}
                       placeholder="Remarks..."
                     />
@@ -1677,7 +1688,7 @@ export default function OverviewTab({
                           }
                         }
                       }}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                     >
                       <option value="portal">Cash Out</option>
                       <option value="retailer">Retailer Payout</option>
@@ -1731,9 +1742,9 @@ export default function OverviewTab({
                           id="editToOfficeCheckbox"
                           checked={selectedNewToOffice}
                           onChange={(e) => setSelectedNewToOffice(e.target.checked)}
-                          className="w-4 h-4 text-blue-650 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                          className="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="editToOfficeCheckbox" className="text-xs font-bold text-slate-700 dark:text-slate-350">Handover to Main Office Cashier</label>
+                        <label htmlFor="editToOfficeCheckbox" className="text-xs font-bold text-slate-700 dark:text-slate-400">Handover to Main Office Cashier</label>
                       </div>
 
                       {!selectedNewToOffice && (
@@ -1781,7 +1792,7 @@ export default function OverviewTab({
                         <select
                           value={selectedNewVirtualTargetType}
                           onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
-                          className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                         >
                           <option value="retailer">Retailer</option>
                           <option value="staff">Staff Member</option>
@@ -1829,7 +1840,7 @@ export default function OverviewTab({
                       <select
                         value={selectedNewPaymentMode}
                         onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       >
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
@@ -1842,9 +1853,10 @@ export default function OverviewTab({
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Amount</label>
                     <input autoComplete="one-time-code"
                       type="number"
+                      inputMode="decimal"
                       value={selectedNewAmount}
                       onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1856,7 +1868,7 @@ export default function OverviewTab({
                       type="date"
                       value={selectedNewDate}
                       onChange={(e) => setSelectedNewDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1868,7 +1880,7 @@ export default function OverviewTab({
                       type="text"
                       value={selectedNewRefNo}
                       onChange={(e) => setSelectedNewRefNo(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       placeholder="Optional"
                     />
                   </div>
@@ -1879,7 +1891,7 @@ export default function OverviewTab({
                     <textarea
                       value={selectedNewRemarks}
                       onChange={(e) => setSelectedNewRemarks(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold focus:outline-none dark:text-white"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       rows={2}
                       placeholder="Remarks..."
                     />
@@ -1891,14 +1903,14 @@ export default function OverviewTab({
                 <button
                   type="button"
                   onClick={() => setIsEditCollectionModalOpen(false)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-xs font-bold transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingCollection}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-sm text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {isSavingCollection ? "Saving..." : "Save Entry"}
@@ -1911,11 +1923,11 @@ export default function OverviewTab({
 
       {/* Date Range Cash Flow Report Modal */}
       {isRangeModalOpen && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl p-6 shadow-2xl animate-fade-in relative flex flex-col max-h-[85vh]">
+        <div className="fixed inset-0 bg-slate-950/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-3xl p-6 relative flex flex-col max-h-[85vh]">
             
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-4">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <div className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 <div>
@@ -1929,14 +1941,14 @@ export default function OverviewTab({
               </div>
               <button
                 onClick={() => setIsRangeModalOpen(false)}
-                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+                className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 <X className="w-4.5 h-4.5" />
               </button>
             </div>
 
             {/* Range controls & presets */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-150 dark:border-slate-850">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50 dark:bg-slate-950 p-4 rounded-sm border border-slate-200 dark:border-slate-800">
               
               {/* Presets */}
               <div className="flex flex-wrap gap-1.5">
@@ -1946,7 +1958,7 @@ export default function OverviewTab({
                     setRangeStartDate(today);
                     setRangeEndDate(today);
                   }}
-                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-[9px] font-black text-slate-650 dark:text-slate-300 uppercase transition-all cursor-pointer"
+                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-sm text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase transition-colors cursor-pointer"
                 >
                   Today
                 </button>
@@ -1958,7 +1970,7 @@ export default function OverviewTab({
                     setRangeStartDate(yestStr);
                     setRangeEndDate(yestStr);
                   }}
-                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-[9px] font-black text-slate-650 dark:text-slate-300 uppercase transition-all cursor-pointer"
+                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-sm text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase transition-colors cursor-pointer"
                 >
                   Yesterday
                 </button>
@@ -1971,7 +1983,7 @@ export default function OverviewTab({
                     setRangeStartDate(startStr);
                     setRangeEndDate(today);
                   }}
-                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-[9px] font-black text-slate-650 dark:text-slate-300 uppercase transition-all cursor-pointer"
+                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-sm text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase transition-colors cursor-pointer"
                 >
                   Last 7 Days
                 </button>
@@ -1984,7 +1996,7 @@ export default function OverviewTab({
                     setRangeStartDate(startMonthStr);
                     setRangeEndDate(today);
                   }}
-                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg text-[9px] font-black text-slate-650 dark:text-slate-300 uppercase transition-all cursor-pointer"
+                  className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-sm text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase transition-colors cursor-pointer"
                 >
                   This Month
                 </button>
@@ -1998,7 +2010,7 @@ export default function OverviewTab({
                     type="date"
                     value={rangeStartDate}
                     onChange={(e) => setRangeStartDate(e.target.value)}
-                    className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg text-[10px] font-bold outline-none dark:text-white"
+                    className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-[10px] font-bold outline-none dark:text-white"
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -2007,7 +2019,7 @@ export default function OverviewTab({
                     type="date"
                     value={rangeEndDate}
                     onChange={(e) => setRangeEndDate(e.target.value)}
-                    className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-lg text-[10px] font-bold outline-none dark:text-white"
+                    className="px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-[10px] font-bold outline-none dark:text-white"
                   />
                 </div>
               </div>
@@ -2017,10 +2029,10 @@ export default function OverviewTab({
             {/* Range Cash In / Cash Out Summary Grid */}
             <div className="grid grid-cols-3 gap-4">
               {/* Cash In */}
-              <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-4 flex flex-col justify-between">
-                <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-450 tracking-wider">Cash In (Collections)</span>
+              <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-sm p-4 flex flex-col justify-between">
+                <span className="text-[9px] font-black uppercase text-emerald-600 dark:text-emerald-500 tracking-wider">Cash In (Collections)</span>
                 <div className="mt-2 flex items-baseline justify-between">
-                  <span className="text-lg font-black text-emerald-700 dark:text-emerald-400">
+                  <span className="text-lg font-black text-emerald-700 dark:text-emerald-400 font-mono tabular-nums">
                     ₹{rangeCashIn.toLocaleString()}
                   </span>
                   <span className="text-[9px] font-bold text-emerald-600/80">
@@ -2030,29 +2042,29 @@ export default function OverviewTab({
               </div>
 
               {/* Cash Out */}
-              <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-xl p-4 flex flex-col justify-between">
-                <span className="text-[9px] font-black uppercase text-red-600 dark:text-red-455 tracking-wider">Cash Out (Deposits)</span>
+              <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-sm p-4 flex flex-col justify-between">
+                <span className="text-[9px] font-black uppercase text-red-600 dark:text-red-500 tracking-wider">Cash Out (Deposits)</span>
                 <div className="mt-2 flex items-baseline justify-between">
-                  <span className="text-lg font-black text-red-700 dark:text-red-400">
+                  <span className="text-lg font-black text-red-700 dark:text-red-400 font-mono tabular-nums">
                     ₹{rangeCashOut.toLocaleString()}
                   </span>
-                  <span className="text-[9px] font-bold text-red-650/80">
+                  <span className="text-[9px] font-bold text-red-600/80">
                     {filteredDeposits.length} entries
                   </span>
                 </div>
               </div>
 
               {/* Net Flow */}
-              <div className={`border rounded-xl p-4 flex flex-col justify-between ${
+              <div className={`border rounded-sm p-4 flex flex-col justify-between ${
                 rangeNet >= 0
-                  ? 'bg-blue-50/50 dark:bg-blue-955 border-blue-100 dark:border-blue-900/30'
-                  : 'bg-amber-50/50 dark:bg-amber-955 border-amber-100 dark:border-amber-900/30'
+                  ? 'bg-blue-50/50 dark:bg-blue-950 border-blue-100 dark:border-blue-900/30'
+                  : 'bg-amber-50/50 dark:bg-amber-950 border-amber-100 dark:border-amber-900/30'
               }`}>
-                <span className={`text-[9px] font-black uppercase tracking-wider ${rangeNet >= 0 ? 'text-blue-650' : 'text-amber-650'}`}>
+                <span className={`text-[9px] font-black uppercase tracking-wider ${rangeNet >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
                   Net Cash Flow
                 </span>
                 <div className="mt-2">
-                  <span className={`text-lg font-black block ${rangeNet >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                  <span className={`text-lg font-black block font-mono tabular-nums ${rangeNet >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-amber-700 dark:text-amber-400'}`}>
                     {rangeNet >= 0 ? '+' : ''}₹{rangeNet.toLocaleString()}
                   </span>
                 </div>
@@ -2062,20 +2074,20 @@ export default function OverviewTab({
             {/* Entries Section */}
             <div className="flex-1 flex flex-col min-h-0 pt-2 space-y-2">
               <div className="flex items-center gap-1.5">
-                <div className="w-1 h-3.5 bg-blue-600 rounded-full" />
+                <div className="w-1 h-3.5 bg-blue-600 rounded-sm" />
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
                   Transaction Entries ({rangeEntries.length})
                 </span>
               </div>
 
-              <div className="flex-1 overflow-y-auto min-h-0 pr-1 divide-y divide-slate-100 dark:divide-slate-800 border border-slate-150 dark:border-slate-800 rounded-xl">
+              <div className="flex-1 overflow-y-auto min-h-0 pr-1 divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-sm">
                 {rangeEntries.length === 0 ? (
                   <div className="p-12 text-center text-slate-400 italic text-[11px] font-bold">
                     No transaction entries found for this range.
                   </div>
                 ) : (
                   rangeEntries.map((item) => (
-                    <div key={item.id} className="p-3.5 hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors flex flex-col gap-1.5">
+                    <div key={item.id} className="p-3.5 hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors flex flex-col gap-1.5">
                       <div className="flex items-center justify-between text-[11px]">
                         
                         {/* Flow Description */}
