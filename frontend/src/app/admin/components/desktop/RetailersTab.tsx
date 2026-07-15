@@ -477,28 +477,28 @@ export default function RetailersTab({
               placeholder="Search store directory profiles..."
               value={retailerSearch}
               onChange={(e) => setRetailerSearch(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-semibold placeholder-slate-400 focus:outline-none shadow-sm"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold placeholder-slate-400 focus:outline-none"
             />
           </div>
 
           <button
             onClick={() => setShowRetailerDrawer(true)}
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-955 text-xs font-bold rounded-xl shadow-sm flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 text-xs font-bold rounded-sm flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" /> Register Retailer
           </button>
         </div>
 
         {categories.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 shadow-xs">
+          <div className="flex items-center gap-2 flex-wrap bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3">
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider ml-1">Filter Categories:</span>
             <button
               type="button"
               onClick={() => setSelectedCategories([])}
-              className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-sm text-[10px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer ${
                 selectedCategories.length === 0
-                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 font-black shadow-sm"
-                  : "bg-slate-50 dark:bg-slate-800/40 text-slate-450 hover:text-slate-700 dark:hover:text-slate-200"
+                  ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 font-black"
+                  : "bg-slate-50 dark:bg-slate-800/40 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200"
               }`}
             >
               All
@@ -514,10 +514,10 @@ export default function RetailersTab({
                       prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
                     );
                   }}
-                  className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer border ${
+                  className={`px-3 py-1.5 rounded-sm text-[10px] font-extrabold uppercase tracking-wider transition-colors cursor-pointer border ${
                     isActive
-                      ? "bg-blue-600 border-blue-600 text-white shadow-sm shadow-blue-500/20"
-                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-350 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200"
+                      ? "bg-blue-600 border-blue-600 text-white"
+                      : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:border-slate-300 dark:hover:border-slate-700 hover:text-slate-700 dark:hover:text-slate-200"
                   }`}
                 >
                   {cat}
@@ -532,17 +532,17 @@ export default function RetailersTab({
             <div
               key={retailer.id}
               onClick={() => handleOpenLedger(retailer)}
-              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all flex items-center justify-between cursor-pointer group active:scale-[0.99] select-none"
+              className="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm transition-colors flex items-center justify-between cursor-pointer group select-none"
             >
               <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700/60 shadow-xs text-slate-555 dark:text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0">
+                <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-sm border border-slate-100 dark:border-slate-700/60 text-slate-500 dark:text-slate-400 group-hover:text-emerald-600 transition-colors shrink-0">
                   <StoreIcon className="w-5 h-5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 group-hover:text-indigo-600 transition-colors truncate">{retailer.name}</h3>
                     {retailer.category && (
-                      <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-full text-[9px] font-black uppercase tracking-wider">
+                      <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100/50 dark:border-blue-900/30 rounded-sm text-[9px] font-black uppercase tracking-wider">
                         {retailer.category.trim()
                           .toLowerCase()
                           .split(/\s+/)
@@ -553,7 +553,7 @@ export default function RetailersTab({
                   </div>
                   {retailer.name.toLowerCase().trim() !== "cms" && retailer.area && (
                     <div className="flex items-center gap-1.5 mt-1">
-                      <MapPin className="w-3 h-3 text-slate-455" />
+                      <MapPin className="w-3 h-3 text-slate-500" />
                       <span className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">{retailer.area}</span>
                     </div>
                   )}
@@ -561,17 +561,17 @@ export default function RetailersTab({
               </div>
 
               <div className="text-right shrink-0">
-                <span className={`text-sm font-black ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
+                <span className={`text-sm font-black font-mono tabular-nums ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
                   ₹{Math.abs(retailer.balance || 0).toLocaleString()}
                 </span>
-                <span className="text-[8px] font-black text-slate-455 uppercase block tracking-wider mt-1">Outstanding Balance</span>
+                <span className="text-[8px] font-black text-slate-500 uppercase block tracking-wider mt-1">Outstanding Balance</span>
               </div>
             </div>
           ))}
       </div>
 
       {filteredRetailers.length === 0 && (
-        <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200 border-dashed dark:border-slate-800 col-span-2">
+        <div className="text-center py-10 bg-slate-50 dark:bg-slate-900/50 rounded-sm border border-slate-200 border-dashed dark:border-slate-800 col-span-2">
            <StoreIcon className="w-8 h-8 text-slate-300 mx-auto mb-3" />
            <p className="text-sm font-bold text-slate-500">No Retailers Found</p>
            <p className="text-[10px] text-slate-400 mt-1">Try adjusting your filters or search terms.</p>
@@ -580,23 +580,23 @@ export default function RetailersTab({
 
       {/* RETAILER EDIT MODAL */}
       {isEditRetailerModalOpen && editingRetailer && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm p-6 space-y-6 select-none animate-slide-up shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm p-6 space-y-6 select-none">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">Edit Retailer Profile</h3>
-              <button onClick={() => setIsEditRetailerModalOpen(false)} className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer"><X className="w-4 h-4" /></button>
+              <button onClick={() => setIsEditRetailerModalOpen(false)} className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer"><X className="w-4 h-4" /></button>
             </div>
             <form onSubmit={handleSaveRetailerEdit} className="space-y-4">
               <div className="space-y-3">
-                <input autoComplete="one-time-code" type="text" value={editRetName} onChange={(e) => setEditRetName(e.target.value)} placeholder="Retailer Name" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
-                <input autoComplete="one-time-code" type="tel" value={editRetPhone} onChange={(e) => setEditRetPhone(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" required />
-                <input autoComplete="one-time-code" type="text" value={editRetArea} onChange={(e) => setEditRetArea(e.target.value)} placeholder="Area / Route" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
-                <input autoComplete="one-time-code" type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
-                <input autoComplete="one-time-code" type="text" value={editRetCategory} onChange={(e) => setEditRetCategory(e.target.value)} placeholder="Category (e.g. Supermarket, Wholesaler)" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" />
-                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none">
+                <input autoComplete="one-time-code" type="text" value={editRetName} onChange={(e) => setEditRetName(e.target.value)} placeholder="Retailer Name" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold" required />
+                <input autoComplete="one-time-code" type="tel" value={editRetPhone} onChange={(e) => setEditRetPhone(e.target.value)} placeholder="Phone" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold" required />
+                <input autoComplete="one-time-code" type="text" value={editRetArea} onChange={(e) => setEditRetArea(e.target.value)} placeholder="Area / Route" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold" />
+                <input autoComplete="one-time-code" type="email" value={editRetEmail} onChange={(e) => setEditRetEmail(e.target.value)} placeholder="Email" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold" />
+                <input autoComplete="one-time-code" type="text" value={editRetCategory} onChange={(e) => setEditRetCategory(e.target.value)} placeholder="Category (e.g. Supermarket, Wholesaler)" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold" />
+                <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-200 dark:border-slate-800 text-[11px] select-none">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-400 font-medium">Current Net Balance</span>
-                    <span className={`font-black ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
+                    <span className={`font-black font-mono tabular-nums ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
                       ₹{Math.abs(editingRetailer.balance || 0).toLocaleString()}
                     </span>
                   </div>
@@ -609,12 +609,13 @@ export default function RetailersTab({
                       <input
                         autoComplete="one-time-code"
                         type="number"
+                        inputMode="decimal"
                         step="any"
                         min="0"
                         value={editRetToTake}
                         onChange={(e) => setEditRetToTake(e.target.value)}
                         placeholder="0.00"
-                        className="w-full px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-lg text-xs font-bold focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+                        className="w-full px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-amber-500"
                       />
                     </div>
                     <div>
@@ -622,18 +623,19 @@ export default function RetailersTab({
                       <input
                         autoComplete="one-time-code"
                         type="number"
+                        inputMode="decimal"
                         step="any"
                         min="0"
                         value={editRetToGive}
                         onChange={(e) => setEditRetToGive(e.target.value)}
                         placeholder="0.00"
-                        className="w-full px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-lg text-xs font-bold focus:outline-none focus:ring-1 focus:ring-blue-500/30"
+                        className="w-full px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-blue-500"
                       />
                     </div>
                   </div>
                 </div>
               </div>
-              <button type="submit" className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-xl text-xs font-bold">Update Profile</button>
+              <button type="submit" className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-sm text-xs font-bold">Update Profile</button>
             </form>
           </div>
         </div>
@@ -641,8 +643,8 @@ export default function RetailersTab({
 
       {/* STORE MANAGEMENT MODAL */}
       {isStoreModalOpen && selectedRetailer && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 space-y-6 select-none animate-slide-up shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-md p-6 space-y-6 select-none overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
@@ -660,7 +662,7 @@ export default function RetailersTab({
                   setEditingStoreId(null);
                   setStoreSearch("");
                 }}
-                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"
+                className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -678,7 +680,7 @@ export default function RetailersTab({
                         placeholder="Search stores..."
                         value={storeSearch}
                         onChange={(e) => setStoreSearch(e.target.value)}
-                        className="w-full pl-8 pr-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-semibold placeholder-slate-400 focus:outline-none"
+                        className="w-full pl-8 pr-2 py-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-[10px] font-semibold placeholder-slate-400 focus:outline-none"
                       />
                     </div>
                   )}
@@ -692,7 +694,7 @@ export default function RetailersTab({
                     return filteredStores.length > 0 ? (
                       <div className="space-y-2">
                         {filteredStores.map((s) => (
-                          <div key={s.id} className="p-3 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-xl">
+                          <div key={s.id} className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm">
                             {editingStoreId === s.id ? (
                               /* EDIT MODE */
                               <div className="space-y-2">
@@ -700,26 +702,26 @@ export default function RetailersTab({
                                   type="text"
                                   value={editStoreName}
                                   onChange={(e) => setEditStoreName(e.target.value)}
-                                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded-lg text-xs font-semibold focus:outline-none"
+                                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-blue-300 dark:border-blue-700 rounded-sm text-xs font-semibold focus:outline-none"
                                   placeholder="Store Name"
                                 />
                                 <input autoComplete="one-time-code"
                                   type="text"
                                   value={editStoreArea}
                                   onChange={(e) => setEditStoreArea(e.target.value)}
-                                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                                  className="w-full px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none"
                                   placeholder="Area / Address"
                                 />
                                 <div className="flex gap-2">
                                   <button
                                     onClick={() => handleSaveStoreEdit(s.id)}
-                                    className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1"
+                                    className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-sm text-[10px] font-bold flex items-center justify-center gap-1"
                                   >
                                     <Check className="w-3 h-3" /> Save
                                   </button>
                                   <button
                                     onClick={() => setEditingStoreId(null)}
-                                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg text-[10px] font-bold"
+                                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-sm text-[10px] font-bold"
                                   >
                                     Cancel
                                   </button>
@@ -729,7 +731,7 @@ export default function RetailersTab({
                               /* VIEW MODE */
                               <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+                                  <div className="p-2 bg-white dark:bg-slate-900 rounded-sm border border-slate-200 dark:border-slate-800">
                                     <StoreIcon className="w-4 h-4 text-blue-500" />
                                   </div>
                                   <div>
@@ -740,14 +742,14 @@ export default function RetailersTab({
                                 <div className="flex items-center gap-1.5">
                                   <button
                                     onClick={() => handleStartEditStore(s)}
-                                    className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
+                                    className="p-1.5 rounded-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                                     title="Edit store"
                                   >
                                     <Edit2 className="w-3.5 h-3.5" />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteStore(s.id, s.store_name)}
-                                    className="p-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                                    className="p-1.5 rounded-sm bg-red-50 dark:bg-red-900/20 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
                                     title="Delete store"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -759,13 +761,13 @@ export default function RetailersTab({
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-4 border border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
+                      <div className="text-center py-4 border border-dashed border-slate-100 dark:border-slate-800 rounded-sm">
                         <p className="text-[10px] text-slate-400 font-bold">No matching stores found</p>
                       </div>
                     );
                   })()
                 ) : (
-                  <div className="text-center py-6 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-xl">
+                  <div className="text-center py-6 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-sm">
                     <p className="text-[10px] text-slate-400 font-bold">No stores registered for this retailer</p>
                   </div>
                 )}
@@ -780,7 +782,7 @@ export default function RetailersTab({
                       placeholder="Store Name"
                       value={newStoreName}
                       onChange={(e) => setNewStoreName(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none"
                       required
                     />
                     <input autoComplete="one-time-code"
@@ -788,13 +790,13 @@ export default function RetailersTab({
                       placeholder="Area / Address"
                       value={newStoreArea}
                       onChange={(e) => setNewStoreArea(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold focus:outline-none"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none"
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={isCreatingStore}
-                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-sm text-xs font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-50"
                   >
                     <Plus className="w-4 h-4" /> {isCreatingStore ? "Adding..." : "Register Store Location"}
                   </button>
@@ -809,7 +811,7 @@ export default function RetailersTab({
         <div className="fixed inset-0 bg-slate-950 z-50 overflow-y-auto select-none">
           {loadingLedger ? (
             <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-4 border-slate-700 border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (
             <LedgerReportView 
@@ -843,15 +845,15 @@ export default function RetailersTab({
       )}
       {/* EDIT TRANSACTION ENTRY MODAL */}
       {isEditEntryModalOpen && editingEntry && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 select-none animate-fade-in">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-sm max-h-[90vh] overflow-y-auto p-6 space-y-6 animate-slide-up shadow-2xl">
+        <div className="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 select-none animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm max-h-[90vh] overflow-y-auto p-6 space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
                 {editingIsDeposit ? "Edit Cash Out Entry" : "Edit Cash In Entry"}
               </h3>
               <button 
                 onClick={() => setIsEditEntryModalOpen(false)} 
-                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-550 cursor-pointer"
+                className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -895,7 +897,7 @@ export default function RetailersTab({
                         placeholder="None / Cash"
                       />
                     ) : (
-                      <div className="text-[11px] text-slate-400 italic px-3 py-2 bg-slate-50 dark:bg-slate-955 rounded-lg border border-dashed border-slate-200 dark:border-slate-800">
+                      <div className="text-[11px] text-slate-400 italic px-3 py-2 bg-slate-50 dark:bg-slate-950 rounded-sm border border-dashed border-slate-200 dark:border-slate-800">
                         No stores available for this retailer
                       </div>
                     )}
@@ -915,7 +917,7 @@ export default function RetailersTab({
                           setSelectedNewBankAccountId("");
                         }
                       }}
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold"
                     >
                       <option value="cash">Cash</option>
                       <option value="online">Online</option>
@@ -968,7 +970,7 @@ export default function RetailersTab({
                             }
                           }
                         }}
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold"
                       >
                         <option value="portal">Cash Out</option>
                         <option value="retailer">Retailer Payout</option>
@@ -1021,9 +1023,9 @@ export default function RetailersTab({
                             id="editToOfficeCheckboxDesktop"
                             checked={selectedNewToOffice}
                             onChange={(e) => setSelectedNewToOffice(e.target.checked)}
-                            className="w-3.5 h-3.5 rounded text-indigo-600 border-slate-205 dark:border-slate-800"
+                            className="w-3.5 h-3.5 rounded text-indigo-600 border-slate-200 dark:border-slate-800"
                           />
-                          <label htmlFor="editToOfficeCheckboxDesktop" className="text-[10px] font-bold text-slate-650 dark:text-slate-400 uppercase">Handover to Cashier</label>
+                          <label htmlFor="editToOfficeCheckboxDesktop" className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase">Handover to Cashier</label>
                         </div>
                         {!selectedNewToOffice && (
                           <div>
@@ -1070,7 +1072,7 @@ export default function RetailersTab({
                           <select
                             value={selectedNewVirtualTargetType}
                             onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
-                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                            className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold"
                           >
                             <option value="retailer">Retailer</option>
                             <option value="staff">Staff Member</option>
@@ -1117,7 +1119,7 @@ export default function RetailersTab({
                         <select
                           value={selectedNewPaymentMode}
                           onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold"
+                          className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold"
                         >
                           <option value="cash">Cash</option>
                           <option value="online">Online</option>
@@ -1131,7 +1133,7 @@ export default function RetailersTab({
                         type="text" 
                         value={selectedNewRefNo} 
                         onChange={(e) => setSelectedNewRefNo(e.target.value)} 
-                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                        className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold" 
                         placeholder="Optional reference number"
                       />
                     </div>
@@ -1145,7 +1147,7 @@ export default function RetailersTab({
                     type="date" 
                     value={selectedNewDate} 
                     onChange={(e) => setSelectedNewDate(e.target.value)} 
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold" 
                     required 
                   />
                 </div>
@@ -1154,19 +1156,20 @@ export default function RetailersTab({
                 {selectedNewPaymentMode !== "cash" && (
                   <div>
                     <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Amount (₹)</label>
-                    <input 
-                      type="number" 
-                      value={selectedNewAmount} 
-                      onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))} 
-                      className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold" 
-                      required 
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={selectedNewAmount}
+                      onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400"
+                      required
                     />
                   </div>
                 )}
 
                 {/* DENOMINATIONS (for Cash Mode) – staff-style full-row layout */}
                 {selectedNewPaymentMode === "cash" && (
-                  <div className="bg-slate-50 dark:bg-slate-955 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-1.5 select-none">
+                  <div className="bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-200 dark:border-slate-800 space-y-1.5 select-none">
                     <label className="block text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-2">Counting Details (Notes)</label>
                     <div className="space-y-1">
                       {[
@@ -1180,17 +1183,18 @@ export default function RetailersTab({
                       ].map((n) => (
                         <div key={n.key} className="flex items-center gap-2 justify-between py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
                           <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">{n.label}</span>
-                          <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">&times;</span>
+                          <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
                           <input
                             type="number"
+                            inputMode="numeric"
                             placeholder="0"
                             min="0"
                             value={selectedNewDenoms[n.key as keyof typeof selectedNewDenoms] || ""}
                             onChange={(e) => handleDenomValChange(n.key, e.target.value)}
-                            className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded text-center text-xs outline-none focus:border-slate-400"
+                            className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-extrabold outline-none focus:border-slate-500 dark:focus:border-slate-400"
                           />
                           <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
-                          <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0">
+                          <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0 font-mono tabular-nums">
                             ₹{(Number(selectedNewDenoms[n.key as keyof typeof selectedNewDenoms] || 0) * n.multiplier).toLocaleString()}
                           </span>
                         </div>
@@ -1199,7 +1203,7 @@ export default function RetailersTab({
                     {/* Live total summary */}
                     <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
                       <span className="text-[9px] uppercase font-black tracking-wider text-slate-400">Total (Cash)</span>
-                      <span className="text-sm font-black text-slate-800 dark:text-white">₹{selectedNewAmount.toLocaleString()}</span>
+                      <span className="text-sm font-black text-slate-800 dark:text-white font-mono tabular-nums">₹{selectedNewAmount.toLocaleString()}</span>
                     </div>
                   </div>
                 )}
@@ -1210,7 +1214,7 @@ export default function RetailersTab({
                   <textarea 
                     value={selectedNewRemarks} 
                     onChange={(e) => setSelectedNewRemarks(e.target.value)} 
-                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-semibold" 
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold" 
                     rows={2}
                     placeholder="Remarks"
                   />
@@ -1220,7 +1224,7 @@ export default function RetailersTab({
               <button 
                 type="submit" 
                 disabled={isSavingEntry}
-                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 transition-all disabled:opacity-50"
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-sm text-xs font-bold transition-colors disabled:opacity-50"
               >
                 {isSavingEntry ? "Saving..." : "Save Changes"}
               </button>
