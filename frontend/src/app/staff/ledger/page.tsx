@@ -246,7 +246,7 @@ export default function StaffLedgerPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/staff")}
-              className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-md cursor-pointer animate-in fade-in duration-200"
+              className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-sm cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
@@ -257,7 +257,7 @@ export default function StaffLedgerPage() {
           </div>
           <button
             onClick={loadLedgerData}
-            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-md"
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-sm"
             title="Refresh Ledger"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-blue-500" : ""}`} />
@@ -266,21 +266,21 @@ export default function StaffLedgerPage() {
 
         {/* Summary Blocks */}
         <div className="grid grid-cols-3 gap-2 mt-1">
-          <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+          <div className="bg-white dark:bg-slate-900 p-2.5 rounded-sm border border-slate-200 dark:border-slate-800 flex flex-col">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Cash In</span>
-            <span className="text-sm font-black text-emerald-600 dark:text-emerald-500 tracking-tight">
+            <span className="text-sm font-black text-emerald-600 dark:text-emerald-500 tracking-tight font-mono tabular-nums">
               ₹{totalCollectedSum.toLocaleString("en-IN")}
             </span>
           </div>
-          <div className="bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col">
+          <div className="bg-white dark:bg-slate-900 p-2.5 rounded-sm border border-slate-200 dark:border-slate-800 flex flex-col">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Cash Out</span>
-            <span className="text-sm font-black text-red-600 dark:text-red-500 tracking-tight">
+            <span className="text-sm font-black text-red-600 dark:text-red-500 tracking-tight font-mono tabular-nums">
               ₹{totalDepositedSum.toLocaleString("en-IN")}
             </span>
           </div>
-          <div className="bg-slate-900 dark:bg-slate-100 p-2.5 rounded-xl border border-slate-800 dark:border-white shadow-md flex flex-col">
+          <div className="bg-slate-900 dark:bg-slate-100 p-2.5 rounded-sm border border-slate-800 dark:border-white flex flex-col">
             <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Total Cash</span>
-            <span className="text-sm font-black text-white dark:text-slate-950 tracking-tight">
+            <span className="text-sm font-black text-white dark:text-slate-950 tracking-tight font-mono tabular-nums">
               ₹{netPortfolio.toLocaleString("en-IN")}
             </span>
           </div>
@@ -295,13 +295,13 @@ export default function StaffLedgerPage() {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-lg focus:outline-none text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold shadow-sm"
+              className="w-full pl-8 pr-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-slate-400 rounded-sm focus:outline-none text-xs text-slate-800 dark:text-slate-200 placeholder-slate-400 font-bold"
             />
           </div>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold outline-none text-slate-800 dark:text-slate-200 shadow-sm cursor-pointer"
+            className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold outline-none text-slate-800 dark:text-slate-200 cursor-pointer"
           >
             <option value="date-desc">LATEST FIRST</option>
             <option value="date-asc">OLDEST FIRST</option>
@@ -312,7 +312,7 @@ export default function StaffLedgerPage() {
 
         {/* Date Filters */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 shadow-sm">
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1">
             <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
               <span className="text-[7.5px] text-slate-400 font-black uppercase">Date From</span>
@@ -324,7 +324,7 @@ export default function StaffLedgerPage() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2.5 py-1 shadow-sm">
+          <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1">
             <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             <div className="flex-1 flex flex-col min-w-0">
               <span className="text-[7.5px] text-slate-400 font-black uppercase">Date To</span>
@@ -339,7 +339,7 @@ export default function StaffLedgerPage() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="grid grid-cols-3 gap-1 bg-slate-200/50 dark:bg-slate-900/60 p-0.5 rounded-lg border border-slate-200/20">
+        <div className="grid grid-cols-3 gap-1 bg-slate-200/50 dark:bg-slate-900/60 p-0.5 rounded-sm border border-slate-200/20">
           {[
             { id: "all", label: "All Logs" },
             { id: "in", label: "Cash In" },
@@ -348,9 +348,9 @@ export default function StaffLedgerPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`py-1.5 text-xs font-black uppercase tracking-wider rounded transition-all cursor-pointer ${
+              className={`py-1.5 text-xs font-black uppercase tracking-wider rounded transition-colors cursor-pointer ${
                 activeTab === tab.id
-                  ? "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm"
+                  ? "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
                   : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
               }`}
             >
@@ -366,7 +366,7 @@ export default function StaffLedgerPage() {
               <RefreshCw className="w-5 h-5 animate-spin text-slate-400" />
             </div>
           ) : Object.keys(groupedTimeline).length === 0 ? (
-            <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold">
+            <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-center text-[10px] text-slate-400 dark:text-slate-500 font-bold">
               <Calendar className="w-5 h-5 text-slate-300 mx-auto mb-1.5" />
               No ledger records found.
             </div>
@@ -390,17 +390,17 @@ export default function StaffLedgerPage() {
                   return (
                     <div
                       key={item.id}
-                      className={`rounded-lg border flex flex-col shadow-sm transition-all overflow-hidden ${
+                      className={`rounded-sm border flex flex-col transition-colors overflow-hidden ${
                         isExpanded
                           ? "bg-slate-50 dark:bg-slate-900 border-blue-200 dark:border-blue-900/40"
-                          : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:shadow-md cursor-pointer"
+                          : "bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 cursor-pointer"
                       }`}
                       onClick={() => toggleExpand(item.id)}
                     >
                       {/* Main Row */}
                       <div className="p-2 flex items-center justify-between">
                         <div className="flex items-center gap-2 min-w-0">
-                          <div className={`w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 shadow-inner ${
+                          <div className={`w-7 h-7 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 ${
                             item.type === "collection" ? "text-emerald-500" : "text-red-500"
                           }`}>
                             {item.type === "collection" ? (
@@ -421,7 +421,7 @@ export default function StaffLedgerPage() {
                           </div>
                         </div>
                         <div className="text-right flex-shrink-0 ml-2 flex items-center gap-1.5">
-                          <span className={`text-base font-black tracking-tight block ${
+                          <span className={`text-base font-black tracking-tight block font-mono tabular-nums ${
                             item.type === "collection" ? "text-emerald-600 dark:text-emerald-500" : "text-red-600 dark:text-red-400"
                           }`}>
                             {item.type === "collection" ? "+" : "-"}₹{item.totalAmount.toLocaleString("en-IN")}
@@ -431,10 +431,10 @@ export default function StaffLedgerPage() {
                       </div>
 
                       {/* Running Balance Segment */}
-                      <div className="grid grid-cols-2 gap-1 bg-slate-100/50 dark:bg-slate-955/40 mx-2 mb-2 p-1.5 rounded-lg border border-slate-200/30 dark:border-slate-800/40">
+                      <div className="grid grid-cols-2 gap-1 bg-slate-100/50 dark:bg-slate-950/40 mx-2 mb-2 p-1.5 rounded-sm border border-slate-200/30 dark:border-slate-800/40 font-mono tabular-nums">
                         <div className="flex flex-col pl-1">
                           <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
-                          <span className="text-sm font-semibold text-slate-650 dark:text-slate-400">₹{snapshots.prev.toLocaleString("en-IN")}</span>
+                          <span className="text-sm font-semibold text-slate-600 dark:text-slate-400">₹{snapshots.prev.toLocaleString("en-IN")}</span>
                         </div>
                         <div className="flex flex-col text-right pr-1">
                           <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
@@ -447,7 +447,7 @@ export default function StaffLedgerPage() {
                         <div className="px-2 mx-2 mb-2 pb-2 pt-1.5 border-t border-slate-200/40 dark:border-slate-800/40 space-y-2 text-xs font-bold text-slate-600 dark:text-slate-400" onClick={e => e.stopPropagation()}>
                           <div>
                             <span className="text-[10px] uppercase font-black text-slate-400 block mb-0.5">Cash Breakdown:</span>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-slate-700 dark:text-slate-355">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-slate-700 dark:text-slate-300 font-mono tabular-nums">
                               {Number(den.note_500 || 0) !== 0 && <div>₹500 Notes: <span className="font-black">{Number(den.note_500)}</span></div>}
                               {Number(den.note_200 || 0) !== 0 && <div>₹200 Notes: <span className="font-black">{Number(den.note_200)}</span></div>}
                               {Number(den.note_100 || 0) !== 0 && <div>₹100 Notes: <span className="font-black">{Number(den.note_100)}</span></div>}
@@ -464,7 +464,7 @@ export default function StaffLedgerPage() {
 
                           <div className="border-t border-slate-200/40 dark:border-slate-800/40 pt-1.5">
                             <span className="text-[10px] uppercase font-black text-slate-400 block mb-0.5">Amount in words:</span>
-                            <span className="text-slate-700 dark:text-slate-350 italic">{numberToWordsIndian(item.totalAmount)} Rupees Only</span>
+                            <span className="text-slate-700 dark:text-slate-300 italic">{numberToWordsIndian(item.totalAmount)} Rupees Only</span>
                           </div>
 
                           {item.remarks && (
@@ -472,7 +472,7 @@ export default function StaffLedgerPage() {
                               <FileText className="w-3.5 h-3.5 text-slate-400 mt-0.5 flex-shrink-0" />
                               <div>
                                 <span className="text-[10px] uppercase font-black text-slate-400 block mb-0.5">Remarks:</span>
-                                <span className="text-slate-750 dark:text-slate-300 font-bold text-xs">{item.remarks}</span>
+                                <span className="text-slate-700 dark:text-slate-300 font-bold text-xs">{item.remarks}</span>
                               </div>
                             </div>
                           )}
@@ -512,7 +512,7 @@ export default function StaffLedgerPage() {
                                   );
                                 }
                               }}
-                              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 active:scale-95 transition-transform"
+                              className="flex-1 flex items-center justify-center gap-1 py-1 rounded-sm bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 transition-colors"
                           >
                             <Share2 className="w-2.5 h-2.5" /> Share
                           </button>
@@ -524,30 +524,30 @@ export default function StaffLedgerPage() {
                                   onClick={() => {
                                     router.push(item.type === "collection" ? `/collection?editId=${item.id}` : `/deposit?editId=${item.id}`);
                                   }}
-                                  className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-955/20 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
+                                  className="flex-1 flex items-center justify-center gap-1 py-1 rounded-sm bg-blue-50 dark:bg-blue-950/20 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 transition-colors"
                                 >
                                   <Edit2 className="w-2.5 h-2.5" /> Edit
                                 </button>
                               ) : (
-                                <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-150/40 dark:bg-slate-850/20 rounded-md border border-slate-200/10">
+                                <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-100/40 dark:bg-slate-800/20 rounded-sm border border-slate-200/10">
                                   Edit expired
                                 </div>
                               )}
                               {canDelete ? (
                                 <button
                                   onClick={(e) => handleDelete(item, e)}
-                                  className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-650 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 active:scale-95 transition-transform"
+                                  className="flex-1 flex items-center justify-center gap-1 py-1 rounded-sm bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 transition-colors"
                                 >
                                   <Trash2 className="w-2.5 h-2.5" /> Delete
                                 </button>
                               ) : (
-                                <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-150/40 dark:bg-slate-850/20 rounded-md border border-slate-200/10">
+                                <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-100/40 dark:bg-slate-800/20 rounded-sm border border-slate-200/10">
                                   Delete expired
                                 </div>
                               )}
                             </>
                           ) : (
-                            <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-100 dark:bg-slate-800/40 rounded-md border border-slate-200/30 dark:border-slate-800">
+                            <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-100 dark:bg-slate-800/40 rounded-sm border border-slate-200/30 dark:border-slate-800">
                               Action window expired
                             </div>
                           )}
