@@ -589,7 +589,7 @@ export default function MobileOverview({
       {/* Premium Summary Card */}
       <div 
         onClick={() => setIsRangeModalOpen(true)}
-        className="relative overflow-hidden bg-slate-900 dark:bg-white rounded-lg p-3 text-white dark:text-slate-955 shadow-md active:scale-[0.98] transition-all cursor-pointer group"
+        className="relative overflow-hidden bg-slate-900 dark:bg-white rounded-sm p-3 text-white dark:text-slate-950 transition-colors cursor-pointer group"
       >
         <div className="absolute top-0 right-0 p-2 opacity-10">
           <Wallet className="w-16 h-16 rotate-12" />
@@ -597,33 +597,33 @@ export default function MobileOverview({
         <div className="relative z-10 flex items-center justify-between">
           <div>
             <p className="text-[8px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1">
-              Net Cash in Hand <Calendar className="w-2.5 h-2.5 text-blue-455 dark:text-blue-600" />
+              Net Cash in Hand <Calendar className="w-2.5 h-2.5 text-blue-500 dark:text-blue-600" />
             </p>
-            <h2 className="text-xl font-black mt-0.5">₹{netCashBalance.toLocaleString()}</h2>
+            <h2 className="text-xl font-black mt-0.5 font-mono tabular-nums">₹{netCashBalance.toLocaleString()}</h2>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <div className="bg-white/10 dark:bg-slate-100 px-2 py-1 rounded-md backdrop-blur-md">
+            <div className="bg-white/10 dark:bg-slate-100 px-2 py-1 rounded-sm">
               <p className="text-[7px] font-black uppercase opacity-60">Cash In</p>
-              <p className="text-[10px] font-black mt-0.5">₹{totalCollectedAmount.toLocaleString()}</p>
+              <p className="text-[10px] font-black mt-0.5 font-mono tabular-nums">₹{totalCollectedAmount.toLocaleString()}</p>
             </div>
-            <div className="bg-white/10 dark:bg-slate-100 px-2 py-1 rounded-md backdrop-blur-md">
+            <div className="bg-white/10 dark:bg-slate-100 px-2 py-1 rounded-sm">
               <p className="text-[7px] font-black uppercase opacity-60">Cash Out</p>
-              <p className="text-[10px] font-black mt-0.5">₹{totalDepositedAmount.toLocaleString()}</p>
+              <p className="text-[10px] font-black mt-0.5 font-mono tabular-nums">₹{totalDepositedAmount.toLocaleString()}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Staff live Status & Cash Tracker Card */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-2.5 shadow-sm flex flex-col gap-2 animate-fade-in">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-2.5 flex flex-col gap-2">
         {/* Header (Clickable to collapse/expand entire list) */}
         <div 
           onClick={() => setIsStaffTrackingExpanded(!isStaffTrackingExpanded)}
           className="flex items-center justify-between cursor-pointer group"
         >
           <div className="flex items-center gap-1.5">
-            <div className="p-1 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-md">
+            <div className="p-1 bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 rounded-sm">
               <Users className="w-3.5 h-3.5" />
             </div>
             <div>
@@ -631,7 +631,7 @@ export default function MobileOverview({
               <p className="text-[7px] font-bold text-slate-400 dark:text-slate-500 uppercase">Live field reports</p>
             </div>
           </div>
-          <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 ${isStaffTrackingExpanded ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-colors duration-200 ${isStaffTrackingExpanded ? 'rotate-180' : ''}`} />
         </div>
 
         {/* List of active field staff */}
@@ -645,14 +645,14 @@ export default function MobileOverview({
                   const isActive = staff.compliance?.status === "Active Duty";
                   const isExpanded = !!expandedStaffNames[staff.name];
                   return (
-                    <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-md p-1.5 bg-slate-50/20 dark:bg-slate-800/10 space-y-1.5">
+                    <div key={staff.name} className="border border-slate-100 dark:border-slate-800 rounded-sm p-1.5 bg-slate-50/20 dark:bg-slate-800/10 space-y-1.5">
                       {/* Card Header (Clickable to expand/collapse details) */}
                       <div 
                         onClick={() => toggleStaffExpanded(staff.name)}
                         className="flex items-center justify-between cursor-pointer group"
                       >
                         <div className="flex items-center gap-1.5">
-                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
+                          <span className={`w-1.5 h-1.5 rounded-sm ${isActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`} />
                           <span className="text-[10px] font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                             {staff.name}
                           </span>
@@ -660,30 +660,30 @@ export default function MobileOverview({
                             {isActive ? "Active" : "Offline"}
                           </span>
                         </div>
-                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-colors duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                       </div>
 
                       {/* Summary Stats Row — Old Bal | +Today In | -Today Out | =Net */}
-                      <div className="grid grid-cols-4 gap-1">
-                        <div className="p-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-md flex flex-col">
+                      <div className="grid grid-cols-4 gap-1 font-mono tabular-nums">
+                        <div className="p-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-sm flex flex-col">
                           <span className="text-[5.5px] font-black uppercase text-slate-400 tracking-wide">Old Bal</span>
                           <span className={`text-[8px] font-black mt-0.5 ${(staff as any).oldBalance < 0 ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'}`}>
                             ₹{((staff as any).oldBalance || 0).toLocaleString()}
                           </span>
                         </div>
-                        <div className="p-1 bg-emerald-50/25 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/10 rounded-md flex flex-col">
+                        <div className="p-1 bg-emerald-50/25 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/10 rounded-sm flex flex-col">
                           <span className="text-[5.5px] font-black uppercase text-emerald-600 tracking-wide">+Today In</span>
                           <span className="text-[8px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5">
                             ₹{staff.collectedToday.toLocaleString()}
                           </span>
                         </div>
-                        <div className="p-1 bg-red-50/25 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/10 rounded-md flex flex-col">
+                        <div className="p-1 bg-red-50/25 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/10 rounded-sm flex flex-col">
                           <span className="text-[5.5px] font-black uppercase text-red-600 tracking-wide">-Today Out</span>
                           <span className="text-[8px] font-black text-red-700 dark:text-red-400 mt-0.5">
                             ₹{staff.depositedToday.toLocaleString()}
                           </span>
                         </div>
-                        <div className={`p-1 rounded-md flex flex-col border ${
+                        <div className={`p-1 rounded-sm flex flex-col border ${
                           (staff as any).netBalance < 0
                             ? 'bg-red-50 dark:bg-red-950/10 border-red-200 dark:border-red-900/20'
                             : 'bg-blue-50/25 dark:bg-blue-950/5 border-blue-100/30 dark:border-blue-900/10'
@@ -701,11 +701,11 @@ export default function MobileOverview({
 
                       {/* Collapsible Details */}
                       {isExpanded && (
-                        <div className="border-t border-slate-100 dark:border-slate-800/80 pt-1.5 space-y-1.5 animate-fade-in">
+                        <div className="border-t border-slate-100 dark:border-slate-800/80 pt-1.5 space-y-1.5">
                           {/* Check-in info */}
                           <div className="flex items-center justify-between text-[8px]">
                             <span className="font-bold text-slate-400 uppercase tracking-wide">Shift Status</span>
-                            <span className="font-black text-slate-700 dark:text-slate-350">
+                            <span className="font-black text-slate-700 dark:text-slate-400">
                               {staff.compliance ? (
                                 `${staff.compliance.status} ${staff.compliance.startTime ? `(IN: ${staff.compliance.startTime})` : ""}`
                               ) : (
@@ -796,7 +796,7 @@ export default function MobileOverview({
                             return (
                               <div className="border-t border-slate-100 dark:border-slate-800/40 pt-1.5">
                                 <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest block mb-1">Cash in Hand Breakdown</span>
-                                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 font-mono tabular-nums">
                                   {denItems.map(d => (
                                     <div key={d.label} className="flex items-center justify-between text-[8px]">
                                       <span className="font-bold text-slate-500 dark:text-slate-400">{d.label} × {d.count}</span>
@@ -823,9 +823,9 @@ export default function MobileOverview({
                             <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Outings</span>
                             <button
                               onClick={() => staff.visitedStores.length > 0 && setActiveModalStaff({ name: staff.name, visitedStores: staff.visitedStores })}
-                              className={`flex items-center gap-1 font-black uppercase tracking-wider text-[7px] px-1.5 py-0.5 rounded transition-all ${
+                              className={`flex items-center gap-1 font-black uppercase tracking-wider text-[7px] px-1.5 py-0.5 rounded transition-colors ${
                                 staff.visitedStores.length > 0 
-                                ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/80 cursor-pointer shadow-xs" 
+                                ? "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 hover:bg-blue-100 dark:hover:bg-blue-900/80 cursor-pointer" 
                                 : "text-slate-400 dark:text-slate-600 bg-slate-50/50 dark:bg-slate-900/20 cursor-not-allowed"
                               }`}
                               disabled={staff.visitedStores.length === 0}
@@ -847,13 +847,13 @@ export default function MobileOverview({
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-16">
+        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-16">
           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">To Take</p>
-          <p className="text-sm font-black text-red-500">₹{totalToTake.toLocaleString()}</p>
+          <p className="text-sm font-black text-red-500 font-mono tabular-nums">₹{totalToTake.toLocaleString()}</p>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between h-16">
+        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-16">
           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">To Give</p>
-          <p className="text-sm font-black text-emerald-500">₹{totalToGive.toLocaleString()}</p>
+          <p className="text-sm font-black text-emerald-500 font-mono tabular-nums">₹{totalToGive.toLocaleString()}</p>
         </div>
       </div>
 
@@ -871,7 +871,7 @@ export default function MobileOverview({
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
               onClick={(e) => e.stopPropagation()}
-              className="bg-transparent border-none text-[8px] font-black text-slate-450 dark:text-slate-500 uppercase tracking-wider focus:outline-none cursor-pointer"
+              className="bg-transparent border-none text-[8px] font-black text-slate-500 dark:text-slate-500 uppercase tracking-wider focus:outline-none cursor-pointer"
             >
               <option value="date-desc">LATEST FIRST</option>
               <option value="date-asc">OLDEST FIRST</option>
@@ -881,12 +881,12 @@ export default function MobileOverview({
           </div>
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Link href="/admin/ledger" className="text-[8px] font-black text-blue-600 uppercase">View All</Link>
-            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-transform duration-200 ${isRecentLedgerExpanded ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transform transition-colors duration-200 ${isRecentLedgerExpanded ? 'rotate-180' : ''}`} />
           </div>
         </div>
 
         {isRecentLedgerExpanded && (
-          <div className="bg-white dark:bg-slate-900 rounded-lg overflow-hidden border border-slate-100 dark:border-slate-800 shadow-xs mb-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-sm overflow-hidden border border-slate-100 dark:border-slate-800 mb-4">
           {recentActivity.length === 0 ? (
             <div className="p-4 text-center text-slate-400 text-[9px] font-black uppercase tracking-widest">
               No recent activity
@@ -898,7 +898,7 @@ export default function MobileOverview({
               return (
               <div key={idx} className={`border-b border-slate-50 dark:border-slate-800/50 transition-colors cursor-pointer ${isExpanded ? 'bg-slate-50/80 dark:bg-slate-800/20' : 'active:bg-slate-50 dark:active:bg-slate-800/30'}`} onClick={() => setExpandedActivityId(prev => prev === item.id ? null : item.id)}>
                 <div className="flex items-center gap-2 py-1.5 px-2.5">
-                  <div className={`w-7 h-7 rounded-md flex items-center justify-center ${item.type === 'collection' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
+                  <div className={`w-7 h-7 rounded-sm flex items-center justify-center ${item.type === 'collection' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
                     {item.type === 'collection' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -918,12 +918,12 @@ export default function MobileOverview({
                           className="p-0.5 bg-slate-50 dark:bg-slate-800 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors inline-flex items-center justify-center cursor-pointer shrink-0"
                           title="View Remark"
                         >
-                          <ChevronDown className={`w-2.5 h-2.5 text-slate-500 transition-transform duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-505' : ''}`} />
+                          <ChevronDown className={`w-2.5 h-2.5 text-slate-500 transition-colors duration-200 ${cmsRemarksExpanded[item.id] ? 'rotate-180 text-indigo-500' : ''}`} />
                         </button>
                       )}
                     </div>
                     {item.type === 'collection' && item.party?.toLowerCase().startsWith("cms") && cmsRemarksExpanded[item.id] && (
-                      <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[8px] font-medium text-slate-605 dark:text-slate-400 max-w-[200px] break-words">
+                      <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded border border-slate-200/50 dark:border-slate-800 text-[8px] font-medium text-slate-600 dark:text-slate-400 max-w-[200px] break-words">
                         <span className="text-[7px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
                         <span className="italic">{item.remarks || "no remark"}</span>
                       </div>
@@ -945,20 +945,20 @@ export default function MobileOverview({
                   </div>
                   <div className="text-right flex items-center gap-1">
                     <div>
-                      <p className={`text-[11px] font-black ${item.type === 'collection' ? 'text-blue-600' : 'text-red-600'}`}>
+                      <p className={`text-[11px] font-black font-mono tabular-nums ${item.type === 'collection' ? 'text-blue-600' : 'text-red-600'}`}>
                         {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
                       </p>
                       {item.balance !== undefined && item.balance !== null && (
-                        <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5">Due: ₹{Number(item.balance).toLocaleString()}</p>
+                        <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5 font-mono tabular-nums">Due: ₹{Number(item.balance).toLocaleString()}</p>
                       )}
                     </div>
-                    <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3 h-3 text-slate-400 transition-colors ${isExpanded ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
                 {isExpanded && (
                   <div className="px-3 pb-2 pt-1 border-t border-slate-100 dark:border-slate-800" onClick={e => e.stopPropagation()}>
                     <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[8.5px] font-bold text-slate-600 dark:text-slate-300">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-[8.5px] font-bold text-slate-600 dark:text-slate-300 font-mono tabular-nums">
                       {Number(den.note_500 || 0) !== 0 && <span>₹500 × {den.note_500} = ₹{(Number(den.note_500)*500).toLocaleString()}</span>}
                       {Number(den.note_200 || 0) !== 0 && <span>₹200 × {den.note_200} = ₹{(Number(den.note_200)*200).toLocaleString()}</span>}
                       {Number(den.note_100 || 0) !== 0 && <span>₹100 × {den.note_100} = ₹{(Number(den.note_100)*100).toLocaleString()}</span>}
@@ -979,7 +979,7 @@ export default function MobileOverview({
                             shareDepositEntry({ deposit_type: item.deposit_type, target_name: item.party, amount: item.amount, denominations: item.denominations, created_at: item.created_at || item.date, remarks: item.remarks, recipient_staff_id: item.recipient_staff_id }, item.staff);
                           }
                         }}
-                        className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 active:scale-95 transition-transform"
+                        className="flex-1 flex items-center justify-center gap-1 py-1 rounded-sm bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 text-[8px] font-black uppercase tracking-wider border border-emerald-100 dark:border-emerald-900/30 transition-colors"
                       >
                         <Share2 className="w-2.5 h-2.5" /> Share
                       </button>
@@ -988,7 +988,7 @@ export default function MobileOverview({
                           e.stopPropagation();
                           handleStartEditCollection(item);
                         }}
-                        className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-blue-50 dark:bg-blue-955/30 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 active:scale-95 transition-transform"
+                        className="flex-1 flex items-center justify-center gap-1 py-1 rounded-sm bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 text-[8px] font-black uppercase tracking-wider border border-blue-100 dark:border-blue-900/30 transition-colors"
                       >
                         <Edit2 className="w-2.5 h-2.5" /> Edit
                       </button>
@@ -1008,7 +1008,7 @@ export default function MobileOverview({
                             }
                           }
                         }}
-                        className="flex-1 flex items-center justify-center gap-1 py-1 rounded-md bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 active:scale-95 transition-transform"
+                        className="flex-1 flex items-center justify-center gap-1 py-1 rounded-sm bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 text-[8px] font-black uppercase tracking-wider border border-red-100 dark:border-red-900/30 transition-colors"
                       >
                         <Trash2 className="w-2.5 h-2.5" /> Delete
                       </button>
@@ -1025,12 +1025,12 @@ export default function MobileOverview({
 
       {/* Stores Visited Mobile Sliding Overlay Modal */}
       {activeModalStaff && (
-        <div className="fixed inset-0 bg-slate-955/60 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-0 sm:p-3 transition-all duration-300">
-          <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-205 dark:border-slate-800 rounded-t-lg sm:rounded-lg w-full max-w-md p-3 pb-4 space-y-2.5 shadow-2xl animate-slide-up relative">
+        <div className="fixed inset-0 bg-slate-950/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-3 transition-colors duration-300">
+          <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-lg sm:rounded-sm w-full max-w-md p-3 pb-4 space-y-2.5 animate-slide-up relative">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
               <div className="flex items-center gap-1.5">
-                <div className="p-1 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-md">
+                <div className="p-1 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-sm">
                   <Store className="w-4 h-4" />
                 </div>
                 <div>
@@ -1044,18 +1044,18 @@ export default function MobileOverview({
               </div>
               <button
                 onClick={() => setActiveModalStaff(null)}
-                className="p-1 rounded-md bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+                className="p-1 rounded-sm bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Modal Body: Stores list */}
-            <div className="max-h-[40vh] overflow-y-auto pr-1 divide-y divide-slate-100 dark:divide-slate-850">
+            <div className="max-h-[40vh] overflow-y-auto pr-1 divide-y divide-slate-100 dark:divide-slate-800">
               {activeModalStaff.visitedStores.map((item: VisitedStore, idx: number) => (
-                <div key={idx} className="py-1.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-850/10 px-1 rounded-md transition-all">
+                <div key={idx} className="py-1.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-800/10 px-1 rounded-sm transition-colors">
                   <div className="flex flex-col min-w-0 flex-1 pr-1.5">
-                    <span className="font-black text-slate-800 dark:text-slate-205 uppercase tracking-tight truncate text-[11px]">
+                    <span className="font-black text-slate-800 dark:text-slate-200 uppercase tracking-tight truncate text-[11px]">
                       {item.retailerName}
                     </span>
                     <div className="flex items-center gap-1 text-[8px] text-slate-400 font-bold">
@@ -1074,10 +1074,10 @@ export default function MobileOverview({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-[11px]">
+                    <span className="font-black text-emerald-600 dark:text-emerald-400 text-[11px] font-mono tabular-nums">
                       +₹{item.amount.toLocaleString()}
                     </span>
-                    <span className={`px-1.5 py-0.5 rounded-full text-[7px] font-black uppercase tracking-wider ${
+                    <span className={`px-1.5 py-0.5 rounded-sm text-[7px] font-black uppercase tracking-wider ${
                       item.status === 'verified'
                       ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border border-emerald-100 dark:border-emerald-900/30'
                       : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border border-amber-100 dark:border-amber-900/30'
@@ -1093,13 +1093,13 @@ export default function MobileOverview({
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-[7px] font-black text-slate-400 uppercase tracking-wide">Total Visited Today</span>
-                <span className="text-[10px] font-black text-slate-705 dark:text-slate-350">
+                <span className="text-[10px] font-black text-slate-700 dark:text-slate-400">
                   {activeModalStaff.visitedStores.length} Stores
                 </span>
               </div>
               <button
                 onClick={() => setActiveModalStaff(null)}
-                className="px-3 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-[9px] font-black rounded-lg hover:bg-slate-850 dark:hover:bg-slate-100 transition-all cursor-pointer shadow-md"
+                className="px-3 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-950 text-[9px] font-black rounded-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 Close
               </button>
@@ -1109,10 +1109,10 @@ export default function MobileOverview({
       )}
       {/* Edit Collection/Deposit Modal */}
       {isEditCollectionModalOpen && editingCollection && (
-        <div className="fixed inset-0 bg-slate-955/60 backdrop-blur-xs z-[120] flex items-center justify-center p-3">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg w-full max-w-md p-3 space-y-2.5 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/60 z-[120] flex items-center justify-center p-3">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-md p-3 space-y-2.5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-              <h3 className="text-xs font-black text-slate-850 dark:text-slate-100 uppercase tracking-tight">
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight">
                 {editingIsDeposit ? "Edit Cash Out Entry" : "Edit Cash In Entry"}
               </h3>
               <button 
@@ -1142,11 +1142,11 @@ export default function MobileOverview({
                   </div>
 
                   {(availableStores.length > 0 || editingCollection?.store_name) && (
-                    <div className="space-y-0.5 animate-in fade-in duration-200">
+                    <div className="space-y-0.5">
                       <div className="flex justify-between items-center px-0.5">
                         <label className="text-[8px] text-slate-400 font-black uppercase block">Parent Store (Shop/Branch)</label>
                         {editingCollection?.store_name && (
-                          <span className="text-[8px] text-amber-505 font-black">
+                          <span className="text-[8px] text-amber-500 font-black">
                             (Original: {editingCollection.store_name})
                           </span>
                         )}
@@ -1189,7 +1189,7 @@ export default function MobileOverview({
                   </div>
 
                   {/* Denominations editor for Collection – staff-style full-row layout */}
-                  <div className="border border-slate-100 dark:border-slate-800 rounded-lg p-3 bg-slate-50/50 dark:bg-slate-950/50 space-y-1">
+                  <div className="border border-slate-100 dark:border-slate-800 rounded-sm p-3 bg-slate-50/50 dark:bg-slate-950/50 space-y-1">
                     <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">Counting Details (Notes)</span>
                     <div className="space-y-1">
                       {[
@@ -1203,18 +1203,19 @@ export default function MobileOverview({
                       ].map(item => (
                         <div key={item.key} className="flex items-center gap-2 justify-between py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
                           <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">{item.label}</span>
-                          <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">&times;</span>
+                          <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
                           <input autoComplete="one-time-code"
                             type="number"
+                            inputMode={item.key === "coins" ? "decimal" : "numeric"}
                             value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || ""}
                             onChange={(e) => {
                               const val = item.key === "coins" ? (parseFloat(e.target.value) || 0) : (parseInt(e.target.value) || 0);
                               setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
                             }}
-                            className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-center text-xs font-black outline-none focus:border-slate-400"
+                            className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-black outline-none focus:border-slate-500 dark:focus:border-slate-400"
                           />
                           <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
-                          <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0">
+                          <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0 font-mono tabular-nums">
                             ₹{(Number(selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0) * item.factor).toLocaleString()}
                           </span>
                         </div>
@@ -1222,18 +1223,19 @@ export default function MobileOverview({
                       {/* UPI / Online Amount row */}
                       <div className="flex items-center gap-2 justify-between pt-1.5 border-t border-slate-200 dark:border-slate-800">
                         <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">UPI / Online</span>
-                        <span className="text-slate-350 dark:text-slate-600 text-xs font-bold">+</span>
+                        <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">+</span>
                         <input autoComplete="one-time-code"
                           type="number"
+                          inputMode="decimal"
                           value={selectedNewDenoms.online_amount || ""}
                           onChange={(e) => {
                             const val = Math.max(0, parseFloat(e.target.value) || 0);
                             setSelectedNewDenoms(prev => ({ ...prev, online_amount: val }));
                           }}
-                          className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded text-center text-xs font-black outline-none focus:border-slate-400"
+                          className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-black outline-none focus:border-slate-500 dark:focus:border-slate-400"
                         />
                         <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
-                        <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0">
+                        <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0 font-mono tabular-nums">
                           ₹{Number(selectedNewDenoms.online_amount || 0).toLocaleString()}
                         </span>
                       </div>
@@ -1241,7 +1243,7 @@ export default function MobileOverview({
                     {/* Live total */}
                     <div className="mt-2 pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
                       <span className="text-[8px] uppercase font-black tracking-wider text-slate-400">Total Amount</span>
-                      <span className="text-sm font-black text-slate-800 dark:text-white">₹{(
+                      <span className="text-sm font-black text-slate-800 dark:text-white font-mono tabular-nums">₹{(
                         selectedNewDenoms.note_500 * 500 +
                         selectedNewDenoms.note_200 * 200 +
                         selectedNewDenoms.note_100 * 100 +
@@ -1261,7 +1263,7 @@ export default function MobileOverview({
                       type="date"
                       value={selectedNewDate}
                       onChange={(e) => setSelectedNewDate(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1272,7 +1274,7 @@ export default function MobileOverview({
                     <textarea
                       value={selectedNewRemarks}
                       onChange={(e) => setSelectedNewRemarks(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       rows={1.5}
                       placeholder="Remarks..."
                     />
@@ -1303,7 +1305,7 @@ export default function MobileOverview({
                           }
                         }
                       }}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                     >
                       <option value="portal">Cash Out</option>
                       <option value="retailer">Retailer Payout</option>
@@ -1357,9 +1359,9 @@ export default function MobileOverview({
                           id="editToOfficeCheckboxMobile"
                           checked={selectedNewToOffice}
                           onChange={(e) => setSelectedNewToOffice(e.target.checked)}
-                          className="w-3.5 h-3.5 text-blue-650 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
+                          className="w-3.5 h-3.5 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500"
                         />
-                        <label htmlFor="editToOfficeCheckboxMobile" className="text-[9px] font-black text-slate-700 dark:text-slate-350">Handover to Main Office Cashier</label>
+                        <label htmlFor="editToOfficeCheckboxMobile" className="text-[9px] font-black text-slate-700 dark:text-slate-400">Handover to Main Office Cashier</label>
                       </div>
 
                       {!selectedNewToOffice && (
@@ -1403,7 +1405,7 @@ export default function MobileOverview({
                         <select
                           value={selectedNewVirtualTargetType}
                           onChange={(e) => setSelectedNewVirtualTargetType(e.target.value)}
-                          className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                          className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                         >
                           <option value="retailer">Retailer</option>
                           <option value="staff">Staff Member</option>
@@ -1451,7 +1453,7 @@ export default function MobileOverview({
                       <select
                         value={selectedNewPaymentMode}
                         onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                        className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       >
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
@@ -1464,9 +1466,10 @@ export default function MobileOverview({
                     <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Amount</label>
                     <input autoComplete="one-time-code"
                       type="number"
+                      inputMode="decimal"
                       value={selectedNewAmount}
                       onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1478,7 +1481,7 @@ export default function MobileOverview({
                       type="date"
                       value={selectedNewDate}
                       onChange={(e) => setSelectedNewDate(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       required
                     />
                   </div>
@@ -1490,7 +1493,7 @@ export default function MobileOverview({
                       type="text"
                       value={selectedNewRefNo}
                       onChange={(e) => setSelectedNewRefNo(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       placeholder="Optional"
                     />
                   </div>
@@ -1501,7 +1504,7 @@ export default function MobileOverview({
                     <textarea
                       value={selectedNewRemarks}
                       onChange={(e) => setSelectedNewRemarks(e.target.value)}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-955 border border-slate-200 dark:border-slate-800 rounded-md text-[10px] font-black focus:outline-none dark:text-white"
+                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       rows={1.5}
                       placeholder="Remarks..."
                     />
@@ -1513,14 +1516,14 @@ export default function MobileOverview({
                 <button
                   type="button"
                   onClick={() => setIsEditCollectionModalOpen(false)}
-                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-705 dark:text-slate-200 rounded-md text-[10px] font-black transition-all cursor-pointer"
+                  className="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-[10px] font-black transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingCollection}
-                  className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                  className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-sm text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-3 h-3" />
                   {isSavingCollection ? "Saving..." : "Save Entry"}
@@ -1534,11 +1537,11 @@ export default function MobileOverview({
 
       {/* Mobile Date Range Cash Flow Drawer / Modal */}
       {isRangeModalOpen && (
-        <div className="fixed inset-0 bg-slate-955/60 backdrop-blur-sm z-50 flex flex-col justify-end">
-          <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-2xl w-full max-h-[90vh] p-4 flex flex-col gap-4 shadow-2xl animate-slide-up relative text-left">
+        <div className="fixed inset-0 bg-slate-950/60 z-50 flex flex-col justify-end">
+          <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-2xl w-full max-h-[90vh] p-4 flex flex-col gap-4 animate-slide-up relative text-left">
             
             {/* Handle/Indicator */}
-            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto self-center -mt-1 mb-1" />
+            <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-sm mx-auto self-center -mt-1 mb-1" />
 
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
@@ -1555,14 +1558,14 @@ export default function MobileOverview({
               </div>
               <button
                 onClick={() => setIsRangeModalOpen(false)}
-                className="p-1 rounded-md bg-slate-105 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+                className="p-1 rounded-sm bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
 
             {/* Date Selection Control & Presets */}
-            <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-955 p-3 rounded-lg border border-slate-105 dark:border-slate-850">
+            <div className="flex flex-col gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
               {/* Presets */}
               <div className="grid grid-cols-4 gap-1">
                 <button
@@ -1571,7 +1574,7 @@ export default function MobileOverview({
                     setRangeStartDate(today);
                     setRangeEndDate(today);
                   }}
-                  className="py-1 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
+                  className="py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
                 >
                   Today
                 </button>
@@ -1583,7 +1586,7 @@ export default function MobileOverview({
                     setRangeStartDate(yestStr);
                     setRangeEndDate(yestStr);
                   }}
-                  className="py-1 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
+                  className="py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
                 >
                   Yesterday
                 </button>
@@ -1596,7 +1599,7 @@ export default function MobileOverview({
                     setRangeStartDate(startStr);
                     setRangeEndDate(today);
                   }}
-                  className="py-1 bg-white dark:bg-slate-900 border border-slate-255 dark:border-slate-800 rounded text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
+                  className="py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
                 >
                   7 Days
                 </button>
@@ -1609,7 +1612,7 @@ export default function MobileOverview({
                     setRangeStartDate(startMonthStr);
                     setRangeEndDate(today);
                   }}
-                  className="py-1 bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
+                  className="py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-[8px] font-black text-slate-600 dark:text-slate-300 uppercase cursor-pointer"
                 >
                   Month
                 </button>
@@ -1623,7 +1626,7 @@ export default function MobileOverview({
                     type="date"
                     value={rangeStartDate}
                     onChange={(e) => setRangeStartDate(e.target.value)}
-                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded text-[9px] font-bold outline-none dark:text-white"
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-[9px] font-bold outline-none dark:text-white"
                   />
                 </div>
                 <div className="flex flex-col gap-0.5">
@@ -1632,7 +1635,7 @@ export default function MobileOverview({
                     type="date"
                     value={rangeEndDate}
                     onChange={(e) => setRangeEndDate(e.target.value)}
-                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded text-[9px] font-bold outline-none dark:text-white"
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-[9px] font-bold outline-none dark:text-white"
                   />
                 </div>
               </div>
@@ -1641,9 +1644,9 @@ export default function MobileOverview({
             {/* Range Cash In / Cash Out Summary Grid */}
             <div className="grid grid-cols-3 gap-2">
               {/* Cash In */}
-              <div className="bg-emerald-50/50 dark:bg-emerald-955 border border-emerald-100 dark:border-emerald-900/30 rounded-lg p-2.5 flex flex-col justify-between">
-                <span className="text-[7.5px] font-black uppercase text-emerald-600 dark:text-emerald-450 tracking-wider">Cash In</span>
-                <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 mt-1 block">
+              <div className="bg-emerald-50/50 dark:bg-emerald-950 border border-emerald-100 dark:border-emerald-900/30 rounded-sm p-2.5 flex flex-col justify-between">
+                <span className="text-[7.5px] font-black uppercase text-emerald-600 dark:text-emerald-500 tracking-wider">Cash In</span>
+                <span className="text-xs font-black text-emerald-700 dark:text-emerald-400 mt-1 block font-mono tabular-nums">
                   ₹{rangeCashIn.toLocaleString()}
                 </span>
                 <span className="text-[6.5px] font-bold text-slate-400 block mt-0.5">
@@ -1652,9 +1655,9 @@ export default function MobileOverview({
               </div>
 
               {/* Cash Out */}
-              <div className="bg-red-50/50 dark:bg-red-955 border border-red-100 dark:border-red-900/30 rounded-lg p-2.5 flex flex-col justify-between">
-                <span className="text-[7.5px] font-black uppercase text-red-600 dark:text-red-455 tracking-wider">Cash Out</span>
-                <span className="text-xs font-black text-red-700 dark:text-red-400 mt-1 block">
+              <div className="bg-red-50/50 dark:bg-red-950 border border-red-100 dark:border-red-900/30 rounded-sm p-2.5 flex flex-col justify-between">
+                <span className="text-[7.5px] font-black uppercase text-red-600 dark:text-red-500 tracking-wider">Cash Out</span>
+                <span className="text-xs font-black text-red-700 dark:text-red-400 mt-1 block font-mono tabular-nums">
                   ₹{rangeCashOut.toLocaleString()}
                 </span>
                 <span className="text-[6.5px] font-bold text-slate-400 block mt-0.5">
@@ -1663,15 +1666,15 @@ export default function MobileOverview({
               </div>
 
               {/* Net Flow */}
-              <div className={`border rounded-lg p-2.5 flex flex-col justify-between ${
+              <div className={`border rounded-sm p-2.5 flex flex-col justify-between ${
                 rangeNet >= 0
-                  ? 'bg-blue-50/50 dark:bg-blue-955 border-blue-100 dark:border-blue-900/30'
-                  : 'bg-amber-50/50 dark:bg-amber-955 border-amber-100 dark:border-amber-900/30'
+                  ? 'bg-blue-50/50 dark:bg-blue-950 border-blue-100 dark:border-blue-900/30'
+                  : 'bg-amber-50/50 dark:bg-amber-950 border-amber-100 dark:border-amber-900/30'
               }`}>
-                <span className={`text-[7.5px] font-black uppercase tracking-wider ${rangeNet >= 0 ? 'text-blue-650' : 'text-amber-650'}`}>
+                <span className={`text-[7.5px] font-black uppercase tracking-wider ${rangeNet >= 0 ? 'text-blue-600' : 'text-amber-600'}`}>
                   Net Flow
                 </span>
-                <span className={`text-xs font-black mt-1 block ${rangeNet >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                <span className={`text-xs font-black mt-1 block font-mono tabular-nums ${rangeNet >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-amber-700 dark:text-amber-400'}`}>
                   {rangeNet >= 0 ? '+' : ''}₹{rangeNet.toLocaleString()}
                 </span>
               </div>
@@ -1680,20 +1683,20 @@ export default function MobileOverview({
             {/* Entries Section */}
             <div className="flex-1 flex flex-col min-h-0 min-w-0 gap-1.5">
               <div className="flex items-center gap-1">
-                <div className="w-1 h-3 bg-blue-600 rounded-full" />
+                <div className="w-1 h-3 bg-blue-600 rounded-sm" />
                 <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider">
                   Transaction Entries ({rangeEntries.length})
                 </span>
               </div>
 
-              <div className="flex-1 overflow-y-auto min-h-0 min-w-0 divide-y divide-slate-100 dark:divide-slate-800 border border-slate-150 dark:border-slate-800 rounded-lg">
+              <div className="flex-1 overflow-y-auto min-h-0 min-w-0 divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-sm">
                 {rangeEntries.length === 0 ? (
                   <div className="p-8 text-center text-slate-400 italic text-[10px] font-bold">
                     No entries for this range.
                   </div>
                 ) : (
                   rangeEntries.map((item) => (
-                    <div key={item.id} className="p-2.5 hover:bg-slate-50/50 dark:hover:bg-slate-850/10 transition-colors flex flex-col gap-1">
+                    <div key={item.id} className="p-2.5 hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-colors flex flex-col gap-1">
                       <div className="flex items-center justify-between text-[10px]">
                         
                         {/* Flow Description */}
@@ -1706,7 +1709,7 @@ export default function MobileOverview({
                             {item.type === 'collection' ? 'In' : 'Out'}
                           </span>
 
-                          <div className="flex items-center gap-1 truncate font-extrabold text-slate-850 dark:text-slate-150 uppercase tracking-tight text-[9px] min-w-0">
+                          <div className="flex items-center gap-1 truncate font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight text-[9px] min-w-0">
                             <span className="truncate max-w-[90px]">{item.from}</span>
                             <ArrowRight className="w-2.5 h-2.5 text-slate-400 flex-shrink-0" />
                             <span className="truncate max-w-[90px] text-blue-600 dark:text-blue-400">{item.to}</span>
@@ -1714,7 +1717,7 @@ export default function MobileOverview({
                         </div>
 
                         {/* Amount */}
-                        <span className={`font-black text-[10px] flex-shrink-0 ml-1 ${item.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
+                        <span className={`font-black text-[10px] flex-shrink-0 ml-1 font-mono tabular-nums ${item.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
                           {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
                         </span>
                       </div>
