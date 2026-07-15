@@ -350,7 +350,7 @@ export default function DailyReportPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => router.push("/staff")}
-              className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-md cursor-pointer"
+              className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-sm cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
             </button>
@@ -363,7 +363,7 @@ export default function DailyReportPage() {
           <button
             onClick={downloadPDF}
             disabled={isDownloading}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[10px] font-bold shadow disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
           >
             <Download className="w-3 h-3" />
             {isDownloading ? "Downloading..." : "Download PDF"}
@@ -371,7 +371,7 @@ export default function DailyReportPage() {
         </div>
 
         {/* Date Filter & Refresh */}
-        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-2 rounded-sm border border-slate-200 dark:border-slate-800">
           <div className="flex-1 flex items-center gap-1.5">
             <Calendar className="w-3.5 h-3.5 text-slate-400" />
             <input autoComplete="one-time-code"
@@ -391,7 +391,7 @@ export default function DailyReportPage() {
         </div>
 
         {/* Report Content Container for PDF Generation */}
-        <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm p-0.5">
+        <div className="bg-white border border-slate-200 rounded-sm overflow-hidden p-0.5">
           {isLoading ? (
             <div className="flex justify-center p-8">
               <RefreshCw className="w-5 h-5 animate-spin text-slate-400" />
@@ -405,7 +405,7 @@ export default function DailyReportPage() {
                 <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-cyan-400 via-sky-400 to-blue-500 opacity-90 transform skew-x-12 origin-top-right -mr-3" />
                 
                 <div className="relative p-2.5 pr-28 z-10">
-                  <h2 className="text-sm font-black text-sky-850 tracking-tight leading-none text-sky-900">{currentUser?.name || "Staff Member"}</h2>
+                  <h2 className="text-sm font-black tracking-tight leading-none text-sky-900">{currentUser?.name || "Staff Member"}</h2>
                   
                   {/* Color dots row */}
                   <div className="flex items-center gap-1 mt-1.5">
@@ -420,7 +420,7 @@ export default function DailyReportPage() {
 
                 {/* Centered Report Title bar at bottom */}
                 <div className="border-t border-slate-200 bg-slate-50/50 py-1.5 text-center relative z-10">
-                  <span className="text-[9px] font-black text-slate-955 uppercase tracking-widest">
+                  <span className="text-[9px] font-black text-slate-950 uppercase tracking-widest">
                     Detailed Cash Report - {new Date(selectedDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', timeZone: "Asia/Kolkata" })}
                   </span>
                 </div>
@@ -438,7 +438,7 @@ export default function DailyReportPage() {
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider">Today's Out</span>
-                  <span className="text-xs font-black text-red-650 text-red-600 mt-0.5">₹{totalOutToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-xs font-black text-red-600 mt-0.5">₹{totalOutToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider">Last Balance</span>
