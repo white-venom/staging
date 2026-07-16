@@ -13,10 +13,14 @@ interface Tenant {
   maintenance_mode: boolean;
   created_at: string;
   admin_phone?: string;
-  // Simulated fields for UI metrics
-  cpu?: number;
-  memory?: number;
-  storage?: number;
+}
+
+interface TenantStats {
+  db_size_mb: number;
+  staff_count: number;
+  admin_count: number;
+  retailer_count: number;
+  collection_count: number;
 }
 
 export default function DashboardPage() {
@@ -72,6 +76,37 @@ export default function DashboardPage() {
   const [loadingSSL, setLoadingSSL] = useState(false);
   const [renewingSSL, setRenewingSSL] = useState(false);
 
+  // Infrastructure status (real DB connection count + version)
+  const [infraStatus, setInfraStatus] = useState<any>(null);
+
+  const fetchInfraStatus = async () => {
+    try {
+      const data = await superAdminApi.getInfraStatus();
+      setInfraStatus(data);
+    } catch (err: any) {
+      console.error("Failed to fetch infra status:", err);
+    }
+  };
+
+  // Real per-tenant resource stats (DB size, staff/retailer counts)
+  const [tenantStats, setTenantStats] = useState<TenantStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  const fetchTenantStats = async (tenantId: string) => {
+    try {
+      setLoadingStats(true);
+      setStatsError(null);
+      const data = await superAdminApi.getTenantStats(tenantId);
+      setTenantStats(data);
+    } catch (err: any) {
+      setTenantStats(null);
+      setStatsError(err.message || "Failed to load tenant stats.");
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
   const fetchSSLStatus = async () => {
     try {
       setLoadingSSL(true);
@@ -108,33 +143,15 @@ export default function DashboardPage() {
     setUsername(localStorage.getItem("superadmin_username") || "superadmin");
     fetchTenants();
     fetchSSLStatus();
+    fetchInfraStatus();
   }, [router]);
 
-  // Simulate real-time metric fluctuations
+  // Fetch real resource stats whenever the selected tenant changes or the Resources tab is opened
   useEffect(() => {
-    if (tenants.length === 0) return;
-    const interval = setInterval(() => {
-      setTenants((prevTenants) =>
-        prevTenants.map((t) => {
-          if (t.maintenance_mode) {
-            return {
-              ...t,
-              cpu: Math.max(1, Math.floor(Math.random() * 4) + 1),
-              memory: Math.max(64, (t.memory || 128) + Math.floor(Math.random() * 5) - 2),
-              storage: t.storage || Number((10 + Math.random() * 5).toFixed(1)),
-            };
-          }
-          return {
-            ...t,
-            cpu: Math.max(2, Math.min(99, (t.cpu || Math.floor(Math.random() * 30) + 5) + Math.floor(Math.random() * 11) - 5)),
-            memory: Math.max(128, Math.min(2048, (t.memory || Math.floor(Math.random() * 512) + 128) + Math.floor(Math.random() * 21) - 10)),
-            storage: Number(((t.storage || Math.floor(Math.random() * 50) + 10) + 0.001).toFixed(3)),
-          };
-        })
-      );
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [tenants.length]);
+    if (selectedTenant && activeTab === "resources") {
+      fetchTenantStats(selectedTenant.id);
+    }
+  }, [selectedTenant?.id, activeTab]);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -146,17 +163,11 @@ export default function DashboardPage() {
       setLoading(true);
       setFetchError(null);
       const data = await superAdminApi.getTenants();
-      const mapped = data.map((t) => ({
-        ...t,
-        cpu: Math.floor(Math.random() * 25) + 5,
-        memory: Math.floor(Math.random() * 256) + 128,
-        storage: Number((15.4 + Math.random() * 12).toFixed(1)),
-      }));
-      setTenants(mapped);
-      if (mapped.length > 0 && !selectedTenant) {
-        setSelectedTenant(mapped[0]);
+      setTenants(data);
+      if (data.length > 0 && !selectedTenant) {
+        setSelectedTenant(data[0]);
       } else if (selectedTenant) {
-        const updatedSelected = mapped.find((t) => t.id === selectedTenant.id);
+        const updatedSelected = data.find((t) => t.id === selectedTenant.id);
         if (updatedSelected) setSelectedTenant(updatedSelected);
       }
     } catch (err: any) {
@@ -295,20 +306,16 @@ export default function DashboardPage() {
 
   return (
     <div className="relative min-h-screen bg-[#f8fafc] text-slate-800 overflow-x-hidden font-sans">
-      {/* Ambient Light Gradients */}
-      <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-violet-100/50 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-100/40 blur-[130px] pointer-events-none" />
-
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 px-5 py-4 bg-white border border-emerald-500/20 text-emerald-600 rounded-2xl flex items-center gap-3 shadow-[0_10px_35px_rgba(0,0,0,0.08)] animate-bounce text-[10px] font-black uppercase tracking-wider">
-          <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
+        <div className="fixed bottom-5 right-5 z-50 px-5 py-4 bg-white border border-emerald-500/20 text-emerald-600 rounded-sm flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
+          <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />
           {toastMessage}
         </div>
       )}
 
       {/* Header Bar */}
-      <header className="sticky top-0 z-40 bg-[#0d1b3e] border-b border-blue-900/40 px-3.5 py-2 flex items-center justify-between shadow-md">
+      <header className="sticky top-0 z-40 bg-[#0d1b3e] border-b border-blue-900/40 px-3.5 py-2 flex items-center justify-between">
         <div className="flex items-center gap-1">
           <img 
             src="/logo.png" 
@@ -324,7 +331,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={handleLogout}
-            className="px-2.5 py-1 border border-blue-800 hover:border-red-400 hover:bg-red-950/30 text-blue-200 hover:text-red-400 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer"
+            className="px-2.5 py-1 border border-blue-800 hover:border-red-400 hover:bg-red-950/30 text-blue-200 hover:text-red-400 rounded-sm text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
           >
             Sign Out
           </button>
@@ -342,7 +349,7 @@ export default function DashboardPage() {
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="self-start md:self-auto px-3.5 py-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-200 shadow-md active:scale-[0.98] cursor-pointer"
+            className="self-start md:self-auto px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors duration-200 cursor-pointer"
           >
             + Onboard New Client
           </button>
@@ -352,9 +359,9 @@ export default function DashboardPage() {
         <div className="flex items-center gap-1 border-b border-slate-200 mb-4 pb-px">
           <button
             onClick={() => setActiveTab("directory")}
-            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-all duration-250 cursor-pointer ${
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-colors duration-250 cursor-pointer ${
               activeTab === "directory"
-                ? "border-violet-650 text-violet-650 bg-slate-100/50"
+                ? "border-violet-600 text-violet-600 bg-slate-100/50"
                 : "border-transparent text-slate-400 hover:text-slate-600"
             }`}
           >
@@ -362,9 +369,9 @@ export default function DashboardPage() {
           </button>
           <button
             onClick={() => setActiveTab("resources")}
-            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-all duration-250 cursor-pointer ${
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-colors duration-250 cursor-pointer ${
               activeTab === "resources"
-                ? "border-violet-650 text-violet-650 bg-slate-100/50"
+                ? "border-violet-600 text-violet-600 bg-slate-100/50"
                 : "border-transparent text-slate-400 hover:text-slate-600"
             }`}
           >
@@ -372,9 +379,9 @@ export default function DashboardPage() {
           </button>
           <button
             onClick={() => setActiveTab("infrastructure")}
-            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-all duration-250 cursor-pointer ${
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-colors duration-250 cursor-pointer ${
               activeTab === "infrastructure"
-                ? "border-violet-650 text-violet-650 bg-slate-100/50"
+                ? "border-violet-600 text-violet-600 bg-slate-100/50"
                 : "border-transparent text-slate-400 hover:text-slate-600"
             }`}
           >
@@ -384,43 +391,43 @@ export default function DashboardPage() {
 
         {/* ─── TAB 1: DIRECTORY ─── */}
         {activeTab === "directory" && (
-          <div className="space-y-4 animate-fade-in">
+          <div className="space-y-4">
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm">
+              <div className="bg-white border border-slate-200/80 rounded-sm p-3">
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Total Active Tenants</p>
-                <p className="text-xl font-black mt-1 text-violet-650">{tenants.length}</p>
+                <p className="text-xl font-black mt-1 text-violet-600 font-mono tabular-nums">{tenants.length}</p>
                 <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-wide">Isolated DB-Per-Client Model</p>
               </div>
-              <div className="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm">
+              <div className="bg-white border border-slate-200/80 rounded-sm p-3">
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">PostgreSQL Server Status</p>
                 <p className="text-xl font-black mt-1 text-emerald-600">ONLINE</p>
                 <p className="text-[9px] text-emerald-500 font-bold mt-1 uppercase tracking-wide">Accepting DB schema connections</p>
               </div>
-              <div className="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm">
+              <div className="bg-white border border-slate-200/80 rounded-sm p-3">
                 <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Master Database Node</p>
-                <p className="text-[13px] font-mono font-black mt-2 text-slate-755">crediiflow_master</p>
+                <p className="text-[13px] font-mono font-black mt-2 text-slate-800">crediiflow_master</p>
                 <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-wide">Runs global tenant indexing</p>
               </div>
             </div>
 
             {/* Table */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-slate-200/80 rounded-sm overflow-hidden">
               <div className="px-3.5 py-2 border-b border-slate-200/80 bg-slate-50/50 flex items-center justify-between">
                 <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-800">Registered Tenant Clusters</h2>
                 <button 
                   onClick={fetchTenants}
-                  className="text-[10px] text-indigo-650 hover:text-indigo-700 font-black uppercase tracking-wider cursor-pointer"
+                  className="text-[10px] text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-wider cursor-pointer"
                 >
                   Refresh Data
                 </button>
               </div>
 
               {loading ? (
-                <div className="p-12 text-center text-slate-400 text-[11px] font-bold uppercase tracking-wider animate-pulse">Loading database client instances...</div>
+                <div className="p-12 text-center text-slate-400 text-[11px] font-bold uppercase tracking-wider">Loading database client instances...</div>
               ) : fetchError ? (
                 <div className="p-10 text-center space-y-3">
-                  <div className="inline-flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200/60 text-red-600 rounded-xl text-[10px] font-bold">
+                  <div className="inline-flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200/60 text-red-600 rounded-sm text-[10px] font-bold">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 shrink-0">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                     </svg>
@@ -429,7 +436,7 @@ export default function DashboardPage() {
                   <p className="text-slate-400 text-[10px] font-medium">Failed to fetch data from backend. Session may have expired.</p>
                   <button
                     onClick={fetchTenants}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-lg transition-colors cursor-pointer"
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-sm transition-colors cursor-pointer"
                   >
                     Retry Connection
                   </button>
@@ -451,7 +458,7 @@ export default function DashboardPage() {
                         <th className="px-3.5 py-2 text-center">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-[10px] text-slate-705">
+                    <tbody className="divide-y divide-slate-100 text-[10px] text-slate-700">
                       {tenants.map((t) => (
                         <tr 
                           key={t.id} 
@@ -474,7 +481,7 @@ export default function DashboardPage() {
                             <span className={`inline-block px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
                               t.status === "active" 
                                 ? "bg-emerald-50 border border-emerald-200/50 text-emerald-600" 
-                                : "bg-red-50 border border-red-200/50 text-red-650"
+                                : "bg-red-50 border border-red-200/50 text-red-600"
                             }`}>
                               {t.status === "active" ? "Active" : "Suspended"}
                             </span>
@@ -483,7 +490,7 @@ export default function DashboardPage() {
                             <div className="flex items-center justify-center gap-1.5">
                               <button
                                 onClick={() => handleToggleMaintenance(t.id, !t.maintenance_mode)}
-                                className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest transition-all duration-200 cursor-pointer ${
+                                className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest transition-colors duration-200 cursor-pointer ${
                                   t.maintenance_mode
                                     ? "bg-amber-50 border border-amber-200/60 text-amber-600 hover:bg-amber-100"
                                     : "bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/60"
@@ -496,7 +503,7 @@ export default function DashboardPage() {
                                   href={`https://${t.subdomain}.crediiflow.in/?bypass=true`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-indigo-50 border border-indigo-200/60 text-indigo-650 hover:bg-indigo-100 transition-colors"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-indigo-50 border border-indigo-200/60 text-indigo-600 hover:bg-indigo-100 transition-colors"
                                   title="Admin Login Bypass"
                                 >
                                   Login
@@ -520,7 +527,7 @@ export default function DashboardPage() {
                               </button>
                               <button
                                 onClick={() => handleOpenDelete(t)}
-                                className="p-1 bg-red-50 hover:bg-red-100 text-red-650 border border-red-200/40 rounded transition-colors cursor-pointer"
+                                className="p-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/40 rounded transition-colors cursor-pointer"
                                 title="Delete Tenant"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
@@ -541,20 +548,20 @@ export default function DashboardPage() {
 
         {/* ─── TAB 2: RESOURCE VISUALIZER ─── */}
         {activeTab === "resources" && (
-          <div className="space-y-4 animate-fade-in">
+          <div className="space-y-4">
             {selectedTenant ? (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Selector column */}
-                <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-lg p-2.5 h-fit space-y-2 shadow-sm">
+                <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-sm p-2.5 h-fit space-y-2">
                   <h3 className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 px-1">Select Instance</h3>
                   <div className="space-y-1">
                     {tenants.map((t) => (
                       <button
                         key={t.id}
                         onClick={() => setSelectedTenant(t)}
-                        className={`w-full p-2.5 rounded-lg text-left border flex items-center justify-between transition-all duration-205 cursor-pointer ${
+                        className={`w-full p-2.5 rounded-sm text-left border flex items-center justify-between transition-colors duration-205 cursor-pointer ${
                           selectedTenant.id === t.id
-                            ? "bg-slate-50 border-violet-500/40 text-slate-900 shadow-sm font-black"
+                            ? "bg-slate-50 border-violet-500/40 text-slate-900 font-black"
                             : "bg-transparent border-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-800"
                         }`}
                       >
@@ -569,13 +576,11 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Dashboard column */}
-                <div className="lg:col-span-8 bg-white border border-slate-200/80 rounded-lg p-4 space-y-4 shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/5 rounded-full blur-2xl pointer-events-none" />
-
+                <div className="lg:col-span-8 bg-white border border-slate-200/80 rounded-sm p-4 space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
                     <div>
                       <h2 className="text-base font-black uppercase tracking-tight text-slate-900">{selectedTenant.name}</h2>
-                      <p className="text-[9px] text-indigo-650 mt-0.5 font-bold">Resource allocation cluster logs</p>
+                      <p className="text-[9px] text-indigo-600 mt-0.5 font-bold">Resource allocation cluster logs</p>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border self-start sm:self-auto ${
                       selectedTenant.maintenance_mode
@@ -586,58 +591,39 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  {/* Meter Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {/* CPU gauge */}
-                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-200/60 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">CPU Utilization</span>
-                        <span className="text-[10px] font-black text-violet-650">{selectedTenant.cpu || 12}%</span>
-                      </div>
-                      <div className="w-full bg-slate-200/50 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className="bg-gradient-to-r from-violet-500 to-indigo-500 h-1.5 rounded-full transition-all duration-750"
-                          style={{ width: `${selectedTenant.cpu || 12}%` }}
-                        />
-                      </div>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase">Core Limit: 2.0 vCPU Shared</p>
+                  {/* Real Metrics Grid */}
+                  {loadingStats ? (
+                    <div className="p-6 text-center text-slate-400 text-[10px] font-bold uppercase tracking-wider">Reading live database stats...</div>
+                  ) : statsError ? (
+                    <div className="p-3 bg-red-50 border border-red-200/60 text-red-600 rounded-sm text-[10px] font-bold text-center">
+                      {statsError}
                     </div>
-
-                    {/* RAM gauge */}
-                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-200/60 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Memory Heap</span>
-                        <span className="text-[10px] font-black text-indigo-605">{selectedTenant.memory || 256} MB</span>
+                  ) : tenantStats ? (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <div className="bg-slate-50/50 p-3 rounded-sm border border-slate-200/60 space-y-1">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">DB Disk Storage</span>
+                          <span className="text-lg font-black text-blue-600 tracking-tight font-mono tabular-nums">{tenantStats.db_size_mb} MB</span>
+                          <p className="text-[8px] font-bold text-slate-400 uppercase">Live pg_database_size()</p>
+                        </div>
+                        <div className="bg-slate-50/50 p-3 rounded-sm border border-slate-200/60 space-y-1">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Staff / Admin Users</span>
+                          <span className="text-lg font-black text-indigo-600 tracking-tight font-mono tabular-nums">{tenantStats.staff_count} / {tenantStats.admin_count}</span>
+                          <p className="text-[8px] font-bold text-slate-400 uppercase">Active user accounts</p>
+                        </div>
+                        <div className="bg-slate-50/50 p-3 rounded-sm border border-slate-200/60 space-y-1">
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Retailers</span>
+                          <span className="text-lg font-black text-violet-600 tracking-tight font-mono tabular-nums">{tenantStats.retailer_count}</span>
+                          <p className="text-[8px] font-bold text-slate-400 uppercase">{tenantStats.collection_count} lifetime collections</p>
+                        </div>
                       </div>
-                      <div className="w-full bg-slate-200/50 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className="bg-gradient-to-r from-indigo-500 to-blue-500 h-1.5 rounded-full transition-all duration-750"
-                          style={{ width: `${Math.min(100, ((selectedTenant.memory || 256) / 2048) * 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase">RAM Ceiling: 2048 MB</p>
-                    </div>
-
-                    {/* Storage Gauge */}
-                    <div className="bg-slate-50/50 p-3 rounded-lg border border-slate-200/60 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">DB Disk Storage</span>
-                        <span className="text-[10px] font-black text-blue-600">{selectedTenant.storage || 15.4} MB</span>
-                      </div>
-                      <div className="w-full bg-slate-200/50 rounded-full h-1.5 overflow-hidden">
-                        <div 
-                          className="bg-gradient-to-r from-blue-500 to-cyan-500 h-1.5 rounded-full transition-all duration-750"
-                          style={{ width: `${Math.min(100, ((selectedTenant.storage || 15.4) / 100) * 100)}%` }}
-                        />
-                      </div>
-                      <p className="text-[8px] font-bold text-slate-400 uppercase">Max Database Allocation: 100 MB</p>
-                    </div>
-                  </div>
+                    </>
+                  ) : null}
 
                   {/* System details */}
-                  <div className="p-3 bg-slate-50/50 border border-slate-200/60 rounded-lg space-y-2 text-slate-755">
+                  <div className="p-3 bg-slate-50/50 border border-slate-200/60 rounded-sm space-y-2 text-slate-800">
                     <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Database cluster specifications</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[10px]">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[10px]">
                       <div>
                         <span className="text-slate-400 block mb-0.5">DB Name</span>
                         <span className="font-mono font-bold text-slate-800">{selectedTenant.db_name}</span>
@@ -652,16 +638,12 @@ export default function DashboardPage() {
                           {new Date(selectedTenant.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <div>
-                        <span className="text-slate-400 block mb-0.5">Instance Type</span>
-                        <span className="font-bold text-indigo-650 uppercase tracking-wider">Kubernetes-Pod</span>
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="p-16 text-center text-slate-400 border border-dashed border-slate-200 rounded-3xl bg-white shadow-sm">
+              <div className="p-16 text-center text-slate-400 border border-dashed border-slate-200 rounded-sm bg-white">
                 Please onboard a tenant directory to monitor live resource usage.
               </div>
             )}
@@ -670,59 +652,59 @@ export default function DashboardPage() {
 
         {/* ─── TAB 3: INFRASTRUCTURE HEALTH ─── */}
         {activeTab === "infrastructure" && (
-          <div className="space-y-4 animate-fade-in">
+          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="bg-white border border-slate-200/80 rounded-lg p-3 space-y-2 shadow-sm">
+              <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">Central PG Database</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 </div>
-                <div className="space-y-0.5 text-[10px] text-slate-650">
-                  <div className="flex justify-between"><span className="text-slate-450">Node Status</span><span className="font-bold text-slate-850">HEALTHY</span></div>
-                  <div className="flex justify-between"><span className="text-slate-450">Connections</span><span className="font-bold text-slate-850">7 Active</span></div>
-                  <div className="flex justify-between"><span className="text-slate-450">Version</span><span className="font-mono text-slate-500">PostgreSQL 16-alpine</span></div>
+                <div className="space-y-0.5 text-[10px] text-slate-600">
+                  <div className="flex justify-between"><span className="text-slate-400">Node Status</span><span className="font-bold text-slate-800">HEALTHY</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Connections</span><span className="font-bold text-slate-800 font-mono tabular-nums">{infraStatus ? `${infraStatus.active_connections} Active` : "..."}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Version</span><span className="font-mono text-slate-500">{infraStatus?.pg_version ? `PostgreSQL ${infraStatus.pg_version}` : "..."}</span></div>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 rounded-lg p-3 space-y-2 shadow-sm">
+              <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">FastAPI Core Backend</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 </div>
-                <div className="space-y-0.5 text-[10px] text-slate-650">
-                  <div className="flex justify-between"><span className="text-slate-450">Uvicorn Status</span><span className="font-bold text-slate-850">OPERATIONAL</span></div>
-                  <div className="flex justify-between"><span className="text-slate-450">CORS Policy</span><span className="font-bold text-indigo-600 uppercase tracking-widest text-[10px]">*.crediiflow.in</span></div>
-                  <div className="flex justify-between"><span className="text-slate-450">Port Mapping</span><span className="font-mono text-slate-500">{"8000 -> 8000"}</span></div>
+                <div className="space-y-0.5 text-[10px] text-slate-600">
+                  <div className="flex justify-between"><span className="text-slate-400">Uvicorn Status</span><span className="font-bold text-slate-800">OPERATIONAL</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">CORS Policy</span><span className="font-bold text-indigo-600 uppercase tracking-widest text-[10px]">*.crediiflow.in</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Port Mapping</span><span className="font-mono text-slate-500">{"8000 -> 8000"}</span></div>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 rounded-lg p-3 space-y-2 shadow-sm">
+              <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">Nginx Reverse Proxy</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 </div>
-                <div className="space-y-0.5 text-[10px] text-slate-650">
-                  <div className="flex justify-between"><span className="text-slate-450">SSL Certificates</span><span className="font-bold text-slate-850">SECURE (Let's Encrypt)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-450">HTTP/2 Support</span><span className="font-bold text-slate-850">ENABLED</span></div>
-                  <div className="flex justify-between"><span className="text-slate-450">Config Path</span><span className="font-mono text-slate-500">/etc/nginx/nginx.conf</span></div>
+                <div className="space-y-0.5 text-[10px] text-slate-600">
+                  <div className="flex justify-between"><span className="text-slate-400">SSL Certificates</span><span className="font-bold text-slate-800">SECURE (Let's Encrypt)</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">HTTP/2 Support</span><span className="font-bold text-slate-800">ENABLED</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Config Path</span><span className="font-mono text-slate-500">/etc/nginx/nginx.conf</span></div>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 rounded-lg p-3 space-y-2 shadow-sm flex flex-col justify-between">
+              <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">SSL Certificate Guard</span>
                     <span className={`w-2 h-2 rounded-full ${
-                      sslStatus?.status === 'secure' ? 'bg-emerald-500 animate-pulse' :
-                      sslStatus?.status === 'warning' ? 'bg-amber-500 animate-pulse' :
-                      sslStatus?.status === 'expired' ? 'bg-red-500 animate-pulse' : 'bg-slate-300 animate-pulse'
+                      sslStatus?.status === 'secure' ? 'bg-emerald-500' :
+                      sslStatus?.status === 'warning' ? 'bg-amber-500' :
+                      sslStatus?.status === 'expired' ? 'bg-red-500' : 'bg-slate-300'
                     }`} />
                   </div>
-                  <div className="space-y-0.5 text-[10px] text-slate-650 mt-1">
-                    <div className="flex justify-between"><span className="text-slate-450">Domain</span><span className="font-bold text-slate-850 truncate max-w-[120px]" title={sslStatus?.domain}>{sslStatus?.domain || "Loading..."}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-450">Issuer</span><span className="font-bold text-slate-850 truncate max-w-[120px]" title={sslStatus?.issuer}>{sslStatus?.issuer || "Loading..."}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-450">Expires</span><span className="font-mono text-slate-500 text-[9px]">{sslStatus?.expiry_date || "Loading..."}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-450">Remaining</span><span className={`font-bold ${sslStatus?.days_remaining <= 15 ? 'text-red-650' : 'text-slate-850'}`}>{sslStatus?.days_remaining !== undefined ? `${sslStatus.days_remaining} Days` : "Loading..."}</span></div>
+                  <div className="space-y-0.5 text-[10px] text-slate-600 mt-1">
+                    <div className="flex justify-between"><span className="text-slate-400">Domain</span><span className="font-bold text-slate-800 truncate max-w-[120px]" title={sslStatus?.domain}>{sslStatus?.domain || "Loading..."}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Issuer</span><span className="font-bold text-slate-800 truncate max-w-[120px]" title={sslStatus?.issuer}>{sslStatus?.issuer || "Loading..."}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Expires</span><span className="font-mono text-slate-500 text-[9px]">{sslStatus?.expiry_date || "Loading..."}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400">Remaining</span><span className={`font-bold ${sslStatus?.days_remaining <= 15 ? 'text-red-600' : 'text-slate-800'}`}>{sslStatus?.days_remaining !== undefined ? `${sslStatus.days_remaining} Days` : "Loading..."}</span></div>
                   </div>
                 </div>
                 <div className="pt-2 border-t border-slate-50 flex items-center justify-between gap-2">
@@ -739,7 +721,7 @@ export default function DashboardPage() {
                   <button
                     onClick={handleRenewSSL}
                     disabled={renewingSSL}
-                    className="flex-1 py-0.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-650 disabled:opacity-50 text-[9px] font-black uppercase tracking-wider rounded transition-colors"
+                    className="flex-1 py-0.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 disabled:opacity-50 text-[9px] font-black uppercase tracking-wider rounded transition-colors"
                   >
                     {renewingSSL ? "Renewing..." : "Renew SSL"}
                   </button>
@@ -748,14 +730,14 @@ export default function DashboardPage() {
             </div>
 
             {/* Docker Container Table */}
-            <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
+            <div className="bg-white border border-slate-200/80 rounded-sm overflow-hidden">
               <div className="px-6 py-5 border-b border-slate-200/80 bg-slate-50/50">
                 <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-800">Active Container Host Services</h3>
               </div>
               <div className="overflow-x-auto text-[10px]">
                 <table className="w-full text-left border-collapse text-slate-600">
                   <thead>
-                    <tr className="bg-slate-50/70 text-slate-450 text-[10px] font-black uppercase tracking-widest border-b border-slate-200/80">
+                    <tr className="bg-slate-50/70 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-200/80">
                       <th className="px-3.5 py-2">Service Name</th>
                       <th className="px-3.5 py-2">Docker Image</th>
                       <th className="px-3.5 py-2">Container ID</th>
@@ -763,7 +745,7 @@ export default function DashboardPage() {
                       <th className="px-3.5 py-2 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-755">
+                  <tbody className="divide-y divide-slate-100 text-slate-800">
                     <tr>
                       <td className="px-3.5 py-2 font-bold text-slate-900">doit_frontend</td>
                       <td className="px-3.5 py-2 font-mono text-slate-500">crediiflow-frontend:latest</td>
@@ -809,20 +791,20 @@ export default function DashboardPage() {
 
       {/* ─── ADD ONBOARD MODAL ─── */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-755">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-sm overflow-hidden relative text-slate-800">
             <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">Onboard New Client Instance</h3>
               <button 
                 onClick={() => setShowAddModal(false)}
-                className="text-slate-400 hover:text-slate-650 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-sm hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             {formError && (
-              <div className="mx-6 mt-6 p-4 text-[10px] bg-red-50 border border-red-200/50 text-red-650 rounded-xl text-center font-bold">
+              <div className="mx-6 mt-6 p-4 text-[10px] bg-red-50 border border-red-200/50 text-red-600 rounded-sm text-center font-bold">
                 {formError}
               </div>
             )}
@@ -836,7 +818,7 @@ export default function DashboardPage() {
                     required
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                     placeholder="e.g. Acme Corporation"
                   />
                 </div>
@@ -848,7 +830,7 @@ export default function DashboardPage() {
                       required
                       value={subdomain}
                       onChange={(e) => setSubdomain(e.target.value)}
-                      className="w-full pl-4 pr-24 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                      className="w-full pl-4 pr-24 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                       placeholder="e.g. acme"
                     />
                     <span className="absolute right-2 text-[8px] font-black text-slate-400 lowercase">.crediiflow.in</span>
@@ -856,42 +838,42 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="p-2.5 bg-slate-50/50 border border-slate-200/60 rounded-lg space-y-2">
+              <div className="p-2.5 bg-slate-50/50 border border-slate-200/60 rounded-sm space-y-2">
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Client Admin Account (Credentials)</p>
                 
                 <div>
-                  <label className="block text-[8px] font-black text-slate-450 uppercase tracking-widest mb-0.5">Admin Full Name</label>
+                  <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Admin Full Name</label>
                   <input
                     type="text"
                     required
                     value={tenantAdminName}
                     onChange={(e) => setTenantAdminName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                     placeholder="e.g. John Doe"
                   />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[8px] font-black text-slate-455 uppercase tracking-widest mb-0.5">Admin Phone Number</label>
+                    <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Admin Phone Number</label>
                     <input
                       type="tel"
                       required
                       value={tenantAdminPhone}
                       onChange={(e) => setTenantAdminPhone(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                       placeholder="e.g. 9876543210"
                     />
                   </div>
                   <div>
-                    <label className="block text-[8px] font-black text-slate-455 uppercase tracking-widest mb-0.5">Admin Password</label>
+                    <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Admin Password</label>
                     <div className="relative">
                       <input
                         type={showOnboardPassword ? "text" : "password"}
                         required
                         value={tenantAdminPassword}
                         onChange={(e) => setTenantAdminPassword(e.target.value)}
-                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                         placeholder="••••••••"
                       />
                       <button
@@ -919,14 +901,14 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2.5 border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  className="px-4 py-2.5 border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-sm text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
-                  className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors duration-200 disabled:opacity-50 cursor-pointer"
                 >
                   {creating ? "Provisioning DB..." : "Deploy Instance"}
                 </button>
@@ -936,20 +918,20 @@ export default function DashboardPage() {
         </div>
       )}
       {showEditModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-755">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40">
+          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-sm overflow-hidden relative text-slate-800">
             <div className="px-3 py-2 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <h3 className="text-xs font-black uppercase tracking-wider text-slate-900">Edit Client Configuration</h3>
               <button 
                 onClick={() => setShowEditModal(false)}
-                className="text-slate-400 hover:text-slate-650 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-sm hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             {editError && (
-              <div className="mx-6 mt-6 p-4 text-[10px] bg-red-50 border border-red-200/50 text-red-650 rounded-xl text-center font-bold">
+              <div className="mx-6 mt-6 p-4 text-[10px] bg-red-50 border border-red-200/50 text-red-600 rounded-sm text-center font-bold">
                 {editError}
               </div>
             )}
@@ -963,7 +945,7 @@ export default function DashboardPage() {
                     required
                     value={editClientName}
                     onChange={(e) => setEditClientName(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                    className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                   />
                 </div>
                 <div>
@@ -974,7 +956,7 @@ export default function DashboardPage() {
                       required
                       value={editSubdomain}
                       onChange={(e) => setEditSubdomain(e.target.value)}
-                      className="w-full pl-4 pr-24 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                      className="w-full pl-4 pr-24 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                       placeholder="e.g. acme"
                     />
                     <span className="absolute right-2 text-[8px] font-black text-slate-400 lowercase">.crediiflow.in</span>
@@ -987,38 +969,38 @@ export default function DashboardPage() {
                 <select
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                  className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                 >
                   <option value="active">Active (Operational)</option>
                   <option value="suspended">Suspended (Access Revoked)</option>
                 </select>
               </div>
 
-              <div className="p-2.5 bg-slate-50/50 border border-slate-200/60 rounded-lg space-y-2">
+              <div className="p-2.5 bg-slate-50/50 border border-slate-200/60 rounded-sm space-y-2">
                 <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">Client Admin Credentials</p>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[8px] font-black text-slate-455 uppercase tracking-widest mb-0.5">Admin Phone Number</label>
+                    <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Admin Phone Number</label>
                     <input
                       type="tel"
                       required
                       value={editAdminPhone}
                       onChange={(e) => setEditAdminPhone(e.target.value)}
-                      className="w-full px-4 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                      className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                       placeholder="e.g. 9876543210"
                       autoComplete="off"
                       name="client-admin-phone-no-autofill"
                     />
                   </div>
                   <div>
-                    <label className="block text-[8px] font-black text-slate-455 uppercase tracking-widest mb-0.5">New Admin Password</label>
+                    <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">New Admin Password</label>
                     <div className="relative">
                       <input
                         type={showEditPassword ? "text" : "password"}
                         value={editAdminPassword}
                         onChange={(e) => setEditAdminPassword(e.target.value)}
-                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-205 focus:border-violet-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                        className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                         placeholder="Leave blank to keep same"
                         autoComplete="new-password"
                         name="client-admin-password-no-autofill"
@@ -1048,14 +1030,14 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  className="px-4 py-2.5 border border-slate-205 text-slate-450 hover:text-slate-655 hover:bg-slate-100 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  className="px-4 py-2.5 border border-slate-200 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-sm text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={updating}
-                  className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors duration-200 disabled:opacity-50 cursor-pointer"
                 >
                   {updating ? "Saving Changes..." : "Save Config"}
                 </button>
@@ -1067,34 +1049,34 @@ export default function DashboardPage() {
 
       {/* ─── DELETE CONFIRMATION MODAL ─── */}
       {showDeleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-md bg-white border border-red-200 rounded-2xl shadow-2xl overflow-hidden relative text-slate-755">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50">
+          <div className="w-full max-w-md bg-white border border-red-200 rounded-sm overflow-hidden relative text-slate-800">
             <div className="px-3 py-2 border-b border-red-100 flex items-center justify-between bg-red-50/50">
-              <h3 className="text-sm font-black uppercase tracking-wider text-red-650 flex items-center gap-1">
-                <svg className="w-3.5 h-3.5 text-red-650 animate-pulse flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+              <h3 className="text-sm font-black uppercase tracking-wider text-red-600 flex items-center gap-1">
+                <svg className="w-3.5 h-3.5 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                 <span>Danger: Drop Tenant DB Cluster</span>
               </h3>
               <button 
                 onClick={() => setShowDeleteModal(false)}
-                className="text-slate-400 hover:text-slate-650 p-1 rounded-lg hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-sm hover:bg-slate-100 focus:outline-none cursor-pointer transition-colors"
               >
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             </div>
 
             {deleteError && (
-              <div className="mx-6 mt-6 p-4 text-[10px] bg-red-50 border border-red-200 text-red-600 rounded-xl text-center font-bold">
+              <div className="mx-6 mt-6 p-4 text-[10px] bg-red-50 border border-red-200 text-red-600 rounded-sm text-center font-bold">
                 {deleteError}
               </div>
             )}
 
             <form onSubmit={handleDeleteTenant} className="p-3.5 space-y-2.5">
-              <div className="p-4 bg-red-50 border border-red-200 text-[10px] text-red-650 leading-relaxed font-bold rounded-xl">
-                WARNING: Wipes <span className="font-mono bg-red-105/70 px-1 py-0.5 rounded font-black text-red-750">crediiflow_{deleteClientName.toLowerCase().replace(/\s+/g, "_")}</span>. All client data and configs will be destroyed.
+              <div className="p-4 bg-red-50 border border-red-200 text-[10px] text-red-600 leading-relaxed font-bold rounded-sm">
+                WARNING: Wipes <span className="font-mono bg-red-100/70 px-1 py-0.5 rounded font-black text-red-700">crediiflow_{deleteClientName.toLowerCase().replace(/\s+/g, "_")}</span>. All client data and configs will be destroyed.
               </div>
 
               <div>
-                <label className="block text-[8px] font-black text-slate-450 uppercase tracking-widest mb-0.5">
+                <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
                   Type <span className="text-slate-900 font-black">{deleteClientName}</span> to confirm:
                 </label>
                 <input
@@ -1102,7 +1084,7 @@ export default function DashboardPage() {
                   required
                   value={deleteConfirmationName}
                   onChange={(e) => setDeleteConfirmationName(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-205 focus:border-red-500 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none transition-all duration-200 text-[10px] font-bold"
+                  className="w-full px-4 py-2.5 bg-slate-50/50 border border-slate-200 focus:border-red-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                   placeholder="Enter company name exactly"
                 />
               </div>
@@ -1111,14 +1093,14 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2.5 border border-slate-205 text-slate-450 hover:text-slate-650 hover:bg-slate-100 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                  className="px-4 py-2.5 border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-sm text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={deleting || deleteConfirmationName !== deleteClientName}
-                  className="px-5 py-2.5 bg-red-600 hover:bg-red-550 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all duration-200 shadow-md disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {deleting ? "Destroying Cluster..." : "Permanently Destroy Cluster"}
                 </button>

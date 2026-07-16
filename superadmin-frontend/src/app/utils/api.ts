@@ -45,6 +45,7 @@ export const superAdminApi = {
     body: JSON.stringify(data),
   }),
   getTenants: () => request<any[]>("/superadmin/tenants"),
+  getTenantStats: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}/stats`),
   createTenant: (data: any) => request<any>("/superadmin/tenants", {
     method: "POST",
     body: JSON.stringify(data),
@@ -60,6 +61,7 @@ export const superAdminApi = {
   deleteTenant: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}`, {
     method: "DELETE",
   }),
+  getInfraStatus: () => request<any>("/superadmin/infra/status"),
   getSSLStatus: () => request<any>("/superadmin/ssl/status"),
   renewSSL: () => request<any>("/superadmin/ssl/renew", {
     method: "POST",
