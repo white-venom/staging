@@ -259,6 +259,43 @@ def create_tenant(
     res.admin_phone = tenant_data.admin_phone
     return res
 
+@router.get("/tenants/{tenant_id}/stats")
+def get_tenant_stats(
+    tenant_id: uuid.UUID,
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    tenant_url = get_tenant_connection_string(tenant.db_name)
+    tenant_engine = create_engine(tenant_url)
+    try:
+        with tenant_engine.connect() as conn:
+            db_size_bytes = conn.execute(
+                text("SELECT pg_database_size(:name)"), {"name": tenant.db_name}
+            ).scalar()
+            staff_count = conn.execute(
+                text("SELECT COUNT(*) FROM users WHERE role = 'staff'")
+            ).scalar()
+            admin_count = conn.execute(
+                text("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+            ).scalar()
+            retailer_count = conn.execute(text("SELECT COUNT(*) FROM retailers")).scalar()
+            collection_count = conn.execute(text("SELECT COUNT(*) FROM collections")).scalar()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read tenant stats: {str(e)}")
+
+    return {
+        "db_size_mb": round((db_size_bytes or 0) / (1024 * 1024), 2),
+        "staff_count": staff_count or 0,
+        "admin_count": admin_count or 0,
+        "retailer_count": retailer_count or 0,
+        "collection_count": collection_count or 0,
+    }
+
+
 @router.get("/tenants", response_model=List[TenantResponse])
 def list_tenants(
     db: Session = Depends(get_master_db),
@@ -406,6 +443,25 @@ def delete_tenant(
     db.delete(tenant)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/infra/status")
+def get_infra_status(
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    try:
+        active_connections = db.execute(
+            text("SELECT COUNT(*) FROM pg_stat_activity WHERE datname IS NOT NULL")
+        ).scalar()
+        pg_version_raw = db.execute(text("SHOW server_version")).scalar()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read database status: {str(e)}")
+
+    return {
+        "active_connections": active_connections or 0,
+        "pg_version": pg_version_raw or "unknown",
+    }
 
 
 @router.get("/ssl/status")
