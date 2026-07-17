@@ -920,21 +920,21 @@ export default function StaffDashboard() {
                      </div>
                    </div>
 
-                   {/* Balance row */}
-                   <div className="grid grid-cols-2 gap-1 bg-white dark:bg-slate-900 mx-2 mb-2 p-1.5 rounded-sm border border-slate-100 dark:border-slate-800/50">
-                     <div className="flex flex-col">
-                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
-                       <span className="text-[9px] font-bold text-slate-500 font-mono tabular-nums">₹{snapshots.prev.toLocaleString()}</span>
-                     </div>
-                     <div className="flex flex-col text-right">
-                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
-                       <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 font-mono tabular-nums">₹{snapshots.next.toLocaleString()}</span>
-                     </div>
-                   </div>
-
-                   {/* Expanded panel */}
+                   {/* Expanded panel -- balance + denomination breakdown + actions all live here,
+                       collapsed rows stay a single compact line so more entries fit on screen */}
                    {isExpanded && (
-                     <div className="border-t border-slate-100 dark:border-slate-800 mx-1.5 mb-1.5 pt-1.5" onClick={e => e.stopPropagation()}>
+                     <div className="border-t border-slate-100 dark:border-slate-800 mx-2 mb-2 pt-2" onClick={e => e.stopPropagation()}>
+                       {/* Balance row */}
+                       <div className="grid grid-cols-2 gap-1 bg-white dark:bg-slate-900 mb-1.5 p-1.5 rounded-sm border border-slate-100 dark:border-slate-800/50">
+                         <div className="flex flex-col">
+                           <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
+                           <span className="text-[9px] font-bold text-slate-500 font-mono tabular-nums">₹{snapshots.prev.toLocaleString()}</span>
+                         </div>
+                         <div className="flex flex-col text-right">
+                           <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
+                           <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 font-mono tabular-nums">₹{snapshots.next.toLocaleString()}</span>
+                         </div>
+                       </div>
                        {/* Denomination breakdown */}
                        <div className="mb-1.5">
                          <span className="text-[7px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
