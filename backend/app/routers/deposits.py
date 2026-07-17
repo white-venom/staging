@@ -60,7 +60,13 @@ def submit_deposit(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only administrators are authorized to process virtual transfers."
             )
-        bank_account = db.scalar(select(BankAccount).options(joinedload(BankAccount.portal)).where(BankAccount.id == payload.bank_account_id).with_for_update())
+        # NOTE: no joinedload(BankAccount.portal) here -- combining a locking
+        # query (with_for_update) with an eager-loaded outer join to a nullable
+        # relationship makes Postgres reject the query outright ("FOR UPDATE
+        # cannot be applied to the nullable side of an outer join"), 500ing
+        # every virtual transfer. lock_portal() below locks the Portal row
+        # separately, and `bank_account.portal` still lazy-loads fine afterward.
+        bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
         if not bank_account:
             raise HTTPException(status_code=404, detail="Source bank/wallet account not found.")
         retailer = db.scalar(select(Retailer).where(Retailer.id == payload.retailer_id).with_for_update())
@@ -72,10 +78,11 @@ def submit_deposit(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only administrators are authorized to process account-to-account transfers."
             )
-        bank_account = db.scalar(select(BankAccount).options(joinedload(BankAccount.portal)).where(BankAccount.id == payload.bank_account_id).with_for_update())
+        # See NOTE above -- no joinedload combined with with_for_update().
+        bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
         if not bank_account:
             raise HTTPException(status_code=404, detail="Destination bank account not found.")
-        from_bank_account = db.scalar(select(BankAccount).options(joinedload(BankAccount.portal)).where(BankAccount.id == payload.from_bank_account_id).with_for_update())
+        from_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.from_bank_account_id).with_for_update())
         if not from_bank_account:
             raise HTTPException(status_code=404, detail="Source bank account not found.")
 
