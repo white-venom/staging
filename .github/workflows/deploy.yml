@@ -23,16 +23,16 @@ jobs:
         script: |
           set -e
           # Go to the deployment directory on VPS
-          cd /opt/do-it-services
-          
+          cd /opt/crediiflow
+
           # Pull the latest changes from Git
           git pull origin main
-          
+
           # Stop and remove all containers including orphans from previous deploys
           docker compose down --remove-orphans
-          
+
           # Force-remove any stale named containers that may conflict
-          docker rm -f doit_db doit_backend doit_frontend doit_superadmin_frontend doit_nginx 2>/dev/null || true
+          docker rm -f crediiflow_db crediiflow_backend crediiflow_frontend crediiflow_superadmin_frontend crediiflow_landing_page crediiflow_nginx 2>/dev/null || true
           
           # Safely prune stopped containers and unused networks to clear stale references
           docker container prune -f
