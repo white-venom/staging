@@ -286,11 +286,11 @@ export default function AdminDesktopLayout({ children }: { children: React.React
               </button>
             </div>
             <form onSubmit={handleAddRetailer} className="space-y-4 text-xs font-semibold">
-              <input autoComplete="one-time-code" type="text" placeholder="Store Name" value={retailerName} onChange={(e) => setRetailerName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" required />
-              <input autoComplete="one-time-code" type="tel" placeholder="Phone" value={retailerPhone} onChange={(e) => setRetailerPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" required />
-              <input autoComplete="one-time-code" type="text" placeholder="Area" value={retailerArea} onChange={(e) => setRetailerArea(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" />
-              <input autoComplete="one-time-code" type="email" placeholder="Retailer Email" value={retailerEmail} onChange={(e) => setRetailerEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" />
-              <input autoComplete="one-time-code" type="text" placeholder="Category (e.g. Supermarket, Wholesaler)" value={retailerCategory} onChange={(e) => setRetailerCategory(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm" />
+              <input autoComplete="one-time-code" type="text" placeholder="Store Name" value={retailerName} onChange={(e) => setRetailerName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400" required />
+              <input autoComplete="one-time-code" type="tel" placeholder="Phone" value={retailerPhone} onChange={(e) => setRetailerPhone(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400" required />
+              <input autoComplete="one-time-code" type="text" placeholder="Area" value={retailerArea} onChange={(e) => setRetailerArea(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400" />
+              <input autoComplete="one-time-code" type="email" placeholder="Retailer Email" value={retailerEmail} onChange={(e) => setRetailerEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400" />
+              <input autoComplete="one-time-code" type="text" placeholder="Category (e.g. Supermarket, Wholesaler)" value={retailerCategory} onChange={(e) => setRetailerCategory(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400" />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-red-500 uppercase ml-1">To Take</label>
@@ -343,16 +343,17 @@ export default function AdminDesktopLayout({ children }: { children: React.React
               <div className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">BankAccount Name</label>
-                  <input autoComplete="one-time-code" type="text" placeholder="e.g. RevaPay" value={pGroupName} onChange={(e) => setPGroupName(e.target.value)} className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm font-bold" required />
+                  <input autoComplete="one-time-code" type="text" placeholder="e.g. RevaPay" value={pGroupName} onChange={(e) => setPGroupName(e.target.value)} className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 font-bold" required />
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Opening Balance (₹)</label>
-                  <input autoComplete="one-time-code" 
-                    type="number" 
-                    placeholder="Enter Opening Balance (negative if To Give)" 
-                    value={pBalance} 
-                    onChange={(e) => setPGroupBalance(e.target.value)} 
-                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm font-bold focus:outline-none" 
+                  <input autoComplete="one-time-code"
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="Enter Opening Balance (negative if To Give)"
+                    value={pBalance}
+                    onChange={(e) => setPGroupBalance(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 text-right font-mono tabular-nums font-bold"
                   />
                 </div>
                 <div className="flex items-center gap-2 px-1 py-1">
@@ -405,15 +406,15 @@ export default function AdminDesktopLayout({ children }: { children: React.React
             <form onSubmit={handleUpdateProfile} className="space-y-4 text-xs font-semibold">
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Full Name</label>
-                <input autoComplete="one-time-code" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm focus:outline-none dark:text-white" required />
+                <input autoComplete="one-time-code" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white" required />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Phone Number</label>
-                <input autoComplete="one-time-code" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm focus:outline-none dark:text-white" required />
+                <input autoComplete="one-time-code" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white" required />
               </div>
               <div className="space-y-1">
                 <label className="text-[10px] font-black text-slate-400 uppercase ml-1">New Password</label>
-                <input autoComplete="new-password" type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 rounded-sm focus:outline-none dark:text-white" />
+                <input autoComplete="new-password" type="password" placeholder="••••••••" value={profilePassword} onChange={(e) => setProfilePassword(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white" />
                 <p className="text-[9px] text-slate-400 font-bold ml-1 mt-0.5">Leave blank to keep current password (min 6 chars)</p>
               </div>
               <button type="submit" disabled={isUpdatingProfile} className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-sm font-bold hover:bg-slate-800 transition-colors uppercase tracking-wider text-[10px] cursor-pointer disabled:opacity-50">{isUpdatingProfile ? "Updating..." : "Save Changes"}</button>
