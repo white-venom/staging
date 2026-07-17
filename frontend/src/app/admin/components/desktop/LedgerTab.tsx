@@ -995,11 +995,14 @@ export default function LedgerTab({
                       options={[
                         { value: "", label: "None / Cash" },
                         ...portalDirectory
-                          .flatMap((group: any) => {
-                            const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
-                            if (!firstOnlineBankAccount) return [];
-                            return [{ value: String(firstOnlineBankAccount.id), label: group.name }];
-                          })
+                          .flatMap((group: any) =>
+                            (group.bankAccounts || [])
+                              .filter((ba: any) => ba.show_in_online_payment)
+                              .map((ba: any) => ({
+                                value: String(ba.id),
+                                label: `${group.name} — ${ba.bank_account_name}`,
+                              }))
+                          )
                       ]}
                       placeholder="None / Cash"
                     />
@@ -1161,11 +1164,12 @@ export default function LedgerTab({
                         options={[
                           { value: "", label: "Select Bank Account" },
                           ...portalDirectory
-                            .flatMap((group: any) => {
-                              const firstBankAccount = (group.bankAccounts || [])[0];
-                              if (!firstBankAccount) return [];
-                              return [{ value: String(firstBankAccount.id), label: group.name }];
-                            })
+                            .flatMap((group: any) =>
+                              (group.bankAccounts || []).map((ba: any) => ({
+                                value: String(ba.id),
+                                label: `${group.name} — ${ba.bank_account_name}`,
+                              }))
+                            )
                         ]}
                         placeholder="Select Bank Account"
                       />
@@ -1227,11 +1231,12 @@ export default function LedgerTab({
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...portalDirectory.flatMap((group: any) => {
-                              const firstBankAccount = (group.bankAccounts || [])[0];
-                              if (!firstBankAccount) return [];
-                              return [{ value: String(firstBankAccount.id), label: group.name }];
-                            })
+                            ...portalDirectory.flatMap((group: any) =>
+                              (group.bankAccounts || []).map((ba: any) => ({
+                                value: String(ba.id),
+                                label: `${group.name} — ${ba.bank_account_name}`,
+                              }))
+                            )
                           ]}
                           placeholder="Select Bank Account"
                         />

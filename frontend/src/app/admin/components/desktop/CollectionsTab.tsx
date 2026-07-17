@@ -615,11 +615,14 @@ export default function CollectionsTab({
                     options={[
                       { value: "", label: "None / Cash" },
                       ...portalDirectory
-                        .flatMap((group: any) => {
-                          const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
-                          if (!firstOnlineBankAccount) return [];
-                          return [{ value: String(firstOnlineBankAccount.id), label: group.name }];
-                        })
+                        .flatMap((group: any) =>
+                          (group.bankAccounts || [])
+                            .filter((ba: any) => ba.show_in_online_payment)
+                            .map((ba: any) => ({
+                              value: String(ba.id),
+                              label: `${group.name} — ${ba.bank_account_name}`,
+                            }))
+                        )
                     ]}
                     placeholder="None / Cash"
                   />

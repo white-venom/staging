@@ -666,19 +666,19 @@ export default function MobileOverview({
                       {/* Summary Stats Row — Old Bal | +Today In | -Today Out | =Net */}
                       <div className="grid grid-cols-4 gap-1 font-mono tabular-nums">
                         <div className="p-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-sm flex flex-col">
-                          <span className="text-[5.5px] font-black uppercase text-slate-400 tracking-wide">Old Bal</span>
+                          <span className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wide">Old Bal</span>
                           <span className={`text-[8px] font-black mt-0.5 ${(staff as any).oldBalance < 0 ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'}`}>
                             ₹{((staff as any).oldBalance || 0).toLocaleString()}
                           </span>
                         </div>
                         <div className="p-1 bg-emerald-50/25 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/10 rounded-sm flex flex-col">
-                          <span className="text-[5.5px] font-black uppercase text-emerald-600 tracking-wide">+Today In</span>
+                          <span className="text-[7px] font-black uppercase text-emerald-600 tracking-wide">+Today In</span>
                           <span className="text-[8px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5">
                             ₹{staff.collectedToday.toLocaleString()}
                           </span>
                         </div>
                         <div className="p-1 bg-red-50/25 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/10 rounded-sm flex flex-col">
-                          <span className="text-[5.5px] font-black uppercase text-red-600 tracking-wide">-Today Out</span>
+                          <span className="text-[7px] font-black uppercase text-red-600 tracking-wide">-Today Out</span>
                           <span className="text-[8px] font-black text-red-700 dark:text-red-400 mt-0.5">
                             ₹{staff.depositedToday.toLocaleString()}
                           </span>
@@ -688,7 +688,7 @@ export default function MobileOverview({
                             ? 'bg-red-50 dark:bg-red-950/10 border-red-200 dark:border-red-900/20'
                             : 'bg-blue-50/25 dark:bg-blue-950/5 border-blue-100/30 dark:border-blue-900/10'
                         }`}>
-                          <span className={`text-[5.5px] font-black uppercase tracking-wide ${
+                          <span className={`text-[7px] font-black uppercase tracking-wide ${
                             (staff as any).netBalance < 0 ? 'text-red-600' : 'text-blue-600'
                           }`}>=Net</span>
                           <span className={`text-[8px] font-black mt-0.5 ${
@@ -1178,11 +1178,14 @@ export default function MobileOverview({
                       options={[
                         { value: "", label: "None / Cash" },
                         ...portalDirectory
-                          .flatMap((group: any) => {
-                            const firstOnlineBankAccount = (group.bankAccounts || []).find((p: any) => p.show_in_online_payment);
-                            if (!firstOnlineBankAccount) return [];
-                            return [{ value: String(firstOnlineBankAccount.id), label: group.name }];
-                          })
+                          .flatMap((group: any) =>
+                            (group.bankAccounts || [])
+                              .filter((ba: any) => ba.show_in_online_payment)
+                              .map((ba: any) => ({
+                                value: String(ba.id),
+                                label: `${group.name} — ${ba.bank_account_name}`,
+                              }))
+                          )
                       ]}
                       placeholder="None / Cash"
                     />
@@ -1325,11 +1328,12 @@ export default function MobileOverview({
                         options={[
                           { value: "", label: "Select Bank Account" },
                           ...portalDirectory
-                            .flatMap((group: any) => {
-                              const firstBankAccount = (group.bankAccounts || [])[0];
-                              if (!firstBankAccount) return [];
-                              return [{ value: String(firstBankAccount.id), label: group.name }];
-                            })
+                            .flatMap((group: any) =>
+                              (group.bankAccounts || []).map((ba: any) => ({
+                                value: String(ba.id),
+                                label: `${group.name} — ${ba.bank_account_name}`,
+                              }))
+                            )
                         ]}
                         placeholder="Select Bank Account"
                       />
@@ -1390,11 +1394,12 @@ export default function MobileOverview({
                           onChange={setSelectedNewBankAccountId}
                           options={[
                             { value: "", label: "Select Bank Account" },
-                            ...portalDirectory.flatMap((group: any) => {
-                              const firstBankAccount = (group.bankAccounts || [])[0];
-                              if (!firstBankAccount) return [];
-                              return [{ value: String(firstBankAccount.id), label: group.name }];
-                            })
+                            ...portalDirectory.flatMap((group: any) =>
+                              (group.bankAccounts || []).map((ba: any) => ({
+                                value: String(ba.id),
+                                label: `${group.name} — ${ba.bank_account_name}`,
+                              }))
+                            )
                           ]}
                           placeholder="Select Bank Account"
                         />
