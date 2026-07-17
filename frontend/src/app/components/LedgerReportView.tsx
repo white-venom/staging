@@ -54,7 +54,7 @@ const renderDenominations = (denom: any) => {
   return (
     <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-sm border border-slate-100 dark:border-slate-800 space-y-2 mt-2">
       <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Cash Denominations</span>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400 font-medium tabular-nums">
         {notes.map(n => (
           <div key={n.label} className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-0.5">
             <span>₹{n.label} × {n.count}</span>
@@ -387,14 +387,14 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           <div className="flex items-center gap-1.5">
             <button
               onClick={handleCopyLink}
-              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-sm border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
               title={isCopied ? "Copied Link" : "Copy Portal Link"}
             >
               {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
             </button>
             <button
               onClick={handleShare}
-              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-sm border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
               title="Share Portal Link"
             >
               <Share2 className="w-4 h-4" />
@@ -697,7 +697,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               </div>
               <button
                 onClick={() => setSelectedEntryForDetails(null)}
-                className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer"
+                className="p-1.5 rounded-sm bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -747,7 +747,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                           : (selectedEntryForDetails.portal_name
                             ? `${selectedEntryForDetails.portal_name}${selectedEntryForDetails.bank_account_name ? ` (${selectedEntryForDetails.bank_account_name})` : ""}`
                             : selectedEntryForDetails.bank_account_name)}
-                        {selectedEntryForDetails.denominations?.online_amount ? ` (₹${selectedEntryForDetails.denominations.online_amount})` : ""}
+                        {selectedEntryForDetails.denominations?.online_amount ? (
+                          <span className="font-mono tabular-nums"> (₹{selectedEntryForDetails.denominations.online_amount})</span>
+                        ) : ""}
                       </span>
                     </div>
                   )}
