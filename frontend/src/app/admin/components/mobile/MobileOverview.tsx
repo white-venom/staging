@@ -1026,7 +1026,7 @@ export default function MobileOverview({
       {/* Stores Visited Mobile Sliding Overlay Modal */}
       {activeModalStaff && (
         <div className="fixed inset-0 bg-slate-950/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-3 transition-colors duration-300">
-          <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-lg sm:rounded-sm w-full max-w-md p-3 pb-4 space-y-2.5 animate-slide-up relative">
+          <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-sm sm:rounded-sm w-full max-w-md p-3 pb-4 space-y-2.5 relative">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
               <div className="flex items-center gap-1.5">
@@ -1538,7 +1538,7 @@ export default function MobileOverview({
       {/* Mobile Date Range Cash Flow Drawer / Modal */}
       {isRangeModalOpen && (
         <div className="fixed inset-0 bg-slate-950/60 z-50 flex flex-col justify-end">
-          <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-2xl w-full max-h-[90vh] p-4 flex flex-col gap-4 animate-slide-up relative text-left">
+          <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-2xl w-full max-h-[90vh] p-4 flex flex-col gap-4 relative text-left">
             
             {/* Handle/Indicator */}
             <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-sm mx-auto self-center -mt-1 mb-1" />

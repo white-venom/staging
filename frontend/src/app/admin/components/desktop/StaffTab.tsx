@@ -124,7 +124,7 @@ export default function StaffTab({
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
       <div className="grid lg:grid-cols-2 gap-6 items-start">
         
         {/* LEFT COLUMN: STAFF MANAGEMENT */}

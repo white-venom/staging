@@ -467,7 +467,7 @@ export default function RetailersTab({
   }, [retailerDirectory, retailerSearch, selectedCategories]);
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4">
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div className="relative flex-1 max-w-sm">
@@ -845,7 +845,7 @@ export default function RetailersTab({
       )}
       {/* EDIT TRANSACTION ENTRY MODAL */}
       {isEditEntryModalOpen && editingEntry && (
-        <div className="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 select-none animate-fade-in">
+        <div className="fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center p-4 select-none">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm max-h-[90vh] overflow-y-auto p-6 space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <h3 className="text-sm font-black text-slate-800 dark:text-slate-100">
@@ -877,7 +877,7 @@ export default function RetailersTab({
                 )}
 
                 {!editingIsDeposit && (availableStores.length > 0 || editingEntry?.store_name) && (
-                  <div className="animate-in fade-in duration-200 space-y-1">
+                  <div className="transition-colors space-y-1">
                     <div className="flex justify-between items-center px-1">
                       <label className="block text-[10px] font-bold text-slate-400 uppercase">Parent Store (Shop/Branch)</label>
                       {editingEntry?.store_name && (

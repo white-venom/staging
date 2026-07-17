@@ -155,5 +155,5 @@ export default function AdminTabPage() {
     }
   };
 
-  return <div className="animate-fade-in">{renderTab()}</div>;
+  return <>{renderTab()}</>;
 }
