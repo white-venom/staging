@@ -40,7 +40,7 @@ export default function PublicRetailerLedgerPage() {
   if (error || !data) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-        <div className="text-center text-red-500 font-bold bg-slate-900 border border-slate-800 p-6 rounded-2xl max-w-sm w-full">
+        <div className="text-center text-red-500 font-bold bg-slate-900 border border-slate-800 p-6 rounded-sm max-w-sm w-full">
           <p className="text-sm">{error || "Invalid or expired secure statement link."}</p>
         </div>
       </div>

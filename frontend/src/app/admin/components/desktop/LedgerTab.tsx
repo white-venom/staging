@@ -721,15 +721,15 @@ export default function LedgerTab({
           <div className="flex items-center justify-center gap-10 mt-8 border-y py-6">
              <div className="text-center">
                 <span className="text-[10px] block uppercase text-slate-400 font-black mb-1">Total Debit</span>
-                <span className="text-xl font-black text-red-600">₹{totalDebit.toLocaleString()}.00</span>
+                <span className="text-xl font-black text-red-600 font-mono tabular-nums">₹{totalDebit.toLocaleString()}.00</span>
              </div>
              <div className="text-center border-x px-10">
                 <span className="text-[10px] block uppercase text-slate-400 font-black mb-1">Total Credit</span>
-                <span className="text-xl font-black text-emerald-600">₹{totalCredit.toLocaleString()}.00</span>
+                <span className="text-xl font-black text-emerald-600 font-mono tabular-nums">₹{totalCredit.toLocaleString()}.00</span>
              </div>
              <div className="text-center">
                 <span className="text-[10px] block uppercase text-slate-400 font-black mb-1">Net Balance</span>
-                <span className={`text-xl font-black ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
+                <span className={`text-xl font-black font-mono tabular-nums ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
                   ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
                 </span>
              </div>
