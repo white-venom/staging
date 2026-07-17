@@ -841,7 +841,7 @@ export default function StaffDashboard() {
               View All <ArrowUpRight className="w-2.5 h-2.5" />
             </button>
           </div>
-          <div className="space-y-1">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm divide-y divide-slate-100 dark:divide-slate-800/60 overflow-hidden">
              {(() => {
                const sorted = [...combinedLedger].sort((a, b) => {
                  const timeA = new Date(a.date.replace(' ', 'T')).getTime();
@@ -866,22 +866,22 @@ export default function StaffDashboard() {
                return (
                  <div
                    key={c.id}
-                   className={`rounded-sm border flex flex-col ${isExpanded ? 'bg-slate-50 dark:bg-slate-900/80 border-blue-200/60 dark:border-blue-900/30' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 cursor-pointer'}`}
+                   className={`flex flex-col transition-colors ${isExpanded ? 'bg-slate-50 dark:bg-slate-950/60' : 'cursor-pointer hover:bg-slate-50/60 dark:hover:bg-slate-950/30'}`}
                    onClick={() => setExpandedHomeId(prev => prev === c.id ? null : c.id)}
                  >
                    {/* Main row */}
-                   <div className="p-1.5 flex items-center justify-between">
-                     <div className="flex items-center gap-2">
-                       <div className={`w-7 h-7 rounded-sm bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center flex-shrink-0`}>
+                   <div className="px-2 py-2 flex items-center justify-between gap-2">
+                     <div className="flex items-center gap-2 flex-1 min-w-0">
+                       <div className={`w-7 h-7 rounded-sm bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0`}>
                          {c.type === 'collection' ? (
                            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                          ) : (
                            <ArrowUpRight className="w-3.5 h-3.5 text-red-500" />
                          )}
                        </div>
-                       <div>
-                         <div className="text-xs font-black text-slate-800 dark:text-slate-100 tracking-tight flex items-center gap-1">
-                           <span>
+                       <div className="min-w-0">
+                         <div className="text-xs font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                           <span className="break-words">
                              {c.type === 'collection'
                                ? `${c.retailerName || c.targetName}${c.store_name && c.store_name !== "Cash" ? ` (${c.store_name})` : ''}`
                                : `${c.targetName || 'Deposit'}${c.store_name && c.store_name !== "Cash" ? ` (${c.store_name})` : ''}`}
@@ -892,7 +892,7 @@ export default function StaffDashboard() {
                                  e.stopPropagation();
                                  setCmsRemarksExpanded(prev => ({ ...prev, [c.id]: !prev[c.id] }));
                                }}
-                               className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-sm transition-colors cursor-pointer inline-flex items-center justify-center"
+                               className="p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-sm transition-colors cursor-pointer inline-flex items-center justify-center shrink-0"
                                title="View Remark"
                              >
                                <ChevronDown className={`w-3 h-3 text-slate-500 transition-transform ${cmsRemarksExpanded[c.id] ? 'rotate-180' : ''}`} />
@@ -901,19 +901,19 @@ export default function StaffDashboard() {
                          </div>
                          {c.remarks && cmsRemarksExpanded[c.id] && (
                            <div className="mt-1 px-1.5 py-0.5 bg-slate-50 dark:bg-slate-950/40 rounded-sm border border-slate-200/50 dark:border-slate-800 text-[9px] font-medium text-slate-600 dark:text-slate-400">
-                             <span className="text-[7.5px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
-                             <span className="italic">{c.remarks || "no remark"}</span>
+                             <span className="text-[7px] uppercase font-bold text-slate-400 block mb-0.5">Remark:</span>
+                             <span className="italic break-words">{c.remarks || "no remark"}</span>
                            </div>
                          )}
-                         <div className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                         <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider flex items-center gap-1">
                            <span className="text-blue-600 dark:text-blue-400">{c.type === 'collection' ? (c.bankAccountName || "Handover") : (c.depositType || 'Deposit')}</span>
                            <span className="w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                            <span>{c.date}</span>
                          </div>
                        </div>
                      </div>
-                     <div className="text-right flex-shrink-0 ml-2 flex items-center gap-1.5">
-                       <span className={`text-xs font-black tracking-tight font-mono tabular-nums block ${c.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
+                     <div className="text-right flex-shrink-0 flex items-center gap-1.5">
+                       <span className={`text-sm font-black font-mono tabular-nums block ${c.type === 'collection' ? 'text-emerald-600' : 'text-red-600'}`}>
                          {c.type === 'collection' ? '+' : '-'}₹{c.totalAmount.toLocaleString()}
                        </span>
                        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
@@ -921,13 +921,13 @@ export default function StaffDashboard() {
                    </div>
 
                    {/* Balance row */}
-                   <div className="grid grid-cols-2 gap-1 bg-slate-50/50 dark:bg-slate-950/50 mx-1.5 mb-1.5 p-1.5 rounded-sm border border-slate-100 dark:border-slate-800/50">
+                   <div className="grid grid-cols-2 gap-1 bg-white dark:bg-slate-900 mx-2 mb-2 p-1.5 rounded-sm border border-slate-100 dark:border-slate-800/50">
                      <div className="flex flex-col">
-                       <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
+                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Opening</span>
                        <span className="text-[9px] font-bold text-slate-500 font-mono tabular-nums">₹{snapshots.prev.toLocaleString()}</span>
                      </div>
                      <div className="flex flex-col text-right">
-                       <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
+                       <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Closing</span>
                        <span className="text-[9px] font-black text-slate-800 dark:text-slate-200 font-mono tabular-nums">₹{snapshots.next.toLocaleString()}</span>
                      </div>
                    </div>
@@ -981,7 +981,7 @@ export default function StaffDashboard() {
                                  <Edit2 className="w-2.5 h-2.5" /> Edit
                                </button>
                              ) : (
-                               <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-sm border border-slate-100/10">
+                               <div className="flex-1 text-center text-[8px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-sm border border-slate-100/10">
                                  Edit expired
                                </div>
                              )}
@@ -1011,13 +1011,13 @@ export default function StaffDashboard() {
                                  <Trash2 className="w-2.5 h-2.5" /> Delete
                                </button>
                              ) : (
-                               <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-sm border border-slate-100/10">
+                               <div className="flex-1 text-center text-[8px] font-bold text-slate-400 py-1 bg-slate-50/50 dark:bg-slate-800/20 rounded-sm border border-slate-100/10">
                                  Delete expired
                                </div>
                              )}
                            </>
                          ) : (
-                           <div className="flex-1 text-center text-[7.5px] font-bold text-slate-400 py-1 bg-slate-50 dark:bg-slate-800/50 rounded-sm border border-slate-100 dark:border-slate-800">
+                           <div className="flex-1 text-center text-[8px] font-bold text-slate-400 py-1 bg-slate-50 dark:bg-slate-800/50 rounded-sm border border-slate-100 dark:border-slate-800">
                              Action window expired
                            </div>
                          )}
@@ -1225,17 +1225,17 @@ function SummaryBlocks({
       <div className="grid grid-cols-4 gap-1">
         {/* Old Balance */}
         <div className="p-1.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-sm flex flex-col">
-          <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-widest">Old Bal</span>
+          <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">Old Bal</span>
           <span className="text-[10px] font-black text-slate-700 dark:text-slate-300 mt-0.5 font-mono tabular-nums">₹{oldBalance.toLocaleString()}</span>
         </div>
         {/* Today In */}
         <div className="p-1.5 bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-sm flex flex-col">
-          <span className="text-[6.5px] font-black text-emerald-600 uppercase tracking-widest">+ Today In</span>
+          <span className="text-[7px] font-black text-emerald-600 uppercase tracking-widest">+ Today In</span>
           <span className="text-[10px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5 font-mono tabular-nums">₹{todayIn.toLocaleString()}</span>
         </div>
         {/* Today Out */}
         <div className="p-1.5 bg-red-50/60 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-sm flex flex-col">
-          <span className="text-[6.5px] font-black text-red-600 uppercase tracking-widest">- Today Out</span>
+          <span className="text-[7px] font-black text-red-600 uppercase tracking-widest">- Today Out</span>
           <span className="text-[10px] font-black text-red-700 dark:text-red-400 mt-0.5 font-mono tabular-nums">₹{todayOut.toLocaleString()}</span>
         </div>
         {/* Net */}
@@ -1244,7 +1244,7 @@ function SummaryBlocks({
             ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/30'
             : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-800'
         }`}>
-          <span className={`text-[6.5px] font-black uppercase tracking-widest ${
+          <span className={`text-[7px] font-black uppercase tracking-widest ${
             netBalance < 0 ? 'text-red-600' : 'text-slate-500'
           }`}>
             = Net
