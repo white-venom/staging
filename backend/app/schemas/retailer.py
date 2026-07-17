@@ -8,7 +8,10 @@ class RetailerBase(BaseModel):
     address: str = Field(..., max_length=255, examples=["Sector 15, Dwarka"])
     assigned_staff_id: Optional[uuid.UUID] = Field(None, examples=["e3d166c3-1ff6-4279-88b1-1647413f99aa"])
     email: Optional[EmailStr] = Field(None, examples=["aggarwal.store@gmail.com"])
-    phone: Optional[str] = Field(None, max_length=20, examples=["9876543210"])
+    # Required to match the DB's NOT NULL constraint on retailers.phone -- letting
+    # this stay Optional here let requests through validation only to crash with a
+    # raw psycopg2 NotNullViolation at insert time instead of a clean 422.
+    phone: str = Field(..., max_length=20, examples=["9876543210"])
     category: Optional[str] = Field(None, max_length=100, examples=["Supermarket"])
 
 
