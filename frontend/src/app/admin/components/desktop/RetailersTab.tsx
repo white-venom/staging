@@ -605,7 +605,7 @@ export default function RetailersTab({
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Opening Balance Adjustment</p>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[9px] font-bold text-amber-500 uppercase mb-1">To Take (₹)</label>
+                      <label className="block text-[9px] font-bold text-red-500 uppercase mb-1">To Take (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"
@@ -615,11 +615,11 @@ export default function RetailersTab({
                         value={editRetToTake}
                         onChange={(e) => setEditRetToTake(e.target.value)}
                         placeholder="0.00"
-                        className="w-full px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-amber-500"
+                        className="w-full px-3 py-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-red-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-bold text-blue-500 uppercase mb-1">To Give (₹)</label>
+                      <label className="block text-[9px] font-bold text-emerald-500 uppercase mb-1">To Give (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"
@@ -629,7 +629,7 @@ export default function RetailersTab({
                         value={editRetToGive}
                         onChange={(e) => setEditRetToGive(e.target.value)}
                         placeholder="0.00"
-                        className="w-full px-3 py-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-blue-500"
+                        className="w-full px-3 py-2 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-emerald-500"
                       />
                     </div>
                   </div>

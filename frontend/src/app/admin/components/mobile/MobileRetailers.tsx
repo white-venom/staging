@@ -814,7 +814,7 @@ export default function MobileRetailers({
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Opening Balance Adjustment</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[8px] font-bold text-amber-500 uppercase mb-0.5">To Take (₹)</label>
+                      <label className="block text-[8px] font-bold text-red-500 uppercase mb-0.5">To Take (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"
@@ -824,11 +824,11 @@ export default function MobileRetailers({
                         value={editRetToTake}
                         onChange={(e) => setEditRetToTake(e.target.value)}
                         placeholder="0.00"
-                        className="w-full px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-amber-500"
+                        className="w-full px-2.5 py-1.5 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-red-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[8px] font-bold text-blue-500 uppercase mb-0.5">To Give (₹)</label>
+                      <label className="block text-[8px] font-bold text-emerald-500 uppercase mb-0.5">To Give (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"
@@ -838,7 +838,7 @@ export default function MobileRetailers({
                         value={editRetToGive}
                         onChange={(e) => setEditRetToGive(e.target.value)}
                         placeholder="0.00"
-                        className="w-full px-2.5 py-1.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-blue-500"
+                        className="w-full px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/50 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-emerald-500"
                       />
                     </div>
                   </div>
