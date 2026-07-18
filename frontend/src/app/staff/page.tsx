@@ -35,17 +35,7 @@ import {
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../utils/shareHelper";
 import { usePWAInstall } from "../hooks/usePWAInstall";
 import PWAInstallModal from "../components/PWAInstallModal";
-
-const getUtcDate = (dateStr: any) => {
-  if (!dateStr) return new Date();
-  // Backend timestamps can carry 6-digit microseconds (Python's isoformat()),
-  // which some Safari/WebKit versions fail to parse — truncate to milliseconds.
-  const s = String(dateStr).replace(" ", "T").replace(/\.(\d{3})\d+/, ".$1");
-  if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
-    return new Date(s + "Z");
-  }
-  return new Date(s);
-};
+import { getUtcDate, buildDisplayDate } from "../utils/dateHelpers";
 
 export default function StaffDashboard() {
   const router = useRouter();
@@ -237,7 +227,7 @@ export default function StaffDashboard() {
         },
         status: c.status,
         remarks: c.remarks,
-        date: getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        date: buildDisplayDate(c.created_at, c.collection_date),
         retailer_ledger_token: c.retailer_ledger_token,
         created_at: c.created_at,
       }));
@@ -285,7 +275,7 @@ export default function StaffDashboard() {
         remarks: d.remarks,
         bankAccountName: d.bank_account_name || undefined,
         bankName: d.bank_name || undefined,
-        date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        date: buildDisplayDate(d.created_at, d.deposit_date),
         retailer_ledger_token: d.retailer_ledger_token,
         created_at: d.created_at,
       }));
@@ -373,7 +363,7 @@ export default function StaffDashboard() {
           },
           status: updated.status,
           remarks: updated.remarks,
-          date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+          date: buildDisplayDate(updated.created_at, updated.collection_date),
           created_at: updated.created_at,
         };
         store.setCollections(store.collections.map(col => col.id === editingItem.id ? mappedUpdated : col));
@@ -418,7 +408,7 @@ export default function StaffDashboard() {
           remarks: updated.remarks,
           bankAccountName: updated.bank_account_name || undefined,
           bankName: updated.bank_name || undefined,
-          date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+          date: buildDisplayDate(updated.created_at, updated.deposit_date),
           created_at: updated.created_at,
         };
         store.setDeposits(store.deposits.map(dep => dep.id === editingItem.id ? mappedUpdated : dep));
@@ -999,8 +989,8 @@ export default function StaffDashboard() {
                                      // Refresh data
                                      const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
                                      const { setCollections, setDeposits } = useAppStore.getState();
-                                     setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', bankAccountName: col.bank_account_name || 'Cash', portalName: col.portal_name || undefined, staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: getUtcDate(col.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
-                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, bank_account_id: d.bank_account_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_name) ? d.portal_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, remarks: d.remarks, bankAccountName: d.bank_account_name || undefined, bankName: d.bank_name || undefined, date: getUtcDate(d.created_at).toLocaleString('sv-SE', { timeZone: 'Asia/Kolkata' }).substring(0, 16), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
+                                     setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', bankAccountName: col.bank_account_name || 'Cash', portalName: col.portal_name || undefined, staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: buildDisplayDate(col.created_at, col.collection_date), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
+                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, bank_account_id: d.bank_account_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_name) ? d.portal_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, remarks: d.remarks, bankAccountName: d.bank_account_name || undefined, bankName: d.bank_name || undefined, date: buildDisplayDate(d.created_at, d.deposit_date), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
                                      setExpandedHomeId(null);
                                    } catch (err: any) {
                                      alert('Delete failed: ' + err.message);

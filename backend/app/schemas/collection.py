@@ -68,6 +68,7 @@ class CollectionResponse(BaseModel):
     from_staff_id: Optional[uuid.UUID] = None
     from_office: bool = False
     mirror_deposit_id: Optional[uuid.UUID] = None
+    online_routing_deposit_id: Optional[uuid.UUID] = None
     store_id: Optional[uuid.UUID]
     total_amount: Decimal
     remarks: Optional[str]

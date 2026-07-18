@@ -166,7 +166,8 @@ def submit_collection(
                 )
                 db.add(db_deposit)
                 db.flush()
-                
+                db_collection.online_routing_deposit_id = db_deposit.id
+
                 db_deposit_denom = Denomination(
                     deposit_id=db_deposit.id,
                     note_500=0,
@@ -179,7 +180,7 @@ def submit_collection(
                     online_amount=d.online_amount
                 )
                 db.add(db_deposit_denom)
-                
+
                 if bank_account_obj:
                     lock_portal(db, bank_account_obj)
                     bank_account_obj.balance += d.online_amount
@@ -513,19 +514,30 @@ def delete_collection(
             if bank_account.portal:
                 bank_account.portal.balance += Decimal(str(collection.total_amount))
 
-    # Delete corresponding auto-created bank_account deposit if this collection had an online component
+    # Delete corresponding auto-created bank_account deposit if this collection had an online component.
+    # Prefer the real FK link (Collection.online_routing_deposit_id); only fall back to
+    # matching by coincidence for legacy rows created before that link existed -- the
+    # coincidence match silently fails to find the deposit (and so never reverses its
+    # balance) as soon as the deposit is edited independently and its amount no longer
+    # equals collection.denominations.online_amount.
     if collection.retailer_id and collection.bank_account_id and collection.denominations and collection.denominations.online_amount > 0:
-        bank_account_dep = db.scalar(
-            select(BankDeposit).where(
-                and_(
-                    BankDeposit.deposit_type == "portal",
-                    BankDeposit.staff_id == collection.staff_id,
-                    BankDeposit.bank_account_id == collection.bank_account_id,
-                    BankDeposit.amount == collection.denominations.online_amount,
-                    BankDeposit.deposit_date == collection.collection_date
+        bank_account_dep = None
+        if collection.online_routing_deposit_id:
+            bank_account_dep = db.scalar(
+                select(BankDeposit).where(BankDeposit.id == collection.online_routing_deposit_id)
+            )
+        if not bank_account_dep:
+            bank_account_dep = db.scalar(
+                select(BankDeposit).where(
+                    and_(
+                        BankDeposit.deposit_type == "portal",
+                        BankDeposit.staff_id == collection.staff_id,
+                        BankDeposit.bank_account_id == collection.bank_account_id,
+                        BankDeposit.amount == collection.denominations.online_amount,
+                        BankDeposit.deposit_date == collection.collection_date
+                    )
                 )
             )
-        )
         if bank_account_dep:
             bank_account = db.scalar(select(BankAccount).where(BankAccount.id == collection.bank_account_id).with_for_update())
             if bank_account:
@@ -688,9 +700,17 @@ def update_collection(
                 if new_bank_account.portal:
                     new_bank_account.portal.balance -= Decimal(str(new_amount))
     
-    # Find the existing auto-created deposit if it existed
+    # Find the existing auto-created deposit if it existed. Prefer the real FK
+    # link (Collection.online_routing_deposit_id); only fall back to matching by
+    # coincidence for legacy rows created before that link existed -- the
+    # coincidence match silently breaks as soon as the deposit is edited
+    # independently and its amount no longer equals old_online_amount.
     existing_dep = None
-    if old_bank_account_id and old_online_amount > 0:
+    if collection.online_routing_deposit_id:
+        existing_dep = db.scalar(
+            select(BankDeposit).where(BankDeposit.id == collection.online_routing_deposit_id)
+        )
+    if not existing_dep and old_bank_account_id and old_online_amount > 0:
         existing_dep = db.scalar(
             select(BankDeposit).where(
                 and_(
@@ -731,6 +751,8 @@ def update_collection(
             existing_dep.bank_account_id = new_bank_account_id
             existing_dep.amount = new_online_amount
             existing_dep.deposit_date = new_collection_date
+            if collection.online_routing_deposit_id is None:
+                collection.online_routing_deposit_id = existing_dep.id
 
             if existing_dep.denominations:
                 existing_dep.denominations.online_amount = new_online_amount
@@ -768,7 +790,8 @@ def update_collection(
             )
             db.add(db_deposit)
             db.flush()
-            
+            collection.online_routing_deposit_id = db_deposit.id
+
             db_denom = Denomination(
                 deposit_id=db_deposit.id,
                 note_500=0, note_200=0, note_100=0, note_50=0, note_20=0, note_10=0,
@@ -776,7 +799,7 @@ def update_collection(
                 online_amount=new_online_amount
             )
             db.add(db_denom)
-            
+
             if new_bank_acct:
                 lock_portal(db, new_bank_acct)
                 new_bank_acct.balance += new_online_amount
@@ -793,6 +816,7 @@ def update_collection(
                     old_bank_acct.balance -= existing_dep.amount
                     if old_bank_acct.portal:
                         old_bank_acct.portal.balance -= existing_dep.amount
+            collection.online_routing_deposit_id = None
             db.delete(existing_dep)
 
 

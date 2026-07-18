@@ -214,7 +214,15 @@ class Collection(Base):
     # instead of matching by staff_id/amount/date coincidence, so create/update/
     # delete can always find the correct paired record with no ambiguity.
     mirror_deposit_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bank_deposits.id", ondelete="SET NULL"), nullable=True)
-    
+    # For a retailer collection with an online component routed to a bank_account,
+    # points at the auto-created BankDeposit (deposit_type='portal',
+    # payment_mode='online') that carries that online_amount into the bank_account's
+    # balance. A real FK instead of matching by bank_account_id/staff_id/amount/date
+    # coincidence -- without it, editing that deposit directly leaves this Collection
+    # silently stale, and deleting this Collection can fail to find (and therefore
+    # fail to reverse the balance of) the deposit if it was ever edited independently.
+    online_routing_deposit_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bank_deposits.id", ondelete="SET NULL"), nullable=True)
+
     total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     collection_date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
     remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

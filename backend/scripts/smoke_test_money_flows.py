@@ -392,6 +392,67 @@ class SmokeTest:
               f"cash-in-hand should be unchanged (net zero) after collecting Rs.500 then depositing that exact "
               f"Rs.500 back out with a different note mix: before={before}, after={after}")
 
+    def scenario_online_routing_deposit_link(self):
+        """Regression test for the 2026-07-18 audit finding: the auto-created
+        online-payment-routing BankDeposit had no FK back to its Collection, only
+        coincidence-matching by bank_account_id/staff_id/amount/date. If that deposit
+        was ever edited directly (bypassing the Collection), deleting the Collection
+        would silently fail to find it and leave the bank_account balance un-reversed.
+        Collection.online_routing_deposit_id now makes this lookup exact."""
+        amount = Decimal("1000.00")
+        online_amount = Decimal("500.00")
+        payload = {
+            "retailer_id": self.retailer_id,
+            "bank_account_id": self.bank_account_id,
+            "total_amount": str(amount),
+            "denominations": zero_denom(amount, online_amount),
+        }
+        r = self.admin.request("POST", "/collections", json=payload)
+        check(r.status_code == 201, f"create collection with online routing failed: {r.status_code} {r.text}")
+        col = r.json()
+        self.created["collections"].append(col["id"])
+        check(col.get("online_routing_deposit_id"), "collection missing online_routing_deposit_id FK")
+        routing_dep_id = col["online_routing_deposit_id"]
+
+        r = self.admin.request("GET", "/bank-deposits")
+        check(r.status_code == 200, f"list deposits failed: {r.status_code}")
+        routing_dep = next((d for d in r.json() if d["id"] == routing_dep_id), None)
+        check(routing_dep is not None, "linked online-routing deposit not found via FK")
+        check(Decimal(str(routing_dep["amount"])) == online_amount, "routing deposit amount mismatch")
+
+        ba_before = self.get_bank_account_balance()
+
+        # Edit the routing deposit DIRECTLY (bypassing the Collection) -- exactly the
+        # scenario that used to break the old coincidence-match lookup, since the
+        # deposit's amount no longer equals collection.denominations.online_amount.
+        new_online_amount = Decimal("750.00")
+        r = self.admin.request("PUT", f"/bank-deposits/{routing_dep_id}", json={
+            "deposit_type": "portal", "bank_account_id": self.bank_account_id, "payment_mode": "online",
+            "amount": str(new_online_amount), "deposit_date": col["collection_date"],
+            "denominations": zero_denom(new_online_amount, new_online_amount),
+        })
+        check(r.status_code == 200, f"direct edit of routing deposit failed: {r.status_code} {r.text}")
+        ba_after_edit = self.get_bank_account_balance()
+        check(ba_after_edit - ba_before == (new_online_amount - online_amount),
+              f"bank account should move by {new_online_amount - online_amount}, moved {ba_after_edit - ba_before}")
+
+        # Delete the Collection. With the FK, this must find the (now coincidence-
+        # mismatched) deposit via online_routing_deposit_id and correctly reverse the
+        # CURRENT bank_account balance (750), not silently leave it un-reversed.
+        r = self.admin.request("DELETE", f"/collections/{col['id']}")
+        check(r.status_code == 204, f"delete collection failed: {r.status_code} {r.text}")
+        self.created["collections"].remove(col["id"])
+
+        ba_after_delete = self.get_bank_account_balance()
+        expected_reversal = ba_after_edit - new_online_amount
+        check(ba_after_delete == expected_reversal,
+              f"bank account balance did not correctly reverse via FK lookup after delete: "
+              f"expected {expected_reversal}, got {ba_after_delete}")
+
+        r = self.admin.request("GET", "/bank-deposits")
+        still_exists = any(d["id"] == routing_dep_id for d in r.json())
+        check(not still_exists, "online-routing deposit was not deleted alongside its Collection")
+
     def run(self):
         self.run_step("setup fixtures", self.setup)
         self.run_step("1. login as staff/admin", self.scenario_login)
@@ -402,6 +463,7 @@ class SmokeTest:
         self.run_step("6. backdated entry rejected when staff flag is off", self.scenario_backdated_rejected)
         self.run_step("7. denomination/amount mismatch rejected", self.scenario_denomination_mismatch_rejected)
         self.run_step("8. cash-in-hand nets denomination offset correctly (no per-type clamp)", self.scenario_cash_in_hand_denomination_offset)
+        self.run_step("9. online-routing deposit FK survives independent edit + collection delete", self.scenario_online_routing_deposit_link)
         self.teardown()
 
         print("\n--- summary ---")

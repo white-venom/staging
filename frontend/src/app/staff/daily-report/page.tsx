@@ -12,16 +12,7 @@ import {
   FileText
 } from "lucide-react";
 import Script from "next/script";
-import { getISTDateString } from "../../utils/dateHelpers";
-
-const getUtcDate = (dateStr: any) => {
-  if (!dateStr) return new Date();
-  const s = String(dateStr);
-  if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
-    return new Date(s + "Z");
-  }
-  return new Date(s);
-};
+import { getISTDateString, getUtcDate } from "../../utils/dateHelpers";
 
 export default function DailyReportPage() {
   const router = useRouter();
@@ -62,12 +53,25 @@ export default function DailyReportPage() {
     }
   };
 
-  const formatDateTime = (dateStr: string) => {
+  // transactionDate (collection_date/deposit_date) drives the DATE shown, not
+  // created_at -- a backdated entry must display under the day it claims to
+  // represent. created_at still drives the time-of-day (the actual submission
+  // instant), matching admin/context/AdminContext.tsx's pattern.
+  const formatDateTime = (dateStr: string, transactionDate?: string | null) => {
     const dateObj = getUtcDate(dateStr);
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    const month = months[dateObj.getMonth()];
-    
+
+    let day: string;
+    let month: string;
+    if (transactionDate) {
+      const [, m, dd] = transactionDate.split("-");
+      day = dd;
+      month = months[Number(m) - 1];
+    } else {
+      day = String(dateObj.getDate()).padStart(2, '0');
+      month = months[dateObj.getMonth()];
+    }
+
     let hours = dateObj.getHours();
     const minutes = String(dateObj.getMinutes()).padStart(2, '0');
     const ampm = hours >= 12 ? 'pm' : 'am';
@@ -81,14 +85,16 @@ export default function DailyReportPage() {
     };
   };
 
-  // Filter lists based on the selected date
+  // Filter lists based on the selected date -- bucketed by the transaction's OWN
+  // date (collection_date/deposit_date), not created_at, so a backdated entry
+  // correctly shows up under the day it claims to represent.
   const filteredCollections = collections.filter(c => {
-    const localDateStr = getISTDateString(getUtcDate(c.created_at));
+    const localDateStr = c.collection_date || getISTDateString(getUtcDate(c.created_at));
     return localDateStr === selectedDate;
   });
 
   const filteredDeposits = deposits.filter(d => {
-    const localDateStr = getISTDateString(getUtcDate(d.created_at));
+    const localDateStr = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
     return localDateStr === selectedDate;
   });
 
@@ -114,10 +120,11 @@ export default function DailyReportPage() {
     })
   ].sort((a, b) => getUtcDate(a.created_at).getTime() - getUtcDate(b.created_at).getTime());
 
-  // Calculate Running Balances
+  // Calculate Running Balances -- bucketed by collection_date/deposit_date, not
+  // created_at, matching the filters above.
   const totalInBefore = collections
     .filter(c => {
-      const localDateStr = getISTDateString(getUtcDate(c.created_at));
+      const localDateStr = c.collection_date || getISTDateString(getUtcDate(c.created_at));
       return localDateStr < selectedDate;
     })
     .reduce((sum, c) => sum + Number(c.total_amount), 0) +
@@ -125,7 +132,7 @@ export default function DailyReportPage() {
     .filter(d => {
       const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
       if (!isRecipient) return false;
-      const localDateStr = getISTDateString(getUtcDate(d.created_at));
+      const localDateStr = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       return localDateStr < selectedDate;
     })
     .reduce((sum, d) => sum + Number(d.amount), 0);
@@ -134,7 +141,7 @@ export default function DailyReportPage() {
     .filter(d => {
       const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
       if (isRecipient) return false;
-      const localDateStr = getISTDateString(getUtcDate(d.created_at));
+      const localDateStr = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       return localDateStr < selectedDate;
     })
     .reduce((sum, d) => sum + Number(d.amount), 0);
@@ -152,7 +159,8 @@ export default function DailyReportPage() {
     const notes = { note500: 0, note200: 0, note100: 0, note50: 0, note20: 0, note10: 0, coins: 0 };
     collections.forEach((c) => {
       if (!c.denominations) return;
-      if (getISTDateString(getUtcDate(c.created_at)) > throughDateInclusive) return;
+      const cDate = c.collection_date || getISTDateString(getUtcDate(c.created_at));
+      if (cDate > throughDateInclusive) return;
       notes.note500 += Number(c.denominations.note_500) || 0;
       notes.note200 += Number(c.denominations.note_200) || 0;
       notes.note100 += Number(c.denominations.note_100) || 0;
@@ -163,7 +171,8 @@ export default function DailyReportPage() {
     });
     deposits.forEach((d) => {
       if (!d.denominations) return;
-      if (getISTDateString(getUtcDate(d.created_at)) > throughDateInclusive) return;
+      const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
+      if (dDate > throughDateInclusive) return;
       const isReceivedHandover = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
       if (!isReceivedHandover && d.deposit_type === "virtual") return;
       const sign = isReceivedHandover ? 1 : -1;
@@ -484,7 +493,7 @@ export default function DailyReportPage() {
                       </tr>
                     ) : (
                       reportItems.map((item, idx) => {
-                        const dt = formatDateTime(item.created_at);
+                        const dt = formatDateTime(item.created_at, item.collection_date || item.deposit_date);
                         const isCol = item.itemType === "collection";
                         
                         const staffName = item.staff_name || currentUser?.name || "Staff";

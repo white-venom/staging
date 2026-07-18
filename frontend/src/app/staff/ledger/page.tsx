@@ -22,18 +22,7 @@ import {
   Coins
 } from "lucide-react";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../utils/shareHelper";
-
-const getUtcDate = (dateStr: any) => {
-  if (!dateStr) return new Date();
-  let s = String(dateStr).trim();
-  if (s.includes(" ") && !s.includes("GMT") && !s.includes("+")) {
-    s = s.replace(" ", "T");
-  }
-  if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
-    return new Date(s + "Z");
-  }
-  return new Date(s);
-};
+import { getUtcDate, buildDisplayDate } from "../../utils/dateHelpers";
 
 export default function StaffLedgerPage() {
   const router = useRouter();
@@ -123,7 +112,7 @@ export default function StaffLedgerPage() {
         ...c,
         type: "collection" as const,
         totalAmount: Number(c.total_amount),
-        date: getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        date: buildDisplayDate(c.created_at, c.collection_date),
         displayName,
         displayBankAccount: c.bank_account_name || "Cash"
       };
@@ -158,7 +147,7 @@ export default function StaffLedgerPage() {
         type: isRecipient ? ("collection" as const) : ("deposit" as const),
         isStaffHandoverReceived: isRecipient,
         totalAmount: Number(d.amount),
-        date: getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        date: buildDisplayDate(d.created_at, d.deposit_date),
         displayName,
         displayBankAccount: d.deposit_type === "staff" ? "Staff Handover" : (d.deposit_type || "Deposit")
       };
@@ -227,10 +216,15 @@ export default function StaffLedgerPage() {
 
   const displayTimeline = sortedCombined;
 
-  // Group by date
+  // Group by date -- collection_date/deposit_date (the day it claims to
+  // represent), not created_at. Noon UTC keeps the formatted IST date safely
+  // within the same calendar day.
   const groupedTimeline: Record<string, any[]> = {};
   displayTimeline.forEach(item => {
-    const dateStr = item.created_at ? getUtcDate(item.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Unknown Date";
+    const txDate = item.collection_date || item.deposit_date;
+    const dateStr = txDate
+      ? new Date(`${txDate}T12:00:00Z`).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })
+      : (item.created_at ? getUtcDate(item.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Unknown Date");
     if (!groupedTimeline[dateStr]) {
       groupedTimeline[dateStr] = [];
     }

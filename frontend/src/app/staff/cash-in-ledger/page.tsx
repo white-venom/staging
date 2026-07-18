@@ -18,18 +18,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { numberToWordsIndian, formatShareDate } from "../../utils/shareHelper";
-
-const getUtcDate = (dateStr: any) => {
-  if (!dateStr) return new Date();
-  let s = String(dateStr).trim();
-  if (s.includes(" ") && !s.includes("GMT") && !s.includes("+")) {
-    s = s.replace(" ", "T");
-  }
-  if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
-    return new Date(s + "Z");
-  }
-  return new Date(s);
-};
+import { getUtcDate, buildDisplayDate } from "../../utils/dateHelpers";
 
 export default function CashInLedgerPage() {
   const router = useRouter();
@@ -289,7 +278,7 @@ ${dateFormatted}`;
         },
         status: updated.status,
         remarks: updated.remarks,
-        date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        date: buildDisplayDate(updated.created_at, updated.collection_date),
         created_at: updated.created_at,
       };
       store.setCollections(store.collections.map(c => c.id === editingItem.id ? mappedUpdated : c));
@@ -317,8 +306,10 @@ ${dateFormatted}`;
       }
     }
 
-    if (c.created_at) {
-      const dateOnlyStr = getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 10);
+    const dateOnlyStr = c.collection_date || (c.created_at
+      ? getUtcDate(c.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 10)
+      : null);
+    if (dateOnlyStr) {
       if (dateFrom && dateOnlyStr < dateFrom) return false;
       if (dateTo && dateOnlyStr > dateTo) return false;
     }
@@ -328,7 +319,11 @@ ${dateFormatted}`;
   // Group by date
   const groupedCollections: Record<string, any[]> = {};
   filteredCollections.forEach(c => {
-    const dateStr = c.created_at ? getUtcDate(c.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Unknown Date";
+    // Grouped by collection_date (the day it claims to represent), not created_at.
+    // Noon UTC keeps the formatted IST date safely within the same calendar day.
+    const dateStr = c.collection_date
+      ? new Date(`${c.collection_date}T12:00:00Z`).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })
+      : (c.created_at ? getUtcDate(c.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Unknown Date");
     if (!groupedCollections[dateStr]) {
       groupedCollections[dateStr] = [];
     }

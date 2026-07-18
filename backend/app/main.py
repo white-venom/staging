@@ -139,6 +139,19 @@ def startup_event():
                             print(f"[INFO] Column opening_cash_in_hand added/verified for tenant '{tenant.subdomain}'.")
                         except Exception:
                             pass
+                        try:
+                            # Self-healing safety net: scripts/migrate_tenants.py (alembic) is
+                            # the source of truth for this column, but it's a manual step run
+                            # against the VPS -- this idempotent ALTER means a fresh deploy never
+                            # depends on that step happening first, matching the pattern already
+                            # used above for auto_checkout_time/opening_cash_in_hand.
+                            conn.execute(text(
+                                "ALTER TABLE collections ADD COLUMN online_routing_deposit_id UUID "
+                                "REFERENCES bank_deposits(id) ON DELETE SET NULL"
+                            ))
+                            print(f"[INFO] Column online_routing_deposit_id added/verified for tenant '{tenant.subdomain}'.")
+                        except Exception:
+                            pass
 
                     tenant_db.close()
                 except Exception as t_err:

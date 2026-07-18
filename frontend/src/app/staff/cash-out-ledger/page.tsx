@@ -17,18 +17,7 @@ import {
   Share2
 } from "lucide-react";
 import { numberToWordsIndian, formatShareDate } from "../../utils/shareHelper";
-
-const getUtcDate = (dateStr: any) => {
-  if (!dateStr) return new Date();
-  let s = String(dateStr).trim();
-  if (s.includes(" ") && !s.includes("GMT") && !s.includes("+")) {
-    s = s.replace(" ", "T");
-  }
-  if (!s.endsWith("Z") && !s.includes("+") && !s.includes("GMT")) {
-    return new Date(s + "Z");
-  }
-  return new Date(s);
-};
+import { getUtcDate, buildDisplayDate } from "../../utils/dateHelpers";
 
 export default function CashOutLedgerPage() {
   const router = useRouter();
@@ -289,7 +278,7 @@ ${dateFormatted}`;
         } : undefined,
         status: updated.status,
         remarks: updated.remarks,
-        date: getUtcDate(updated.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 16),
+        date: buildDisplayDate(updated.created_at, updated.deposit_date),
         created_at: updated.created_at,
       };
       store.setDeposits(store.deposits.map(d => d.id === editingItem.id ? mappedUpdated : d));
@@ -318,8 +307,10 @@ ${dateFormatted}`;
       }
     }
 
-    if (d.created_at) {
-      const dateOnlyStr = getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 10);
+    const dateOnlyStr = d.deposit_date || (d.created_at
+      ? getUtcDate(d.created_at).toLocaleString("sv-SE", { timeZone: "Asia/Kolkata" }).substring(0, 10)
+      : null);
+    if (dateOnlyStr) {
       if (dateFrom && dateOnlyStr < dateFrom) return false;
       if (dateTo && dateOnlyStr > dateTo) return false;
     }
@@ -329,7 +320,11 @@ ${dateFormatted}`;
   // Group by date
   const groupedDeposits: Record<string, any[]> = {};
   filteredDeposits.forEach(d => {
-    const dateStr = d.created_at ? getUtcDate(d.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Unknown Date";
+    // Grouped by deposit_date (the day it claims to represent), not created_at.
+    // Noon UTC keeps the formatted IST date safely within the same calendar day.
+    const dateStr = d.deposit_date
+      ? new Date(`${d.deposit_date}T12:00:00Z`).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })
+      : (d.created_at ? getUtcDate(d.created_at).toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" }) : "Unknown Date");
     if (!groupedDeposits[dateStr]) {
       groupedDeposits[dateStr] = [];
     }
