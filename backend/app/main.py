@@ -129,29 +129,34 @@ def startup_event():
                 try:
                     tenant_db = get_tenant_session(tenant.subdomain)
                     tenant_engine = tenant_db.bind
-                    with tenant_engine.begin() as conn:
+
+                    # Each ALTER runs in its OWN transaction, and uses IF NOT EXISTS so it
+                    # succeeds as a no-op instead of erroring once the column already exists.
+                    # Previously all three shared a single `tenant_engine.begin()` transaction:
+                    # the first statement (auto_checkout_time) already existed on every boot
+                    # after its first deploy, so it always errored -- which aborted that shared
+                    # Postgres transaction and silently discarded every later statement in the
+                    # same block too, including brand new columns that had never actually been
+                    # applied. That's exactly how online_routing_deposit_id below shipped to
+                    # collections.py's queries without ever reaching the real tenant's schema,
+                    # 500ing every collection endpoint (2026-07-18) until this was caught and
+                    # fixed the same day. Never share a transaction across independent idempotent
+                    # DDL checks like this again.
+                    schema_statements = [
+                        ("business_settings.auto_checkout_time",
+                         "ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS auto_checkout_time VARCHAR(10) DEFAULT '20:00'"),
+                        ("business_settings.opening_cash_in_hand",
+                         "ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS opening_cash_in_hand DOUBLE PRECISION DEFAULT 0.0"),
+                        ("collections.online_routing_deposit_id",
+                         "ALTER TABLE collections ADD COLUMN IF NOT EXISTS online_routing_deposit_id UUID "
+                         "REFERENCES bank_deposits(id) ON DELETE SET NULL"),
+                    ]
+                    for label, stmt in schema_statements:
                         try:
-                            conn.execute(text("ALTER TABLE business_settings ADD COLUMN auto_checkout_time VARCHAR(10) DEFAULT '20:00'"))
-                        except Exception:
-                            pass
-                        try:
-                            conn.execute(text("ALTER TABLE business_settings ADD COLUMN opening_cash_in_hand DOUBLE PRECISION DEFAULT 0.0"))
-                            print(f"[INFO] Column opening_cash_in_hand added/verified for tenant '{tenant.subdomain}'.")
-                        except Exception:
-                            pass
-                        try:
-                            # Self-healing safety net: scripts/migrate_tenants.py (alembic) is
-                            # the source of truth for this column, but it's a manual step run
-                            # against the VPS -- this idempotent ALTER means a fresh deploy never
-                            # depends on that step happening first, matching the pattern already
-                            # used above for auto_checkout_time/opening_cash_in_hand.
-                            conn.execute(text(
-                                "ALTER TABLE collections ADD COLUMN online_routing_deposit_id UUID "
-                                "REFERENCES bank_deposits(id) ON DELETE SET NULL"
-                            ))
-                            print(f"[INFO] Column online_routing_deposit_id added/verified for tenant '{tenant.subdomain}'.")
-                        except Exception:
-                            pass
+                            with tenant_engine.begin() as conn:
+                                conn.execute(text(stmt))
+                        except Exception as col_err:
+                            print(f"[WARN] Schema check '{label}' failed for tenant '{tenant.subdomain}': {col_err}")
 
                     tenant_db.close()
                 except Exception as t_err:
