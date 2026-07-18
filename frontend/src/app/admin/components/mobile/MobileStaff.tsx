@@ -35,13 +35,11 @@ export default function MobileStaff() {
   const [loadingLedger, setLoadingLedger] = useState(false);
 
   const handleOpenLedger = async (user: any) => {
-    console.log("handleOpenLedger called for staff user on mobile:", user);
     setLedgerStaff(user);
     setIsLedgerModalOpen(true);
     setLoadingLedger(true);
     try {
       const res = await api.getStaffLedger(user.id);
-      console.log("getStaffLedger response on mobile:", res);
       setLedgerData(res.statement_history || []);
       setLedgerOutstanding(res.outstanding_balance || 0);
     } catch (err: any) {

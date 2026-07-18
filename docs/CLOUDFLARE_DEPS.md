@@ -1,6 +1,6 @@
 # Cloudflare CDN & WAF Configuration Guide (Task 60)
 
-This document contains step-by-step instructions to configure Cloudflare edge capabilities, DDoS protection profiles, and WAF rules for DO IT SERVICES domains (`app.doitservices.in` and `api.doitservices.in`).
+This document contains step-by-step instructions to configure Cloudflare edge capabilities, DDoS protection profiles, and WAF rules for CrediiFlow domains (`app.crediiflow.in` and `api.crediiflow.in`).
 
 ---
 
@@ -38,6 +38,6 @@ Configure the following custom firewall rule sets in the Cloudflare dashboard to
 ---
 
 ## 4. DDoS & Rate Limiting Shields
-In addition to Nginx rate limiting (`limit_req` in `nginx.conf`), configure Cloudflare Rate Limiting rules on `api.doitservices.in/*`:
+In addition to Nginx rate limiting (`limit_req` in `nginx.conf`), configure Cloudflare Rate Limiting rules on `api.crediiflow.in/*`:
 - **Trigger**: When requests exceed `60` requests per minute per IP address.
 - **Action**: **Block** or trigger a **JS Challenge** for 1 hour. This eliminates scraping and automated load generation before it reaches your origin infrastructure.

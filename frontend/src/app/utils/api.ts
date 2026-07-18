@@ -11,12 +11,6 @@ const getApiBaseUrl = () => {
       return "https://api.crediiflow.in";
     }
     
-    // Legacy Vercel/Render fallback
-    if (window.location.hostname === "do-it-services.vercel.app" || 
-        window.location.hostname.includes("vercel.app")) {
-      return "https://doit-backend-9yel.onrender.com";
-    }
-    
     // Local dev
     if (window.location.port === "3000" || window.location.port === "5173" || 
         window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || 
@@ -84,9 +78,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
   const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
   const path = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
   const fullUrl = `${baseUrl}${path}`;
-  
-  console.log(`[API] Requesting: ${fullUrl} (Tenant: ${tenantId})`);
-  
+
   const bypass = typeof window !== "undefined" ? sessionStorage.getItem("maintenance_bypass") : null;
 
   const headers = {
