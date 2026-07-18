@@ -351,6 +351,47 @@ class SmokeTest:
         check(r.status_code == 422,
               f"expected 422 validation error for denomination mismatch, got {r.status_code}: {r.text}")
 
+    def scenario_cash_in_hand_denomination_offset(self):
+        """Regression test for the 2026-07-18 QA finding: GET /staff/cash-in-hand used to
+        clamp each note denomination independently to max(0, collected - deposited), so a
+        surplus in one denomination could never offset a shortfall in another. Collecting
+        Rs.500 as a single note_500 and then depositing that exact Rs.500 back out as five
+        note_100s (routine bank note-exchange) used to still show Rs.500 "in pocket" --
+        this must now net to exactly zero change."""
+        r = self.staff["client"].request("GET", "/staff/cash-in-hand")
+        check(r.status_code == 200, f"get cash-in-hand (before) failed: {r.status_code} {r.text}")
+        before = Decimal(str(r.json()["total_pocket_cash"]))
+
+        amount = Decimal("500.00")
+        r = self.staff["client"].request("POST", "/collections", json={
+            "retailer_id": self.retailer_id,
+            "total_amount": str(amount),
+            "denominations": {
+                "note_500": 1, "note_200": 0, "note_100": 0, "note_50": 0,
+                "note_20": 0, "note_10": 0, "coins": "0.00", "online_amount": "0.00",
+            },
+        })
+        check(r.status_code == 201, f"collect Rs.500 as 1x note_500 failed: {r.status_code} {r.text}")
+        self.created["collections"].append(r.json()["id"])
+
+        r = self.staff["client"].request("POST", "/bank-deposits", json={
+            "deposit_type": "portal", "bank_account_id": self.bank_account_id, "payment_mode": "cash",
+            "amount": str(amount),
+            "denominations": {
+                "note_500": 0, "note_200": 0, "note_100": 5, "note_50": 0,
+                "note_20": 0, "note_10": 0, "coins": "0.00", "online_amount": "0.00",
+            },
+        })
+        check(r.status_code == 201, f"deposit the same Rs.500 as 5x note_100 failed: {r.status_code} {r.text}")
+        self.created["deposits"].append(r.json()["id"])
+
+        r = self.staff["client"].request("GET", "/staff/cash-in-hand")
+        check(r.status_code == 200, f"get cash-in-hand (after) failed: {r.status_code} {r.text}")
+        after = Decimal(str(r.json()["total_pocket_cash"]))
+        check(after == before,
+              f"cash-in-hand should be unchanged (net zero) after collecting Rs.500 then depositing that exact "
+              f"Rs.500 back out with a different note mix: before={before}, after={after}")
+
     def run(self):
         self.run_step("setup fixtures", self.setup)
         self.run_step("1. login as staff/admin", self.scenario_login)
@@ -360,6 +401,7 @@ class SmokeTest:
         self.run_step("5. staff-to-staff handover mirrors correctly", self.scenario_staff_handover)
         self.run_step("6. backdated entry rejected when staff flag is off", self.scenario_backdated_rejected)
         self.run_step("7. denomination/amount mismatch rejected", self.scenario_denomination_mismatch_rejected)
+        self.run_step("8. cash-in-hand nets denomination offset correctly (no per-type clamp)", self.scenario_cash_in_hand_denomination_offset)
         self.teardown()
 
         print("\n--- summary ---")

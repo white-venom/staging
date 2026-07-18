@@ -597,7 +597,15 @@ def update_deposit(
     deposit = db.scalar(select(BankDeposit).where(BankDeposit.id == deposit_id).with_for_update())
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit record not found")
-        
+
+    # Captured before any field is overwritten below -- needed to find the paired
+    # Collection (if this is a staff-to-staff handover) and to fall back-match it
+    # by its pre-edit values when no direct mirror_deposit_id link exists.
+    old_recipient_staff_id = deposit.recipient_staff_id
+    old_amount = deposit.amount
+    old_deposit_date = deposit.deposit_date
+    old_deposit_type = deposit.deposit_type
+
     if current_user.role != "admin":
         if deposit.deposit_type == "virtual" or payload.deposit_type.lower().strip() == "virtual":
             raise HTTPException(
@@ -776,6 +784,52 @@ def update_deposit(
         if ledger_entry:
             db.delete(ledger_entry)
             ledger_entry = None
+
+    # Sync the paired Collection on the recipient's side if this deposit is a
+    # staff-to-staff handover. update_collection() in collections.py already keeps
+    # the mirrored BankDeposit in sync when a handover is edited from the
+    # recipient's (Collection) side; without this, editing from the sender's
+    # (BankDeposit) side directly let the two records drift out of sync forever.
+    # Prefer the real FK link (Collection.mirror_deposit_id); only fall back to
+    # matching by pre-edit coincidence for legacy rows created before that link existed.
+    if old_deposit_type == "staff" and old_recipient_staff_id:
+        mirrored_collection = db.scalar(
+            select(Collection).where(Collection.mirror_deposit_id == deposit.id).with_for_update()
+        )
+        if not mirrored_collection:
+            mirrored_collection = db.scalar(
+                select(Collection).where(
+                    and_(
+                        Collection.from_staff_id == deposit.staff_id,
+                        Collection.staff_id == old_recipient_staff_id,
+                        Collection.total_amount == old_amount,
+                        Collection.collection_date == old_deposit_date,
+                    )
+                ).with_for_update()
+            )
+        if mirrored_collection:
+            mirrored_collection.total_amount = deposit.amount
+            mirrored_collection.collection_date = deposit.deposit_date
+            if mirrored_collection.mirror_deposit_id is None:
+                mirrored_collection.mirror_deposit_id = deposit.id
+            if payload.denominations:
+                d = payload.denominations
+                if mirrored_collection.denominations:
+                    mirrored_collection.denominations.note_500 = d.note_500
+                    mirrored_collection.denominations.note_200 = d.note_200
+                    mirrored_collection.denominations.note_100 = d.note_100
+                    mirrored_collection.denominations.note_50 = d.note_50
+                    mirrored_collection.denominations.note_20 = d.note_20
+                    mirrored_collection.denominations.note_10 = d.note_10
+                    mirrored_collection.denominations.coins = d.coins
+                    mirrored_collection.denominations.online_amount = d.online_amount
+                else:
+                    db.add(Denomination(
+                        collection_id=mirrored_collection.id,
+                        note_500=d.note_500, note_200=d.note_200, note_100=d.note_100,
+                        note_50=d.note_50, note_20=d.note_20, note_10=d.note_10,
+                        coins=d.coins, online_amount=d.online_amount,
+                    ))
 
     if payload.deposit_date:
         import pytz

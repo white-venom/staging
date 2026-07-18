@@ -30,7 +30,8 @@ class VirtualTransferRequest(BaseModel):
     bank_account_id: uuid.UUID
     retailer_id: Optional[uuid.UUID] = None
     staff_id: Optional[uuid.UUID] = None
-    amount: Decimal = Field(..., gt=0)
+    # Bounded to what the DB's NUMERIC(12,2) column can actually store.
+    amount: Decimal = Field(..., gt=0, le=Decimal("9999999999.99"))
     remarks: Optional[str] = None
     direction: str = "load"  # "load" (BankAccount -> Retailer) or "refund" (Retailer -> BankAccount)
     transfer_date: Optional[date] = None

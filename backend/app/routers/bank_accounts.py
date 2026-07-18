@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -316,6 +317,7 @@ def get_bank_account_ledger(
         tx_list.append({
             "id": str(d.id),
             "created_at": d.created_at,
+            "tx_date": d.deposit_date,
             "transaction_type": tx_type,
             "amount": amount,
             "description": desc_text,
@@ -352,6 +354,7 @@ def get_bank_account_ledger(
         tx_list.append({
             "id": str(c.id),
             "created_at": c.created_at,
+            "tx_date": c.collection_date,
             "transaction_type": "debit", # You Gave (decreases account balance)
             "amount": float(c.total_amount),
             "description": f"Collection from {c.retailer.retailer_name if c.retailer else 'Retailer'}" + (f" ({c.remarks})" if c.remarks else ""),
@@ -385,9 +388,13 @@ def get_bank_account_ledger(
         else:
             running_balance -= tx["amount"]
 
+        # Display under collection_date/deposit_date, not created_at -- row order
+        # and running_balance still follow created_at (real submission order).
+        display_date = datetime.combine(tx["tx_date"], tx["created_at"].time()) if tx.get("tx_date") else tx["created_at"]
+
         formatted_txs.append({
             "id": tx["id"],
-            "date": tx["created_at"].strftime("%Y-%m-%d %H:%M:%S"),
+            "date": display_date.strftime("%Y-%m-%d %H:%M:%S"),
             "transaction_type": tx["transaction_type"],
             "amount": tx["amount"],
             "running_balance": running_balance,

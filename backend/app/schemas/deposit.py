@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel, Field, model_validator
 
-from app.schemas.collection import DenominationSchema
+from app.schemas.collection import DenominationSchema, NUMERIC_12_2_MAX
 from app.core.timezone import ist_today
 
 
@@ -15,9 +15,10 @@ class DepositCreate(BaseModel):
     retailer_id: Optional[uuid.UUID] = None
     recipient_staff_id: Optional[uuid.UUID] = None
     to_office: bool = False
-    
+
     payment_mode: str = Field("cash", examples=["cash", "online"])
-    amount: Decimal = Field(..., gt=0)
+    # Bounded to what the DB's NUMERIC(12,2) column can actually store.
+    amount: Decimal = Field(..., gt=0, le=NUMERIC_12_2_MAX)
     deposit_date: date = Field(default_factory=ist_today)
     reference_no: Optional[str] = Field(None, max_length=100)
     remarks: Optional[str] = Field(None, max_length=255)

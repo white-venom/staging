@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.database.db import get_db
 from app.database.models import Retailer, Ledger, Collection, BankDeposit, Attendance, Denomination, BankAccount, User, DenominationBaseline
 from app.dependencies import require_admin, require_staff, require_any_user
-from app.core.timezone import ist_today, ist_day_bounds_utc
+from app.core.timezone import ist_today
 
 router = APIRouter(tags=["Reports & Public Statements"])
 
@@ -116,9 +116,21 @@ def get_public_ledger(
                 "online_amount": float(denom_obj.online_amount or 0.0)
             }
 
+        # Display under the day the entry claims to represent (collection_date /
+        # deposit_date) rather than created_at (the real submission instant), so a
+        # backdated entry shows up correctly dated to the retailer. Row order and
+        # running_balance still follow created_at (recalculate_balances() computes
+        # `balance` in that same order) -- only the displayed date changes.
+        if tx.collection:
+            display_date = datetime.combine(tx.collection.collection_date, tx.created_at.time())
+        elif tx.deposit:
+            display_date = datetime.combine(tx.deposit.deposit_date, tx.created_at.time())
+        else:
+            display_date = tx.created_at
+
         tx_list.append({
             "id": tx.id,
-            "date": tx.created_at.strftime("%Y-%m-%d %H:%M:%S"),
+            "date": display_date.strftime("%Y-%m-%d %H:%M:%S"),
             "transaction_type": tx.transaction_type,  # 'credit', 'debit'
             "amount": float(tx.amount),
             "running_balance": float(tx.balance),
@@ -152,14 +164,15 @@ def get_admin_summary(
 ):
     """Admin dashboard summary: metrics for Today's Collections, Active Staff, and pending queues."""
     today = ist_today()
-    today_start_utc, today_end_utc = ist_day_bounds_utc(today)
 
-    # 1. Today's collections sum
+    # 1. Today's collections sum -- bucketed by collection_date (the day the entry
+    # claims to represent), not created_at (the real submission instant), so a
+    # collection backdated away from today is correctly excluded even if it was
+    # actually submitted today, and one dated today counts even if entered late.
     collections_today = db.scalar(
         select(func.sum(Collection.total_amount))
         .where(and_(
-            Collection.created_at >= today_start_utc,
-            Collection.created_at < today_end_utc,
+            Collection.collection_date == today,
             Collection.status == "verified"
         ))
     ) or Decimal("0.00")
@@ -200,9 +213,33 @@ def get_staff_cash_in_hand(
 ):
     """Calculates active field staff's real-time cash balance and pocket note breakdown.
     Calculated as: Total collected notes - Total deposited/handed over notes.
+
+    Mirrors the "honest sum" walk in frontend/src/app/staff/page.tsx: each
+    denomination is tracked as a signed running total and is NOT clamped to zero
+    per-type. A deposit almost never uses the same note mix as the collection it
+    came from (banks exchange notes, staff consolidate into rounder denominations),
+    so clamping any single type to max(0, ...) silently discards real value instead
+    of letting it offset a surplus in another type -- that previously let the
+    displayed total drift arbitrarily far from the true net position (see the
+    2026-07-18 QA pass: collecting Rs.500 as a single note and depositing that exact
+    Rs.500 back out as five Rs.100 notes still showed Rs.500 "in pocket").
+    Only the final total is floored at zero, matching the frontend's single
+    `Math.max(0, netPortfolio - totalOnline)` clamp on the headline figure.
+
+    If a verified DenominationBaseline exists for this staff member, start every
+    running total from it and only sum transactions at/after its `as_of` instant,
+    instead of replaying the staff's entire history.
     """
+    baseline = db.scalar(
+        select(DenominationBaseline)
+        .where(DenominationBaseline.staff_id == current_user.id)
+        .order_by(desc(DenominationBaseline.as_of))
+        .limit(1)
+    )
+    cutoff = baseline.as_of if baseline else None
+
     # 1. Summarize all collections made by this staff member (excluding internal staff-to-staff handovers)
-    collections_denoms = db.scalars(
+    collections_query = (
         select(Denomination)
         .join(Collection, Denomination.collection_id == Collection.id)
         .where(
@@ -211,16 +248,22 @@ def get_staff_cash_in_hand(
                 Collection.from_staff_id == None
             )
         )
-    ).all()
+    )
+    if cutoff is not None:
+        collections_query = collections_query.where(Collection.created_at >= cutoff)
+    collections_denoms = db.scalars(collections_query).all()
 
     # 2. Summarize all deposits/handovers made by this staff member
-    deposits_denoms = db.scalars(
+    deposits_query = (
         select(Denomination)
         .join(BankDeposit, Denomination.deposit_id == BankDeposit.id)
         .where(BankDeposit.staff_id == current_user.id)
-    ).all()
+    )
+    if cutoff is not None:
+        deposits_query = deposits_query.where(BankDeposit.created_at >= cutoff)
+    deposits_denoms = db.scalars(deposits_query).all()
 
-    received_denoms = db.scalars(
+    received_query = (
         select(Denomination)
         .join(BankDeposit, Denomination.deposit_id == BankDeposit.id)
         .where(
@@ -229,7 +272,10 @@ def get_staff_cash_in_hand(
                 BankDeposit.deposit_type == "staff"
             )
         )
-    ).all()
+    )
+    if cutoff is not None:
+        received_query = received_query.where(BankDeposit.created_at >= cutoff)
+    received_denoms = db.scalars(received_query).all()
 
     # Aggregate collected notes
     collected = {
@@ -270,32 +316,50 @@ def get_staff_cash_in_hand(
         deposited["note_10"] += d.note_10
         deposited["coins"] += d.coins
 
-    # Calculate net pocket notes: collected + received - deposited
-    pocket = {
-        "note_500": max(0, collected["note_500"] + received["note_500"] - deposited["note_500"]),
-        "note_200": max(0, collected["note_200"] + received["note_200"] - deposited["note_200"]),
-        "note_100": max(0, collected["note_100"] + received["note_100"] - deposited["note_100"]),
-        "note_50": max(0, collected["note_50"] + received["note_50"] - deposited["note_50"]),
-        "note_20": max(0, collected["note_20"] + received["note_20"] - deposited["note_20"]),
-        "note_10": max(0, collected["note_10"] + received["note_10"] - deposited["note_10"]),
-        "coins": float(max(Decimal("0.00"), collected["coins"] + received["coins"] - deposited["coins"]))
+    baseline_note = {
+        "note_500": baseline.note_500 if baseline else 0,
+        "note_200": baseline.note_200 if baseline else 0,
+        "note_100": baseline.note_100 if baseline else 0,
+        "note_50": baseline.note_50 if baseline else 0,
+        "note_20": baseline.note_20 if baseline else 0,
+        "note_10": baseline.note_10 if baseline else 0,
+        "coins": Decimal(str(baseline.coins)) if baseline else Decimal("0.00"),
     }
 
-    # Calculate actual physical cash-in-hand value
-    total_pocket_cash = (
+    # Net pocket per denomination: baseline (if any) + collected + received - deposited.
+    # Deliberately NOT clamped per-type -- a negative count here is real, useful
+    # information ("you're short one Rs.500 note"), and clamping it away while
+    # leaving an offsetting surplus in another denomination untouched is exactly
+    # the bug this rewrite fixes.
+    pocket = {
+        "note_500": baseline_note["note_500"] + collected["note_500"] + received["note_500"] - deposited["note_500"],
+        "note_200": baseline_note["note_200"] + collected["note_200"] + received["note_200"] - deposited["note_200"],
+        "note_100": baseline_note["note_100"] + collected["note_100"] + received["note_100"] - deposited["note_100"],
+        "note_50": baseline_note["note_50"] + collected["note_50"] + received["note_50"] - deposited["note_50"],
+        "note_20": baseline_note["note_20"] + collected["note_20"] + received["note_20"] - deposited["note_20"],
+        "note_10": baseline_note["note_10"] + collected["note_10"] + received["note_10"] - deposited["note_10"],
+        "coins": float(baseline_note["coins"] + collected["coins"] + received["coins"] - deposited["coins"]),
+    }
+
+    # Calculate actual physical cash-in-hand value from the SIGNED (unclamped) per-type
+    # values, then floor only the final total at zero -- a per-type surplus can and should
+    # offset a per-type shortfall (e.g. broke a Rs.500 note into Rs.100s before depositing).
+    total_pocket_cash_signed = (
         pocket["note_500"] * 500 +
         pocket["note_200"] * 200 +
         pocket["note_100"] * 100 +
         pocket["note_50"] * 50 +
         pocket["note_20"] * 20 +
         pocket["note_10"] * 10 +
-        pocket["coins"]
+        Decimal(str(pocket["coins"]))
     )
+    total_pocket_cash = max(Decimal("0.00"), total_pocket_cash_signed)
 
     return {
         "staff_name": current_user.name,
         "total_pocket_cash": float(total_pocket_cash),
-        "note_breakdown": pocket
+        "note_breakdown": pocket,
+        "baseline_as_of": baseline.as_of.isoformat() if baseline else None,
     }
 
 
@@ -315,14 +379,21 @@ def get_staff_daily_summary(
     else:
         target_staff_id = uuid.UUID(staff_id) if staff_id else current_user.id
 
-    selected_day_start_utc, selected_day_end_utc = ist_day_bounds_utc(selected_date)
+    # Bucketed by collection_date/deposit_date (the day the entry claims to
+    # represent) rather than created_at (the real submission instant). Both
+    # columns are already plain IST calendar dates (see submit_collection /
+    # submit_deposit, which default them via ist_today()), so they compare
+    # directly against `selected_date` with no further timezone conversion --
+    # this also means a backdated entry now correctly lands in the opening
+    # balance / day bucket it was backdated to, instead of always being
+    # attributed to the day it was actually keyed in.
 
     # 1. Total Collections (In) before the selected date
     collections_before = db.scalar(
         select(func.sum(Collection.total_amount))
         .where(and_(
             Collection.staff_id == target_staff_id,
-            Collection.created_at < selected_day_start_utc
+            Collection.collection_date < selected_date
         ))
     ) or Decimal("0.00")
 
@@ -331,7 +402,7 @@ def get_staff_daily_summary(
         select(func.sum(BankDeposit.amount))
         .where(and_(
             BankDeposit.staff_id == target_staff_id,
-            BankDeposit.created_at < selected_day_start_utc
+            BankDeposit.deposit_date < selected_date
         ))
     ) or Decimal("0.00")
 
@@ -342,8 +413,7 @@ def get_staff_daily_summary(
         select(func.sum(Collection.total_amount))
         .where(and_(
             Collection.staff_id == target_staff_id,
-            Collection.created_at >= selected_day_start_utc,
-            Collection.created_at < selected_day_end_utc
+            Collection.collection_date == selected_date
         ))
     ) or Decimal("0.00")
 
@@ -352,8 +422,7 @@ def get_staff_daily_summary(
         select(func.sum(BankDeposit.amount))
         .where(and_(
             BankDeposit.staff_id == target_staff_id,
-            BankDeposit.created_at >= selected_day_start_utc,
-            BankDeposit.created_at < selected_day_end_utc
+            BankDeposit.deposit_date == selected_date
         ))
     ) or Decimal("0.00")
 
@@ -456,6 +525,7 @@ def get_staff_ledger(
         tx_list.append({
             "id": str(c.id),
             "created_at": c.created_at,
+            "tx_date": c.collection_date,
             "transaction_type": "credit", # cash in
             "amount": float(c.total_amount),
             "description": desc,
@@ -478,6 +548,7 @@ def get_staff_ledger(
         tx_list.append({
             "id": str(d.id),
             "created_at": d.created_at,
+            "tx_date": d.deposit_date,
             "transaction_type": "credit", # cash in
             "amount": float(d.amount),
             "description": desc,
@@ -519,6 +590,7 @@ def get_staff_ledger(
         tx_list.append({
             "id": str(d.id),
             "created_at": d.created_at,
+            "tx_date": d.deposit_date,
             "transaction_type": "debit", # cash out
             "amount": float(d.amount),
             "description": desc,
@@ -547,9 +619,14 @@ def get_staff_ledger(
         else:
             running_balance -= tx["amount"]
 
+        # Display under collection_date/deposit_date (the day the entry claims to
+        # represent), not created_at -- row order and running_balance still follow
+        # created_at (the real chronological submission order).
+        display_date = datetime.combine(tx["tx_date"], tx["created_at"].time()) if tx.get("tx_date") else tx["created_at"]
+
         formatted_txs.append({
             "id": tx["id"],
-            "date": tx["created_at"].strftime("%Y-%m-%d %H:%M:%S"),
+            "date": display_date.strftime("%Y-%m-%d %H:%M:%S"),
             "transaction_type": tx["transaction_type"],
             "amount": tx["amount"],
             "running_balance": running_balance,
