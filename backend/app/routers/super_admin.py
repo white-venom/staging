@@ -464,6 +464,88 @@ def get_infra_status(
     }
 
 
+@router.get("/infra/services")
+def get_infra_services(
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """Real reachability check for each docker-compose service, probed live over the
+    internal Docker network from inside this backend container -- replaces the old
+    hardcoded "Active Container Host Services" table (5 rows, 100% fake, would show
+    "Running" even during an actual crash).
+
+    Deliberately does NOT use the Docker socket/API: that would need this container
+    to either run as root or have its non-root user's GID matched to the host's
+    docker group, both of which weaken the "Run application under non-privileged
+    system user" hardening this Dockerfile already does on purpose. An HTTP/TCP
+    reachability probe over the compose network answers the same real question --
+    "is this service actually up" -- without that privilege escalation.
+    """
+    import socket as socket_lib
+    import time as time_lib
+
+    services = [{
+        "name": "Backend API", "container": "crediiflow_backend",
+        "check": "self", "status": "up", "detail": "Responding to this request", "latency_ms": 0,
+    }]
+
+    http_targets = [
+        ("Tenant Frontend", "crediiflow_frontend", "http://frontend:3000/"),
+        ("Superadmin Frontend", "crediiflow_superadmin_frontend", "http://superadmin-frontend:3001/"),
+        ("Landing Page", "crediiflow_landing_page", "http://landing-page:3002/"),
+    ]
+    for name, container, url in http_targets:
+        start = time_lib.monotonic()
+        try:
+            with httpx.Client(timeout=3.0) as client:
+                resp = client.get(url)
+            services.append({
+                "name": name, "container": container, "check": url,
+                "status": "up" if resp.status_code < 500 else "degraded",
+                "detail": f"HTTP {resp.status_code}",
+                "latency_ms": round((time_lib.monotonic() - start) * 1000),
+            })
+        except Exception as e:
+            services.append({
+                "name": name, "container": container, "check": url,
+                "status": "unreachable", "detail": str(e)[:120], "latency_ms": None,
+            })
+
+    # Nginx routes by Host header/server_name, so an unmatched GET would just 404
+    # from nginx itself -- a bare TCP connect is the honest check for "is the
+    # process listening at all" here.
+    start = time_lib.monotonic()
+    try:
+        with socket_lib.create_connection(("nginx", 80), timeout=3.0):
+            pass
+        services.append({
+            "name": "Nginx Reverse Proxy", "container": "crediiflow_nginx",
+            "check": "tcp:nginx:80", "status": "up", "detail": "Port open",
+            "latency_ms": round((time_lib.monotonic() - start) * 1000),
+        })
+    except Exception as e:
+        services.append({
+            "name": "Nginx Reverse Proxy", "container": "crediiflow_nginx",
+            "check": "tcp:nginx:80", "status": "unreachable", "detail": str(e)[:120], "latency_ms": None,
+        })
+
+    start = time_lib.monotonic()
+    try:
+        db.execute(text("SELECT 1"))
+        services.append({
+            "name": "PostgreSQL Database", "container": "crediiflow_db",
+            "check": "SELECT 1", "status": "up", "detail": "Query succeeded",
+            "latency_ms": round((time_lib.monotonic() - start) * 1000),
+        })
+    except Exception as e:
+        services.append({
+            "name": "PostgreSQL Database", "container": "crediiflow_db",
+            "check": "SELECT 1", "status": "unreachable", "detail": str(e)[:120], "latency_ms": None,
+        })
+
+    return {"services": services, "checked_at": datetime.utcnow().isoformat()}
+
+
 @router.get("/ssl/status")
 def get_ssl_status(
     current_admin: SuperAdmin = Depends(get_current_super_admin)

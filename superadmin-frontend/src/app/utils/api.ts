@@ -62,6 +62,7 @@ export const superAdminApi = {
     method: "DELETE",
   }),
   getInfraStatus: () => request<any>("/superadmin/infra/status"),
+  getInfraServices: () => request<any>("/superadmin/infra/services"),
   getSSLStatus: () => request<any>("/superadmin/ssl/status"),
   renewSSL: () => request<any>("/superadmin/ssl/renew", {
     method: "POST",

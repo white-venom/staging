@@ -88,6 +88,33 @@ export default function DashboardPage() {
     }
   };
 
+  // Live per-service reachability checks (replaces the old hardcoded container table)
+  const [infraServices, setInfraServices] = useState<any>(null);
+  const [loadingInfraServices, setLoadingInfraServices] = useState(false);
+
+  const fetchInfraServices = async () => {
+    try {
+      setLoadingInfraServices(true);
+      const data = await superAdminApi.getInfraServices();
+      setInfraServices(data);
+    } catch (err: any) {
+      console.error("Failed to fetch infra services:", err);
+    } finally {
+      setLoadingInfraServices(false);
+    }
+  };
+
+  const getInfraService = (name: string) => infraServices?.services?.find((s: any) => s.name === name);
+  const svcDotClass = (status?: string) =>
+    status === "up" ? "bg-emerald-500" :
+    status === "degraded" ? "bg-amber-500" :
+    status === "unreachable" ? "bg-red-500" : "bg-slate-300";
+  const svcTextClass = (status?: string) =>
+    status === "up" ? "text-emerald-600" :
+    status === "degraded" ? "text-amber-600" :
+    status === "unreachable" ? "text-red-600" : "text-slate-400";
+  const svcLabel = (status?: string) => status ? status.toUpperCase() : "CHECKING...";
+
   // Real per-tenant resource stats (DB size, staff/retailer counts)
   const [tenantStats, setTenantStats] = useState<TenantStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -152,6 +179,13 @@ export default function DashboardPage() {
       fetchTenantStats(selectedTenant.id);
     }
   }, [selectedTenant?.id, activeTab]);
+
+  // Re-check live service reachability every time the Infrastructure Health tab is opened
+  useEffect(() => {
+    if (activeTab === "infrastructure") {
+      fetchInfraServices();
+    }
+  }, [activeTab]);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -657,10 +691,10 @@ export default function DashboardPage() {
               <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">Central PG Database</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className={`w-2 h-2 rounded-full ${svcDotClass(getInfraService("PostgreSQL Database")?.status)}`} />
                 </div>
                 <div className="space-y-0.5 text-[10px] text-slate-600">
-                  <div className="flex justify-between"><span className="text-slate-400">Node Status</span><span className="font-bold text-slate-800">HEALTHY</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Live Check</span><span className={`font-bold ${svcTextClass(getInfraService("PostgreSQL Database")?.status)}`}>{svcLabel(getInfraService("PostgreSQL Database")?.status)}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">Connections</span><span className="font-bold text-slate-800 font-mono tabular-nums">{infraStatus ? `${infraStatus.active_connections} Active` : "..."}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">Version</span><span className="font-mono text-slate-500">{infraStatus?.pg_version ? `PostgreSQL ${infraStatus.pg_version}` : "..."}</span></div>
                 </div>
@@ -669,10 +703,10 @@ export default function DashboardPage() {
               <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">FastAPI Core Backend</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className={`w-2 h-2 rounded-full ${svcDotClass(getInfraService("Backend API")?.status)}`} />
                 </div>
                 <div className="space-y-0.5 text-[10px] text-slate-600">
-                  <div className="flex justify-between"><span className="text-slate-400">Uvicorn Status</span><span className="font-bold text-slate-800">OPERATIONAL</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Live Check</span><span className={`font-bold ${svcTextClass(getInfraService("Backend API")?.status)}`}>{svcLabel(getInfraService("Backend API")?.status)}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">CORS Policy</span><span className="font-bold text-indigo-600 uppercase tracking-widest text-[10px]">*.crediiflow.in</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">Port Mapping</span><span className="font-mono text-slate-500">{"8000 -> 8000"}</span></div>
                 </div>
@@ -681,11 +715,11 @@ export default function DashboardPage() {
               <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
                   <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">Nginx Reverse Proxy</span>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  <span className={`w-2 h-2 rounded-full ${svcDotClass(getInfraService("Nginx Reverse Proxy")?.status)}`} />
                 </div>
                 <div className="space-y-0.5 text-[10px] text-slate-600">
-                  <div className="flex justify-between"><span className="text-slate-400">SSL Certificates</span><span className="font-bold text-slate-800">SECURE (Let's Encrypt)</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">HTTP/2 Support</span><span className="font-bold text-slate-800">ENABLED</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Live Check</span><span className={`font-bold ${svcTextClass(getInfraService("Nginx Reverse Proxy")?.status)}`}>{svcLabel(getInfraService("Nginx Reverse Proxy")?.status)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400">Latency</span><span className="font-mono text-slate-500">{getInfraService("Nginx Reverse Proxy")?.latency_ms != null ? `${getInfraService("Nginx Reverse Proxy")?.latency_ms} ms` : "--"}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">Config Path</span><span className="font-mono text-slate-500">/etc/nginx/nginx.conf</span></div>
                 </div>
               </div>
@@ -729,58 +763,61 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Docker Container Table */}
+            {/* Live Service Reachability Table (probed over the internal Docker network, not a Docker socket call) */}
             <div className="bg-white border border-slate-200/80 rounded-sm overflow-hidden">
-              <div className="px-6 py-5 border-b border-slate-200/80 bg-slate-50/50">
-                <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-800">Active Container Host Services</h3>
+              <div className="px-6 py-5 border-b border-slate-200/80 bg-slate-50/50 flex items-center justify-between">
+                <div>
+                  <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-800">Live Service Reachability</h3>
+                  <p className="text-[9px] text-slate-400 mt-0.5">
+                    {infraServices?.checked_at ? `Last checked ${new Date(infraServices.checked_at).toLocaleTimeString()}` : "Probed over the internal service network on each load"}
+                  </p>
+                </div>
+                <button
+                  onClick={fetchInfraServices}
+                  disabled={loadingInfraServices}
+                  className="p-1 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-50 transition-colors"
+                  title="Re-run live checks"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 ${loadingInfraServices ? "animate-spin" : ""}`}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                  </svg>
+                </button>
               </div>
               <div className="overflow-x-auto text-[10px]">
                 <table className="w-full text-left border-collapse text-slate-600">
                   <thead>
                     <tr className="bg-slate-50/70 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-200/80">
                       <th className="px-3.5 py-2">Service Name</th>
-                      <th className="px-3.5 py-2">Docker Image</th>
-                      <th className="px-3.5 py-2">Container ID</th>
-                      <th className="px-3.5 py-2">Ports</th>
+                      <th className="px-3.5 py-2">Container</th>
+                      <th className="px-3.5 py-2">Check</th>
+                      <th className="px-3.5 py-2">Latency</th>
                       <th className="px-3.5 py-2 text-center">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-800">
-                    <tr>
-                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_frontend</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">crediiflow-frontend:latest</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_frontend</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">{"3000 -> 3000"}</td>
-                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
-                    </tr>
-                    <tr>
-                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_backend</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">crediiflow-backend:latest</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_backend</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">{"8000 -> 8000"}</td>
-                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
-                    </tr>
-                    <tr>
-                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_superadmin_frontend</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">crediiflow-superadmin-frontend:latest</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_superadmin_frontend</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">{"3001 -> 3001"}</td>
-                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
-                    </tr>
-                    <tr>
-                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_nginx</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">nginx:alpine</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_nginx</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">80:80, 443:443</td>
-                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
-                    </tr>
-                    <tr>
-                      <td className="px-3.5 py-2 font-bold text-slate-900">doit_db</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">postgres:16-alpine</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">doit_db</td>
-                      <td className="px-3.5 py-2 font-mono text-slate-500">5432 Internal</td>
-                      <td className="px-3.5 py-2 text-center"><span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200/50 text-emerald-600 rounded-full font-black uppercase tracking-wider text-[8px]">Running</span></td>
-                    </tr>
+                    {!infraServices ? (
+                      <tr>
+                        <td colSpan={5} className="px-3.5 py-4 text-center text-slate-400">
+                          {loadingInfraServices ? "Running live checks..." : "No data yet."}
+                        </td>
+                      </tr>
+                    ) : (
+                      infraServices.services.map((svc: any) => (
+                        <tr key={svc.name}>
+                          <td className="px-3.5 py-2 font-bold text-slate-900">{svc.name}</td>
+                          <td className="px-3.5 py-2 font-mono text-slate-500">{svc.container}</td>
+                          <td className="px-3.5 py-2 font-mono text-slate-500 truncate max-w-[220px]" title={svc.detail}>{svc.detail || svc.check}</td>
+                          <td className="px-3.5 py-2 font-mono text-slate-500">{svc.latency_ms != null ? `${svc.latency_ms} ms` : "--"}</td>
+                          <td className="px-3.5 py-2 text-center">
+                            <span className={`px-2 py-0.5 rounded-full font-black uppercase tracking-wider text-[8px] ${
+                              svc.status === "up" ? "bg-emerald-50 border border-emerald-200/50 text-emerald-600" :
+                              svc.status === "degraded" ? "bg-amber-50 border border-amber-200/50 text-amber-600" :
+                              "bg-red-50 border border-red-200/50 text-red-600"
+                            }`}>{svc.status}</span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

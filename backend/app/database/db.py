@@ -53,6 +53,16 @@ def get_tenant_engine(db_name: str):
         )
     return _tenant_engines[db_name]
 
+class TenantSuspendedError(Exception):
+    """Raised when a tenant subdomain resolves to a real tenant that exists but
+    isn't active (e.g. suspended) -- kept distinct from a bare "not found" so
+    callers can return a clear 403 instead of an indistinguishable 404."""
+    def __init__(self, subdomain: str, status: str):
+        self.subdomain = subdomain
+        self.status = status
+        super().__init__(f"Tenant '{subdomain}' is {status}, not active")
+
+
 def get_tenant_session(tenant_subdomain: str) -> Session:
     # 1. Fetch tenant from master database to resolve their DB name
     master_db = MasterSessionLocal()
@@ -67,7 +77,7 @@ def get_tenant_session(tenant_subdomain: str) -> Session:
         if not tenant:
             raise ValueError(f"Tenant '{tenant_subdomain}' not found")
         if tenant.status != "active":
-            raise ValueError(f"Tenant '{tenant_subdomain}' is not active")
+            raise TenantSuspendedError(tenant_subdomain, tenant.status)
         db_name = tenant.db_name
     finally:
         master_db.close()
@@ -141,10 +151,16 @@ def get_db(request: Request = None):
 
     try:
         db = get_tenant_session(tenant_id)
-        try:
-            yield db
-        finally:
-            db.close()
+    except TenantSuspendedError as e:
+        raise HTTPException(
+            status_code=403,
+            detail=f"This tenant account has been {e.status}. Please contact support to reactivate it."
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+    try:
+        yield db
+    finally:
+        db.close()
 
