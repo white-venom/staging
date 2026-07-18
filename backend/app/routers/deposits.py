@@ -652,6 +652,20 @@ def update_deposit(
                     bank_account.balance += Decimal(str(deposit.amount))
                     if bank_account.portal:
                         bank_account.portal.balance += Decimal(str(deposit.amount))
+            elif deposit.deposit_type == "portal_transfer":
+                # Reverse destination bank account (reduce balance)
+                bank_account.balance -= Decimal(str(deposit.amount))
+                if bank_account.portal:
+                    bank_account.portal.balance -= Decimal(str(deposit.amount))
+
+    # Reverse portal_transfer source account balance if needed
+    if deposit.deposit_type == "portal_transfer" and deposit.from_bank_account_id:
+        src_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.from_bank_account_id).with_for_update())
+        if src_bank_account:
+            lock_portal(db, src_bank_account)
+            src_bank_account.balance += Decimal(str(deposit.amount))
+            if src_bank_account.portal:
+                src_bank_account.portal.balance += Decimal(str(deposit.amount))
 
     if deposit.deposit_type == "virtual":
         if deposit.recipient_staff_id:
@@ -742,6 +756,21 @@ def update_deposit(
                     creator.virtual_balance += Decimal(str(deposit.amount))
                 else:
                     creator.virtual_balance -= Decimal(str(deposit.amount))
+    elif dt == "portal_transfer":
+        if deposit.bank_account_id:
+            dst_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.bank_account_id).with_for_update())
+            if dst_bank_account:
+                lock_portal(db, dst_bank_account)
+                dst_bank_account.balance += Decimal(str(deposit.amount))
+                if dst_bank_account.portal:
+                    dst_bank_account.portal.balance += Decimal(str(deposit.amount))
+        if deposit.from_bank_account_id:
+            src_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.from_bank_account_id).with_for_update())
+            if src_bank_account:
+                lock_portal(db, src_bank_account)
+                src_bank_account.balance -= Decimal(str(deposit.amount))
+                if src_bank_account.portal:
+                    src_bank_account.portal.balance -= Decimal(str(deposit.amount))
 
     # Update ledger entry
     ledger_entry = db.scalar(select(Ledger).where(Ledger.deposit_id == deposit_id))
