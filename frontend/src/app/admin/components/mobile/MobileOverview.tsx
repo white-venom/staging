@@ -271,6 +271,7 @@ export default function MobileOverview({
   
   const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
   const [selectedNewStoreId, setSelectedNewStoreId] = useState("");
+  const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
   const [availableStores, setAvailableStores] = useState<any[]>([]);
   const [selectedNewBankAccountId, setSelectedNewBankAccountId] = useState("");
   const [selectedNewRecipientStaffId, setSelectedNewRecipientStaffId] = useState("");
@@ -326,6 +327,7 @@ export default function MobileOverview({
     
     setSelectedNewRetailerId(item.retailer_id || item.retailerId || "");
     setSelectedNewStoreId(item.store_id || item.storeId || "");
+    setSelectedNewPortalId(""); // re-derived from bank_account_id below via effectiveEditPortalId
     setSelectedNewBankAccountId(item.bank_account_id || item.bankAccountId || "");
     setSelectedNewRemarks(item.remarks || "");
     
@@ -583,6 +585,14 @@ export default function MobileOverview({
       return a.name.localeCompare(b.name);
     });
   }, [staffListData]);
+
+  // Edit modal's portal selector: once the user picks one, use it. Before
+  // that -- e.g. right when the modal opens pre-filled from an existing
+  // deposit -- derive it from whichever portal actually owns the already
+  // selected bank account, so editing an entry doesn't force a re-selection.
+  const effectiveEditPortalId = selectedNewPortalId
+    || (portalDirectory || []).find((g: any) => (g.bankAccounts || []).some((ba: any) => ba.id === selectedNewBankAccountId))?.id
+    || "";
 
   return (
     <div className="space-y-3.5">
@@ -1387,22 +1397,29 @@ export default function MobileOverview({
 
                   {selectedNewDepositType === "virtual" && (
                     <>
-                      <div className="space-y-0.5">
-                        <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Source BankAccount</label>
-                        <InlineSelect
-                          value={selectedNewBankAccountId}
-                          onChange={setSelectedNewBankAccountId}
-                          options={[
-                            { value: "", label: "Select Bank Account" },
-                            ...portalDirectory.flatMap((group: any) =>
-                              (group.bankAccounts || []).map((ba: any) => ({
-                                value: String(ba.id),
-                                label: `${group.name} — ${ba.bank_account_name}`,
-                              }))
-                            )
-                          ]}
-                          placeholder="Select Bank Account"
-                        />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-0.5">
+                          <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Source Portal</label>
+                          <InlineSelect
+                            value={effectiveEditPortalId}
+                            onChange={(val) => { setSelectedNewPortalId(val); setSelectedNewBankAccountId(""); }}
+                            options={portalDirectory.map((group: any) => ({ value: String(group.id), label: group.name }))}
+                            placeholder="Select Portal"
+                          />
+                        </div>
+                        <div className="space-y-0.5">
+                          <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Source BankAccount</label>
+                          <InlineSelect
+                            value={selectedNewBankAccountId}
+                            onChange={setSelectedNewBankAccountId}
+                            disabled={!effectiveEditPortalId}
+                            options={
+                              (portalDirectory.find((group: any) => String(group.id) === effectiveEditPortalId)?.bankAccounts || [])
+                                .map((ba: any) => ({ value: String(ba.id), label: ba.bank_account_name }))
+                            }
+                            placeholder={effectiveEditPortalId ? "Select Bank Account" : "Select a portal first"}
+                          />
+                        </div>
                       </div>
 
                       <div className="space-y-0.5">

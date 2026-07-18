@@ -22,6 +22,7 @@ export default function VirtualLedgerTab() {
 
   const [selectedNewRetailerId, setSelectedNewRetailerId] = useState("");
   const [selectedNewStoreId, setSelectedNewStoreId] = useState("");
+  const [selectedNewPortalId, setSelectedNewPortalId] = useState("");
   const [availableStores, setAvailableStores] = useState<any[]>([]);
   const [selectedNewBankAccountId, setSelectedNewBankAccountId] = useState("");
   const [selectedNewRemarks, setSelectedNewRemarks] = useState("");
@@ -261,6 +262,7 @@ export default function VirtualLedgerTab() {
     setEditingIsDeposit(isDeposit);
     setEditingCollection(raw);
     setSelectedNewRetailerId(raw.retailer_id || raw.retailerId || "");
+    setSelectedNewPortalId(""); // re-derived from bank_account_id below via effectiveEditPortalId
     setSelectedNewBankAccountId(raw.bank_account_id || raw.bankAccountId || "");
     setSelectedNewRemarks(raw.remarks || "");
     
@@ -488,6 +490,14 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
       }
     }
   };
+
+  // Edit modal's portal selector: once the user picks one, use it. Before
+  // that -- e.g. right when the modal opens pre-filled from an existing
+  // deposit -- derive it from whichever portal actually owns the already
+  // selected bank account, so editing an entry doesn't force a re-selection.
+  const effectiveEditPortalId = selectedNewPortalId
+    || (portalDirectory || []).find((g: any) => (g.bankAccounts || []).some((ba: any) => ba.id === selectedNewBankAccountId))?.id
+    || "";
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-28 md:pb-20">
@@ -1236,24 +1246,33 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
 
                   {selectedNewDepositType === "virtual" && (
                     <>
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
-                          {selectedNewPaymentMode === "refund" ? "Destination BankAccount" : "Source BankAccount"}
-                        </label>
-                        <InlineSelect
-                          value={selectedNewBankAccountId}
-                          onChange={setSelectedNewBankAccountId}
-                          options={[
-                            { value: "", label: "Select Bank Account" },
-                            ...portalDirectory.flatMap((group: any) =>
-                              (group.bankAccounts || []).map((ba: any) => ({
-                                value: String(ba.id),
-                                label: `${group.name} — ${ba.bank_account_name}`,
-                              }))
-                            )
-                          ]}
-                          placeholder="Select Bank Account"
-                        />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                            {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                          </label>
+                          <InlineSelect
+                            value={effectiveEditPortalId}
+                            onChange={(val) => { setSelectedNewPortalId(val); setSelectedNewBankAccountId(""); }}
+                            options={portalDirectory.map((group: any) => ({ value: String(group.id), label: group.name }))}
+                            placeholder="Select Portal"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                            {selectedNewPaymentMode === "refund" ? "Destination BankAccount" : "Source BankAccount"}
+                          </label>
+                          <InlineSelect
+                            value={selectedNewBankAccountId}
+                            onChange={setSelectedNewBankAccountId}
+                            disabled={!effectiveEditPortalId}
+                            options={
+                              (portalDirectory.find((group: any) => String(group.id) === effectiveEditPortalId)?.bankAccounts || [])
+                                .map((ba: any) => ({ value: String(ba.id), label: ba.bank_account_name }))
+                            }
+                            placeholder={effectiveEditPortalId ? "Select Bank Account" : "Select a portal first"}
+                          />
+                        </div>
                       </div>
 
                       <div className="space-y-1">
