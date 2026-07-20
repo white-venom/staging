@@ -111,6 +111,7 @@ export default function VirtualLedgerTab() {
         narrationFrom: retailerName.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, ""),
         narrationTo: bankAccountName,
         balance_snapshot: c.balance_snapshot || 0,
+        balanceAccountLabel: bankAccountName,
         rawRecord: c
       });
     });
@@ -148,6 +149,11 @@ export default function VirtualLedgerTab() {
         narrationFrom,
         narrationTo,
         balance_snapshot: d.balance_snapshot || 0,
+        // Which account this row's running balance belongs to -- rows from
+        // different bank accounts are interleaved chronologically in this
+        // list, so without this label consecutive "Bal." figures look like
+        // they don't add up (they're each a different account's own total).
+        balanceAccountLabel: d.portalName && d.bankAccountName ? `${d.portalName} · ${d.bankAccountName}` : bankAccountName,
         rawRecord: d
       });
     });
@@ -690,8 +696,13 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                         <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 px-2 py-0.5 rounded-sm uppercase tracking-wider self-start mt-1 font-mono tabular-nums">
                           Bal. ₹{Math.round(tx.balance_snapshot || 0).toLocaleString("en-IN")}
                         </span>
+                        {tx.balanceAccountLabel && (
+                          <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 truncate max-w-[125px]" title={tx.balanceAccountLabel}>
+                            {tx.balanceAccountLabel}
+                          </span>
+                        )}
                       </div>
-                      
+
                       {/* Middle: Description */}
                       <div className="flex-1 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300 break-words whitespace-pre-wrap">
                         <div className="flex flex-col gap-0.5">
@@ -862,6 +873,9 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       <span className="text-xs font-bold text-slate-800">{formatted.date}</span>
                       <span className="text-[9px] text-slate-400">{formatted.time}</span>
                       <span className="text-[9px] text-slate-500 font-bold font-mono tabular-nums">Bal: ₹{Math.round(tx.balance_snapshot || 0).toLocaleString()}</span>
+                      {tx.balanceAccountLabel && (
+                        <span className="text-[8px] text-slate-400">{tx.balanceAccountLabel}</span>
+                      )}
                     </div>
                     <div className="flex-1 px-4 text-xs font-medium text-slate-700">
                       <div className="font-bold uppercase text-[9px] text-slate-500">{tx.type.replace("-", " ")}</div>

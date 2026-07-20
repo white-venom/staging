@@ -142,7 +142,7 @@ export default function WalletTransferTab() {
   });
   const [isTransferring, setIsTransferring] = useState(false);
 
-  // BankAccount-to-BankAccount Transfer state
+  // Portal-to-Portal Transfer state
   const todayIST = () => {
     const d = new Date();
     const tzString = d.toLocaleString("en-US", { timeZone: "Asia/Kolkata" });
@@ -202,7 +202,7 @@ export default function WalletTransferTab() {
         deposit_date: ptpDate,
       });
       if (showToastNotification) {
-        showToastNotification(`BankAccount Transfer of ₹${amt.toLocaleString("en-IN")} done successfully!`);
+        showToastNotification(`Portal to Portal Transfer of ₹${amt.toLocaleString("en-IN")} done successfully!`);
       }
       setPtpFromPortalId("");
       setPtpFromAccountId("");
@@ -359,7 +359,7 @@ export default function WalletTransferTab() {
             }`}
           >
             <ArrowLeftRight className="w-3.5 h-3.5" />
-            BankAccount to BankAccount
+            Portal to Portal
           </button>
         </div>
 
@@ -369,7 +369,7 @@ export default function WalletTransferTab() {
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <ArrowLeftRight className="w-5 h-5 text-violet-600" />
               <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
-                BankAccount to BankAccount Transfer
+                Portal to Portal Transfer
               </h3>
             </div>
             <form onSubmit={handlePortalToPortalTransfer} className="space-y-4">
@@ -474,7 +474,7 @@ export default function WalletTransferTab() {
                 disabled={isPortalTransferring}
                 className="w-full py-3 text-white rounded-sm text-xs font-black transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 dark:bg-violet-500 dark:hover:bg-violet-600"
               >
-                {isPortalTransferring ? "Processing Transfer..." : "Transfer Between Accounts"}
+                {isPortalTransferring ? "Processing Transfer..." : "Transfer Between Portals"}
               </button>
             </form>
           </>
