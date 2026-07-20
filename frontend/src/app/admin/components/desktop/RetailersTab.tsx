@@ -14,13 +14,18 @@ interface RetailersTabProps {
   setShowRetailerDrawer: (val: boolean) => void;
   showToastNotification: (msg: string) => void;
   fetchData: () => void;
+  // Set when this tab is rendered from /admin/retailers/[token]/ledger so a
+  // page refresh (or a shared/bookmarked link) re-opens the same ledger
+  // instead of landing on the bare retailer list.
+  initialLedgerToken?: string;
 }
 
 export default function RetailersTab({
   retailerDirectory,
   setShowRetailerDrawer,
   showToastNotification,
-  fetchData
+  fetchData,
+  initialLedgerToken
 }: RetailersTabProps) {
   const router = useRouter();
   const { collections, deposits, setLedgerSearchTerm, portalDirectory, userDirectory } = useAdmin();
@@ -40,10 +45,13 @@ export default function RetailersTab({
   const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
   const [loadingLedger, setLoadingLedger] = useState(false);
 
-  const handleOpenLedger = async (retailer: any) => {
+  const handleOpenLedger = async (retailer: any, opts?: { skipNav?: boolean }) => {
     setLedgerRetailer(retailer);
     setIsLedgerModalOpen(true);
     setLoadingLedger(true);
+    if (!opts?.skipNav) {
+      router.push(`/admin/retailers/${retailer.ledger_token}/ledger`);
+    }
     try {
       const res = await api.getPublicLedger(retailer.ledger_token);
       setLedgerData(res.statement_history || []);
@@ -55,6 +63,17 @@ export default function RetailersTab({
       setLoadingLedger(false);
     }
   };
+
+  // Re-open the right ledger when this tab is reached directly at
+  // /admin/retailers/[token]/ledger (a fresh load or a page refresh), instead
+  // of only supporting the click-to-open path.
+  useEffect(() => {
+    if (!initialLedgerToken || isLedgerModalOpen) return;
+    const match = retailerDirectory.find((r) => r.ledger_token === initialLedgerToken);
+    if (match) {
+      handleOpenLedger(match, { skipNav: true });
+    }
+  }, [initialLedgerToken, retailerDirectory]);
 
   // Retailer Edit state
   const [isEditRetailerModalOpen, setIsEditRetailerModalOpen] = useState(false);
@@ -834,6 +853,7 @@ export default function RetailersTab({
                 setIsLedgerModalOpen(false);
                 setLedgerRetailer(null);
                 setLedgerData([]);
+                if (initialLedgerToken) router.push("/admin/retailers");
               }}
               publicLink={typeof window !== "undefined" ? `${window.location.origin}/public/ledger/${ledgerRetailer.ledger_token}` : ""}
               onEditRetailer={() => handleStartEditRetailer(ledgerRetailer)}

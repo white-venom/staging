@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAdmin } from "../../context/AdminContext";
 import BankAccountLedgerModal, { type LedgerTarget } from "../../../components/BankAccountLedgerModal";
 import MobileBankAccountsPanel from "./MobileBankAccountsPanel";
@@ -19,13 +20,18 @@ interface MobilePortalsProps {
   portalDirectory: any[];
   showToastNotification: (msg: string) => void;
   fetchData: () => void;
+  // Set when reached directly at /admin/bankAccounts/[id]/ledger so a page
+  // refresh re-opens the same portal ledger instead of the bare list.
+  initialPortalLedgerId?: string;
 }
 
 export default function MobilePortals({
   portalDirectory,
   showToastNotification,
-  fetchData
+  fetchData,
+  initialPortalLedgerId
 }: MobilePortalsProps) {
+  const router = useRouter();
   const { retailerDirectory, userDirectory } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -53,7 +59,7 @@ export default function MobilePortals({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [portalDirectory]);
 
-  const openGroupLedger = (group: any) => {
+  const openGroupLedger = (group: any, opts?: { skipNav?: boolean }) => {
     setLedgerTarget({
       id: group.id,
       bank_account_name: group.name,
@@ -62,7 +68,20 @@ export default function MobilePortals({
       ifsc_code: "",
       isGroupLedger: true
     });
+    if (!opts?.skipNav) {
+      router.push(`/admin/bankAccounts/${group.id}/ledger`);
+    }
   };
+
+  // Re-open the right portal ledger when this component is reached directly
+  // at /admin/bankAccounts/[id]/ledger (a fresh load or a page refresh).
+  useEffect(() => {
+    if (!initialPortalLedgerId || ledgerTarget) return;
+    const match = portalDirectory.find((p) => p.id === initialPortalLedgerId);
+    if (match) {
+      openGroupLedger(match, { skipNav: true });
+    }
+  }, [initialPortalLedgerId, portalDirectory]);
 
   const handleStartManageGroup = (group: any) => {
     setSelectedPortal(group);
@@ -280,7 +299,10 @@ export default function MobilePortals({
 
       <BankAccountLedgerModal
         target={ledgerTarget}
-        onClose={() => setLedgerTarget(null)}
+        onClose={() => {
+          setLedgerTarget(null);
+          if (initialPortalLedgerId) router.push("/admin/bankAccounts");
+        }}
         portalDirectory={portalDirectory}
         retailerDirectory={retailerDirectory}
         userDirectory={userDirectory}

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAdmin } from "../../context/AdminContext";
 import { getISTDateString } from "../../../utils/dateHelpers";
 import LedgerReportView from "../../../components/LedgerReportView";
@@ -23,13 +24,18 @@ interface MobileRetailersProps {
   retailerDirectory: any[];
   showToastNotification: (msg: string) => void;
   fetchData: () => void;
+  // Set when reached directly at /admin/retailers/[token]/ledger so a page
+  // refresh re-opens the same ledger instead of the bare retailer list.
+  initialLedgerToken?: string;
 }
 
 export default function MobileRetailers({
   retailerDirectory,
   showToastNotification,
-  fetchData
+  fetchData,
+  initialLedgerToken
 }: MobileRetailersProps) {
+  const router = useRouter();
   const { collections, deposits, portalDirectory, userDirectory } = useAdmin();
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
@@ -42,10 +48,13 @@ export default function MobileRetailers({
   const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
   const [loadingLedger, setLoadingLedger] = useState(false);
 
-  const handleOpenLedger = async (retailer: any) => {
+  const handleOpenLedger = async (retailer: any, opts?: { skipNav?: boolean }) => {
     setLedgerRetailer(retailer);
     setIsLedgerModalOpen(true);
     setLoadingLedger(true);
+    if (!opts?.skipNav) {
+      router.push(`/admin/retailers/${retailer.ledger_token}/ledger`);
+    }
     try {
       const res = await api.getPublicLedger(retailer.ledger_token);
       setLedgerData(res.statement_history || []);
@@ -57,6 +66,16 @@ export default function MobileRetailers({
       setLoadingLedger(false);
     }
   };
+
+  // Re-open the right ledger when this component is reached directly at
+  // /admin/retailers/[token]/ledger (a fresh load or a page refresh).
+  useEffect(() => {
+    if (!initialLedgerToken || isLedgerModalOpen) return;
+    const match = retailerDirectory.find((r) => r.ledger_token === initialLedgerToken);
+    if (match) {
+      handleOpenLedger(match, { skipNav: true });
+    }
+  }, [initialLedgerToken, retailerDirectory]);
 
   // Form states
   const [retName, setRetName] = useState("");
@@ -1041,6 +1060,7 @@ export default function MobileRetailers({
                 setIsLedgerModalOpen(false);
                 setLedgerRetailer(null);
                 setLedgerData([]);
+                if (initialLedgerToken) router.push("/admin/retailers");
               }}
               publicLink={typeof window !== "undefined" ? `${window.location.origin}/public/ledger/${ledgerRetailer.ledger_token}` : ""}
               onEditEntry={handleStartEditEntry}

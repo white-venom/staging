@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Plus, Globe, Edit } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useAdmin } from "../../context/AdminContext";
 import BankAccountsPanel from "./BankAccountsPanel";
 import BankAccountLedgerModal, { type LedgerTarget } from "../../../components/BankAccountLedgerModal";
@@ -11,14 +12,19 @@ interface PortalsTabProps {
   showToastNotification: (msg: string) => void;
   setShowPortalDrawer: (val: boolean) => void;
   fetchData?: () => void;
+  // Set when this tab is rendered from /admin/bankAccounts/[id]/ledger so a
+  // page refresh re-opens the same portal ledger instead of the bare list.
+  initialPortalLedgerId?: string;
 }
 
 export default function PortalsTab({
   portalDirectory,
   showToastNotification,
   setShowPortalDrawer,
-  fetchData
+  fetchData,
+  initialPortalLedgerId
 }: PortalsTabProps) {
+  const router = useRouter();
   const { retailerDirectory, userDirectory } = useAdmin();
   const [portalSearch, setPortalSearch] = useState("");
   const [selectedPortal, setSelectedPortal] = useState<any | null>(null);
@@ -26,7 +32,7 @@ export default function PortalsTab({
   const [filterOnline, setFilterOnline] = useState<"all" | "online">("all");
   const [ledgerTarget, setLedgerTarget] = useState<LedgerTarget | null>(null);
 
-  const openGroupLedger = (group: any) => {
+  const openGroupLedger = (group: any, opts?: { skipNav?: boolean }) => {
     setLedgerTarget({
       id: group.id,
       bank_account_name: group.name,
@@ -35,7 +41,20 @@ export default function PortalsTab({
       ifsc_code: "",
       isGroupLedger: true
     });
+    if (!opts?.skipNav) {
+      router.push(`/admin/bankAccounts/${group.id}/ledger`);
+    }
   };
+
+  // Re-open the right portal ledger when this tab is reached directly at
+  // /admin/bankAccounts/[id]/ledger (a fresh load or a page refresh).
+  useEffect(() => {
+    if (!initialPortalLedgerId || ledgerTarget) return;
+    const match = portalDirectory.find((p) => p.id === initialPortalLedgerId);
+    if (match) {
+      openGroupLedger(match, { skipNav: true });
+    }
+  }, [initialPortalLedgerId, portalDirectory]);
 
   return (
     <div className="space-y-3">
@@ -161,7 +180,10 @@ export default function PortalsTab({
 
       <BankAccountLedgerModal
         target={ledgerTarget}
-        onClose={() => setLedgerTarget(null)}
+        onClose={() => {
+          setLedgerTarget(null);
+          if (initialPortalLedgerId) router.push("/admin/bankAccounts");
+        }}
         portalDirectory={portalDirectory}
         retailerDirectory={retailerDirectory}
         userDirectory={userDirectory}
