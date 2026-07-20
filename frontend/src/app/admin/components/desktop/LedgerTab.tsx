@@ -390,6 +390,23 @@ export default function LedgerTab({
       snapshots.set(tx.id, { old, new: newVal });
     });
 
+    // Single source of truth for a row's (Opening, Party Bal) pair. Always prefers
+    // the backend's own stored balance_snapshot (set by collections.py/deposits.py)
+    // over the locally-recomputed `snapshots` map above -- that local map uses one
+    // generic (debit - credit) delta for every row, which happens to match the
+    // portal/bank-account direction but is inverted for retailer collections (a
+    // collection is a "credit" that the backend ADDS to the retailer's balance, not
+    // subtracts). Deriving Opening from the trusted new balance side-steps that
+    // mismatch instead of trying to make one delta formula fit both directions.
+    const getTxBalances = (tx: any): { old: number; new: number } => {
+      if (tx.balance_snapshot !== undefined && tx.balance_snapshot !== null) {
+        const txNew = Number(tx.balance_snapshot);
+        const txOld = tx.type === 'collection' ? txNew - Number(tx.credit) : txNew - Number(tx.debit);
+        return { old: txOld, new: txNew };
+      }
+      return snapshots.get(tx.id) || { old: 0, new: 0 };
+    };
+
     // 3. Report-level Running Balance (Global column)
     let totalInitial = 0;
     if (partyFilter !== "all" || bankAccountFilter !== "all") {
@@ -623,10 +640,8 @@ export default function LedgerTab({
                       <thead><tr><th>Date &amp; Time</th><th>Party</th><th>Staff</th><th style="text-align:right">Opening Bal</th><th style="text-align:right">Received / Paid</th><th style="text-align:right">Balance</th></tr></thead>
                       <tbody>
                         ${allTransactions.map(tx => {
-                          const snap = snapshots.get(tx.id) || { old: 0, new: 0 };
-                          const txOld = snap.old;
-                          const txNew = snap.new;
-                          const isCredit = tx.type === 'collection';
+                          const { old: txOld, new: txNew } = getTxBalances(tx);
+                          const isCredit = txNew >= txOld;
                           return `<tr>
                             <td>${tx.date.split(' ')[0].split('-').reverse().join('-')}<br><small style="color:#94a3b8">${tx.date.split(' ')[1] || ''}</small></td>
                             <td style="font-weight:700">${tx.party || '-'}</td>
@@ -652,8 +667,8 @@ export default function LedgerTab({
               onClick={() => {
                 const headers = ["Date Time", "Description", "Staff", "Opening Balance", "Received", "Balance"];
                 const rows = allTransactions.map(tx => {
-                    const snap = snapshots.get(tx.id) || { old: 0, new: 0 };
-                    return [`"${tx.date}"`, `"${tx.party}"`, `"${tx.staff}"`, snap.old, tx.credit || -tx.debit, snap.new];
+                    const { old: txOld, new: txNew } = getTxBalances(tx);
+                    return [`"${tx.date}"`, `"${tx.party}"`, `"${tx.staff}"`, txOld, txNew - txOld, txNew];
                 });
                 rows.push(["TOTAL", "", "", "", "", netBalance]);
                 const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -761,10 +776,7 @@ export default function LedgerTab({
               {allTransactions.length === 0 ? (
                 <tr><td colSpan={5} className="p-10 text-center text-slate-400 italic font-bold">No entries match your filters.</td></tr>
               ) : allTransactions.map((tx) => {
-                const txNew = tx.balance_snapshot !== undefined && tx.balance_snapshot !== null ? tx.balance_snapshot : (snapshots.get(tx.id)?.new || 0);
-                const txOld = tx.balance_snapshot !== undefined && tx.balance_snapshot !== null
-                    ? (tx.type === 'collection' ? Number(txNew) + Number(tx.credit) : Number(txNew) - Number(tx.debit))
-                    : (snapshots.get(tx.id)?.old || 0);
+                const { old: txOld, new: txNew } = getTxBalances(tx);
 
                 const isExpanded = expandedTxId === tx.id;
                 const den = tx.rawRecord?.denominations || {};
@@ -858,8 +870,8 @@ export default function LedgerTab({
                   <td className="p-2 border-r border-slate-50 dark:border-slate-800 text-right font-bold text-slate-500 text-xs font-mono tabular-nums">
                     ₹{txOld.toLocaleString()}
                   </td>
-                  <td className={`p-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${tx.type === 'collection' ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
-                    {tx.type === 'collection' ? '+' : '-'}₹{(tx.credit || tx.debit).toLocaleString()}
+                  <td className={`p-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${txNew >= txOld ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
+                    {txNew >= txOld ? '+' : '-'}₹{(tx.credit || tx.debit).toLocaleString()}
                   </td>
                   <td className="p-2 text-right font-black text-xs font-mono tabular-nums text-blue-700 dark:text-blue-400 bg-blue-50/10 dark:bg-blue-950/5">
                     ₹{txNew.toLocaleString()}
