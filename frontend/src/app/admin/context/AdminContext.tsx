@@ -9,6 +9,7 @@ interface AdminContextType {
   error: string | null;
   collections: any[];
   deposits: any[];
+  openingBalanceEntries: any[];
   retailerDirectory: any[];
   portalDirectory: any[];
   userDirectory: any[];
@@ -34,6 +35,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
+  const [openingBalanceEntries, setOpeningBalanceEntries] = useState<any[]>([]);
   const [retailerDirectory, setRetailerDirectory] = useState<any[]>([]);
   const [portalDirectory, setPortalDirectory] = useState<any[]>([]);
   const [userDirectory, setUserDirectory] = useState<any[]>([]);
@@ -58,14 +60,15 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
     if (showLoading) setIsLoading(true);
     try {
-      const [cols, deps, rets, fetchedUsers, pGroups, attendanceLogs, settings] = await Promise.all([
+      const [cols, deps, rets, fetchedUsers, pGroups, attendanceLogs, settings, openingBalances] = await Promise.all([
         api.getCollections().catch((e) => { console.error("Cols err:", e); return []; }),
         api.getDeposits().catch((e) => { console.error("Deps err:", e); return []; }),
         api.getRetailers().catch((e) => { console.error("Rets err:", e); return []; }),
         api.getUsers().catch((e) => { console.error("Users err:", e); return []; }),
         api.getPortals().catch((e) => { console.error("Portals err:", e); return []; }),
         api.getTodayAttendance().catch((e) => { console.error("Att err:", e); return []; }),
-        api.getAdminSettings().catch((e) => { console.error("Settings err:", e); return null; })
+        api.getAdminSettings().catch((e) => { console.error("Settings err:", e); return null; }),
+        api.getOpeningBalanceEntries().catch((e) => { console.error("Opening balance err:", e); return []; })
       ]);
       
       const mappedCols = cols.map((c: any) => {
@@ -183,6 +186,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       
       setCollections(mappedCols);
       setDeposits(mappedDeps);
+      setOpeningBalanceEntries(openingBalances);
       setRetailerDirectory(mappedRets);
       setUserDirectory(fetchedUsers);
       setPortalDirectory(mappedPortals);
@@ -244,6 +248,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       error,
       collections: storeCols,
       deposits: storeDeps,
+      openingBalanceEntries,
       retailerDirectory,
       portalDirectory,
       userDirectory,

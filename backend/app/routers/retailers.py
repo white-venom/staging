@@ -3,7 +3,7 @@ from typing import List
 # pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.database.db import get_db
 from app.database.models import Retailer, User, Ledger, Store
@@ -86,6 +86,36 @@ def list_retailers(
 ):
     """Get active retailers. All users can see all retailers for now."""
     return db.scalars(select(Retailer).where(Retailer.is_active == True).order_by(Retailer.retailer_name)).all()
+
+
+@router.get("/opening-balance-entries")
+def get_opening_balance_entries(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_any_user)
+):
+    """Every retailer's Opening Balance ledger row (synced by recalculate_balances()
+    whenever opening_to_give/opening_to_take is set at creation or edited later).
+    These live in the ledgers table but aren't tied to a collection_id or deposit_id,
+    so the main admin Ledger tab -- which only merges /collections and /bank-deposits
+    -- never showed them. Exposed here so that view can include them too."""
+    entries = db.scalars(
+        select(Ledger)
+        .options(joinedload(Ledger.retailer))
+        .where(Ledger.description == "Opening Balance")
+        .order_by(Ledger.created_at)
+    ).all()
+    return [
+        {
+            "id": str(e.id),
+            "retailer_id": str(e.retailer_id),
+            "retailer_name": e.retailer.retailer_name if e.retailer else None,
+            "transaction_type": e.transaction_type,
+            "amount": float(e.amount),
+            "balance": float(e.balance),
+            "created_at": e.created_at.isoformat(),
+        }
+        for e in entries
+    ]
 
 
 @router.put("/{retailer_id}", response_model=RetailerResponse)

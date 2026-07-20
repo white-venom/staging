@@ -38,14 +38,15 @@ export default function LedgerTab({
     return `${y}-${m}-${day}`;
   };
 
-  const { ledgerSearchTerm, setLedgerSearchTerm } = adminContext;
+  const { ledgerSearchTerm, setLedgerSearchTerm, openingBalanceEntries } = adminContext;
   const [dateFrom, setDateFrom] = React.useState(getTodayDateString());
   const [dateTo, setDateTo] = React.useState(getTodayDateString());
   const [selectedTypes, setSelectedTypes] = React.useState<string[]>([
     "cash-in",
     "cash-out",
     "virtual-transfer",
-    "move-to-dist"
+    "move-to-dist",
+    "opening-balance"
   ]);
   const [staffFilter, setStaffFilter] = React.useState("all");
   const [partyFilter, setPartyFilter] = React.useState("all");
@@ -309,7 +310,27 @@ export default function LedgerTab({
         txType,
         rawRecord: d
       };
-    })
+    }),
+    // Opening Balance entries: synced by the backend (recalculate_balances())
+    // whenever a retailer's opening_to_give/opening_to_take is set at creation
+    // or edited later, but not tied to a collection_id or deposit_id -- so they
+    // need their own mapping here rather than fitting the two shapes above.
+    ...(openingBalanceEntries || []).map((e: any) => ({
+      id: e.id,
+      date: (e.created_at || "").replace("T", " ").split(".")[0],
+      partyId: e.retailer_id,
+      party: e.retailer_name || "Retailer",
+      store_name: null,
+      bankAccount: null,
+      staff: "Admin",
+      debit: e.transaction_type === 'debit' ? e.amount : 0,
+      credit: e.transaction_type === 'credit' ? e.amount : 0,
+      balance_snapshot: e.balance,
+      type: 'opening-balance',
+      depositType: null,
+      txType: 'opening-balance',
+      rawRecord: e
+    }))
   ];
 
   const partyList = Array.from(new Set(
@@ -401,7 +422,14 @@ export default function LedgerTab({
     const getTxBalances = (tx: any): { old: number; new: number } => {
       if (tx.balance_snapshot !== undefined && tx.balance_snapshot !== null) {
         const txNew = Number(tx.balance_snapshot);
-        const txOld = tx.type === 'collection' ? txNew - Number(tx.credit) : txNew - Number(tx.debit);
+        // Opening Balance is always the first ledger row ever created for its
+        // retailer (recalculate_balances() dates it to open the account before
+        // anything else), so there's nothing before it regardless of whether
+        // it's a credit or debit -- unlike collection/deposit rows, neither
+        // "new - credit" nor "new - debit" applies here.
+        const txOld = tx.type === 'opening-balance' ? 0
+          : tx.type === 'collection' ? txNew - Number(tx.credit)
+          : txNew - Number(tx.debit);
         return { old: txOld, new: txNew };
       }
       return snapshots.get(tx.id) || { old: 0, new: 0 };
@@ -530,7 +558,8 @@ export default function LedgerTab({
               { id: "cash-in", label: "Cash In", color: "emerald" },
               { id: "cash-out", label: "Cash Out", color: "rose" },
               { id: "virtual-transfer", label: "Virtual Transfer", color: "blue" },
-              { id: "move-to-dist", label: "Move to Distributor", color: "purple" }
+              { id: "move-to-dist", label: "Move to Distributor", color: "purple" },
+              { id: "opening-balance", label: "Opening Balance", color: "amber" }
             ].map((t) => {
               const isActive = selectedTypes.includes(t.id);
               let colorClasses = "";
@@ -549,6 +578,10 @@ export default function LedgerTab({
               } else if (t.color === "purple") {
                 colorClasses = isActive
                   ? "bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-800"
+                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
+              } else if (t.color === "amber") {
+                colorClasses = isActive
+                  ? "bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800"
                   : "bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
               }
 
@@ -816,6 +849,9 @@ export default function LedgerTab({
                             {tx.depositType === 'virtual' && (
                               <span className="text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
                             )}
+                            {tx.type === 'opening-balance' && (
+                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 uppercase tracking-wider">Opening Balance</span>
+                            )}
                             {tx.rawRecord?.remarks && (
                               <button
                                 type="button"
@@ -836,33 +872,37 @@ export default function LedgerTab({
                           <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter mt-0.5">By {tx.staff}</span>
                       </div>
                       <div className="flex items-center gap-1.5 no-print" onClick={e => e.stopPropagation()}>
-                        <button
-                          onClick={() => {
-                            if (tx.txType === 'cash-in') {
-                              shareCollectionEntry(tx.rawRecord, tx.staff || 'Staff');
-                            } else {
-                              shareDepositEntry(tx.rawRecord, tx.staff || 'Staff');
-                            }
-                          }}
-                          className="p-1 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 rounded-sm hover:bg-emerald-100 transition-colors cursor-pointer"
-                          title="Share Entry"
-                        >
-                          <Share2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleStartEditCollection(tx)}
-                          className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-sm hover:bg-blue-100 transition-colors cursor-pointer"
-                          title="Edit Entry"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteEntry(tx)}
-                          className="p-1 bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 rounded-sm hover:bg-red-100 transition-colors cursor-pointer"
-                          title="Delete Entry"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {tx.type !== 'opening-balance' && (
+                          <>
+                            <button
+                              onClick={() => {
+                                if (tx.txType === 'cash-in') {
+                                  shareCollectionEntry(tx.rawRecord, tx.staff || 'Staff');
+                                } else {
+                                  shareDepositEntry(tx.rawRecord, tx.staff || 'Staff');
+                                }
+                              }}
+                              className="p-1 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 rounded-sm hover:bg-emerald-100 transition-colors cursor-pointer"
+                              title="Share Entry"
+                            >
+                              <Share2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleStartEditCollection(tx)}
+                              className="p-1 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-sm hover:bg-blue-100 transition-colors cursor-pointer"
+                              title="Edit Entry"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEntry(tx)}
+                              className="p-1 bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 rounded-sm hover:bg-red-100 transition-colors cursor-pointer"
+                              title="Delete Entry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                       </div>
                     </div>

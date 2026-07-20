@@ -248,6 +248,7 @@ export const api = {
   // Retailers
   getRetailers: () => request<any[]>("/retailers"),
   getRetailerStores: (retailerId: string) => request<any[]>(`/retailers/${retailerId}/stores`),
+  getOpeningBalanceEntries: () => request<any[]>("/retailers/opening-balance-entries"),
   createRetailer: (data: any) => request<any>("/retailers", {
     method: "POST",
     body: JSON.stringify(data),
