@@ -194,9 +194,24 @@ def create_tenant(
     existing = db.scalar(select(Tenant).where(Tenant.subdomain == tenant_data.subdomain))
     if existing:
         raise HTTPException(status_code=400, detail="Subdomain already registered")
-        
+
     db_name = f"crediiflow_{tenant_data.subdomain.replace('-', '_')}"
-    
+
+    # A stale/renamed subdomain elsewhere in this table could let a *different*
+    # subdomain string past the check above while still computing the same
+    # db_name (this exact scenario happened: the real tenant's subdomain had
+    # drifted to a legacy value, so "do-it-services" looked unregistered here
+    # even though its db_name -- crediiflow_do_it_services -- was already the
+    # real tenant's database). Catching that collision here, before touching
+    # any database, turns it into a clean 400 instead of a mid-seeding crash
+    # against someone else's live data.
+    existing_db_name = db.scalar(select(Tenant).where(Tenant.db_name == db_name))
+    if existing_db_name:
+        raise HTTPException(
+            status_code=400,
+            detail=f"A tenant already uses database '{db_name}' (registered under subdomain '{existing_db_name.subdomain}'). Choose a different subdomain."
+        )
+
     # Create database and run migrations/seed
     try:
         # Create physical database and schema
@@ -204,8 +219,18 @@ def create_tenant(
         pg_engine = create_engine(pg_url, isolation_level="AUTOCOMMIT")
         with pg_engine.connect() as conn:
             result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname='{db_name}'"))
-            if not result.fetchone():
-                conn.execute(text(f"CREATE DATABASE {db_name}"))
+            if result.fetchone():
+                # Already ruled out a *tracked* collision above -- if the physical
+                # database exists anyway, it's an orphan (e.g. a previous tenant
+                # deletion's DROP DATABASE step failed silently). Reusing it as-is
+                # is exactly how this class of bug bites: it's already seeded, so
+                # the insert below fails with a confusing duplicate-key error deep
+                # inside someone else's leftover data. Refuse cleanly instead.
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Database '{db_name}' already exists on the server but isn't registered to any tenant (likely an orphan from a previous deletion). It must be dropped manually before this subdomain can be used."
+                )
+            conn.execute(text(f"CREATE DATABASE {db_name}"))
         
         # Populate tables
         tenant_url = get_tenant_connection_string(db_name)
@@ -249,7 +274,9 @@ def create_tenant(
             tenant_db.commit()
         finally:
             tenant_db.close()
-            
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,
