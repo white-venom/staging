@@ -278,32 +278,151 @@ remember the live config is server-only — consider bringing it into the repo
 
 ---
 
-## 5. Database backup — script exists, but is **not currently scheduled anywhere**
+## 5. Database backup — wired up and running daily; R2 destination still pending
 
-`backend/backup_postgres_r2.sh` (in git) dumps Postgres, encrypts with
-AES-256, and uploads to Cloudflare R2. Its header comment says to install it
-as `0 2 * * * /app/backup_postgres_r2.sh`, but as of this writing:
+**Status as of 2026-07-20: the backup mechanism (dump → compress → encrypt)
+is installed, scheduled, and verified working end-to-end. The final upload
+leg (Cloudflare R2) is intentionally not yet configured — real R2 credentials
+haven't been provisioned. Until they are, the job runs daily, correctly
+detects that R2 isn't configured, and exits cleanly with no partial/silent
+failure — it does not pretend to succeed.**
 
-- No host crontab entry for it (`crontab -l` for root: empty).
-- No cron installed *inside* the backend container at all (`crontab`: command
-  not found — the image doesn't include a cron daemon).
-- No docker-compose service runs it.
-- The `.env` file (§3) is also missing the variables the script requires to
-  even start (`DB_BACKUP_KEY`, `R2_S3_ENDPOINT`, `R2_BACKUP_BUCKET`,
-  `POSTGRES_HOST`, `POSTGRES_PORT` are all absent) — the script would exit
-  immediately on its own config-validation checks even if invoked manually.
+### What changed from the original script
 
-**There is currently no automated database backup running in production.**
+`backend/backup_postgres_r2.sh` originally ran `pg_dump -d $POSTGRES_DB`
+(single database). This is a DB-per-tenant architecture — `POSTGRES_DB`
+(`doit_production`) is just the container's empty default bootstrap
+database; the real data lives in `crediiflow_master` (tenant registry) and
+one `crediiflow_<subdomain>` database per tenant. The original script would
+have backed up nothing that mattered. Fixed to use `pg_dumpall`, which dumps
+every database in the cluster (plus roles/globals) in one pass and
+automatically picks up new tenants without code changes.
+
+Also removed the script's curl-based "fallback" upload path. R2 requires
+AWS SigV4-signed requests; an unsigned `curl PUT` was never a working
+alternative to the `aws` CLI — it would be rejected by any real private
+bucket, or (worse) print a false "✅ success" without uploading anything. The
+script now fails loudly if `aws` isn't installed instead of silently no-op'ing
+through it.
+
+### Where it runs, and why
+
+Unlike `ssl-trigger-watcher.sh` (which runs `docker exec` into the backend
+container), the backup runs **directly on the host**, not inside a container:
+there's no cron daemon in the backend image, and installing one would only
+last until the next `docker compose up --build` (rebuilt on every deploy)
+wiped it out. Running from the host via systemd is deploy-proof.
+
+This means the backup uses the Postgres port already published to the host's
+loopback interface (`docker-compose.yml`: `"127.0.0.1:5432:5432"` on the `db`
+service) rather than the container-internal hostname `db`. `postgresql-client`
+(for `pg_dumpall`) and `awscli` (for the eventual R2 upload, via `pip install
+--break-system-packages awscli` since the `awscli` apt package isn't available
+on this box's configured repos) were installed directly on the host for this.
+
+### `.env` additions (`/opt/crediiflow/.env`)
+
+```
+POSTGRES_HOST=127.0.0.1
+POSTGRES_PORT=5432
+DB_BACKUP_KEY=<a generated random key -- already set on the live server, not reproduced here>
+
+# PENDING: fill these in with real Cloudflare R2 values
+R2_S3_ENDPOINT=https://your-account-id.r2.cloudflarestorage.com
+R2_BACKUP_BUCKET=doit-db-backups
+AWS_ACCESS_KEY_ID=PENDING_R2_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=PENDING_R2_SECRET_ACCESS_KEY
+```
+
+`DB_BACKUP_KEY` is the AES-256 passphrase the script encrypts every dump
+with — generate a new one with `openssl rand -base64 48` if this ever needs
+to be recreated (but note: doing so makes any *previously* encrypted backup
+undecryptable with the new key — keep old keys alongside old backups, don't
+just overwrite).
+
+`R2_S3_ENDPOINT` is deliberately left at the exact placeholder string the
+script itself checks for (`https://your-account-id.r2.cloudflarestorage.com`)
+— this is what makes the script's own validation guard trip cleanly with a
+clear error, rather than attempting a doomed request against a fake host.
+
+**To finish this setup**: in the Cloudflare dashboard, create an R2 bucket,
+then R2 → Manage API Tokens → create a token scoped to Object Read & Write on
+that bucket. Replace the four `R2_*`/`AWS_*` placeholder lines above with the
+real bucket name, endpoint (shown on the R2 dashboard, format
+`https://<account-id>.r2.cloudflarestorage.com`), and the token's Access Key
+ID / Secret Access Key. No script or systemd changes needed after that — the
+next scheduled run (or a manual `systemctl start crediiflow-db-backup.service`)
+will pick the new values up automatically.
+
+### Systemd units
+
+`/etc/systemd/system/crediiflow-db-backup.service`:
+
+```ini
+[Unit]
+Description=CrediiFlow: encrypted Postgres cluster backup to Cloudflare R2
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/opt/crediiflow/.env
+ExecStart=/opt/crediiflow/backend/backup_postgres_r2.sh
+```
+
+`/etc/systemd/system/crediiflow-db-backup.timer`:
+
+```ini
+[Unit]
+Description=Run crediiflow-db-backup.service daily at 02:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target
+```
+
+`Persistent=true` means if the VPS is down at 02:00 (reboot, maintenance),
+the backup runs shortly after boot instead of being silently skipped until
+the next day — deliberately more cautious than the SSL watcher's timer, since
+missing a whole day of backups is worse than missing one SSL-trigger poll.
+
+Enable after creating both files: `systemctl daemon-reload && systemctl
+enable --now crediiflow-db-backup.timer`. Check status with `systemctl
+list-timers crediiflow-db-backup.timer` or `journalctl -u
+crediiflow-db-backup.service`.
+
+**Also note**: `backend/backup_postgres_r2.sh` must be executable
+(`chmod 755`) — it was previously committed as `100644` in git, which made
+the systemd service fail with `203/EXEC` the first time it was invoked
+directly (rather than via `bash script.sh`). Fixed in git with `git
+update-index --chmod=+x`, so a fresh clone now gets the right mode.
+
+### What was actually tested (2026-07-20)
+
+- `systemctl start crediiflow-db-backup.service` → correctly fails with
+  `❌ Error: R2_S3_ENDPOINT is not configured or is set to a placeholder.`
+  (exit 1, no partial upload attempt, no silent success) — confirms the
+  guard rail works exactly as intended given the current pending state.
+- Ran the dump → gzip → encrypt → decrypt → gunzip round-trip manually
+  (bypassing only the R2 step, which can't be tested without real
+  credentials): produced a 128KB encrypted archive containing all 3
+  databases (`crediiflow_master`, `crediiflow_do_it_services`,
+  `doit_production`) and 45 `COPY` statements (i.e. actual row data, not
+  just schema) — confirms the backup content itself is real, complete, and
+  restorable, independent of the still-pending R2 destination.
+
+### Known pre-existing gap this replaces
+
 A stray one-off dump, `/opt/crediiflow/my_database_backup.sql` (created
-2026-06-08, ~325KB), sits in the deploy directory root — almost certainly a
-manual `pg_dump` someone ran once, not output from this script (the script
-uploads to R2 and deletes its local copy; this file is a plain uncompressed
-`.sql`, and its location/naming don't match the script's conventions).
-
-Wiring this up for real (adding the missing `.env` vars, an R2 bucket, and an
-actual schedule — host cron calling into the container, or a compose-level
-sidecar) is a real gap, not something this document can paper over — flagging
-it here so it's visible rather than assumed-handled.
+2026-06-08, ~325KB), still sits in the deploy directory root — almost
+certainly a manual `pg_dump` someone ran once before any of the above
+existed. Harmless to leave, safe to delete once the R2 pipeline above is
+confirmed working with real credentials and has produced its first real
+off-server backup.
 
 ---
 
@@ -372,6 +491,23 @@ If this VPS is ever rebuilt from scratch:
 11. `docker compose up -d --build`.
 12. Set up GitHub Actions secrets (`VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`) for
     `.github/workflows/deploy.yml` to keep working.
-13. Decide what to do about §5 (backups) — currently not running even on the
-    old server, so this is a good opportunity to actually wire it up rather
-    than reproduce the gap.
+13. Install `postgresql-client` (`apt install postgresql-client`) and `awscli`
+    (`pip install --break-system-packages awscli`) on the host (§5).
+14. Add the backup-related `.env` keys from §5 (`POSTGRES_HOST`,
+    `POSTGRES_PORT`, `DB_BACKUP_KEY`, and the real `R2_*`/`AWS_*` values —
+    not the placeholders — if R2 was ever actually configured before the
+    disaster; otherwise re-provision R2 fresh per §5's setup steps).
+15. `chmod 755` on `/opt/crediiflow/backend/backup_postgres_r2.sh` if it
+    isn't already (should be `100755` in git — verify with `git ls-files -s`).
+16. Recreate the two backup systemd units from §5, `daemon-reload`,
+    `enable --now` the timer.
+
+**Important caveat**: if R2 was never actually configured with real
+credentials before a hypothetical total server loss, there is **no off-server
+copy of the database to restore from** — the `postgres_data` Docker volume
+recreated in step 2 starts empty, and this whole checklist rebuilds the
+*application*, not the *data*. Confirming R2 is actually receiving real
+backups (§5) is what makes this checklist meaningful for data recovery, not
+just service recovery. Until then, the only backup is whatever the VPS
+provider's own infrastructure-level disk snapshots (if any) provide —
+verify that separately; it isn't covered by anything in this document.
