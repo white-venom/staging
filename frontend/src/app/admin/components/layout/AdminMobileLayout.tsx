@@ -277,6 +277,16 @@ export default function AdminMobileLayout({ children }: { children: React.ReactN
                 <LogOut className="w-3 h-3" />
                 Log Out
               </button>
+
+              <div className="pt-3 mt-1 border-t border-slate-100 dark:border-slate-800 text-center">
+                <a href="https://xcplllp.com" target="_blank" rel="noopener noreferrer" className="inline-flex flex-col items-center gap-1 text-slate-400 hover:opacity-80 transition-opacity">
+                  <span className="text-[8px] font-semibold">Developed and managed by</span>
+                  <span className="inline-flex items-center gap-1">
+                    <img src="/logo-xc.png" alt="Xenelasia Group Logo" className="h-3 w-auto object-contain align-middle" />
+                    <span className="text-[9px] font-bold text-slate-500 dark:text-slate-400">Xenelasia</span>
+                  </span>
+                </a>
+              </div>
             </div>
           </div>
         </div>

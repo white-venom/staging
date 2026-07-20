@@ -1815,12 +1815,13 @@ export default function LandingPage() {
             <span className="text-slate-700 hidden sm:inline">|</span>
             <div className="flex items-center gap-2">
               <span>Developed and managed by</span>
-              <a href="https://xcplllp.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center hover:opacity-80 transition-opacity">
+              <a href="https://xcplllp.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity">
                 <img
                   src="/logo-xc.png"
                   alt="Xenelasia Group Logo"
                   className="h-5.5 w-auto object-contain align-middle"
                 />
+                <span className="font-semibold">Xenelasia</span>
               </a>
             </div>
           </div>

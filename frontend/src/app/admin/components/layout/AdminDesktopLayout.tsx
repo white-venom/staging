@@ -263,6 +263,16 @@ export default function AdminDesktopLayout({ children }: { children: React.React
             Sign Out
           </button>
         </div>
+
+        <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-800 text-center">
+          <a href="https://xcplllp.com" target="_blank" rel="noopener noreferrer" className="inline-flex flex-col items-center gap-1 text-slate-400 hover:opacity-80 transition-opacity">
+            <span className="text-[9px] font-semibold">Developed and managed by</span>
+            <span className="inline-flex items-center gap-1">
+              <img src="/logo-xc.png" alt="Xenelasia Group Logo" className="h-3.5 w-auto object-contain align-middle" />
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Xenelasia</span>
+            </span>
+          </a>
+        </div>
       </aside>
 
       <main className="flex-1 ml-64 p-6 min-h-screen">

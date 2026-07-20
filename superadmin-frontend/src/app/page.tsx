@@ -873,6 +873,21 @@ export default function DashboardPage() {
         )}
       </main>
 
+      {/* ─── FOOTER ─── */}
+      <footer className="mt-6 py-5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-center text-center text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+        <div className="max-w-7xl mx-auto px-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+          <span>© {new Date().getFullYear()} CrediiFlow Platform. All Rights Reserved.</span>
+          <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+          <div className="flex items-center gap-1.5">
+            <span>Developed and managed by</span>
+            <a href="https://xcplllp.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+              <img src="/logo-xc.png" alt="Xenelasia Group Logo" className="h-4 w-auto object-contain align-middle" />
+              <span className="font-bold text-slate-500 dark:text-slate-400">Xenelasia</span>
+            </a>
+          </div>
+        </div>
+      </footer>
+
       {/* ─── ADD ONBOARD MODAL ─── */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40">
