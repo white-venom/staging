@@ -52,6 +52,21 @@ def cloudflare_add_dns(subdomain: str) -> None:
     except Exception as e:
         print(f"[CF DNS] Exception adding {fqdn}: {e}")
 
+def trigger_ssl_provisioning() -> None:
+    """Drop the same trigger file the manual "Renew SSL" button writes -- the
+    host-level automation (outside this repo) watches for it, runs Certbot
+    against every tenant subdomain currently in the master DB, and reloads
+    Nginx. Called automatically after a new tenant is created so a fresh
+    subdomain gets a working cert without a manual renew click, matching the
+    behavior new tenants had before this call went missing from create_tenant.
+    Raises on failure -- callers that must not fail the whole request over
+    this (e.g. tenant creation, mirroring how the Cloudflare DNS call is
+    treated) are responsible for catching it themselves."""
+    trigger_dir = "/app/triggers"
+    os.makedirs(trigger_dir, exist_ok=True)
+    with open(os.path.join(trigger_dir, "ssl_renew.trigger"), "w") as f:
+        f.write(datetime.utcnow().isoformat())
+
 def cloudflare_delete_dns(subdomain: str) -> None:
     """Delete all A records for <subdomain>.<CF_DOMAIN> from Cloudflare.
     Silently skips if env vars are not configured."""
@@ -254,6 +269,15 @@ def create_tenant(
 
     # Auto-provision Cloudflare DNS A record for the new subdomain
     cloudflare_add_dns(tenant_data.subdomain)
+
+    # Auto-provision the SSL cert for the new subdomain (fire-and-forget, same
+    # as the manual "Renew SSL" button -- see trigger_ssl_provisioning above).
+    # Non-fatal: a trigger-write failure shouldn't roll back an otherwise
+    # successful tenant creation, same treatment as the Cloudflare DNS call.
+    try:
+        trigger_ssl_provisioning()
+    except Exception as e:
+        print(f"[SSL] Failed to write provisioning trigger for new tenant: {e}")
 
     res = TenantResponse.model_validate(new_tenant)
     res.admin_phone = tenant_data.admin_phone
@@ -591,13 +615,8 @@ def get_ssl_status(
 def trigger_ssl_renewal(
     current_admin: SuperAdmin = Depends(get_current_super_admin)
 ):
-    trigger_dir = "/app/triggers"
     try:
-        os.makedirs(trigger_dir, exist_ok=True)
-        trigger_file_path = os.path.join(trigger_dir, "ssl_renew.trigger")
-        with open(trigger_file_path, "w") as f:
-            f.write(datetime.utcnow().isoformat())
-        
+        trigger_ssl_provisioning()
         return {
             "status": "success",
             "message": "SSL renewal triggered successfully. The host automation will execute Certbot and reload Nginx shortly."
