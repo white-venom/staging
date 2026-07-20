@@ -71,6 +71,22 @@ export default function DashboardPage() {
   // Global Toast
   const [toastMessage, setToastMessage] = useState("");
 
+  // Dark mode (persisted locally; scoped to this panel only, same class-based
+  // approach as the rest of the app's `dark:` variants)
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useEffect(() => {
+    if (localStorage.getItem("superadmin_theme") === "dark") setTheme("dark");
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "light" ? "dark" : "light";
+      localStorage.setItem("superadmin_theme", next);
+      return next;
+    });
+  };
+
   // SSL Certificate States
   const [sslStatus, setSslStatus] = useState<any>(null);
   const [loadingSSL, setLoadingSSL] = useState(false);
@@ -78,13 +94,16 @@ export default function DashboardPage() {
 
   // Infrastructure status (real DB connection count + version)
   const [infraStatus, setInfraStatus] = useState<any>(null);
+  const [infraStatusError, setInfraStatusError] = useState(false);
 
   const fetchInfraStatus = async () => {
     try {
       const data = await superAdminApi.getInfraStatus();
       setInfraStatus(data);
+      setInfraStatusError(false);
     } catch (err: any) {
       console.error("Failed to fetch infra status:", err);
+      setInfraStatusError(true);
     }
   };
 
@@ -228,6 +247,11 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
+  // Backend requires subdomain to match ^[a-z0-9-]+$ -- strip anything outside
+  // that set (not just whitespace) so a stray apostrophe/period/underscore in
+  // what the admin types can't silently produce a 422 the form can't recover from.
+  const sanitizeSubdomain = (raw: string) => raw.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
@@ -236,7 +260,7 @@ export default function DashboardPage() {
     try {
       await superAdminApi.createTenant({
         name: clientName,
-        subdomain: subdomain.toLowerCase().replace(/\s+/g, "-"),
+        subdomain: sanitizeSubdomain(subdomain),
         admin_name: tenantAdminName,
         admin_phone: tenantAdminPhone,
         admin_password: tenantAdminPassword,
@@ -278,7 +302,7 @@ export default function DashboardPage() {
       const payload: any = {
         name: editClientName,
         status: editStatus,
-        subdomain: editSubdomain.toLowerCase().replace(/\s+/g, "-"),
+        subdomain: sanitizeSubdomain(editSubdomain),
         admin_phone: editAdminPhone,
       };
       if (editAdminPassword) {
@@ -339,10 +363,10 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#f8fafc] text-slate-800 overflow-x-hidden font-sans">
+    <div className={`relative min-h-screen overflow-x-hidden font-sans ${theme === "dark" ? "dark bg-slate-950 text-slate-100" : "bg-[#f8fafc] text-slate-800"}`}>
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 px-5 py-4 bg-white border border-emerald-500/20 text-emerald-600 rounded-sm flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
+        <div className="fixed bottom-5 right-5 z-50 px-5 py-4 bg-white dark:bg-slate-900 border border-emerald-500/20 dark:border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-sm flex items-center gap-3 text-[10px] font-black uppercase tracking-wider">
           <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full" />
           {toastMessage}
         </div>
@@ -351,9 +375,9 @@ export default function DashboardPage() {
       {/* Header Bar */}
       <header className="sticky top-0 z-40 bg-[#0d1b3e] border-b border-blue-900/40 px-3.5 py-2 flex items-center justify-between">
         <div className="flex items-center gap-1">
-          <img 
-            src="/logo.png" 
-            alt="CrediiFlow Logo" 
+          <img
+            src="/logo.png"
+            alt="CrediiFlow Logo"
             className="h-7 w-auto object-contain"
           />
         </div>
@@ -363,6 +387,21 @@ export default function DashboardPage() {
             <p className="text-[10px] font-black uppercase text-slate-100 tracking-wider">{adminName}</p>
             <p className="text-[8px] font-bold text-blue-200/70 uppercase mt-0.5">@{username}</p>
           </div>
+          <button
+            onClick={toggleTheme}
+            className="p-1.5 border border-blue-800 hover:border-blue-500 text-blue-200 hover:text-white rounded-sm transition-colors duration-200 cursor-pointer"
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+              </svg>
+            )}
+          </button>
           <button
             onClick={handleLogout}
             className="px-2.5 py-1 border border-blue-800 hover:border-red-400 hover:bg-red-950/30 text-blue-200 hover:text-red-400 rounded-sm text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
@@ -374,29 +413,29 @@ export default function DashboardPage() {
 
       {/* Content Area */}
       <main className="max-w-7xl mx-auto px-4 py-4 relative z-10">
-        
+
         {/* Welcome Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
           <div>
-            <h1 className="text-base font-black uppercase tracking-tight text-slate-900">Super Admin Command Center</h1>
-            <p className="text-slate-500 text-[10px] mt-0.5 font-medium">Manage global directories, edit plan constraints, and monitor tenant database clusters.</p>
+            <h1 className="text-base font-black uppercase tracking-tight text-slate-900 dark:text-white">Super Admin Command Center</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-[10px] mt-0.5 font-medium">Manage global directories, edit plan constraints, and monitor tenant database clusters.</p>
           </div>
           <button
             onClick={() => setShowAddModal(true)}
-            className="self-start md:self-auto px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors duration-200 cursor-pointer"
+            className="self-start md:self-auto px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors duration-200 cursor-pointer"
           >
             + Onboard New Client
           </button>
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center gap-1 border-b border-slate-200 mb-4 pb-px">
+        <div className="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 mb-4 pb-px">
           <button
             onClick={() => setActiveTab("directory")}
             className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-colors duration-250 cursor-pointer ${
               activeTab === "directory"
-                ? "border-violet-600 text-violet-600 bg-slate-100/50"
-                : "border-transparent text-slate-400 hover:text-slate-600"
+                ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-slate-100/50 dark:bg-slate-800/50"
+                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
             }`}
           >
             Client Directory
@@ -405,8 +444,8 @@ export default function DashboardPage() {
             onClick={() => setActiveTab("resources")}
             className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-colors duration-250 cursor-pointer ${
               activeTab === "resources"
-                ? "border-violet-600 text-violet-600 bg-slate-100/50"
-                : "border-transparent text-slate-400 hover:text-slate-600"
+                ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-slate-100/50 dark:bg-slate-800/50"
+                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
             }`}
           >
             Resource Visualizer
@@ -415,8 +454,8 @@ export default function DashboardPage() {
             onClick={() => setActiveTab("infrastructure")}
             className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-colors duration-250 cursor-pointer ${
               activeTab === "infrastructure"
-                ? "border-violet-600 text-violet-600 bg-slate-100/50"
-                : "border-transparent text-slate-400 hover:text-slate-600"
+                ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-slate-100/50 dark:bg-slate-800/50"
+                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
             }`}
           >
             Infrastructure Health
@@ -428,62 +467,70 @@ export default function DashboardPage() {
           <div className="space-y-4">
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-white border border-slate-200/80 rounded-sm p-3">
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Total Active Tenants</p>
-                <p className="text-xl font-black mt-1 text-violet-600 font-mono tabular-nums">{tenants.length}</p>
-                <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-wide">Isolated DB-Per-Client Model</p>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-3">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Total Active Tenants</p>
+                <p className="text-lg font-black mt-1 text-blue-600 dark:text-blue-400 font-mono tabular-nums">{tenants.length}</p>
+                <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold mt-1 uppercase tracking-wide">Isolated DB-Per-Client Model</p>
               </div>
-              <div className="bg-white border border-slate-200/80 rounded-sm p-3">
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">PostgreSQL Server Status</p>
-                <p className="text-xl font-black mt-1 text-emerald-600">ONLINE</p>
-                <p className="text-[9px] text-emerald-500 font-bold mt-1 uppercase tracking-wide">Accepting DB schema connections</p>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-3">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">PostgreSQL Server Status</p>
+                <p className={`text-lg font-black mt-1 ${
+                  infraStatusError ? "text-red-600 dark:text-red-400" : infraStatus ? "text-emerald-600 dark:text-emerald-500" : "text-slate-400 dark:text-slate-500"
+                }`}>
+                  {infraStatusError ? "UNREACHABLE" : infraStatus ? "ONLINE" : "CHECKING..."}
+                </p>
+                <p className={`text-[9px] font-bold mt-1 uppercase tracking-wide ${
+                  infraStatusError ? "text-red-500 dark:text-red-400" : "text-emerald-500 dark:text-emerald-400"
+                }`}>
+                  {infraStatusError ? "Master DB query failed" : "Accepting DB schema connections"}
+                </p>
               </div>
-              <div className="bg-white border border-slate-200/80 rounded-sm p-3">
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Master Database Node</p>
-                <p className="text-[13px] font-mono font-black mt-2 text-slate-800">crediiflow_master</p>
-                <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-wide">Runs global tenant indexing</p>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-3">
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Master Database Node</p>
+                <p className="text-[13px] font-mono font-black mt-2 text-slate-800 dark:text-slate-100">crediiflow_master</p>
+                <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold mt-1 uppercase tracking-wide">Runs global tenant indexing</p>
               </div>
             </div>
 
             {/* Table */}
-            <div className="bg-white border border-slate-200/80 rounded-sm overflow-hidden">
-              <div className="px-3.5 py-2 border-b border-slate-200/80 bg-slate-50/50 flex items-center justify-between">
-                <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-800">Registered Tenant Clusters</h2>
-                <button 
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm overflow-hidden">
+              <div className="px-3.5 py-2 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
+                <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Registered Tenant Clusters</h2>
+                <button
                   onClick={fetchTenants}
-                  className="text-[10px] text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-wider cursor-pointer"
+                  className="text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-black uppercase tracking-wider cursor-pointer"
                 >
                   Refresh Data
                 </button>
               </div>
 
               {loading ? (
-                <div className="p-12 text-center text-slate-400 text-[11px] font-bold uppercase tracking-wider">Loading database client instances...</div>
+                <div className="p-12 text-center text-slate-400 dark:text-slate-500 text-[11px] font-bold uppercase tracking-wider">Loading database client instances...</div>
               ) : fetchError ? (
                 <div className="p-10 text-center space-y-3">
-                  <div className="inline-flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200/60 text-red-600 rounded-sm text-[10px] font-bold">
+                  <div className="inline-flex items-center gap-2 px-4 py-3 bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-sm text-[10px] font-bold">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 shrink-0">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                     </svg>
                     API Error: {fetchError}
                   </div>
-                  <p className="text-slate-400 text-[10px] font-medium">Failed to fetch data from backend. Session may have expired.</p>
+                  <p className="text-slate-400 dark:text-slate-500 text-[10px] font-medium">Failed to fetch data from backend. Session may have expired.</p>
                   <button
                     onClick={fetchTenants}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-wider rounded-sm transition-colors cursor-pointer"
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-wider rounded-sm transition-colors cursor-pointer"
                   >
                     Retry Connection
                   </button>
                 </div>
               ) : tenants.length === 0 ? (
-                <div className="p-16 text-center text-slate-400 text-sm font-semibold">
+                <div className="p-16 text-center text-slate-400 dark:text-slate-500 text-sm font-semibold">
                   No clients onboarded yet. Click "+ Onboard New Client" to provision the first client!
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50/70 text-slate-400 text-[9px] font-black uppercase tracking-widest border-b border-slate-200/80">
+                      <tr className="bg-slate-50/70 dark:bg-slate-950 text-slate-400 dark:text-slate-500 text-[9px] font-black uppercase tracking-widest border-b border-slate-200/80 dark:border-slate-800">
                         <th className="px-3.5 py-2">Client / Company Name</th>
                         <th className="px-3.5 py-2">Subdomain / Domain Target</th>
                         <th className="px-3.5 py-2">Database Node</th>
@@ -492,17 +539,17 @@ export default function DashboardPage() {
                         <th className="px-3.5 py-2 text-center">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-[10px] text-slate-700">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-[10px] text-slate-700 dark:text-slate-300">
                       {tenants.map((t) => (
-                        <tr 
-                          key={t.id} 
+                        <tr
+                          key={t.id}
                           onClick={() => setSelectedTenant(t)}
-                          className={`hover:bg-slate-50/40 transition-colors duration-155 cursor-pointer ${
-                            selectedTenant?.id === t.id ? "bg-slate-50/80 border-l-2 border-l-violet-600" : ""
+                          className={`hover:bg-slate-50/40 dark:hover:bg-slate-800/40 transition-colors duration-155 cursor-pointer ${
+                            selectedTenant?.id === t.id ? "bg-slate-50/80 dark:bg-slate-800/50 border-l-2 border-l-blue-600" : ""
                           }`}
                         >
-                          <td className="px-3.5 py-2 font-black text-slate-900">{t.name}</td>
-                          <td className="px-3.5 py-2 text-indigo-600 font-bold">
+                          <td className="px-3.5 py-2 font-black text-slate-900 dark:text-white">{t.name}</td>
+                          <td className="px-3.5 py-2 text-blue-600 dark:text-blue-400 font-bold">
                             <a href={`https://${t.subdomain}.crediiflow.in`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                               {t.subdomain}.crediiflow.in
                               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
@@ -510,12 +557,12 @@ export default function DashboardPage() {
                               </svg>
                             </a>
                           </td>
-                          <td className="px-3.5 py-2 font-mono text-slate-500">{t.db_name}</td>
+                          <td className="px-3.5 py-2 font-mono text-slate-500 dark:text-slate-400">{t.db_name}</td>
                           <td className="px-3.5 py-2 text-center">
                             <span className={`inline-block px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${
-                              t.status === "active" 
-                                ? "bg-emerald-50 border border-emerald-200/50 text-emerald-600" 
-                                : "bg-red-50 border border-red-200/50 text-red-600"
+                              t.status === "active"
+                                ? "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400"
+                                : "bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 text-red-600 dark:text-red-400"
                             }`}>
                               {t.status === "active" ? "Active" : "Suspended"}
                             </span>
@@ -526,8 +573,8 @@ export default function DashboardPage() {
                                 onClick={() => handleToggleMaintenance(t.id, !t.maintenance_mode)}
                                 className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest transition-colors duration-200 cursor-pointer ${
                                   t.maintenance_mode
-                                    ? "bg-amber-50 border border-amber-200/60 text-amber-600 hover:bg-amber-100"
-                                    : "bg-slate-100 hover:bg-slate-200 text-slate-500 border border-slate-200/60"
+                                    ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30"
+                                    : "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60"
                                 }`}
                               >
                                 {t.maintenance_mode ? "ON (Maintenance)" : "OFF (Live)"}
@@ -537,7 +584,7 @@ export default function DashboardPage() {
                                   href={`https://${t.subdomain}.crediiflow.in/?bypass=true`}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-indigo-50 border border-indigo-200/60 text-indigo-600 hover:bg-indigo-100 transition-colors"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-blue-50 dark:bg-blue-950/20 border border-blue-200/60 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                                   title="Admin Login Bypass"
                                 >
                                   Login
@@ -552,7 +599,7 @@ export default function DashboardPage() {
                             <div className="flex items-center justify-center gap-1">
                               <button
                                 onClick={() => handleOpenEdit(t)}
-                                className="p-1 bg-slate-50 hover:bg-slate-100 text-slate-500 border border-slate-200/60 rounded hover:text-slate-800 transition-colors cursor-pointer"
+                                className="p-1 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-700/60 rounded hover:text-slate-800 dark:hover:text-slate-100 transition-colors cursor-pointer"
                                 title="Edit Client Config"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
@@ -561,7 +608,7 @@ export default function DashboardPage() {
                               </button>
                               <button
                                 onClick={() => handleOpenDelete(t)}
-                                className="p-1 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200/40 rounded transition-colors cursor-pointer"
+                                className="p-1 bg-red-50 dark:bg-red-950/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 border border-red-200/40 dark:border-red-900/30 rounded transition-colors cursor-pointer"
                                 title="Delete Tenant"
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
@@ -584,10 +631,10 @@ export default function DashboardPage() {
         {activeTab === "resources" && (
           <div className="space-y-4">
             {selectedTenant ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
                 {/* Selector column */}
-                <div className="lg:col-span-4 bg-white border border-slate-200/80 rounded-sm p-2.5 h-fit space-y-2">
-                  <h3 className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-2 px-1">Select Instance</h3>
+                <div className="lg:col-span-4 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-2.5 h-fit space-y-2">
+                  <h3 className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2 px-1">Select Instance</h3>
                   <div className="space-y-1">
                     {tenants.map((t) => (
                       <button
@@ -595,13 +642,13 @@ export default function DashboardPage() {
                         onClick={() => setSelectedTenant(t)}
                         className={`w-full p-2.5 rounded-sm text-left border flex items-center justify-between transition-colors duration-205 cursor-pointer ${
                           selectedTenant.id === t.id
-                            ? "bg-slate-50 border-violet-500/40 text-slate-900 font-black"
-                            : "bg-transparent border-transparent hover:bg-slate-50 text-slate-500 hover:text-slate-800"
+                            ? "bg-slate-50 dark:bg-slate-800 border-blue-500/40 text-slate-900 dark:text-white font-black"
+                            : "bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100"
                         }`}
                       >
                         <div>
                           <p className="text-[11px] font-bold uppercase tracking-wider">{t.name}</p>
-                          <p className="text-[9px] text-slate-400 mt-0.5">{t.subdomain}.crediiflow.in</p>
+                          <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">{t.subdomain}.crediiflow.in</p>
                         </div>
                         <span className={`w-1.5 h-1.5 rounded-full ${t.maintenance_mode ? "bg-amber-500" : "bg-emerald-500"}`} />
                       </button>
@@ -610,16 +657,16 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Dashboard column */}
-                <div className="lg:col-span-8 bg-white border border-slate-200/80 rounded-sm p-4 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-3 gap-2">
+                <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-4 space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 gap-2">
                     <div>
-                      <h2 className="text-base font-black uppercase tracking-tight text-slate-900">{selectedTenant.name}</h2>
-                      <p className="text-[9px] text-indigo-600 mt-0.5 font-bold">Resource allocation cluster logs</p>
+                      <h2 className="text-base font-black uppercase tracking-tight text-slate-900 dark:text-white">{selectedTenant.name}</h2>
+                      <p className="text-[9px] text-blue-600 dark:text-blue-400 mt-0.5 font-bold">Resource allocation cluster logs</p>
                     </div>
                     <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border self-start sm:self-auto ${
                       selectedTenant.maintenance_mode
-                        ? "bg-amber-50 text-amber-600 border-amber-200/60"
-                        : "bg-emerald-50 text-emerald-600 border-emerald-200/60"
+                        ? "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-200/60 dark:border-amber-900/30"
+                        : "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-900/30"
                     }`}>
                       {selectedTenant.maintenance_mode ? "Maintenance Mode" : "Cluster Operational"}
                     </span>
@@ -627,48 +674,48 @@ export default function DashboardPage() {
 
                   {/* Real Metrics Grid */}
                   {loadingStats ? (
-                    <div className="p-6 text-center text-slate-400 text-[10px] font-bold uppercase tracking-wider">Reading live database stats...</div>
+                    <div className="p-6 text-center text-slate-400 dark:text-slate-500 text-[10px] font-bold uppercase tracking-wider">Reading live database stats...</div>
                   ) : statsError ? (
-                    <div className="p-3 bg-red-50 border border-red-200/60 text-red-600 rounded-sm text-[10px] font-bold text-center">
+                    <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200/60 dark:border-red-900/30 text-red-600 dark:text-red-400 rounded-sm text-[10px] font-bold text-center">
                       {statsError}
                     </div>
                   ) : tenantStats ? (
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div className="bg-slate-50/50 p-3 rounded-sm border border-slate-200/60 space-y-1">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">DB Disk Storage</span>
-                          <span className="text-lg font-black text-blue-600 tracking-tight font-mono tabular-nums">{tenantStats.db_size_mb} MB</span>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase">Live pg_database_size()</p>
+                        <div className="bg-slate-50/50 dark:bg-slate-950/40 p-3 rounded-sm border border-slate-200/60 dark:border-slate-800 space-y-1">
+                          <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">DB Disk Storage</span>
+                          <span className="text-lg font-black text-blue-600 dark:text-blue-400 tracking-tight font-mono tabular-nums">{tenantStats.db_size_mb} MB</span>
+                          <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">Live pg_database_size()</p>
                         </div>
-                        <div className="bg-slate-50/50 p-3 rounded-sm border border-slate-200/60 space-y-1">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Staff / Admin Users</span>
-                          <span className="text-lg font-black text-indigo-600 tracking-tight font-mono tabular-nums">{tenantStats.staff_count} / {tenantStats.admin_count}</span>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase">Active user accounts</p>
+                        <div className="bg-slate-50/50 dark:bg-slate-950/40 p-3 rounded-sm border border-slate-200/60 dark:border-slate-800 space-y-1">
+                          <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Staff / Admin Users</span>
+                          <span className="text-lg font-black text-blue-600 dark:text-blue-400 tracking-tight font-mono tabular-nums">{tenantStats.staff_count} / {tenantStats.admin_count}</span>
+                          <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">Active user accounts</p>
                         </div>
-                        <div className="bg-slate-50/50 p-3 rounded-sm border border-slate-200/60 space-y-1">
-                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Retailers</span>
-                          <span className="text-lg font-black text-violet-600 tracking-tight font-mono tabular-nums">{tenantStats.retailer_count}</span>
-                          <p className="text-[8px] font-bold text-slate-400 uppercase">{tenantStats.collection_count} lifetime collections</p>
+                        <div className="bg-slate-50/50 dark:bg-slate-950/40 p-3 rounded-sm border border-slate-200/60 dark:border-slate-800 space-y-1">
+                          <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Retailers</span>
+                          <span className="text-lg font-black text-blue-600 dark:text-blue-400 tracking-tight font-mono tabular-nums">{tenantStats.retailer_count}</span>
+                          <p className="text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase">{tenantStats.collection_count} lifetime collections</p>
                         </div>
                       </div>
                     </>
                   ) : null}
 
                   {/* System details */}
-                  <div className="p-3 bg-slate-50/50 border border-slate-200/60 rounded-sm space-y-2 text-slate-800">
-                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Database cluster specifications</p>
+                  <div className="p-3 bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800 rounded-sm space-y-2 text-slate-800 dark:text-slate-200">
+                    <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">Database cluster specifications</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[10px]">
                       <div>
-                        <span className="text-slate-400 block mb-0.5">DB Name</span>
-                        <span className="font-mono font-bold text-slate-800">{selectedTenant.db_name}</span>
+                        <span className="text-slate-400 dark:text-slate-500 block mb-0.5">DB Name</span>
+                        <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{selectedTenant.db_name}</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block mb-0.5">Port Mapping</span>
-                        <span className="font-bold text-slate-800">5432 Internal</span>
+                        <span className="text-slate-400 dark:text-slate-500 block mb-0.5">Port Mapping</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">5432 Internal</span>
                       </div>
                       <div>
-                        <span className="text-slate-400 block mb-0.5">Created Date</span>
-                        <span className="font-bold text-slate-800">
+                        <span className="text-slate-400 dark:text-slate-500 block mb-0.5">Created Date</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
                           {new Date(selectedTenant.created_at).toLocaleDateString()}
                         </span>
                       </div>
@@ -677,7 +724,7 @@ export default function DashboardPage() {
                 </div>
               </div>
             ) : (
-              <div className="p-16 text-center text-slate-400 border border-dashed border-slate-200 rounded-sm bg-white">
+              <div className="p-16 text-center text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-sm bg-white dark:bg-slate-900">
                 Please onboard a tenant directory to monitor live resource usage.
               </div>
             )}
@@ -688,64 +735,64 @@ export default function DashboardPage() {
         {activeTab === "infrastructure" && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">Central PG Database</span>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-3 space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Central PG Database</span>
                   <span className={`w-2 h-2 rounded-full ${svcDotClass(getInfraService("PostgreSQL Database")?.status)}`} />
                 </div>
-                <div className="space-y-0.5 text-[10px] text-slate-600">
-                  <div className="flex justify-between"><span className="text-slate-400">Live Check</span><span className={`font-bold ${svcTextClass(getInfraService("PostgreSQL Database")?.status)}`}>{svcLabel(getInfraService("PostgreSQL Database")?.status)}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Connections</span><span className="font-bold text-slate-800 font-mono tabular-nums">{infraStatus ? `${infraStatus.active_connections} Active` : "..."}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Version</span><span className="font-mono text-slate-500">{infraStatus?.pg_version ? `PostgreSQL ${infraStatus.pg_version}` : "..."}</span></div>
+                <div className="space-y-0.5 text-[10px] text-slate-600 dark:text-slate-400">
+                  <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Live Check</span><span className={`font-bold ${svcTextClass(getInfraService("PostgreSQL Database")?.status)}`}>{svcLabel(getInfraService("PostgreSQL Database")?.status)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Connections</span><span className="font-bold text-slate-800 dark:text-slate-200 font-mono tabular-nums">{infraStatus ? `${infraStatus.active_connections} Active` : "..."}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Version</span><span className="font-mono text-slate-500 dark:text-slate-400">{infraStatus?.pg_version ? `PostgreSQL ${infraStatus.pg_version}` : "..."}</span></div>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">FastAPI Core Backend</span>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-3 space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">FastAPI Core Backend</span>
                   <span className={`w-2 h-2 rounded-full ${svcDotClass(getInfraService("Backend API")?.status)}`} />
                 </div>
-                <div className="space-y-0.5 text-[10px] text-slate-600">
-                  <div className="flex justify-between"><span className="text-slate-400">Live Check</span><span className={`font-bold ${svcTextClass(getInfraService("Backend API")?.status)}`}>{svcLabel(getInfraService("Backend API")?.status)}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">CORS Policy</span><span className="font-bold text-indigo-600 uppercase tracking-widest text-[10px]">*.crediiflow.in</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Port Mapping</span><span className="font-mono text-slate-500">{"8000 -> 8000"}</span></div>
+                <div className="space-y-0.5 text-[10px] text-slate-600 dark:text-slate-400">
+                  <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Live Check</span><span className={`font-bold ${svcTextClass(getInfraService("Backend API")?.status)}`}>{svcLabel(getInfraService("Backend API")?.status)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">CORS Policy</span><span className="font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest text-[10px]">*.crediiflow.in</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Port Mapping</span><span className="font-mono text-slate-500 dark:text-slate-400">{"8000 -> 8000"}</span></div>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">Nginx Reverse Proxy</span>
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-3 space-y-2">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Nginx Reverse Proxy</span>
                   <span className={`w-2 h-2 rounded-full ${svcDotClass(getInfraService("Nginx Reverse Proxy")?.status)}`} />
                 </div>
-                <div className="space-y-0.5 text-[10px] text-slate-600">
-                  <div className="flex justify-between"><span className="text-slate-400">Live Check</span><span className={`font-bold ${svcTextClass(getInfraService("Nginx Reverse Proxy")?.status)}`}>{svcLabel(getInfraService("Nginx Reverse Proxy")?.status)}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Latency</span><span className="font-mono text-slate-500">{getInfraService("Nginx Reverse Proxy")?.latency_ms != null ? `${getInfraService("Nginx Reverse Proxy")?.latency_ms} ms` : "--"}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">Config Path</span><span className="font-mono text-slate-500">/etc/nginx/nginx.conf</span></div>
+                <div className="space-y-0.5 text-[10px] text-slate-600 dark:text-slate-400">
+                  <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Live Check</span><span className={`font-bold ${svcTextClass(getInfraService("Nginx Reverse Proxy")?.status)}`}>{svcLabel(getInfraService("Nginx Reverse Proxy")?.status)}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Latency</span><span className="font-mono text-slate-500 dark:text-slate-400">{getInfraService("Nginx Reverse Proxy")?.latency_ms != null ? `${getInfraService("Nginx Reverse Proxy")?.latency_ms} ms` : "--"}</span></div>
+                  <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Config Path</span><span className="font-mono text-slate-500 dark:text-slate-400">/etc/nginx/nginx.conf</span></div>
                 </div>
               </div>
 
-              <div className="bg-white border border-slate-200/80 rounded-sm p-3 space-y-2 flex flex-col justify-between">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-3 space-y-2 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-800">SSL Certificate Guard</span>
+                  <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">SSL Certificate Guard</span>
                     <span className={`w-2 h-2 rounded-full ${
                       sslStatus?.status === 'secure' ? 'bg-emerald-500' :
                       sslStatus?.status === 'warning' ? 'bg-amber-500' :
                       sslStatus?.status === 'expired' ? 'bg-red-500' : 'bg-slate-300'
                     }`} />
                   </div>
-                  <div className="space-y-0.5 text-[10px] text-slate-600 mt-1">
-                    <div className="flex justify-between"><span className="text-slate-400">Domain</span><span className="font-bold text-slate-800 truncate max-w-[120px]" title={sslStatus?.domain}>{sslStatus?.domain || "Loading..."}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400">Issuer</span><span className="font-bold text-slate-800 truncate max-w-[120px]" title={sslStatus?.issuer}>{sslStatus?.issuer || "Loading..."}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400">Expires</span><span className="font-mono text-slate-500 text-[9px]">{sslStatus?.expiry_date || "Loading..."}</span></div>
-                    <div className="flex justify-between"><span className="text-slate-400">Remaining</span><span className={`font-bold ${sslStatus?.days_remaining <= 15 ? 'text-red-600' : 'text-slate-800'}`}>{sslStatus?.days_remaining !== undefined ? `${sslStatus.days_remaining} Days` : "Loading..."}</span></div>
+                  <div className="space-y-0.5 text-[10px] text-slate-600 dark:text-slate-400 mt-1">
+                    <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Domain</span><span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[120px]" title={sslStatus?.domain}>{sslStatus?.domain || "Loading..."}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Issuer</span><span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[120px]" title={sslStatus?.issuer}>{sslStatus?.issuer || "Loading..."}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Expires</span><span className="font-mono text-slate-500 dark:text-slate-400 text-[9px]">{sslStatus?.expiry_date || "Loading..."}</span></div>
+                    <div className="flex justify-between"><span className="text-slate-400 dark:text-slate-500">Remaining</span><span className={`font-bold font-mono tabular-nums ${sslStatus?.days_remaining <= 15 ? 'text-red-600 dark:text-red-400' : 'text-slate-800 dark:text-slate-200'}`}>{sslStatus?.days_remaining !== undefined ? `${sslStatus.days_remaining} Days` : "Loading..."}</span></div>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-slate-50 flex items-center justify-between gap-2">
+                <div className="pt-2 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between gap-2">
                   <button
                     onClick={fetchSSLStatus}
                     disabled={loadingSSL}
-                    className="p-1 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-50 transition-colors"
+                    className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                     title="Refresh SSL Status"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 ${loadingSSL ? 'animate-spin' : ''}`}>
@@ -755,7 +802,7 @@ export default function DashboardPage() {
                   <button
                     onClick={handleRenewSSL}
                     disabled={renewingSSL}
-                    className="flex-1 py-0.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 disabled:opacity-50 text-[9px] font-black uppercase tracking-wider rounded transition-colors"
+                    className="flex-1 py-0.5 px-2 bg-blue-50 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400 disabled:opacity-50 text-[9px] font-black uppercase tracking-wider rounded transition-colors"
                   >
                     {renewingSSL ? "Renewing..." : "Renew SSL"}
                   </button>
@@ -764,18 +811,18 @@ export default function DashboardPage() {
             </div>
 
             {/* Live Service Reachability Table (probed over the internal Docker network, not a Docker socket call) */}
-            <div className="bg-white border border-slate-200/80 rounded-sm overflow-hidden">
-              <div className="px-6 py-5 border-b border-slate-200/80 bg-slate-50/50 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm overflow-hidden">
+              <div className="px-6 py-5 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
                 <div>
-                  <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-800">Live Service Reachability</h3>
-                  <p className="text-[9px] text-slate-400 mt-0.5">
+                  <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Live Service Reachability</h3>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">
                     {infraServices?.checked_at ? `Last checked ${new Date(infraServices.checked_at).toLocaleTimeString()}` : "Probed over the internal service network on each load"}
                   </p>
                 </div>
                 <button
                   onClick={fetchInfraServices}
                   disabled={loadingInfraServices}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded hover:bg-slate-50 transition-colors"
+                  className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                   title="Re-run live checks"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className={`w-3 h-3 ${loadingInfraServices ? "animate-spin" : ""}`}>
@@ -784,9 +831,9 @@ export default function DashboardPage() {
                 </button>
               </div>
               <div className="overflow-x-auto text-[10px]">
-                <table className="w-full text-left border-collapse text-slate-600">
+                <table className="w-full text-left border-collapse text-slate-600 dark:text-slate-400">
                   <thead>
-                    <tr className="bg-slate-50/70 text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-200/80">
+                    <tr className="bg-slate-50/70 dark:bg-slate-950 text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest border-b border-slate-200/80 dark:border-slate-800">
                       <th className="px-3.5 py-2">Service Name</th>
                       <th className="px-3.5 py-2">Container</th>
                       <th className="px-3.5 py-2">Check</th>
@@ -794,25 +841,25 @@ export default function DashboardPage() {
                       <th className="px-3.5 py-2 text-center">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-800">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-800 dark:text-slate-200">
                     {!infraServices ? (
                       <tr>
-                        <td colSpan={5} className="px-3.5 py-4 text-center text-slate-400">
+                        <td colSpan={5} className="px-3.5 py-4 text-center text-slate-400 dark:text-slate-500">
                           {loadingInfraServices ? "Running live checks..." : "No data yet."}
                         </td>
                       </tr>
                     ) : (
                       infraServices.services.map((svc: any) => (
                         <tr key={svc.name}>
-                          <td className="px-3.5 py-2 font-bold text-slate-900">{svc.name}</td>
-                          <td className="px-3.5 py-2 font-mono text-slate-500">{svc.container}</td>
-                          <td className="px-3.5 py-2 font-mono text-slate-500 truncate max-w-[220px]" title={svc.detail}>{svc.detail || svc.check}</td>
-                          <td className="px-3.5 py-2 font-mono text-slate-500">{svc.latency_ms != null ? `${svc.latency_ms} ms` : "--"}</td>
+                          <td className="px-3.5 py-2 font-bold text-slate-900 dark:text-white">{svc.name}</td>
+                          <td className="px-3.5 py-2 font-mono text-slate-500 dark:text-slate-400">{svc.container}</td>
+                          <td className="px-3.5 py-2 font-mono text-slate-500 dark:text-slate-400 truncate max-w-[220px]" title={svc.detail}>{svc.detail || svc.check}</td>
+                          <td className="px-3.5 py-2 font-mono text-slate-500 dark:text-slate-400">{svc.latency_ms != null ? `${svc.latency_ms} ms` : "--"}</td>
                           <td className="px-3.5 py-2 text-center">
                             <span className={`px-2 py-0.5 rounded-full font-black uppercase tracking-wider text-[8px] ${
-                              svc.status === "up" ? "bg-emerald-50 border border-emerald-200/50 text-emerald-600" :
-                              svc.status === "degraded" ? "bg-amber-50 border border-amber-200/50 text-amber-600" :
-                              "bg-red-50 border border-red-200/50 text-red-600"
+                              svc.status === "up" ? "bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400" :
+                              svc.status === "degraded" ? "bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400" :
+                              "bg-red-50 dark:bg-red-950/20 border border-red-200/50 dark:border-red-900/30 text-red-600 dark:text-red-400"
                             }`}>{svc.status}</span>
                           </td>
                         </tr>
@@ -908,6 +955,8 @@ export default function DashboardPage() {
                       <input
                         type={showOnboardPassword ? "text" : "password"}
                         required
+                        minLength={6}
+                        title="Must be at least 6 characters"
                         value={tenantAdminPassword}
                         onChange={(e) => setTenantAdminPassword(e.target.value)}
                         className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
@@ -1035,6 +1084,8 @@ export default function DashboardPage() {
                     <div className="relative">
                       <input
                         type={showEditPassword ? "text" : "password"}
+                        minLength={6}
+                        title="Must be at least 6 characters"
                         value={editAdminPassword}
                         onChange={(e) => setEditAdminPassword(e.target.value)}
                         className="w-full pl-4 pr-12 py-2.5 bg-white border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"

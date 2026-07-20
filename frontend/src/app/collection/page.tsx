@@ -28,7 +28,7 @@ function NewCollectionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("editId");
-  const { theme, toggleTheme, addCollection } = useAppStore();
+  const { theme, toggleTheme, addCollection, currentUser } = useAppStore();
 
   // Network State status bar
   const [isOnline, setIsOnline] = useState(true);
@@ -575,7 +575,7 @@ function NewCollectionContent() {
                   <InlineSelect
                     value={selectedStaffId}
                     onChange={(val) => setSelectedStaffId(val)}
-                    options={staffMembers.map((s) => ({ value: s.id, label: s.name }))}
+                    options={staffMembers.filter((s) => s.id !== currentUser?.id).map((s) => ({ value: s.id, label: s.name }))}
                     placeholder="Choose Staff Member"
                     icon={<UserIcon className="w-3.5 h-3.5" />}
                   />

@@ -38,6 +38,8 @@ def submit_collection(
             if not store:
                 raise HTTPException(status_code=404, detail="Store not found")
     elif payload.from_staff_id:
+        if payload.from_staff_id == current_user.id:
+            raise HTTPException(status_code=400, detail="A staff member cannot record a handover from themselves.")
         from_staff = db.scalar(select(User).where(User.id == payload.from_staff_id))
         if not from_staff:
             raise HTTPException(status_code=404, detail="Source staff member not found")
@@ -628,6 +630,8 @@ def update_collection(
     new_bank_account_id = payload.bank_account_id
     old_from_staff_id = collection.from_staff_id
     new_from_staff_id = payload.from_staff_id
+    if new_from_staff_id and new_from_staff_id == collection.staff_id:
+        raise HTTPException(status_code=400, detail="A staff member cannot record a handover from themselves.")
 
     # Capture CMS details if transitioning from CMS (no retailer) to a Retailer
     was_cms = (old_retailer_id is None) and (new_retailer_id is not None)

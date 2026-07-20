@@ -13,6 +13,26 @@ const getApiBaseUrl = () => {
 
 export const API_BASE_URL = getApiBaseUrl();
 
+// FastAPI error bodies come in two shapes: `detail` is a plain string for
+// HTTPException, but a list of {msg, loc} objects for Pydantic validation
+// (422) errors. Rendering the list directly (or passing it to `new Error()`)
+// stringifies it to "[object Object]" -- this always resolves to readable text.
+function extractErrorMessage(errorData: any): string {
+  const detail = errorData?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((e: any) => {
+        const field = Array.isArray(e?.loc) ? e.loc[e.loc.length - 1] : null;
+        return field ? `${field}: ${e.msg}` : e?.msg;
+      })
+      .filter(Boolean)
+      .join("; ");
+  }
+  if (detail && typeof detail === "object") return JSON.stringify(detail);
+  return "";
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("superadmin_token") : null;
   const baseUrl = API_BASE_URL.endsWith("/") ? API_BASE_URL.slice(0, -1) : API_BASE_URL;
@@ -32,7 +52,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ detail: "Request failed" }));
-    throw new Error(errorData.detail || response.statusText);
+    throw new Error(extractErrorMessage(errorData) || response.statusText);
   }
 
   if (response.status === 204) return {} as T;
