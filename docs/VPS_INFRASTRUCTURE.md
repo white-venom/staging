@@ -10,7 +10,41 @@ Server: `187.127.176.149` (root SSH). Repo checked out at `/opt/crediiflow`.
 Deploys via `.github/workflows/deploy.yml` (`git pull` + `docker compose up -d
 --build` over SSH on every push to `main`).
 
-Last verified against the live server: 2026-07-20.
+Last verified against the live server: 2026-07-23.
+
+---
+
+## 0. The real reverse proxy is HOST-level nginx, not the docker-compose `nginx` service
+
+**Discovered 2026-07-23, after it silently failed on every deploy for a
+while and briefly took the site down when something tried to actually free
+port 80/443 for it.** This VPS also hosts an unrelated site, `worrkin.in` —
+that's the reason a HOST-level `nginx.service` exists at all here, with its
+own config at `/etc/nginx/sites-enabled/crediiflow.conf` (crediiflow domains,
+`proxy_pass` to `127.0.0.1:3000/3001/3002/8000`, the same ports this stack's
+containers publish) and `/etc/nginx/sites-enabled/worrkin.conf`. That host
+nginx is the **actual production reverse proxy** for crediiflow.in today.
+
+The `nginx` service in `docker-compose.yml` is now **commented out**. Left
+enabled, it competed for the exact same ports as the host nginx: it either
+lost the race silently (container runs, but `docker port` shows no bound
+ports — traffic still worked because the host nginx already had 80/443) or,
+if the host nginx was ever stopped first, it took the whole site (and
+worrkin.in) down until the host nginx was manually restored. **Do not
+re-enable the docker-compose `nginx` service without first decommissioning
+the host-level one** (or vice versa) — never run both.
+
+Practical implications:
+- `systemctl status nginx` / `systemctl restart nginx` (not `docker
+  restart crediiflow_nginx`) is how you actually manage the reverse proxy now.
+- The SSL renewal hooks (§1 below) and `ssl-trigger-watcher.sh` were
+  originally written against the docker container and have been corrected to
+  `systemctl stop/start nginx`.
+- If nginx config ever needs changing, edit
+  `/etc/nginx/sites-enabled/crediiflow.conf` directly on the host — this file
+  is **not** in git (same "lives only on the VPS" caveat as everything else
+  in this document) and `nginx.conf`/`docker-compose.yml`'s (disabled)
+  `nginx` service in the repo no longer reflect reality.
 
 ---
 
@@ -108,10 +142,12 @@ log "Domain list for this run: ${DOMAIN_ARGS[*]}"
 
 # The existing cert's authenticator is --standalone (binds its own listener on
 # port 80 to complete the HTTP-01 challenge), which conflicts with the
-# dockerized nginx already holding that port. Stop it for the duration of the
-# certbot call, then always restart it regardless of outcome.
+# reverse proxy already holding that port -- the HOST-level nginx.service
+# (not the docker-compose 'nginx' service, which is disabled -- see §0).
+# Stop it for the duration of the certbot call, then always restart it
+# regardless of outcome.
 log "Stopping nginx to free port 80..."
-docker stop crediiflow_nginx >>"$LOG_FILE" 2>&1
+systemctl stop nginx >>"$LOG_FILE" 2>&1
 
 certbot certonly --standalone --cert-name "$CERT_NAME" --expand \
   "${DOMAIN_ARGS[@]}" \
@@ -120,7 +156,7 @@ certbot certonly --standalone --cert-name "$CERT_NAME" --expand \
 CERTBOT_EXIT=$?
 
 log "Restarting nginx..."
-docker start crediiflow_nginx >>"$LOG_FILE" 2>&1
+systemctl start nginx >>"$LOG_FILE" 2>&1
 
 if [ $CERTBOT_EXIT -eq 0 ]; then
   log "Certbot succeeded -- cert now covers: ${DOMAIN_ARGS[*]}"
@@ -182,25 +218,27 @@ The stock OS-installed `certbot.timer` / `/etc/cron.d/certbot` (ships with the
 `certbot` apt package, unrelated to this app) runs `certbot renew` twice
 daily. The cert's renewal config (`/etc/letsencrypt/renewal/api.crediiflow.in.conf`)
 uses `authenticator = standalone`, which has the *same* port-80 conflict with
-the dockerized nginx as above. This had never actually triggered a failure
-only because the cert wasn't yet within its 30-day renewal window — but it
-would have failed the first time renewal actually ran. Fixed with two hook
-scripts (certbot runs anything executable in these directories automatically
-around a real renewal):
+the reverse proxy as above. This had never actually triggered a failure only
+because the cert wasn't yet within its 30-day renewal window — but it would
+have failed the first time renewal actually ran. Fixed with two hook scripts
+(certbot runs anything executable in these directories automatically around a
+real renewal):
 
 `/etc/letsencrypt/renewal-hooks/pre/stop-nginx.sh` (mode `755`):
 
 ```bash
 #!/bin/bash
-# Standalone authenticator needs port 80 free; the dockerized nginx holds it.
-docker stop crediiflow_nginx
+# Standalone authenticator needs port 80 free. The reverse proxy is the
+# HOST-level nginx.service -- see §0 -- not the docker-compose 'nginx'
+# service, which is disabled.
+systemctl stop nginx
 ```
 
 `/etc/letsencrypt/renewal-hooks/post/start-nginx.sh` (mode `755`):
 
 ```bash
 #!/bin/bash
-docker start crediiflow_nginx
+systemctl start nginx
 ```
 
 ### Current cert status (as of last verification)
@@ -263,17 +301,22 @@ those env vars are absent, which is the current state.
 
 ---
 
-## 4. Nginx config — `/opt/crediiflow/nginx.conf`
+## 4. Nginx config — `/opt/crediiflow/nginx.conf` (VESTIGIAL as of 2026-07-23, see §0)
 
-Mounted read-only into the `crediiflow_nginx` container
-(`./nginx.conf:/etc/nginx/nginx.conf:ro` per `docker-compose.yml`). This file
-is **not** in git — it's hand-maintained directly on the server. Two backup
-copies exist alongside it from manual edits on 2026-07-08
-(`nginx.conf.bak.20260708070807`, `nginx.conf.bak.20260708072025`) — evidence
-someone was editing it by hand that day; no changelog beyond the timestamps.
+Was mounted read-only into the `crediiflow_nginx` container
+(`./nginx.conf:/etc/nginx/nginx.conf:ro` per `docker-compose.yml`), which is
+now disabled — this file is no longer part of the live routing path. The
+**real** live nginx config is `/etc/nginx/sites-enabled/crediiflow.conf` on
+the host (also not in git — same "server-only" caveat, just a different
+file). This file is **not** in git either — it's hand-maintained directly on
+the server. Two backup copies exist alongside it from manual edits on
+2026-07-08 (`nginx.conf.bak.20260708070807`, `nginx.conf.bak.20260708072025`)
+— evidence someone was editing it by hand that day; no changelog beyond the
+timestamps.
 
-If nginx routing/rate-limiting/proxy rules are ever debugged or changed,
-remember the live config is server-only — consider bringing it into the repo
+If nginx routing/rate-limiting/proxy rules are ever debugged or changed, edit
+`/etc/nginx/sites-enabled/crediiflow.conf`, not this file — and remember the
+live config is server-only either way; consider bringing it into the repo
 (even as a reference copy) in a future pass so changes are diffable.
 
 ---
@@ -473,15 +516,19 @@ If this VPS is ever rebuilt from scratch:
 3. `git clone` this repo to `/opt/crediiflow`.
 4. Recreate `/opt/crediiflow/.env` with the keys listed in §3 (values from
    secrets manager / password vault — not in this doc, not in git).
-5. Recreate `/opt/crediiflow/nginx.conf` (§4 — not in git; check for an
-   off-server backup, since the server-local `.bak` copies won't survive a
-   rebuild either).
+5. Install nginx on the host (`apt install nginx`) and recreate
+   `/etc/nginx/sites-enabled/crediiflow.conf` (§0 — not in git; check for an
+   off-server backup) plus `sites-enabled/worrkin.conf` if worrkin.in is
+   still meant to live on this same VPS. `systemctl enable --now nginx`. The
+   in-repo `nginx.conf` / docker-compose `nginx` service (§4) are vestigial —
+   don't rely on them; the disabled service in `docker-compose.yml` should
+   stay commented out unless the host nginx is being decommissioned instead.
 6. Issue the initial cert manually (first issuance, before the watcher has
    anything to expand): `certbot certonly --standalone --cert-name
    api.crediiflow.in -d api.crediiflow.in -d app.crediiflow.in -d
    crediiflow.in -d www.crediiflow.in -d superadmin.crediiflow.in -d
-   <each existing tenant subdomain>.crediiflow.in ...` (stop nginx first if
-   it's already up).
+   <each existing tenant subdomain>.crediiflow.in ...` (`systemctl stop
+   nginx` first to free port 80, per §0/§1).
 7. `chown 1002:1001 /opt/crediiflow/triggers; chmod 755 /opt/crediiflow/triggers` (§1).
 8. Recreate `/opt/crediiflow/ssl-trigger-watcher.sh` from §1's inline copy,
    `chmod 755`.
