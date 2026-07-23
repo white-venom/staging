@@ -294,18 +294,29 @@ export default function LedgerTab({
         party = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
       }
       
+      // Virtual transfers are the only deposit rows that can move money IN to
+      // the retailer's balance: a "load" CREDITS the retailer (backend ADDS,
+      // see deposits.py's create_deposit dt=='virtual' branch), while a
+      // "refund" (move-to-distributor) DEBITS the retailer (backend
+      // SUBTRACTS) -- the reverse of every other deposit row here, which is
+      // always an outflow/debit (cash-out, staff handover, portal deposit).
+      // This used to be inverted (isRef put the amount in `credit`, load put
+      // it in `debit`) which fed straight into totalCredit/totalDebit and
+      // double-counted instead of netting a load against a later refund.
+      const isCredit = isVirtual && !isRef;
+
       return {
         id: d.id,
         date: d.date,
         partyId,
         party,
         store_name: null,
-        bankAccount: isVirtual ? (d.portalName || d.bankAccountName || d.targetName) : d.targetName, 
+        bankAccount: isVirtual ? (d.portalName || d.bankAccountName || d.targetName) : d.targetName,
         staff: d.staffName || "Admin",
-        debit: isRef ? 0 : d.amount,
-        credit: isRef ? d.amount : 0,
+        debit: isCredit ? 0 : d.amount,
+        credit: isCredit ? d.amount : 0,
         balance_snapshot: d.balance_snapshot,
-        type: isRef ? 'collection' : 'deposit',
+        type: 'deposit',
         depositType: d.depositType,
         txType,
         rawRecord: d
@@ -406,30 +417,26 @@ export default function LedgerTab({
     chronological.forEach(tx => {
       const currentPartyBal = partyRunningBalances.get(tx.partyId) || 0;
       const old = currentPartyBal;
-      const newVal = old + (tx.debit - tx.credit);
+      // Matches ledger.py's recalculate_balances(): credit ADDS, debit SUBTRACTS.
+      const newVal = old + (tx.credit - tx.debit);
       partyRunningBalances.set(tx.partyId, newVal);
       snapshots.set(tx.id, { old, new: newVal });
     });
 
-    // Single source of truth for a row's (Opening, Party Bal) pair. Always prefers
-    // the backend's own stored balance_snapshot (set by collections.py/deposits.py)
-    // over the locally-recomputed `snapshots` map above -- that local map uses one
-    // generic (debit - credit) delta for every row, which happens to match the
-    // portal/bank-account direction but is inverted for retailer collections (a
-    // collection is a "credit" that the backend ADDS to the retailer's balance, not
-    // subtracts). Deriving Opening from the trusted new balance side-steps that
-    // mismatch instead of trying to make one delta formula fit both directions.
+    // Single source of truth for a row's (Opening, Party Bal) pair. Prefers the
+    // backend's own stored balance_snapshot over the locally-recomputed
+    // `snapshots` map above wherever available. Now that every row upstream
+    // carries a correctly-signed (debit, credit) pair matching the backend's
+    // own credit-adds/debit-subtracts convention (see recalculate_balances()
+    // and create_deposit()'s virtual-transfer branch), one formula covers
+    // every row type: new = old + credit - debit, so old = new - credit + debit.
     const getTxBalances = (tx: any): { old: number; new: number } => {
       if (tx.balance_snapshot !== undefined && tx.balance_snapshot !== null) {
         const txNew = Number(tx.balance_snapshot);
         // Opening Balance is always the first ledger row ever created for its
-        // retailer (recalculate_balances() dates it to open the account before
-        // anything else), so there's nothing before it regardless of whether
-        // it's a credit or debit -- unlike collection/deposit rows, neither
-        // "new - credit" nor "new - debit" applies here.
+        // retailer, so there's nothing before it regardless of credit/debit.
         const txOld = tx.type === 'opening-balance' ? 0
-          : tx.type === 'collection' ? txNew - Number(tx.credit)
-          : txNew - Number(tx.debit);
+          : txNew - Number(tx.credit) + Number(tx.debit);
         return { old: txOld, new: txNew };
       }
       return snapshots.get(tx.id) || { old: 0, new: 0 };

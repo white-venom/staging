@@ -58,6 +58,7 @@ export default function DashboardPage() {
   const [subdomain, setSubdomain] = useState("");
   const [tenantAdminName, setTenantAdminName] = useState("");
   const [tenantAdminPhone, setTenantAdminPhone] = useState("");
+  const [tenantAdminEmail, setTenantAdminEmail] = useState("");
   const [tenantAdminPassword, setTenantAdminPassword] = useState("");
   const [showOnboardPassword, setShowOnboardPassword] = useState(false);
   const [formError, setFormError] = useState("");
@@ -318,6 +319,7 @@ export default function DashboardPage() {
         subdomain: finalSubdomain,
         admin_name: tenantAdminName,
         admin_phone: tenantAdminPhone,
+        admin_email: tenantAdminEmail || undefined,
         admin_password: tenantAdminPassword,
       });
 
@@ -329,6 +331,7 @@ export default function DashboardPage() {
       setSubdomain("");
       setTenantAdminName("");
       setTenantAdminPhone("");
+      setTenantAdminEmail("");
       setTenantAdminPassword("");
       
       triggerToast("New client database cluster provisioned successfully!");
@@ -1200,6 +1203,17 @@ export default function DashboardPage() {
                     onChange={(e) => setTenantAdminName(e.target.value)}
                     className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
                     placeholder="e.g. John Doe"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Admin Email (Optional)</label>
+                  <input
+                    type="email"
+                    value={tenantAdminEmail}
+                    onChange={(e) => setTenantAdminEmail(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-violet-500 rounded-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-colors duration-200 text-[10px] font-bold"
+                    placeholder="e.g. owner@client.com — sends onboarding credentials"
                   />
                 </div>
 

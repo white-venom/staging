@@ -114,6 +114,9 @@ class TenantCreateRequest(BaseModel):
     admin_name: str = Field(..., max_length=100)
     admin_phone: str = Field(..., max_length=20)
     admin_password: str = Field(..., min_length=6)
+    # Not persisted anywhere (the tenant's own `users` table has no email
+    # column) -- used transiently, once, to send the onboarding welcome email.
+    admin_email: Optional[str] = Field(None, max_length=255)
 
 class TenantMaintenanceRequest(BaseModel):
     maintenance_mode: bool
@@ -134,9 +137,12 @@ class TenantResponse(BaseModel):
     maintenance_mode: bool
     created_at: datetime
     admin_phone: Optional[str] = None
-    edit_window_minutes: int = 5
-    delete_window_minutes: int = 5
+    edit_window_minutes: int = 10
+    delete_window_minutes: int = 10
     tenant_admin_can_edit_entities: bool = False
+    time_window_lock_enabled: bool = True
+    admin_edit_window_minutes: int = 30
+    admin_delete_window_minutes: int = 30
 
     class Config:
         from_attributes = True
@@ -144,11 +150,16 @@ class TenantResponse(BaseModel):
 
 class TenantControlsRequest(BaseModel):
     """Superadmin-only, per-tenant controls -- see items #2, #3, #4."""
-    edit_window_minutes: int = Field(5, description="-1 = unlimited")
-    delete_window_minutes: int = Field(5, description="-1 = unlimited")
+    edit_window_minutes: int = Field(10, description="Staff edit window, minutes. -1 = unlimited")
+    delete_window_minutes: int = Field(10, description="Staff delete window, minutes. -1 = unlimited")
     tenant_admin_can_edit_entities: bool = Field(
         False, description="If true, delegate Retailer/Staff/Store/balance editing back to this tenant's own admin."
     )
+    time_window_lock_enabled: bool = Field(
+        True, description="Master toggle for the whole edit/delete time-window + downstream-cash-use lock feature."
+    )
+    admin_edit_window_minutes: int = Field(30, description="Admin edit window, minutes. -1 = unlimited")
+    admin_delete_window_minutes: int = Field(30, description="Admin delete window, minutes. -1 = unlimited")
 
 # Dependency to verify Super Admin
 def get_current_super_admin(
@@ -341,6 +352,25 @@ def create_tenant(
         trigger_ssl_provisioning()
     except Exception as e:
         print(f"[SSL] Failed to write provisioning trigger for new tenant: {e}")
+
+    # Fire-and-forget onboarding email, same treatment as DNS/SSL above --
+    # never fails tenant creation itself. Only sent if the superadmin supplied
+    # an email at onboarding time (not a required field).
+    if tenant_data.admin_email:
+        try:
+            from app.logic.email import send_tenant_onboarding_email
+            login_url = f"https://{tenant_data.subdomain}.{CF_DOMAIN}"
+            send_tenant_onboarding_email(
+                to_email=tenant_data.admin_email,
+                tenant_name=tenant_data.name,
+                subdomain=tenant_data.subdomain,
+                admin_name=tenant_data.admin_name,
+                admin_phone=tenant_data.admin_phone,
+                admin_password=tenant_data.admin_password,
+                login_url=login_url,
+            )
+        except Exception as e:
+            print(f"[EMAIL] Onboarding email dispatch failed for new tenant '{tenant_data.name}': {e}")
 
     res = TenantResponse.model_validate(new_tenant)
     res.admin_phone = tenant_data.admin_phone
@@ -644,13 +674,20 @@ def update_tenant_controls(
         raise HTTPException(status_code=404, detail="Tenant not found")
 
     if payload.edit_window_minutes != -1 and payload.edit_window_minutes < 1:
-        raise HTTPException(status_code=400, detail="Edit window must be -1 (unlimited) or a positive number of minutes.")
+        raise HTTPException(status_code=400, detail="Staff edit window must be -1 (unlimited) or a positive number of minutes.")
     if payload.delete_window_minutes != -1 and payload.delete_window_minutes < 1:
-        raise HTTPException(status_code=400, detail="Delete window must be -1 (unlimited) or a positive number of minutes.")
+        raise HTTPException(status_code=400, detail="Staff delete window must be -1 (unlimited) or a positive number of minutes.")
+    if payload.admin_edit_window_minutes != -1 and payload.admin_edit_window_minutes < 1:
+        raise HTTPException(status_code=400, detail="Admin edit window must be -1 (unlimited) or a positive number of minutes.")
+    if payload.admin_delete_window_minutes != -1 and payload.admin_delete_window_minutes < 1:
+        raise HTTPException(status_code=400, detail="Admin delete window must be -1 (unlimited) or a positive number of minutes.")
 
     tenant.edit_window_minutes = payload.edit_window_minutes
     tenant.delete_window_minutes = payload.delete_window_minutes
     tenant.tenant_admin_can_edit_entities = payload.tenant_admin_can_edit_entities
+    tenant.time_window_lock_enabled = payload.time_window_lock_enabled
+    tenant.admin_edit_window_minutes = payload.admin_edit_window_minutes
+    tenant.admin_delete_window_minutes = payload.admin_delete_window_minutes
     db.commit()
     db.refresh(tenant)
     return tenant

@@ -79,7 +79,15 @@ export default function WalletTransferTab() {
     setIsSavingCollection(true);
 
     try {
-      const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewBankAccountId : null;
+      // Item #2: for "virtual" the admin only picks a Portal now (no BankAccount
+      // field in this branch of the UI), so resolve one internally the same
+      // way the create flows do -- "portal" (Cash Out) is exempt and keeps its
+      // own explicit BankAccount picker/state as-is.
+      const bankAccountId = selectedNewDepositType === "portal"
+        ? selectedNewBankAccountId
+        : selectedNewDepositType === "virtual"
+          ? (portalDirectory.find((g: any) => String(g.id) === effectiveEditPortalId)?.bankAccounts || [])[0]?.id || null
+          : null;
       const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
       const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
       const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
@@ -124,7 +132,6 @@ export default function WalletTransferTab() {
   };
 
   const [vSourcePortalId, setVSourcePortalId] = useState("");
-  const [vSourceBankAccountId, setVSourceBankAccountId] = useState("");
   const [vDirection, setVDirection] = useState<"load" | "refund">("load");
   const [vDestType, setVDestType] = useState<"retailer" | "staff">("retailer");
   const [vDestRetailerId, setVDestRetailerId] = useState("");
@@ -154,9 +161,7 @@ export default function WalletTransferTab() {
   };
   const [activeTab, setActiveTab] = useState<"virtual" | "portal_to_portal">("virtual");
   const [ptpFromPortalId, setPtpFromPortalId] = useState("");
-  const [ptpFromAccountId, setPtpFromAccountId] = useState("");
   const [ptpToPortalId, setPtpToPortalId] = useState("");
-  const [ptpToAccountId, setPtpToAccountId] = useState("");
   const [ptpAmount, setPtpAmount] = useState("");
   const [ptpRemarks, setPtpRemarks] = useState("");
   const [ptpDate, setPtpDate] = useState(todayIST);
@@ -179,12 +184,12 @@ export default function WalletTransferTab() {
 
   const handlePortalToPortalTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ptpFromAccountId || !ptpToAccountId) {
-      alert("Please select both source and destination bankAccounts.");
+    if (!ptpFromPortalId || !ptpToPortalId) {
+      alert("Please select both source and destination portals.");
       return;
     }
-    if (ptpFromAccountId === ptpToAccountId) {
-      alert("Source and destination bankAccounts must be different.");
+    if (ptpFromPortalId === ptpToPortalId) {
+      alert("Source and destination portals must be different.");
       return;
     }
     const amt = parseFloat(ptpAmount);
@@ -192,11 +197,21 @@ export default function WalletTransferTab() {
       alert("Please enter a valid transfer amount.");
       return;
     }
+    // Item #2: balance lives at the Portal level now, so the admin only picks
+    // a Portal -- which specific BankAccount row carries the audit-trail FK
+    // is an implementation detail. Any account under the portal works since
+    // they no longer carry their own balance.
+    const fromAccountId = (portalDirectory || []).find((g: any) => g.id === ptpFromPortalId)?.bankAccounts?.[0]?.id;
+    const toAccountId = (portalDirectory || []).find((g: any) => g.id === ptpToPortalId)?.bankAccounts?.[0]?.id;
+    if (!fromAccountId || !toAccountId) {
+      alert("The selected portal has no bank account on file yet. Add one from the Portals tab first.");
+      return;
+    }
     setIsPortalTransferring(true);
     try {
       await api.portalTransfer({
-        from_bank_account_id: ptpFromAccountId,
-        bank_account_id: ptpToAccountId,
+        from_bank_account_id: fromAccountId,
+        bank_account_id: toAccountId,
         amount: amt,
         remarks: ptpRemarks || undefined,
         deposit_date: ptpDate,
@@ -205,9 +220,7 @@ export default function WalletTransferTab() {
         showToastNotification(`Portal to Portal Transfer of ₹${amt.toLocaleString("en-IN")} done successfully!`);
       }
       setPtpFromPortalId("");
-      setPtpFromAccountId("");
       setPtpToPortalId("");
-      setPtpToAccountId("");
       setPtpAmount("");
       setPtpRemarks("");
       setPtpDate(todayIST());
@@ -221,8 +234,17 @@ export default function WalletTransferTab() {
 
   const handleVirtualTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!vSourceBankAccountId) {
-      alert("Please select a source bankAccount account");
+    if (!vSourcePortalId) {
+      alert("Please select a portal");
+      return;
+    }
+    // Item #2: balance lives at the Portal level now, so the admin only picks
+    // a Portal -- which specific BankAccount row carries the audit-trail FK
+    // is an implementation detail. Any account under the portal works since
+    // they no longer carry their own balance.
+    const sourceBankAccountId = (portalDirectory || []).find((g: any) => g.id === vSourcePortalId)?.bankAccounts?.[0]?.id;
+    if (!sourceBankAccountId) {
+      alert("The selected portal has no bank account on file yet. Add one from the Portals tab first.");
       return;
     }
     const amt = parseFloat(vAmount);
@@ -232,7 +254,7 @@ export default function WalletTransferTab() {
     }
 
     const payload: any = {
-      bank_account_id: vSourceBankAccountId,
+      bank_account_id: sourceBankAccountId,
       amount: amt,
       remarks: vRemarks || undefined,
       direction: vDirection,
@@ -269,7 +291,6 @@ export default function WalletTransferTab() {
       }
 
       setVSourcePortalId("");
-      setVSourceBankAccountId("");
       setVDestRetailerId("");
       setVDestStaffId("");
       setVAmount("");
@@ -373,68 +394,32 @@ export default function WalletTransferTab() {
               </h3>
             </div>
             <form onSubmit={handlePortalToPortalTransfer} className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Portal (From)</label>
-                  <InlineSelect
-                    value={ptpFromPortalId}
-                    onChange={(val) => { setPtpFromPortalId(val); setPtpFromAccountId(""); }}
-                    options={(portalDirectory || []).map((g: any) => ({
-                      value: g.id,
-                      label: `${g.name} — Bal: ₹${(g.balance || 0).toLocaleString("en-IN")}`
-                    }))}
-                    placeholder="Select Portal"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source BankAccount</label>
-                  <InlineSelect
-                    value={ptpFromAccountId}
-                    onChange={(val) => setPtpFromAccountId(val)}
-                    disabled={!ptpFromPortalId}
-                    options={
-                      ((portalDirectory || []).find((g: any) => g.id === ptpFromPortalId)?.bankAccounts || []).map((p: any) => ({
-                        value: p.id,
-                        label: `${p.bank_account_name} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`
-                      }))
-                    }
-                    placeholder={ptpFromPortalId ? "Select Bank Account" : "Select a portal first"}
-                  />
-                </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Source Portal (From)</label>
+                <InlineSelect
+                  value={ptpFromPortalId}
+                  onChange={(val) => setPtpFromPortalId(val)}
+                  options={(portalDirectory || []).map((g: any) => ({
+                    value: g.id,
+                    label: `${g.name} — Bal: ₹${(g.balance || 0).toLocaleString("en-IN")}`
+                  }))}
+                  placeholder="Select Portal"
+                />
               </div>
               <div className="flex items-center justify-center">
                 <ArrowLeftRight className="w-4 h-4 text-violet-400" />
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Portal (To)</label>
-                  <InlineSelect
-                    value={ptpToPortalId}
-                    onChange={(val) => { setPtpToPortalId(val); setPtpToAccountId(""); }}
-                    options={(portalDirectory || []).map((g: any) => ({
-                      value: g.id,
-                      label: `${g.name} — Bal: ₹${(g.balance || 0).toLocaleString("en-IN")}`
-                    }))}
-                    placeholder="Select Portal"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination BankAccount</label>
-                  <InlineSelect
-                    value={ptpToAccountId}
-                    onChange={(val) => setPtpToAccountId(val)}
-                    disabled={!ptpToPortalId}
-                    options={
-                      ((portalDirectory || []).find((g: any) => g.id === ptpToPortalId)?.bankAccounts || [])
-                        .filter((p: any) => p.id !== ptpFromAccountId)
-                        .map((p: any) => ({
-                          value: p.id,
-                          label: `${p.bank_account_name} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`
-                        }))
-                    }
-                    placeholder={ptpToPortalId ? "Select Bank Account" : "Select a portal first"}
-                  />
-                </div>
+              <div>
+                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Destination Portal (To)</label>
+                <InlineSelect
+                  value={ptpToPortalId}
+                  onChange={(val) => setPtpToPortalId(val)}
+                  options={(portalDirectory || []).filter((g: any) => g.id !== ptpFromPortalId).map((g: any) => ({
+                    value: g.id,
+                    label: `${g.name} — Bal: ₹${(g.balance || 0).toLocaleString("en-IN")}`
+                  }))}
+                  placeholder="Select Portal"
+                />
               </div>
               <div>
                 <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Transfer Date</label>
@@ -500,38 +485,19 @@ export default function WalletTransferTab() {
 
         <form onSubmit={handleVirtualTransfer} className="space-y-4">
           <div className={`flex ${vDirection === 'load' ? 'flex-col' : 'flex-col-reverse'} gap-4`}>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                  {vDirection === "load" ? "Source Portal" : "Destination Portal"}
-                </label>
-                <InlineSelect
-                  value={vSourcePortalId}
-                  onChange={(val) => { setVSourcePortalId(val); setVSourceBankAccountId(""); }}
-                  options={(portalDirectory || []).map((g: any) => ({
-                    value: g.id,
-                    label: `${g.name} — Bal: ₹${(g.balance || 0).toLocaleString("en-IN")}`
-                  }))}
-                  placeholder="Select Portal"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
-                  {vDirection === "load" ? "Source BankAccount" : "Destination BankAccount"}
-                </label>
-                <InlineSelect
-                  value={vSourceBankAccountId}
-                  onChange={(val) => setVSourceBankAccountId(val)}
-                  disabled={!vSourcePortalId}
-                  options={
-                    ((portalDirectory || []).find((g: any) => g.id === vSourcePortalId)?.bankAccounts || []).map((p: any) => ({
-                      value: p.id,
-                      label: `${p.bank_account_name} — Bal: ₹${(p.balance || 0).toLocaleString("en-IN")}`
-                    }))
-                  }
-                  placeholder={vSourcePortalId ? "Select Bank Account" : "Select a portal first"}
-                />
-              </div>
+            <div>
+              <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">
+                {vDirection === "load" ? "Source Portal" : "Destination Portal"}
+              </label>
+              <InlineSelect
+                value={vSourcePortalId}
+                onChange={(val) => setVSourcePortalId(val)}
+                options={(portalDirectory || []).map((g: any) => ({
+                  value: g.id,
+                  label: `${g.name} — Bal: ₹${(g.balance || 0).toLocaleString("en-IN")}`
+                }))}
+                placeholder="Select Portal"
+              />
             </div>
 
             <div>
@@ -867,33 +833,16 @@ export default function WalletTransferTab() {
 
                 {selectedNewDepositType === "virtual" && (
                   <>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
-                          {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
-                        </label>
-                        <InlineSelect
-                          value={effectiveEditPortalId}
-                          onChange={(val) => { setSelectedNewPortalId(val); setSelectedNewBankAccountId(""); }}
-                          options={portalDirectory.map((group: any) => ({ value: String(group.id), label: group.name }))}
-                          placeholder="Select Portal"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
-                          {selectedNewPaymentMode === "refund" ? "Destination BankAccount" : "Source BankAccount"}
-                        </label>
-                        <InlineSelect
-                          value={selectedNewBankAccountId}
-                          onChange={setSelectedNewBankAccountId}
-                          disabled={!effectiveEditPortalId}
-                          options={
-                            (portalDirectory.find((group: any) => String(group.id) === effectiveEditPortalId)?.bankAccounts || [])
-                              .map((ba: any) => ({ value: String(ba.id), label: ba.bank_account_name }))
-                          }
-                          placeholder={effectiveEditPortalId ? "Select Bank Account" : "Select a portal first"}
-                        />
-                      </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                        {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                      </label>
+                      <InlineSelect
+                        value={effectiveEditPortalId}
+                        onChange={(val) => setSelectedNewPortalId(val)}
+                        options={portalDirectory.map((group: any) => ({ value: String(group.id), label: group.name }))}
+                        placeholder="Select Portal"
+                      />
                     </div>
 
                     <div className="space-y-1">

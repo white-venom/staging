@@ -489,24 +489,16 @@ function NewDepositContent() {
                     />
                   </div>
 
-                  {selectedPortalId && (
-                    <div>
-                      <label className="block text-[8px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500 mb-1">
-                        2. Select Source Bank Account
-                      </label>
-                      <InlineSelect
-                        value={selectedBankAccountId}
-                        onChange={(val) => setSelectedBankAccountId(val)}
-                        options={portalAccounts.map(a => ({ value: a.id, label: a.name }))}
-                        placeholder={portalAccounts.length === 0 ? "No accounts found..." : "Select Account"}
-                        icon={<CreditCard className="w-3.5 h-3.5" />}
-                      />
-                    </div>
-                  )}
+                  {/* Item #2: balance lives at the Portal level now, so Virtual
+                      Transfer only asks for a Portal -- selectedBankAccountId
+                      still gets auto-populated in the background (see the
+                      selectedPortalId effect above) to satisfy the existing
+                      bank_account_id field the backend expects, it's just no
+                      longer a visible choice here. */}
 
                   <div>
                     <label className="block text-[8px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500 mb-1">
-                      3. Select Destination Retailer
+                      2. Select Destination Retailer
                     </label>
                     <InlineSelect
                       value={selectedRetailerId}

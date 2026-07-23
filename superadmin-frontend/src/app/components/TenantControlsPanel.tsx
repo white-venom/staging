@@ -11,6 +11,9 @@ interface Tenant {
   edit_window_minutes?: number;
   delete_window_minutes?: number;
   tenant_admin_can_edit_entities?: boolean;
+  time_window_lock_enabled?: boolean;
+  admin_edit_window_minutes?: number;
+  admin_delete_window_minutes?: number;
 }
 
 interface Props {
@@ -26,22 +29,36 @@ export default function TenantControlsPanel({ tenants, showToast }: Props) {
   const selectedTenant = tenants.find(t => t.id === selectedTenantId) || null;
 
   // Window/entity controls state
-  const [editWindow, setEditWindow] = useState("5");
-  const [deleteWindow, setDeleteWindow] = useState("5");
+  const [editWindow, setEditWindow] = useState("10");
+  const [deleteWindow, setDeleteWindow] = useState("10");
   const [editPermanent, setEditPermanent] = useState(false);
   const [deletePermanent, setDeletePermanent] = useState(false);
   const [tenantAdminCanEdit, setTenantAdminCanEdit] = useState(false);
+  // Item #3: admin's own (separate, longer) window, plus the whole-feature toggle.
+  const [timeWindowLockEnabled, setTimeWindowLockEnabled] = useState(true);
+  const [adminEditWindow, setAdminEditWindow] = useState("30");
+  const [adminDeleteWindow, setAdminDeleteWindow] = useState("30");
+  const [adminEditPermanent, setAdminEditPermanent] = useState(false);
+  const [adminDeletePermanent, setAdminDeletePermanent] = useState(false);
   const [savingControls, setSavingControls] = useState(false);
 
   useEffect(() => {
     if (!selectedTenant) return;
-    const em = selectedTenant.edit_window_minutes ?? 5;
-    const dm = selectedTenant.delete_window_minutes ?? 5;
+    const em = selectedTenant.edit_window_minutes ?? 10;
+    const dm = selectedTenant.delete_window_minutes ?? 10;
     setEditPermanent(em === -1);
     setDeletePermanent(dm === -1);
-    setEditWindow(em === -1 ? "5" : String(em));
-    setDeleteWindow(dm === -1 ? "5" : String(dm));
+    setEditWindow(em === -1 ? "10" : String(em));
+    setDeleteWindow(dm === -1 ? "10" : String(dm));
     setTenantAdminCanEdit(!!selectedTenant.tenant_admin_can_edit_entities);
+
+    const aem = selectedTenant.admin_edit_window_minutes ?? 30;
+    const adm = selectedTenant.admin_delete_window_minutes ?? 30;
+    setAdminEditPermanent(aem === -1);
+    setAdminDeletePermanent(adm === -1);
+    setAdminEditWindow(aem === -1 ? "30" : String(aem));
+    setAdminDeleteWindow(adm === -1 ? "30" : String(adm));
+    setTimeWindowLockEnabled(selectedTenant.time_window_lock_enabled ?? true);
   }, [selectedTenantId]);
 
   const handleSaveControls = async () => {
@@ -49,9 +66,12 @@ export default function TenantControlsPanel({ tenants, showToast }: Props) {
     setSavingControls(true);
     try {
       await superAdminApi.updateTenantControls(selectedTenant.id, {
-        edit_window_minutes: editPermanent ? -1 : (parseInt(editWindow) || 5),
-        delete_window_minutes: deletePermanent ? -1 : (parseInt(deleteWindow) || 5),
+        edit_window_minutes: editPermanent ? -1 : (parseInt(editWindow) || 10),
+        delete_window_minutes: deletePermanent ? -1 : (parseInt(deleteWindow) || 10),
         tenant_admin_can_edit_entities: tenantAdminCanEdit,
+        time_window_lock_enabled: timeWindowLockEnabled,
+        admin_edit_window_minutes: adminEditPermanent ? -1 : (parseInt(adminEditWindow) || 30),
+        admin_delete_window_minutes: adminDeletePermanent ? -1 : (parseInt(adminDeleteWindow) || 30),
       });
       showToast(`Controls saved for ${selectedTenant.name}`);
     } catch (err: any) {
@@ -173,29 +193,75 @@ export default function TenantControlsPanel({ tenants, showToast }: Props) {
 
           {/* Edit/Delete window + delegation controls */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-5 space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-800 pb-2.5">
-              {selectedTenant.name} — Staff Entry Window
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={labelCls}>Edit Window (Minutes)</label>
-                <div className="flex items-center gap-2">
-                  <input type="number" min="1" value={editWindow} onChange={e => setEditWindow(e.target.value)} disabled={editPermanent} className={inputCls} />
-                  <label className="flex items-center gap-1 text-[9px] font-black uppercase text-purple-600 cursor-pointer select-none">
-                    <input type="checkbox" checked={editPermanent} onChange={e => setEditPermanent(e.target.checked)} /> Unlimited
-                  </label>
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
+                {selectedTenant.name} — Edit/Delete Time Windows
+              </h3>
+              <label className="flex items-center gap-2 cursor-pointer select-none shrink-0">
+                <span className="text-[9px] font-black uppercase text-slate-400">{timeWindowLockEnabled ? "Enabled" : "Disabled"}</span>
+                <div
+                  onClick={() => setTimeWindowLockEnabled(v => !v)}
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer shrink-0 ${timeWindowLockEnabled ? 'bg-emerald-600' : 'bg-slate-200 dark:bg-slate-700'}`}
+                >
+                  <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow transform transition-transform ${timeWindowLockEnabled ? 'translate-x-4' : 'translate-x-1'}`} />
                 </div>
-              </div>
-              <div>
-                <label className={labelCls}>Delete Window (Minutes)</label>
-                <div className="flex items-center gap-2">
-                  <input type="number" min="1" value={deleteWindow} onChange={e => setDeleteWindow(e.target.value)} disabled={deletePermanent} className={inputCls} />
-                  <label className="flex items-center gap-1 text-[9px] font-black uppercase text-red-500 cursor-pointer select-none">
-                    <input type="checkbox" checked={deletePermanent} onChange={e => setDeletePermanent(e.target.checked)} /> Unlimited
-                  </label>
+              </label>
+            </div>
+            <p className="text-[9px] text-slate-400 font-medium -mt-2">
+              Off: no time limit and no downstream-cash-use lock for anyone on this tenant, regardless of the values below.
+            </p>
+
+            <div>
+              <span className="block text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2">Staff</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Edit Window (Minutes)</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min="1" value={editWindow} onChange={e => setEditWindow(e.target.value)} disabled={editPermanent || !timeWindowLockEnabled} className={inputCls} />
+                    <label className="flex items-center gap-1 text-[9px] font-black uppercase text-purple-600 cursor-pointer select-none">
+                      <input type="checkbox" checked={editPermanent} onChange={e => setEditPermanent(e.target.checked)} disabled={!timeWindowLockEnabled} /> Unlimited
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Delete Window (Minutes)</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min="1" value={deleteWindow} onChange={e => setDeleteWindow(e.target.value)} disabled={deletePermanent || !timeWindowLockEnabled} className={inputCls} />
+                    <label className="flex items-center gap-1 text-[9px] font-black uppercase text-red-500 cursor-pointer select-none">
+                      <input type="checkbox" checked={deletePermanent} onChange={e => setDeletePermanent(e.target.checked)} disabled={!timeWindowLockEnabled} /> Unlimited
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
+
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+              <span className="block text-[9px] font-black uppercase text-slate-400 tracking-widest mb-2">Admin</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Edit Window (Minutes)</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min="1" value={adminEditWindow} onChange={e => setAdminEditWindow(e.target.value)} disabled={adminEditPermanent || !timeWindowLockEnabled} className={inputCls} />
+                    <label className="flex items-center gap-1 text-[9px] font-black uppercase text-purple-600 cursor-pointer select-none">
+                      <input type="checkbox" checked={adminEditPermanent} onChange={e => setAdminEditPermanent(e.target.checked)} disabled={!timeWindowLockEnabled} /> Unlimited
+                    </label>
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Delete Window (Minutes)</label>
+                  <div className="flex items-center gap-2">
+                    <input type="number" min="1" value={adminDeleteWindow} onChange={e => setAdminDeleteWindow(e.target.value)} disabled={adminDeletePermanent || !timeWindowLockEnabled} className={inputCls} />
+                    <label className="flex items-center gap-1 text-[9px] font-black uppercase text-red-500 cursor-pointer select-none">
+                      <input type="checkbox" checked={adminDeletePermanent} onChange={e => setAdminDeletePermanent(e.target.checked)} disabled={!timeWindowLockEnabled} /> Unlimited
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[9px] text-slate-400 font-medium pt-2 border-t border-slate-100 dark:border-slate-800">
+              A Collection also locks immediately (regardless of the windows above) once its cash has been drawn on by a later deposit — protects denomination accuracy, not just time.
+            </p>
 
             <label className="flex items-center justify-between gap-3 cursor-pointer select-none pt-2 border-t border-slate-100 dark:border-slate-800">
               <div>

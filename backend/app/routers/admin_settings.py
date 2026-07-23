@@ -47,9 +47,13 @@ def get_business_settings(request: Request, db: Session = Depends(get_db), curre
     # BusinessSettings. Still exposed here (read-only) so staff/admin UIs that
     # gate their own Edit/Delete buttons keep working without a separate call.
     tenant = get_current_tenant_row(request)
-    edit_window_minutes = tenant.edit_window_minutes if tenant else 5
-    delete_window_minutes = tenant.delete_window_minutes if tenant else 5
+    edit_window_minutes = tenant.edit_window_minutes if tenant else 10
+    delete_window_minutes = tenant.delete_window_minutes if tenant else 10
     tenant_admin_can_edit_entities = tenant.tenant_admin_can_edit_entities if tenant else False
+    # Item #3: admin's own (separate, longer) window, plus the whole-feature toggle.
+    time_window_lock_enabled = tenant.time_window_lock_enabled if tenant else True
+    admin_edit_window_minutes = tenant.admin_edit_window_minutes if tenant else 30
+    admin_delete_window_minutes = tenant.admin_delete_window_minutes if tenant else 30
 
     # Superadmin-controlled feature flags for this tenant (Part 1) -- exposed
     # here since this endpoint is already fetched broadly by staff/admin UIs.
@@ -71,6 +75,9 @@ def get_business_settings(request: Request, db: Session = Depends(get_db), curre
             "opening_cash_in_hand": 0.0,
             "staff_can_change_collection_date": False,
             "tenant_admin_can_edit_entities": tenant_admin_can_edit_entities,
+            "time_window_lock_enabled": time_window_lock_enabled,
+            "admin_edit_window_minutes": admin_edit_window_minutes,
+            "admin_delete_window_minutes": admin_delete_window_minutes,
             "feature_flags": feature_flags,
         }
     return {
@@ -82,6 +89,9 @@ def get_business_settings(request: Request, db: Session = Depends(get_db), curre
         "opening_cash_in_hand": getattr(settings, 'opening_cash_in_hand', 0.0),
         "staff_can_change_collection_date": getattr(settings, 'staff_can_change_collection_date', False),
         "tenant_admin_can_edit_entities": tenant_admin_can_edit_entities,
+        "time_window_lock_enabled": time_window_lock_enabled,
+        "admin_edit_window_minutes": admin_edit_window_minutes,
+        "admin_delete_window_minutes": admin_delete_window_minutes,
         "feature_flags": feature_flags,
     }
 

@@ -21,8 +21,16 @@ class Tenant(Base):
     # Staff entry edit/delete windows (minutes, -1 = unlimited). Superadmin-only,
     # per-tenant -- moved here from each tenant's own business_settings table so
     # a tenant admin can no longer see or change it themselves (see item #2).
-    edit_window_minutes: Mapped[int] = mapped_column(Integer, default=5, server_default="5", nullable=False)
-    delete_window_minutes: Mapped[int] = mapped_column(Integer, default=5, server_default="5", nullable=False)
+    edit_window_minutes: Mapped[int] = mapped_column(Integer, default=10, server_default="10", nullable=False)
+    delete_window_minutes: Mapped[int] = mapped_column(Integer, default=10, server_default="10", nullable=False)
+
+    # Item #3: admin gets its own (longer) window -- previously admins had NO
+    # time limit at all on editing/deleting collections or deposits. Gated as
+    # one whole-feature toggle so a tenant can be reverted to "no time limits
+    # at all" instantly if the new enforcement causes friction.
+    time_window_lock_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true", nullable=False)
+    admin_edit_window_minutes: Mapped[int] = mapped_column(Integer, default=30, server_default="30", nullable=False)
+    admin_delete_window_minutes: Mapped[int] = mapped_column(Integer, default=30, server_default="30", nullable=False)
 
     # When False (default), a tenant's own admin cannot edit Retailer/Staff/Store
     # records or adjust a retailer's balance directly -- that becomes a

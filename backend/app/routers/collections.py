@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime, timedelta
 from typing import List, Optional
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
@@ -509,16 +508,15 @@ def delete_collection(
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
 
-    if current_user.role != "admin":
-        if collection.staff_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Not authorized to delete this collection")
-        # Check if within delete window -- superadmin-controlled, per-tenant (item #2)
-        tenant = get_current_tenant_row(request)
-        delete_window = tenant.delete_window_minutes if tenant else 5
-        if delete_window != -1:
-            if datetime.utcnow() - collection.created_at > timedelta(minutes=delete_window):
-                raise HTTPException(status_code=403, detail=f"Can only delete collections within {delete_window} minutes of creation")
-    
+    if current_user.role != "admin" and collection.staff_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this collection")
+
+    # Item #3: time window (role-differentiated, superadmin-configurable) and
+    # the downstream-cash-use lock -- applies to admin too, see docstring.
+    from app.logic.cash_lock import enforce_collection_edit_lock
+    tenant = get_current_tenant_row(request)
+    enforce_collection_edit_lock(collection, current_user, tenant, "delete", db)
+
     retailer_id = collection.retailer_id
     audit_before = {
         "retailer_id": retailer_id, "total_amount": collection.total_amount,
@@ -623,15 +621,15 @@ def update_collection(
         raise HTTPException(status_code=404, detail="Collection not found")
 
     settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
+    # Item #3: time window (role-differentiated, superadmin-configurable) and
+    # the downstream-cash-use lock -- applies to admin too, see docstring.
+    from app.logic.cash_lock import enforce_collection_edit_lock
+    tenant = get_current_tenant_row(request)
+    enforce_collection_edit_lock(collection, current_user, tenant, "edit", db)
+
     if current_user.role != "admin":
         if collection.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this collection")
-        # Check if within edit window -- superadmin-controlled, per-tenant (item #2)
-        tenant = get_current_tenant_row(request)
-        edit_window = tenant.edit_window_minutes if tenant else 5
-        if edit_window != -1:
-            if datetime.utcnow() - collection.created_at > timedelta(minutes=edit_window):
-                raise HTTPException(status_code=403, detail=f"Can only update collections within {edit_window} minutes of creation")
         # Staff can only change date if admin has allowed it — reject with a
         # clear error rather than silently keeping the old date.
         staff_can_change_date = getattr(settings, 'staff_can_change_collection_date', False) if settings else False

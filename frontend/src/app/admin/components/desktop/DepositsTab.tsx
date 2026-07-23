@@ -91,7 +91,15 @@ export default function DepositsTab({
     setIsSavingCollection(true);
     
     try {
-      const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewBankAccountId : null;
+      // Item #2: for "virtual" the admin only picks a Portal now (no BankAccount
+      // field in this branch of the UI), so resolve one internally the same
+      // way the create flows do -- "portal" (Cash Out) is exempt and keeps its
+      // own explicit BankAccount picker/state as-is.
+      const bankAccountId = selectedNewDepositType === "portal"
+        ? selectedNewBankAccountId
+        : selectedNewDepositType === "virtual"
+          ? (portalDirectory.find((g: any) => String(g.id) === effectiveEditPortalId)?.bankAccounts || [])[0]?.id || null
+          : null;
       const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
       const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
       const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
@@ -601,33 +609,16 @@ export default function DepositsTab({
                 )}
                 {selectedNewDepositType === "virtual" && (
                   <>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
-                          {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
-                        </label>
-                        <InlineSelect
-                          value={effectiveEditPortalId}
-                          onChange={(val) => { setSelectedNewPortalId(val); setSelectedNewBankAccountId(""); }}
-                          options={portalDirectory.map((group: any) => ({ value: String(group.id), label: group.name }))}
-                          placeholder="Select Portal"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
-                          {selectedNewPaymentMode === "refund" ? "Destination BankAccount" : "Source BankAccount"}
-                        </label>
-                        <InlineSelect
-                          value={selectedNewBankAccountId}
-                          onChange={setSelectedNewBankAccountId}
-                          disabled={!effectiveEditPortalId}
-                          options={
-                            (portalDirectory.find((group: any) => String(group.id) === effectiveEditPortalId)?.bankAccounts || [])
-                              .map((ba: any) => ({ value: String(ba.id), label: ba.bank_account_name }))
-                          }
-                          placeholder={effectiveEditPortalId ? "Select Bank Account" : "Select a portal first"}
-                        />
-                      </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                        {selectedNewPaymentMode === "refund" ? "Destination Portal" : "Source Portal"}
+                      </label>
+                      <InlineSelect
+                        value={effectiveEditPortalId}
+                        onChange={(val) => setSelectedNewPortalId(val)}
+                        options={portalDirectory.map((group: any) => ({ value: String(group.id), label: group.name }))}
+                        placeholder="Select Portal"
+                      />
                     </div>
 
                     <div className="space-y-1">

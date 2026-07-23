@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy import select, and_, or_, desc
@@ -516,12 +515,12 @@ def delete_deposit(
             )
         if deposit.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this deposit")
-        # Check if within delete window -- superadmin-controlled, per-tenant (item #2)
-        delete_window = tenant.delete_window_minutes if tenant else 5
-        if delete_window != -1:
-            if datetime.utcnow() - deposit.created_at > timedelta(minutes=delete_window):
-                raise HTTPException(status_code=403, detail=f"Can only delete deposits within {delete_window} minutes of creation")
-    
+
+    # Item #3: time window (role-differentiated, superadmin-configurable) --
+    # applies to admin too now (previously admin had no limit at all).
+    from app.logic.cash_lock import enforce_deposit_edit_lock
+    enforce_deposit_edit_lock(deposit, current_user, tenant, "delete")
+
     retailer_id = deposit.retailer_id
     if retailer_id:
         # Lock the retailer up front so the later recalculate_balances() call never
@@ -554,16 +553,13 @@ def delete_deposit(
                 ).with_for_update()
             )
         if matching_collection:
-            # The recipient's own delete window still protects their record: a
-            # non-admin sender deleting their side must not silently bypass the
-            # protection the recipient would otherwise have on their Collection.
-            if current_user.role != "admin":
-                recipient_window = tenant.delete_window_minutes if tenant else 5
-                if recipient_window != -1 and datetime.utcnow() - matching_collection.created_at > timedelta(minutes=recipient_window):
-                    raise HTTPException(
-                        status_code=403,
-                        detail="This handover can no longer be deleted — the recipient's own edit window has expired."
-                    )
+            # The recipient's own Collection record still needs the same
+            # protection it would get if the recipient were deleting it
+            # directly (item #2's window) -- including the downstream-use
+            # lock (item #3), in case the recipient already spent that
+            # received cash before the sender tries to undo the handover.
+            from app.logic.cash_lock import enforce_collection_edit_lock
+            enforce_collection_edit_lock(matching_collection, current_user, tenant, "delete", db)
             db.execute(delete(Ledger).where(Ledger.collection_id == matching_collection.id))
             db.delete(matching_collection)
 
@@ -668,6 +664,12 @@ def update_deposit(
     if deposit.deposit_type == "staff" and deposit.recipient_staff_id and not is_feature_enabled(request, "staff_handover"):
         raise HTTPException(status_code=403, detail="Staff-to-staff handover is not enabled for this account. Contact CrediiFlow support to turn it on.")
 
+    # Item #3: time window (role-differentiated, superadmin-configurable) --
+    # applies to admin too now (previously admin had no limit at all).
+    from app.logic.cash_lock import enforce_deposit_edit_lock
+    tenant = get_current_tenant_row(request)
+    enforce_deposit_edit_lock(deposit, current_user, tenant, "edit")
+
     if current_user.role != "admin":
         if deposit.deposit_type == "virtual" or payload.deposit_type.lower().strip() == "virtual":
             raise HTTPException(
@@ -676,12 +678,6 @@ def update_deposit(
             )
         if deposit.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this deposit")
-        # Check if within edit window -- superadmin-controlled, per-tenant (item #2)
-        tenant = get_current_tenant_row(request)
-        edit_window = tenant.edit_window_minutes if tenant else 5
-        if edit_window != -1:
-            if datetime.utcnow() - deposit.created_at > timedelta(minutes=edit_window):
-                raise HTTPException(status_code=403, detail=f"Can only update deposits within {edit_window} minutes of creation")
 
         # Backdating gate: reject with a clear error rather than silently
         # accepting/discarding a date change.

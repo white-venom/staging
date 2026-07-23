@@ -216,12 +216,16 @@ class SmokeTest:
         raise SmokeTestFailure("test retailer not found in list")
 
     def get_bank_account_balance(self) -> Decimal:
-        r = self.admin.request("GET", "/bank-accounts")
-        check(r.status_code == 200, f"list bank accounts failed: {r.status_code}")
-        for ba in r.json():
-            if ba["id"] == self.bank_account_id:
-                return Decimal(str(ba["balance"]))
-        raise SmokeTestFailure("test bank account not found in list")
+        # Item #8 consolidated per-BankAccount balance tracking into the parent
+        # Portal -- BankAccountResponse no longer carries a `balance` field at
+        # all, so the only source of truth for "did this deposit move money"
+        # is the owning Portal's balance now.
+        r = self.admin.request("GET", "/portals")
+        check(r.status_code == 200, f"list portals failed: {r.status_code}")
+        for p in r.json():
+            if p["id"] == self.portal_id:
+                return Decimal(str(p["balance"]))
+        raise SmokeTestFailure("test portal not found in list")
 
     def scenario_login(self):
         # Already exercised in setup() via admin+staff logins; assert /auth/me works too.

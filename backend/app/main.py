@@ -45,9 +45,20 @@ def startup_event():
     try:
         from sqlalchemy import text as _text
         with master_engine.begin() as conn:
-            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS edit_window_minutes INTEGER NOT NULL DEFAULT 5"))
-            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS delete_window_minutes INTEGER NOT NULL DEFAULT 5"))
+            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS edit_window_minutes INTEGER NOT NULL DEFAULT 10"))
+            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS delete_window_minutes INTEGER NOT NULL DEFAULT 10"))
             conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS tenant_admin_can_edit_entities BOOLEAN NOT NULL DEFAULT false"))
+            # Item #3: admin now gets its own (longer) time-limited window --
+            # previously unlimited -- plus a whole-feature toggle. Existing rows
+            # created under item #2's old 5-minute staff default get bumped to
+            # the new 10-minute default too, since that old value was never a
+            # deliberate superadmin choice (item #2 shipped with no superadmin
+            # UI exposed for it yet -- this is the first real configuration pass).
+            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS time_window_lock_enabled BOOLEAN NOT NULL DEFAULT true"))
+            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_edit_window_minutes INTEGER NOT NULL DEFAULT 30"))
+            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_delete_window_minutes INTEGER NOT NULL DEFAULT 30"))
+            conn.execute(_text("UPDATE tenants SET edit_window_minutes = 10 WHERE edit_window_minutes = 5"))
+            conn.execute(_text("UPDATE tenants SET delete_window_minutes = 10 WHERE delete_window_minutes = 5"))
         with master_engine.begin() as conn:
             conn.execute(_text("ALTER TABLE super_admins ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'full'"))
     except Exception as e:

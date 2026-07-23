@@ -511,3 +511,46 @@ backups (§5) is what makes this checklist meaningful for data recovery, not
 just service recovery. Until then, the only backup is whatever the VPS
 provider's own infrastructure-level disk snapshots (if any) provide —
 verify that separately; it isn't covered by anything in this document.
+
+---
+
+## 9. Outbound email (tenant onboarding) — code is real, SMTP credentials still pending
+
+**Status: the send path (`backend/app/logic/email.py`) is fully implemented
+and wired into `POST /superadmin/tenants` — not a simulation. With no SMTP
+env vars set (the case on production today), it detects that cleanly, logs a
+one-line skip notice, and returns `False` without ever failing tenant
+creation itself.** Same "real code, pending credentials" shape as §5's R2
+upload leg.
+
+### What it does
+
+When a superadmin fills in the optional "Admin Email" field while onboarding
+a new tenant, `create_tenant()` fires a best-effort, non-blocking call to
+`send_tenant_onboarding_email()` after the tenant/admin/DNS/SSL steps all
+succeed. It sends a branded HTML email (matches the app's own visual
+language — Inter font, `#0d1b3e`/`#2563eb`, dense uppercase labels) containing
+the login URL, phone, and password, plus a plain-text fallback.
+
+The email address is **never persisted** — the tenant's own `users` table has
+no `email` column, and this deliberately doesn't add one just to support a
+one-time welcome message. If SMTP isn't configured, or the admin leaves the
+email field blank, tenant creation proceeds exactly as before; nothing about
+the core onboarding flow depends on this working.
+
+### Required `.env` keys (not yet set)
+
+Add these to `/opt/crediiflow/.env` and restart the backend container to
+enable real sending:
+
+```
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=apikey-or-username
+SMTP_PASSWORD=the-real-secret
+SMTP_FROM=onboarding@crediiflow.in
+```
+
+Any standard SMTP provider (SES, SendGrid, Mailgun, Postmark, a real mailbox)
+works — `email.py` only needs STARTTLS on the given host/port plus optional
+AUTH; it isn't tied to a specific vendor's API.
