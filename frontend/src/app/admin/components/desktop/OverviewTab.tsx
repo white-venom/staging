@@ -865,9 +865,7 @@ export default function OverviewTab({
                             <span>{(() => {
                               try {
                                 const [rawHour, min] = item.time.split(":").map(Number);
-                                const ampm = rawHour >= 12 ? 'PM' : 'AM';
-                                const hour = rawHour % 12 || 12;
-                                return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+                                return `${rawHour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
                               } catch (e) { return item.time; }
                             })()}</span>
                           </div>

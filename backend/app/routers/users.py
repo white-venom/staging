@@ -8,7 +8,7 @@ from app.database.db import get_db
 from app.database.models import User
 from app.schemas.auth import UserCreate, UserResponse, UserUpdate
 from app.core.security import get_password_hash
-from app.dependencies import require_admin, require_any_user
+from app.dependencies import require_admin, require_any_user, require_entity_edit_allowed
 
 router = APIRouter(prefix="/users", tags=["User Management"])
 
@@ -83,9 +83,11 @@ def update_user(
     user_id: uuid.UUID,
     user_data: UserUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_admin),
+    _edit_gate=Depends(require_entity_edit_allowed)
 ):
-    """Admin-only endpoint to update a user (name, phone, role, password)."""
+    """Admin-only endpoint to update a user (name, phone, role, password).
+    Superadmin-gated per-tenant -- see item #3."""
     user = db.scalar(select(User).where(User.id == user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

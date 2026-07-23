@@ -29,6 +29,7 @@ export default function LoginPage() {
       localStorage.setItem("superadmin_token", data.access_token);
       localStorage.setItem("superadmin_name", data.name);
       localStorage.setItem("superadmin_username", data.username);
+      localStorage.setItem("superadmin_role", data.role || "full");
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Invalid credentials. Please try again.");

@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
@@ -24,8 +24,22 @@ def create_bank_account(
     if account_data.opening_to_take < 0 or account_data.opening_to_give < 0:
         raise HTTPException(status_code=400, detail="Opening balances cannot be negative")
 
-    # Create bank account
-    initial_balance = Decimal(str(account_data.opening_to_take)) - Decimal(str(account_data.opening_to_give))
+    # Case-insensitive duplicate-name check, scoped to this Portal -- the same
+    # label (e.g. "Primary Account") intentionally repeats across different
+    # portals, so uniqueness is only meaningful within one portal's accounts.
+    existing_name = db.scalar(
+        select(BankAccount).where(
+            BankAccount.portal_id == account_data.portal_id,
+            func.lower(BankAccount.bank_account_name) == account_data.bank_account_name.strip().lower()
+        )
+    )
+    if existing_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A bank account with this name already exists under this portal.")
+
+    # Item #8: BankAccount is purely a label/selector -- it carries no balance
+    # of its own. Any opening figures entered here (e.g. onboarding an existing
+    # account with money already in it) go straight to the parent Portal, the
+    # sole place real balance lives.
     db_account = BankAccount(
         portal_id=account_data.portal_id,
         bank_account_name=account_data.bank_account_name,
@@ -33,14 +47,13 @@ def create_bank_account(
         bank_account_no=account_data.bank_account_no,
         ifsc_code=account_data.ifsc_code,
         show_in_online_payment=account_data.show_in_online_payment,
-        opening_to_give=account_data.opening_to_give,
-        opening_to_take=account_data.opening_to_take,
-        balance=initial_balance
     )
 
-    # Also update the parent group's running balance
+    initial_balance = Decimal(str(account_data.opening_to_take)) - Decimal(str(account_data.opening_to_give))
     group = db.scalar(select(Portal).where(Portal.id == account_data.portal_id))
-    if group:
+    if group and initial_balance != 0:
+        group.opening_to_give = (group.opening_to_give or Decimal("0.00")) + Decimal(str(account_data.opening_to_give))
+        group.opening_to_take = (group.opening_to_take or Decimal("0.00")) + Decimal(str(account_data.opening_to_take))
         group.balance += initial_balance
 
     db.add(db_account)
@@ -72,32 +85,24 @@ def update_bank_account(
     if not db_account:
         raise HTTPException(status_code=404, detail="Bank account not found")
 
-    if account_data.opening_to_give is not None:
-        new_give = (db_account.opening_to_give or Decimal("0.00")) + Decimal(str(account_data.opening_to_give))
-        if new_give < 0:
-            raise HTTPException(status_code=400, detail="To Give cannot be negative")
-    if account_data.opening_to_take is not None:
-        new_take = (db_account.opening_to_take or Decimal("0.00")) + Decimal(str(account_data.opening_to_take))
-        if new_take < 0:
-            raise HTTPException(status_code=400, detail="To Take cannot be negative")
+    target_portal_id = account_data.portal_id if account_data.portal_id is not None else db_account.portal_id
+    if account_data.bank_account_name.strip().lower() != db_account.bank_account_name.strip().lower() or target_portal_id != db_account.portal_id:
+        existing_name = db.scalar(
+            select(BankAccount).where(
+                BankAccount.portal_id == target_portal_id,
+                func.lower(BankAccount.bank_account_name) == account_data.bank_account_name.strip().lower(),
+                BankAccount.id != bank_account_id
+            )
+        )
+        if existing_name:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Another bank account with this name already exists under this portal.")
 
-    # Update fields safely
+    # Item #8: a BankAccount carries no balance of its own anymore -- opening
+    # figures / balance adjustments are a Portal-only operation now (via
+    # update_portal's existing PortalAdjustment mechanism), so this endpoint
+    # only ever touches label/detail fields.
     for field, value in account_data.model_dump(exclude_unset=True).items():
-        if field not in ["opening_to_give", "opening_to_take"]:
-            setattr(db_account, field, value)
-
-    if account_data.opening_to_give is not None:
-        delta_give = Decimal(str(account_data.opening_to_give))
-        db_account.opening_to_give = (db_account.opening_to_give or Decimal("0.00")) + delta_give
-        db_account.balance = (db_account.balance or Decimal("0.00")) - delta_give
-        if db_account.portal:
-            db_account.portal.balance = (db_account.portal.balance or Decimal("0.00")) - delta_give
-    if account_data.opening_to_take is not None:
-        delta_take = Decimal(str(account_data.opening_to_take))
-        db_account.opening_to_take = (db_account.opening_to_take or Decimal("0.00")) + delta_take
-        db_account.balance = (db_account.balance or Decimal("0.00")) + delta_take
-        if db_account.portal:
-            db_account.portal.balance = (db_account.portal.balance or Decimal("0.00")) + delta_take
+        setattr(db_account, field, value)
 
     db.commit()
     db.refresh(db_account)
@@ -115,9 +120,9 @@ def delete_bank_account(
     if not account:
         raise HTTPException(status_code=404, detail="Bank account not found")
 
+    # Item #8: deleting a BankAccount removes a label/selector only -- the money
+    # it represented already lives at the Portal level and is unaffected.
     group = account.portal
-    if group:
-        group.balance -= account.balance
 
     db.delete(account)
     db.commit()
@@ -129,9 +134,6 @@ def delete_bank_account(
             primary_account = BankAccount(
                 portal_id=group.id,
                 bank_account_name="Primary Account",
-                opening_to_give=Decimal("0.00"),
-                opening_to_take=Decimal("0.00"),
-                balance=group.balance,
                 show_in_online_payment=True
             )
             db.add(primary_account)
@@ -373,23 +375,17 @@ def get_bank_account_ledger(
             "denominations": denom_dict
         })
 
-    # Sort transactions by created_at ascending to calculate running balance
+    # Sort transactions by created_at ascending -- purely chronological record.
+    # Item #8: no running/outstanding balance is computed for an individual
+    # BankAccount anymore; that concept lives only at the Portal level now
+    # (see GET /portals/{id}/ledger). This is just "what moved through this
+    # specific bank account," a record, not a balance statement.
     tx_list.sort(key=lambda x: x["created_at"])
-
-    # Calculate running balance safely handling None values
-    opening_take = account.opening_to_take or Decimal("0.00")
-    opening_give = account.opening_to_give or Decimal("0.00")
-    running_balance = float(opening_take - opening_give)
     formatted_txs = []
 
     for tx in tx_list:
-        if tx["transaction_type"] == "credit":
-            running_balance += tx["amount"]
-        else:
-            running_balance -= tx["amount"]
-
         # Display under collection_date/deposit_date, not created_at -- row order
-        # and running_balance still follow created_at (real submission order).
+        # still follows created_at (real submission order).
         display_date = datetime.combine(tx["tx_date"], tx["created_at"].time()) if tx.get("tx_date") else tx["created_at"]
 
         formatted_txs.append({
@@ -397,7 +393,6 @@ def get_bank_account_ledger(
             "date": display_date.strftime("%Y-%m-%d %H:%M:%S"),
             "transaction_type": tx["transaction_type"],
             "amount": tx["amount"],
-            "running_balance": running_balance,
             "description": tx["description"],
             "collection_id": tx["collection_id"],
             "deposit_id": tx["deposit_id"],
@@ -420,6 +415,5 @@ def get_bank_account_ledger(
         "bank_name": account.bank_name,
         "bank_account_no": account.bank_account_no,
         "ifsc_code": account.ifsc_code,
-        "outstanding_balance": float(account.balance or Decimal("0.00")),
         "statement_history": formatted_txs
     }

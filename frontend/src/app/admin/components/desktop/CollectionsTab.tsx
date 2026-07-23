@@ -486,10 +486,8 @@ export default function CollectionsTab({
                         {(() => {
                           const timePart = col.date.split(" ")[1];
                           if (!timePart) return "";
-                          let [hour, min] = timePart.split(":").map(Number);
-                          const ampm = hour >= 12 ? 'PM' : 'AM';
-                          hour = hour % 12 || 12;
-                          return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+                          const [hour, min] = timePart.split(":").map(Number);
+                          return `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
                         })()}
                       </span>
                     </div>

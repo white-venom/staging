@@ -1,13 +1,14 @@
 import uuid
 from datetime import datetime, timedelta
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy import select, and_, or_, desc
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.database.db import get_db
+from app.database.db import get_db, get_current_tenant_row
 from app.database.models import BankDeposit, Denomination, BankAccount, Portal, Retailer, User, Ledger, BusinessSettings, Collection
 from app.logic.ledger import recalculate_balances, lock_portal
+from app.logic.feature_flags import is_feature_enabled
 from sqlalchemy import update, delete
 from decimal import Decimal
 from app.schemas.deposit import DepositCreate, DepositResponse
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/bank-deposits", tags=["Deposits & Payouts Tracking"]
 def submit_deposit(
     payload: DepositCreate,
     background_tasks: BackgroundTasks,
+    request: Request,
     db: Session = Depends(get_db),
     current_user=Depends(require_staff)
 ):
@@ -31,7 +33,7 @@ def submit_deposit(
     if current_user.role != "admin" and payload.deposit_date != ist_today():
         settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
         staff_can_change_date = getattr(settings, 'staff_can_change_collection_date', False) if settings else False
-        if not staff_can_change_date:
+        if not staff_can_change_date or not is_feature_enabled(request, "staff_backdating"):
             raise HTTPException(
                 status_code=403,
                 detail="Backdating deposits is disabled for staff. Ask an admin to enable it or submit with today's date."
@@ -51,6 +53,10 @@ def submit_deposit(
             raise HTTPException(status_code=404, detail="Target retailer profile not found.")
     elif dt == "staff":
         if payload.recipient_staff_id:
+            if not is_feature_enabled(request, "staff_handover"):
+                raise HTTPException(status_code=403, detail="Staff-to-staff handover is not enabled for this account. Contact CrediiFlow support to turn it on.")
+            if payload.recipient_staff_id == current_user.id:
+                raise HTTPException(status_code=400, detail="A staff member cannot record a handover to themselves.")
             recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id).with_for_update())
             if not recipient:
                 raise HTTPException(status_code=404, detail="Recipient staff member not found.")
@@ -60,6 +66,8 @@ def submit_deposit(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only administrators are authorized to process virtual transfers."
             )
+        if not is_feature_enabled(request, "virtual_transfer"):
+            raise HTTPException(status_code=403, detail="Virtual Transfer is not enabled for this account. Contact CrediiFlow support to turn it on.")
         # NOTE: no joinedload(BankAccount.portal) here -- combining a locking
         # query (with_for_update) with an eager-loaded outer join to a nullable
         # relationship makes Postgres reject the query outright ("FOR UPDATE
@@ -78,6 +86,8 @@ def submit_deposit(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only administrators are authorized to process account-to-account transfers."
             )
+        if not is_feature_enabled(request, "portal_transfer"):
+            raise HTTPException(status_code=403, detail="Portal-to-Portal Transfer is not enabled for this account. Contact CrediiFlow support to turn it on.")
         # See NOTE above -- no joinedload combined with with_for_update().
         bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
         if not bank_account:
@@ -153,7 +163,39 @@ def submit_deposit(
             # UPDATE RETAILER BALANCE FIELD
             retailer.balance = new_balance
             db_deposit.balance_snapshot = new_balance
-        
+
+        elif dt == "staff" and payload.recipient_staff_id:
+            # Sending staff initiates the handover here (item #9's reversal of the
+            # old flow, where the *receiving* staff used to initiate via
+            # "Cash In > From Staff"). Auto-create the matching incoming
+            # Collection on the recipient's side, the same mirror-pair shape
+            # submit_collection() used to build in the other direction --
+            # update_deposit()/delete_deposit() already sync and clean up this
+            # pairing bidirectionally via Collection.mirror_deposit_id, so no
+            # changes were needed there.
+            db_collection = Collection(
+                retailer_id=None,
+                staff_id=payload.recipient_staff_id,
+                from_staff_id=current_user.id,
+                from_office=False,
+                total_amount=payload.amount,
+                collection_date=payload.deposit_date,
+                status="verified",
+                balance_snapshot=Decimal("0.00"),
+                mirror_deposit_id=db_deposit.id,
+            )
+            db.add(db_collection)
+            db.flush()
+
+            if payload.denominations:
+                d = payload.denominations
+                db.add(Denomination(
+                    collection_id=db_collection.id,
+                    note_500=d.note_500, note_200=d.note_200, note_100=d.note_100,
+                    note_50=d.note_50, note_20=d.note_20, note_10=d.note_10,
+                    coins=d.coins, online_amount=d.online_amount,
+                ))
+
         elif dt == "portal":
             # BankAccount deposits reduce what CrediiFlow owes to the portal
             # Assets increase (from CrediiFlow's perspective, we have less cash but less debt)
@@ -161,24 +203,19 @@ def submit_deposit(
             # Depositing money to them increases the balance (closer to zero if negative).
             if bank_account:
                 lock_portal(db, bank_account)
-                # Update individual bank_account balance
-                bank_account.balance += Decimal(str(payload.amount))
-                db_deposit.balance_snapshot = bank_account.balance
-
-                # Also update the parent portal's consolidated balance
+                # Item #8: balance lives only at the Portal level now.
                 if bank_account.portal:
                     bank_account.portal.balance += Decimal(str(payload.amount))
+                    db_deposit.balance_snapshot = bank_account.portal.balance
         elif dt == "virtual":
             # Admin does not have a virtual balance limit to validate/decrement.
             lock_portal(db, bank_account)
 
-            # Step A: Adjust BankAccount Balance
+            # Step A: Adjust the parent Portal's balance.
             if payload.payment_mode == "refund":
-                bank_account.balance += payload.amount
                 if bank_account.portal:
                     bank_account.portal.balance += payload.amount
             else:
-                bank_account.balance -= payload.amount
                 if bank_account.portal:
                     bank_account.portal.balance -= payload.amount
                 
@@ -228,13 +265,11 @@ def submit_deposit(
             # Deduct from source bank_account, add to destination bank_account
             lock_portal(db, from_bank_account)
             lock_portal(db, bank_account)
-            from_bank_account.balance -= Decimal(str(payload.amount))
             if from_bank_account.portal:
                 from_bank_account.portal.balance -= Decimal(str(payload.amount))
-            bank_account.balance += Decimal(str(payload.amount))
             if bank_account.portal:
                 bank_account.portal.balance += Decimal(str(payload.amount))
-            db_deposit.balance_snapshot = bank_account.balance
+                db_deposit.balance_snapshot = bank_account.portal.balance
 
         if dt in ["retailer", "virtual"] and payload.retailer_id:
             recalculate_balances(payload.retailer_id, db)
@@ -313,8 +348,22 @@ def submit_deposit(
                 )
             except Exception as whatsapp_err:
                 print(f"Error queueing WhatsApp message for deposit: {whatsapp_err}")
-        
+
+        from app.logic.audit import log_audit_event
+        audit_action = "staff_handover" if (dt == "staff" and payload.recipient_staff_id) else (
+            "virtual_transfer" if dt == "virtual" else ("portal_transfer" if dt == "portal_transfer" else "deposit.create")
+        )
+        log_audit_event(
+            request, actor_type=current_user.role, action=audit_action,
+            actor_id=current_user.id, actor_name=current_user.name,
+            entity_type="BankDeposit", entity_id=db_deposit.id, amount=payload.amount,
+            after={"deposit_type": dt, "target_name": getattr(db_deposit, "target_name", None), "amount": payload.amount},
+            description=f"{current_user.name} recorded a {dt} cash-out of ₹{payload.amount} to {getattr(db_deposit, 'target_name', 'target')}",
+        )
+
         return db_deposit
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"Error recording deposit: {e}")
@@ -448,6 +497,7 @@ def verify_deposit(
 @router.delete("/{deposit_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_deposit(
     deposit_id: uuid.UUID,
+    request: Request,
     db: Session = Depends(get_db),
     current_user=Depends(require_any_user)
 ):
@@ -455,7 +505,9 @@ def delete_deposit(
     deposit = db.scalar(select(BankDeposit).where(BankDeposit.id == deposit_id).with_for_update())
     if not deposit:
         raise HTTPException(status_code=404, detail="Deposit record not found")
-        
+
+    audit_before = {"deposit_type": deposit.deposit_type, "amount": deposit.amount, "deposit_date": deposit.deposit_date}
+    tenant = get_current_tenant_row(request)
     if current_user.role != "admin":
         if deposit.deposit_type == "virtual":
             raise HTTPException(
@@ -464,9 +516,8 @@ def delete_deposit(
             )
         if deposit.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this deposit")
-        # Check if within delete window
-        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
-        delete_window = settings.delete_window_minutes if settings else 5
+        # Check if within delete window -- superadmin-controlled, per-tenant (item #2)
+        delete_window = tenant.delete_window_minutes if tenant else 5
         if delete_window != -1:
             if datetime.utcnow() - deposit.created_at > timedelta(minutes=delete_window):
                 raise HTTPException(status_code=403, detail=f"Can only delete deposits within {delete_window} minutes of creation")
@@ -507,8 +558,7 @@ def delete_deposit(
             # non-admin sender deleting their side must not silently bypass the
             # protection the recipient would otherwise have on their Collection.
             if current_user.role != "admin":
-                settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
-                recipient_window = settings.delete_window_minutes if settings else 5
+                recipient_window = tenant.delete_window_minutes if tenant else 5
                 if recipient_window != -1 and datetime.utcnow() - matching_collection.created_at > timedelta(minutes=recipient_window):
                     raise HTTPException(
                         status_code=403,
@@ -523,20 +573,18 @@ def delete_deposit(
         if bank_account:
             lock_portal(db, bank_account)
             if deposit.deposit_type == "portal":
-                # Deleting bank_account deposit: reduce bank_account balance since cash was never deposited
-                bank_account.balance -= Decimal(str(deposit.amount))
+                # Deleting bank_account deposit: reduce the parent Portal's balance
+                # since cash was never deposited.
                 if bank_account.portal:
                     bank_account.portal.balance -= Decimal(str(deposit.amount))
             elif deposit.deposit_type == "virtual":
-                # Deleting virtual transfer: restore/revert bank_account balance
+                # Deleting virtual transfer: restore/revert the parent Portal's balance
                 if deposit.payment_mode == "refund":
-                    # Deleting virtual refund: decrease bank_account balance since refund is reverted
-                    bank_account.balance -= Decimal(str(deposit.amount))
+                    # Deleting virtual refund: decrease Portal balance since refund is reverted
                     if bank_account.portal:
                         bank_account.portal.balance -= Decimal(str(deposit.amount))
                 else:
-                    # Deleting virtual load: increase bank_account balance since load is reverted
-                    bank_account.balance += Decimal(str(deposit.amount))
+                    # Deleting virtual load: increase Portal balance since load is reverted
                     if bank_account.portal:
                         bank_account.portal.balance += Decimal(str(deposit.amount))
 
@@ -546,14 +594,12 @@ def delete_deposit(
             dst_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.bank_account_id).with_for_update())
             if dst_bank_account:
                 lock_portal(db, dst_bank_account)
-                dst_bank_account.balance -= Decimal(str(deposit.amount))
                 if dst_bank_account.portal:
                     dst_bank_account.portal.balance -= Decimal(str(deposit.amount))
         if deposit.from_bank_account_id:
             src_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.from_bank_account_id).with_for_update())
             if src_bank_account:
                 lock_portal(db, src_bank_account)
-                src_bank_account.balance += Decimal(str(deposit.amount))
                 if src_bank_account.portal:
                     src_bank_account.portal.balance += Decimal(str(deposit.amount))
 
@@ -583,13 +629,22 @@ def delete_deposit(
     if retailer_id:
         recalculate_balances(retailer_id, db)
         db.commit()
-        
+
+    from app.logic.audit import log_audit_event
+    log_audit_event(
+        request, actor_type=current_user.role, action="deposit.delete",
+        actor_id=current_user.id, actor_name=current_user.name,
+        entity_type="BankDeposit", entity_id=deposit_id, amount=audit_before["amount"],
+        before=audit_before,
+        description=f"{current_user.name} deleted a {audit_before['deposit_type']} cash-out of ₹{audit_before['amount']}",
+    )
     return None
 
 @router.put("/{deposit_id}", response_model=DepositResponse)
 def update_deposit(
     deposit_id: uuid.UUID,
     payload: DepositCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user=Depends(require_any_user)
 ):
@@ -606,6 +661,13 @@ def update_deposit(
     old_deposit_date = deposit.deposit_date
     old_deposit_type = deposit.deposit_type
 
+    if (deposit.deposit_type == "virtual" or payload.deposit_type.lower().strip() == "virtual") and not is_feature_enabled(request, "virtual_transfer"):
+        raise HTTPException(status_code=403, detail="Virtual Transfer is not enabled for this account. Contact CrediiFlow support to turn it on.")
+    if (deposit.deposit_type == "portal_transfer" or payload.deposit_type.lower().strip() == "portal_transfer") and not is_feature_enabled(request, "portal_transfer"):
+        raise HTTPException(status_code=403, detail="Portal-to-Portal Transfer is not enabled for this account. Contact CrediiFlow support to turn it on.")
+    if deposit.deposit_type == "staff" and deposit.recipient_staff_id and not is_feature_enabled(request, "staff_handover"):
+        raise HTTPException(status_code=403, detail="Staff-to-staff handover is not enabled for this account. Contact CrediiFlow support to turn it on.")
+
     if current_user.role != "admin":
         if deposit.deposit_type == "virtual" or payload.deposit_type.lower().strip() == "virtual":
             raise HTTPException(
@@ -614,17 +676,18 @@ def update_deposit(
             )
         if deposit.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this deposit")
-        # Check if within edit window
-        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
-        edit_window = settings.edit_window_minutes if settings else 5
+        # Check if within edit window -- superadmin-controlled, per-tenant (item #2)
+        tenant = get_current_tenant_row(request)
+        edit_window = tenant.edit_window_minutes if tenant else 5
         if edit_window != -1:
             if datetime.utcnow() - deposit.created_at > timedelta(minutes=edit_window):
                 raise HTTPException(status_code=403, detail=f"Can only update deposits within {edit_window} minutes of creation")
 
         # Backdating gate: reject with a clear error rather than silently
         # accepting/discarding a date change.
+        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
         staff_can_change_date = getattr(settings, 'staff_can_change_collection_date', False) if settings else False
-        if payload.deposit_date != deposit.deposit_date and not staff_can_change_date:
+        if payload.deposit_date != deposit.deposit_date and (not staff_can_change_date or not is_feature_enabled(request, "staff_backdating")):
             raise HTTPException(
                 status_code=403,
                 detail="Changing the deposit date is disabled for staff. Ask an admin to enable it."
@@ -640,21 +703,17 @@ def update_deposit(
         if bank_account:
             lock_portal(db, bank_account)
             if deposit.deposit_type == "portal":
-                bank_account.balance -= Decimal(str(deposit.amount))
                 if bank_account.portal:
                     bank_account.portal.balance -= Decimal(str(deposit.amount))
             elif deposit.deposit_type == "virtual":
                 if deposit.payment_mode == "refund":
-                    bank_account.balance -= Decimal(str(deposit.amount))
                     if bank_account.portal:
                         bank_account.portal.balance -= Decimal(str(deposit.amount))
                 else:
-                    bank_account.balance += Decimal(str(deposit.amount))
                     if bank_account.portal:
                         bank_account.portal.balance += Decimal(str(deposit.amount))
             elif deposit.deposit_type == "portal_transfer":
                 # Reverse destination bank account (reduce balance)
-                bank_account.balance -= Decimal(str(deposit.amount))
                 if bank_account.portal:
                     bank_account.portal.balance -= Decimal(str(deposit.amount))
 
@@ -663,7 +722,6 @@ def update_deposit(
         src_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.from_bank_account_id).with_for_update())
         if src_bank_account:
             lock_portal(db, src_bank_account)
-            src_bank_account.balance += Decimal(str(deposit.amount))
             if src_bank_account.portal:
                 src_bank_account.portal.balance += Decimal(str(deposit.amount))
 
@@ -726,7 +784,6 @@ def update_deposit(
         bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.bank_account_id).with_for_update())
         if bank_account:
             lock_portal(db, bank_account)
-            bank_account.balance += Decimal(str(deposit.amount))
             if bank_account.portal:
                 bank_account.portal.balance += Decimal(str(deposit.amount))
     elif dt == "virtual":
@@ -734,11 +791,9 @@ def update_deposit(
         if bank_account:
             lock_portal(db, bank_account)
             if deposit.payment_mode == "refund":
-                bank_account.balance += Decimal(str(deposit.amount))
                 if bank_account.portal:
                     bank_account.portal.balance += Decimal(str(deposit.amount))
             else:
-                bank_account.balance -= Decimal(str(deposit.amount))
                 if bank_account.portal:
                     bank_account.portal.balance -= Decimal(str(deposit.amount))
         
@@ -761,14 +816,12 @@ def update_deposit(
             dst_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.bank_account_id).with_for_update())
             if dst_bank_account:
                 lock_portal(db, dst_bank_account)
-                dst_bank_account.balance += Decimal(str(deposit.amount))
                 if dst_bank_account.portal:
                     dst_bank_account.portal.balance += Decimal(str(deposit.amount))
         if deposit.from_bank_account_id:
             src_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == deposit.from_bank_account_id).with_for_update())
             if src_bank_account:
                 lock_portal(db, src_bank_account)
-                src_bank_account.balance -= Decimal(str(deposit.amount))
                 if src_bank_account.portal:
                     src_bank_account.portal.balance -= Decimal(str(deposit.amount))
 
@@ -898,6 +951,15 @@ def update_deposit(
         deposit.target_name = deposit.recipient_staff.name
     else:
         deposit.target_name = deposit.bank_account_name
+
+    from app.logic.audit import log_audit_event
+    log_audit_event(
+        request, actor_type=current_user.role, action="deposit.update",
+        actor_id=current_user.id, actor_name=current_user.name,
+        entity_type="BankDeposit", entity_id=deposit.id, amount=deposit.amount,
+        before={"amount": old_amount}, after={"amount": deposit.amount, "target_name": deposit.target_name},
+        description=f"{current_user.name} edited a cash-out entry (₹{old_amount} → ₹{deposit.amount})",
+    )
 
     return deposit
 

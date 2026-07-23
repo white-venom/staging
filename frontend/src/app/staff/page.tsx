@@ -849,7 +849,7 @@ export default function StaffDashboard() {
                const den = c.denominations || {};
                const txAmount = c.totalAmount || 0;
                // Edit and Delete window checks
-               const createdMs = c.created_at ? new Date(c.created_at).getTime() : (c.date ? new Date(c.date.replace(' ', 'T') + 'Z').getTime() : 0);
+               const createdMs = c.created_at ? getUtcDate(c.created_at).getTime() : (c.date ? new Date(c.date.replace(' ', 'T') + 'Z').getTime() : 0);
                const elapsedMin = (Date.now() - createdMs) / 60000;
                const canEdit = editWindow === -1 || elapsedMin <= editWindow;
                const canDelete = deleteWindow === -1 || elapsedMin <= deleteWindow;

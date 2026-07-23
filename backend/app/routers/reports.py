@@ -11,6 +11,7 @@ from app.database.db import get_db
 from app.database.models import Retailer, Ledger, Collection, BankDeposit, Attendance, Denomination, BankAccount, User, DenominationBaseline
 from app.dependencies import require_admin, require_staff, require_any_user
 from app.core.timezone import ist_today
+from app.logic.feature_flags import require_feature
 
 router = APIRouter(tags=["Reports & Public Statements"])
 
@@ -685,7 +686,8 @@ def _serialize_baseline(baseline: "DenominationBaseline") -> dict:
 def set_denomination_baseline(
     payload: DenominationBaselineIn,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_admin),
+    _feature=Depends(require_feature("denomination_baseline"))
 ):
     """Records a verified physical cash count for a staff member as of a point in
     time. Pocket denomination calculations use the most recent baseline (plus

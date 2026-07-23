@@ -337,28 +337,26 @@ export default function BankAccountsPanel({
                         <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.bank_account_no || "N/A"}</div>
                         <div className="text-slate-400">IFSC</div>
                         <div className="text-slate-700 dark:text-slate-300 font-bold">{acc.ifsc_code || "N/A"}</div>
-                        <div className="text-slate-400 font-bold text-indigo-600 dark:text-indigo-400">Balance</div>
-                        <div className="flex items-center justify-between text-indigo-600 dark:text-indigo-400 font-black">
-                           <span className="font-mono tabular-nums">₹{Number(acc.balance || 0).toLocaleString()}</span>
-                           <button
-                             type="button"
-                             onClick={() => {
-                               onClose();
-                               onOpenLedger({
-                                 id: acc.id,
-                                 bank_account_name: acc.bank_account_name,
-                                 bank_name: acc.bank_name,
-                                 bank_account_no: acc.bank_account_no,
-                                 ifsc_code: acc.ifsc_code,
-                                 isGroupLedger: false
-                               });
-                             }}
-                             className="px-1.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[8px] font-bold rounded cursor-pointer"
-                           >
-                             Ledger
-                           </button>
-                         </div>
                       </div>
+                    )}
+                    {editingAccId !== acc.id && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onOpenLedger({
+                            id: acc.id,
+                            bank_account_name: acc.bank_account_name,
+                            bank_name: acc.bank_name,
+                            bank_account_no: acc.bank_account_no,
+                            ifsc_code: acc.ifsc_code,
+                            isGroupLedger: false
+                          });
+                        }}
+                        className="mt-2 w-full px-1.5 py-1 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/30 text-[9px] font-bold rounded cursor-pointer"
+                      >
+                        View Transaction Record
+                      </button>
                     )}
                   </div>
                 ))}

@@ -216,7 +216,6 @@ export default function MobileBankAccountsPanel({
                     <span className="text-[7px] text-slate-400 truncate">{p.bank_name || 'N/A'} • {p.bank_account_no || 'N/A'}</span>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span className="font-black text-slate-700 dark:text-slate-300 font-mono tabular-nums">₹{Number(p.balance || 0).toLocaleString()}</span>
                     <button
                       type="button"
                       onClick={() => {

@@ -188,6 +188,7 @@ export default function AttendancePage() {
             timeZone: "Asia/Kolkata",
             dateStyle: "medium",
             timeStyle: "medium",
+            hour12: false,
           });
           const timeText = `IST: ${istTimeStr} IST`;
           ctx.fillStyle = "#94a3b8";

@@ -1,4 +1,5 @@
 import { useAppStore } from "./store";
+import { extractErrorMessage } from "./errors";
 
 const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
@@ -169,20 +170,32 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
       const errorData = await response.json().catch(() => ({ detail: "Unknown error" }));
-      const detail = typeof errorData.detail === "object" ? JSON.stringify(errorData.detail) : errorData.detail;
-      
-      // Auto-logout if tenant is suspended or deleted
-      if ((response.status === 404 || response.status === 400) && detail && (detail.toLowerCase().includes("tenant") || detail.toLowerCase().includes("not found") || detail.toLowerCase().includes("not active"))) {
+      const detail = extractErrorMessage(errorData);
+
+      // Auto-logout if tenant is suspended or deleted -- 403 covers a tenant
+      // suspended mid-session (get_db()'s TenantSuspendedError), 404/400 cover
+      // a tenant that's been deleted or never existed for this subdomain.
+      const detailLower = (detail || "").toLowerCase();
+      const isTenantGone = (response.status === 404 || response.status === 400) &&
+        (detailLower.includes("tenant") || detailLower.includes("not found") || detailLower.includes("not active"));
+      const isTenantSuspended = response.status === 403 && detailLower.includes("tenant") && detailLower.includes("suspend");
+      if (isTenantGone || isTenantSuspended) {
         const store = useAppStore.getState();
         if (store.currentUser) {
           store.resetStore();
           if (typeof window !== "undefined") {
             localStorage.removeItem("doit-services-storage");
+            // Login page reads this once to show a clear reason instead of a
+            // silent logout -- see item #3d (clearer suspension messaging).
+            sessionStorage.setItem(
+              "session_end_reason",
+              isTenantSuspended ? detail : "Your account is no longer available. Please contact support."
+            );
             window.location.href = "/";
           }
         }
       }
-      
+
       throw new Error(detail || response.statusText);
     } else {
       const text = await response.text();

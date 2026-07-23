@@ -16,6 +16,7 @@ from app.core.security import (
     decode_token
 )
 from app.dependencies import get_current_user, check_maintenance_mode
+from app.logic.audit import log_audit_event
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -45,6 +46,13 @@ def login(
 
     # Check if maintenance mode is active for non-admin users
     check_maintenance_mode(request, user.role)
+
+    log_audit_event(
+        request, actor_type=user.role, action="login",
+        actor_id=user.id, actor_name=user.name,
+        entity_type="User", entity_id=user.id,
+        description=f"{user.role.capitalize()} '{user.name}' logged in",
+    )
 
     # Generate access & refresh tokens
     access_token = create_access_token(data={"sub": str(user.id)})

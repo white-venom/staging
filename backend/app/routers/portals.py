@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
@@ -31,6 +31,13 @@ def create_portal(
     if group_data.opening_to_take < 0 or group_data.opening_to_give < 0:
         raise HTTPException(status_code=400, detail="Opening balances cannot be negative")
 
+    # Case-insensitive duplicate-name check -- Portal.name also carries a DB-level
+    # unique constraint, but without this the second attempt would 500 on a raw
+    # IntegrityError instead of returning a clean validation error.
+    existing_name = db.scalar(select(Portal).where(func.lower(Portal.name) == group_data.name.strip().lower()))
+    if existing_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A portal with this name already exists.")
+
     initial_balance = Decimal(str(group_data.opening_to_take)) - Decimal(str(group_data.opening_to_give))
 
     db_group = Portal(
@@ -43,13 +50,12 @@ def create_portal(
     db.commit()
     db.refresh(db_group)
 
-    # Automatically create a default Primary Account for the new Portal
+    # Automatically create a default Primary Account for the new Portal. Item
+    # #8: BankAccount carries no balance of its own -- the Portal created above
+    # already holds the opening figures.
     db_account = BankAccount(
         portal_id=db_group.id,
         bank_account_name="Primary Account",
-        opening_to_give=db_group.opening_to_give,
-        opening_to_take=db_group.opening_to_take,
-        balance=db_group.balance,
         show_in_online_payment=group_data.show_in_online_payment
     )
     db.add(db_account)
@@ -74,9 +80,6 @@ def list_portals(
             primary_account = BankAccount(
                 portal_id=group.id,
                 bank_account_name="Primary Account",
-                opening_to_give=Decimal("0.00"),
-                opening_to_take=Decimal("0.00"),
-                balance=group.balance,
                 show_in_online_payment=True
             )
             db.add(primary_account)
@@ -110,6 +113,16 @@ def update_portal(
         new_take = (db_group.opening_to_take or Decimal("0.00")) + Decimal(str(group_data.opening_to_take))
         if new_take < 0:
             raise HTTPException(status_code=400, detail="To Take cannot be negative")
+
+    if group_data.name.strip().lower() != db_group.name.strip().lower():
+        existing_name = db.scalar(
+            select(Portal).where(
+                func.lower(Portal.name) == group_data.name.strip().lower(),
+                Portal.id != portal_id
+            )
+        )
+        if existing_name:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Another portal with this name already exists.")
 
     db_group.name = group_data.name
     if group_data.opening_to_give is not None:

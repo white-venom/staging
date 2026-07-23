@@ -49,17 +49,24 @@ def recalculate_balances(retailer_id, db: Session):
             db.delete(ol)
         db.flush()
     else:
-        # Date the Opening Balance entry off when those figures were actually
-        # set (opening_balance_set_on), not when the retailer record itself
-        # was created — fall back to created_at only for legacy rows that
-        # predate this column being tracked.
+        from app.core.timezone import ist_today, ist_now_utc_naive
+        today = ist_today()
         opening_date = retailer.opening_balance_set_on or retailer.created_at.date()
-        opening_datetime = datetime.combine(opening_date, datetime.min.time())
+
+        def get_opening_datetime(existing_dt=None):
+            if existing_dt and existing_dt.date() == opening_date and existing_dt.time() != datetime.min.time():
+                return existing_dt
+            if opening_date == today:
+                return ist_now_utc_naive()
+            if opening_date == retailer.created_at.date():
+                return retailer.created_at
+            return datetime.combine(opening_date, ist_now_utc_naive().time())
+
         if opening_ledgers:
             primary_ledger = opening_ledgers[0]
             primary_ledger.transaction_type = "credit" if net_opening_balance > 0 else "debit"
             primary_ledger.amount = abs(net_opening_balance)
-            primary_ledger.created_at = opening_datetime
+            primary_ledger.created_at = get_opening_datetime(primary_ledger.created_at)
             # Delete any extra duplicate Opening Balance entries
             for extra_ledger in opening_ledgers[1:]:
                 db.delete(extra_ledger)
@@ -70,7 +77,7 @@ def recalculate_balances(retailer_id, db: Session):
                 amount=abs(net_opening_balance),
                 balance=net_opening_balance,
                 description="Opening Balance",
-                created_at=opening_datetime
+                created_at=get_opening_datetime()
             )
             db.add(primary_ledger)
         db.flush()

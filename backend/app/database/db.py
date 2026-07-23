@@ -124,9 +124,11 @@ def evict_tenant_cache(db_name: str):
         except Exception:
             pass
 
-# DB Dependency generator helper (for FastAPI integration)
-# Automatically extracts the tenant from header, subdomain, or environment variables
-def get_db(request: Request = None):
+# Shared tenant-subdomain resolution (header -> subdomain -> env fallback), used
+# by get_db and by anything else that needs to know "which tenant is this
+# request for" without needing a live DB session yet (e.g. resolving the
+# tenant's superadmin-controlled settings row in the master DB).
+def resolve_tenant_subdomain(request: Request = None) -> str | None:
     tenant_id = None
     if request:
         tenant_id = request.headers.get("X-Tenant-ID")
@@ -142,6 +144,36 @@ def get_db(request: Request = None):
     if not tenant_id:
         # Fallback for dev scripts / pytest
         tenant_id = os.getenv("TEST_TENANT_ID")
+
+    return tenant_id
+
+
+def get_current_tenant_row(request: Request = None):
+    """Look up the master-DB Tenant row for the tenant this request belongs to.
+    Returns None if it can't be resolved -- callers should fall back to sane
+    defaults rather than fail the whole request over a settings lookup."""
+    subdomain = resolve_tenant_subdomain(request)
+    if not subdomain:
+        return None
+    from app.database.master_models import Tenant
+    master_db = MasterSessionLocal()
+    try:
+        tenant = master_db.query(Tenant).filter(Tenant.subdomain == subdomain).first()
+        if not tenant:
+            fallback_subdomain = "do-it-services" if subdomain == "do-it" else ("do-it" if subdomain == "do-it-services" else None)
+            if fallback_subdomain:
+                tenant = master_db.query(Tenant).filter(Tenant.subdomain == fallback_subdomain).first()
+        if tenant:
+            master_db.expunge(tenant)
+        return tenant
+    finally:
+        master_db.close()
+
+
+# DB Dependency generator helper (for FastAPI integration)
+# Automatically extracts the tenant from header, subdomain, or environment variables
+def get_db(request: Request = None):
+    tenant_id = resolve_tenant_subdomain(request)
 
     if not tenant_id:
         raise HTTPException(

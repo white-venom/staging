@@ -72,16 +72,13 @@ export default function DailyReportPage() {
       month = months[dateObj.getMonth()];
     }
 
-    let hours = dateObj.getHours();
+    const hours = dateObj.getHours();
     const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'pm' : 'am';
-    hours = hours % 12;
-    hours = hours ? hours : 12;
     const formattedHour = String(hours).padStart(2, '0');
-    
+
     return {
       date: `${day}-${month}`,
-      time: `${formattedHour}:${minutes} ${ampm}`
+      time: `${formattedHour}:${minutes}`
     };
   };
 

@@ -2,15 +2,16 @@ import uuid
 from datetime import datetime, timedelta
 from typing import List, Optional
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks, Request
 from sqlalchemy import select, and_, desc, update, delete
 from sqlalchemy.orm import Session, joinedload, selectinload
 
-from app.database.db import get_db
+from app.database.db import get_db, get_current_tenant_row
 from app.database.models import Collection, Denomination, Retailer, Ledger, User, Store, BankAccount, BankDeposit, BusinessSettings
 from app.schemas.collection import CollectionCreate, CollectionResponse
 from app.dependencies import require_staff, require_admin, require_any_user
 from app.logic.ledger import recalculate_balances, lock_portal
+from app.logic.feature_flags import is_feature_enabled
 
 router = APIRouter(prefix="/collections", tags=["Collections Control"])
 
@@ -19,6 +20,7 @@ router = APIRouter(prefix="/collections", tags=["Collections Control"])
 def submit_collection(
     payload: CollectionCreate,
     background_tasks: BackgroundTasks,
+    request: Request,
     db: Session = Depends(get_db),
     current_user=Depends(require_staff)
 ):
@@ -38,6 +40,8 @@ def submit_collection(
             if not store:
                 raise HTTPException(status_code=404, detail="Store not found")
     elif payload.from_staff_id:
+        if not is_feature_enabled(request, "staff_handover"):
+            raise HTTPException(status_code=403, detail="Staff-to-staff handover is not enabled for this account. Contact CrediiFlow support to turn it on.")
         if payload.from_staff_id == current_user.id:
             raise HTTPException(status_code=400, detail="A staff member cannot record a handover from themselves.")
         from_staff = db.scalar(select(User).where(User.id == payload.from_staff_id))
@@ -47,13 +51,14 @@ def submit_collection(
         raise HTTPException(status_code=400, detail="Must specify a source (Retailer, Staff, or Office)")
 
     # Backdating gate: a non-admin may only pick a date other than today if
-    # staff_can_change_collection_date is on. Reject with a clear error rather
-    # than silently discarding the requested date.
+    # staff_can_change_collection_date is on AND superadmin hasn't turned the
+    # whole capability off for this tenant (a master switch on top of the
+    # tenant's own setting).
     from app.core.timezone import ist_today
     if current_user.role != "admin" and payload.collection_date is not None and payload.collection_date != ist_today():
         settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
         staff_can_change_date = getattr(settings, 'staff_can_change_collection_date', False) if settings else False
-        if not staff_can_change_date:
+        if not staff_can_change_date or not is_feature_enabled(request, "staff_backdating"):
             raise HTTPException(
                 status_code=403,
                 detail="Backdating collections is disabled for staff. Ask an admin to enable it or submit with today's date."
@@ -185,10 +190,10 @@ def submit_collection(
 
                 if bank_account_obj:
                     lock_portal(db, bank_account_obj)
-                    bank_account_obj.balance += d.online_amount
-                    db_deposit.balance_snapshot = bank_account_obj.balance
+                    # Item #8: balance lives only at the Portal level now.
                     if bank_account_obj.portal:
                         bank_account_obj.portal.balance += d.online_amount
+                        db_deposit.balance_snapshot = bank_account_obj.portal.balance
 
         elif payload.from_staff_id:
             # Checked before bank_account_id: a staff-to-staff handover collection can
@@ -232,10 +237,10 @@ def submit_collection(
             bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.bank_account_id).with_for_update())
             if bank_account:
                 lock_portal(db, bank_account)
-                bank_account.balance -= Decimal(str(payload.total_amount))
-                db_collection.balance_snapshot = bank_account.balance
+                # Item #8: balance lives only at the Portal level now.
                 if bank_account.portal:
                     bank_account.portal.balance -= Decimal(str(payload.total_amount))
+                    db_collection.balance_snapshot = bank_account.portal.balance
         else:
             db_collection.balance_snapshot = Decimal("0.00")
 
@@ -299,7 +304,22 @@ def submit_collection(
             except Exception as whatsapp_err:
                 print(f"Error queueing WhatsApp message for collection: {whatsapp_err}")
 
+        from app.logic.audit import log_audit_event
+        log_audit_event(
+            request, actor_type=current_user.role, action="collection.create",
+            actor_id=current_user.id, actor_name=current_user.name,
+            entity_type="Collection", entity_id=db_collection.id, amount=db_collection.total_amount,
+            after={
+                "retailer_name": db_collection.retailer_name, "from_staff": from_staff.name if from_staff else None,
+                "from_office": payload.from_office, "total_amount": db_collection.total_amount,
+                "collection_date": db_collection.collection_date,
+            },
+            description=f"{current_user.name} recorded a cash-in of ₹{db_collection.total_amount} from {db_collection.retailer_name or ('staff handover' if from_staff else 'office')}",
+        )
+
         return db_collection
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
         print(f"Error during collection insertion: {e}")
@@ -480,6 +500,7 @@ from app.logic.ledger import recalculate_balances
 @router.delete("/{collection_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_collection(
     collection_id: uuid.UUID,
+    request: Request,
     db: Session = Depends(get_db),
     current_user=Depends(require_any_user)
 ):
@@ -487,18 +508,22 @@ def delete_collection(
     collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
-        
+
     if current_user.role != "admin":
         if collection.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to delete this collection")
-        # Check if within delete window
-        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
-        delete_window = settings.delete_window_minutes if settings else 5
+        # Check if within delete window -- superadmin-controlled, per-tenant (item #2)
+        tenant = get_current_tenant_row(request)
+        delete_window = tenant.delete_window_minutes if tenant else 5
         if delete_window != -1:
             if datetime.utcnow() - collection.created_at > timedelta(minutes=delete_window):
                 raise HTTPException(status_code=403, detail=f"Can only delete collections within {delete_window} minutes of creation")
     
     retailer_id = collection.retailer_id
+    audit_before = {
+        "retailer_id": retailer_id, "total_amount": collection.total_amount,
+        "collection_date": collection.collection_date, "staff_id": collection.staff_id,
+    }
     if retailer_id:
         # Lock the retailer up front so the later recalculate_balances() call never
         # races with a concurrent request touching the same retailer's ledger.
@@ -512,7 +537,6 @@ def delete_collection(
         bank_account = db.scalar(select(BankAccount).where(BankAccount.id == collection.bank_account_id).with_for_update())
         if bank_account:
             lock_portal(db, bank_account)
-            bank_account.balance += Decimal(str(collection.total_amount))
             if bank_account.portal:
                 bank_account.portal.balance += Decimal(str(collection.total_amount))
 
@@ -544,7 +568,6 @@ def delete_collection(
             bank_account = db.scalar(select(BankAccount).where(BankAccount.id == collection.bank_account_id).with_for_update())
             if bank_account:
                 lock_portal(db, bank_account)
-                bank_account.balance -= bank_account_dep.amount
                 if bank_account.portal:
                     bank_account.portal.balance -= bank_account_dep.amount
             db.delete(bank_account_dep)
@@ -570,17 +593,27 @@ def delete_collection(
 
     db.delete(collection)
     db.commit()
-    
+
     # Recalculate balances for this retailer
     if retailer_id:
         recalculate_balances(retailer_id, db)
         db.commit()
+
+    from app.logic.audit import log_audit_event
+    log_audit_event(
+        request, actor_type=current_user.role, action="collection.delete",
+        actor_id=current_user.id, actor_name=current_user.name,
+        entity_type="Collection", entity_id=collection_id, amount=audit_before["total_amount"],
+        before=audit_before,
+        description=f"{current_user.name} deleted a cash-in of ₹{audit_before['total_amount']}",
+    )
     return None
 
 @router.put("/{collection_id}", response_model=CollectionResponse)
 def update_collection(
     collection_id: uuid.UUID,
     payload: CollectionCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user=Depends(require_any_user)
 ):
@@ -588,13 +621,14 @@ def update_collection(
     collection = db.scalar(select(Collection).where(Collection.id == collection_id).with_for_update())
     if not collection:
         raise HTTPException(status_code=404, detail="Collection not found")
-        
+
+    settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
     if current_user.role != "admin":
         if collection.staff_id != current_user.id:
             raise HTTPException(status_code=403, detail="Not authorized to update this collection")
-        # Check if within edit window
-        settings = db.scalar(select(BusinessSettings).where(BusinessSettings.id == 1))
-        edit_window = settings.edit_window_minutes if settings else 5
+        # Check if within edit window -- superadmin-controlled, per-tenant (item #2)
+        tenant = get_current_tenant_row(request)
+        edit_window = tenant.edit_window_minutes if tenant else 5
         if edit_window != -1:
             if datetime.utcnow() - collection.created_at > timedelta(minutes=edit_window):
                 raise HTTPException(status_code=403, detail=f"Can only update collections within {edit_window} minutes of creation")
@@ -604,7 +638,7 @@ def update_collection(
         if (
             payload.collection_date is not None
             and payload.collection_date != collection.collection_date
-            and not staff_can_change_date
+            and (not staff_can_change_date or not is_feature_enabled(request, "staff_backdating"))
         ):
             raise HTTPException(
                 status_code=403,
@@ -630,6 +664,8 @@ def update_collection(
     new_bank_account_id = payload.bank_account_id
     old_from_staff_id = collection.from_staff_id
     new_from_staff_id = payload.from_staff_id
+    if new_from_staff_id and new_from_staff_id != old_from_staff_id and not is_feature_enabled(request, "staff_handover"):
+        raise HTTPException(status_code=403, detail="Staff-to-staff handover is not enabled for this account. Contact CrediiFlow support to turn it on.")
     if new_from_staff_id and new_from_staff_id == collection.staff_id:
         raise HTTPException(status_code=400, detail="A staff member cannot record a handover from themselves.")
 
@@ -656,7 +692,6 @@ def update_collection(
                 old_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == old_bank_account_id).with_for_update())
                 if old_bank_account:
                     lock_portal(db, old_bank_account)
-                    old_bank_account.balance += Decimal(str(old_amount))
                     if old_bank_account.portal:
                         old_bank_account.portal.balance += Decimal(str(old_amount))
             # Deduct new bank_account
@@ -664,7 +699,6 @@ def update_collection(
                 new_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
                 if new_bank_account:
                     lock_portal(db, new_bank_account)
-                    new_bank_account.balance -= Decimal(str(new_amount))
                     if new_bank_account.portal:
                         new_bank_account.portal.balance -= Decimal(str(new_amount))
         elif old_bank_account_id and new_amount != old_amount:
@@ -673,7 +707,6 @@ def update_collection(
             bank_account = db.scalar(select(BankAccount).where(BankAccount.id == old_bank_account_id).with_for_update())
             if bank_account:
                 lock_portal(db, bank_account)
-                bank_account.balance -= diff
                 if bank_account.portal:
                     bank_account.portal.balance -= diff
 
@@ -691,7 +724,6 @@ def update_collection(
             old_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == old_bank_account_id).with_for_update())
             if old_bank_account:
                 lock_portal(db, old_bank_account)
-                old_bank_account.balance += Decimal(str(old_amount))
                 if old_bank_account.portal:
                     old_bank_account.portal.balance += Decimal(str(old_amount))
 
@@ -700,7 +732,6 @@ def update_collection(
             new_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
             if new_bank_account:
                 lock_portal(db, new_bank_account)
-                new_bank_account.balance -= Decimal(str(new_amount))
                 if new_bank_account.portal:
                     new_bank_account.portal.balance -= Decimal(str(new_amount))
     
@@ -747,7 +778,6 @@ def update_collection(
                 old_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == existing_dep.bank_account_id).with_for_update())
                 if old_bank_acct:
                     lock_portal(db, old_bank_acct)
-                    old_bank_acct.balance -= existing_dep.amount
                     if old_bank_acct.portal:
                         old_bank_acct.portal.balance -= existing_dep.amount
 
@@ -773,10 +803,9 @@ def update_collection(
             new_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
             if new_bank_acct:
                 lock_portal(db, new_bank_acct)
-                new_bank_acct.balance += new_online_amount
-                existing_dep.balance_snapshot = new_bank_acct.balance
                 if new_bank_acct.portal:
                     new_bank_acct.portal.balance += new_online_amount
+                    existing_dep.balance_snapshot = new_bank_acct.portal.balance
         else:
             # Create a brand new deposit
             new_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == new_bank_account_id).with_for_update())
@@ -806,10 +835,9 @@ def update_collection(
 
             if new_bank_acct:
                 lock_portal(db, new_bank_acct)
-                new_bank_acct.balance += new_online_amount
-                db_deposit.balance_snapshot = new_bank_acct.balance
                 if new_bank_acct.portal:
                     new_bank_acct.portal.balance += new_online_amount
+                    db_deposit.balance_snapshot = new_bank_acct.portal.balance
     else:
         # The new state should NOT have an auto-created bank_account deposit
         if existing_dep:
@@ -817,7 +845,6 @@ def update_collection(
                 old_bank_acct = db.scalar(select(BankAccount).where(BankAccount.id == existing_dep.bank_account_id).with_for_update())
                 if old_bank_acct:
                     lock_portal(db, old_bank_acct)
-                    old_bank_acct.balance -= existing_dep.amount
                     if old_bank_acct.portal:
                         old_bank_acct.portal.balance -= existing_dep.amount
             collection.online_routing_deposit_id = None
@@ -1002,5 +1029,15 @@ def update_collection(
     collection.staff_name = collection.staff.name if collection.staff else "Unknown"
     collection.bank_account_name = collection.bank_account.bank_account_name if collection.bank_account else None
     collection.portal_name = collection.bank_account.portal.name if (collection.bank_account and collection.bank_account.portal) else None
-    
+
+    from app.logic.audit import log_audit_event
+    log_audit_event(
+        request, actor_type=current_user.role, action="collection.update",
+        actor_id=current_user.id, actor_name=current_user.name,
+        entity_type="Collection", entity_id=collection.id, amount=new_amount,
+        before={"total_amount": old_amount, "retailer_id": old_retailer_id},
+        after={"total_amount": new_amount, "retailer_id": new_retailer_id, "collection_date": new_collection_date},
+        description=f"{current_user.name} edited a cash-in entry (₹{old_amount} → ₹{new_amount})",
+    )
+
     return collection

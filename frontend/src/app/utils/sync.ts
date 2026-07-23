@@ -90,7 +90,9 @@ export async function syncOfflineData(): Promise<number> {
   for (const dep of unsyncedDeposits) {
     try {
       await api.createDeposit({
-        deposit_type: dep.depositType,
+        // "staff_person" is a frontend-only distinction (item #9) -- the backend's
+        // deposit_type is "staff" either way, split by to_office vs recipient_staff_id.
+        deposit_type: dep.depositType === "staff_person" ? "staff" : dep.depositType,
         bank_account_id: dep.bank_account_id,
         retailer_id: dep.retailer_id,
         recipient_staff_id: dep.recipient_staff_id,
@@ -109,7 +111,10 @@ export async function syncOfflineData(): Promise<number> {
           bank_account_id: dep.bank_account_id,
           retailer_id: dep.retailer_id,
           recipient_staff_id: dep.recipient_staff_id,
-          depositType: dep.depositType,
+          // Mirror the backend's canonical "staff" type here too, same as the
+          // online submit path -- "staff_person" only exists as a form-input
+          // distinction, never as a stored/displayed deposit type.
+          depositType: dep.depositType === "staff_person" ? "staff" : dep.depositType,
           targetName: dep.targetName,
           amount: dep.amount,
           paymentMode: dep.paymentMode,

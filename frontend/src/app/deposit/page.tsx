@@ -23,9 +23,13 @@ function NewDepositContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("editId");
-  const { theme, toggleTheme, addDeposit } = useAppStore();
+  const { theme, toggleTheme, addDeposit, currentUser } = useAppStore();
 
-  const [depositType, setDepositType] = useState<"portal" | "retailer" | "staff" | "virtual">("portal");
+  // "staff" = handed to the office/super-distributor (to_office=true).
+  // "staff_person" = a genuine staff-to-staff handover (recipient_staff_id set) --
+  // item #9: the SENDING staff now initiates this via this Cash Out channel,
+  // which auto-creates the matching incoming Collection on the recipient's side.
+  const [depositType, setDepositType] = useState<"portal" | "retailer" | "staff" | "staff_person" | "virtual">("portal");
 
   // Dynamic options loaded from backend
   const [portals, setPortals] = useState<any[]>([]);
@@ -45,6 +49,9 @@ function NewDepositContent() {
   // Deposit Date Selector
   const [depositDate, setDepositDate] = useState<string>(() => getISTDateString());
   const [staffCanChangeCashInDate, setStaffCanChangeCashInDate] = useState(false);
+  // Superadmin-controlled feature flags (Part 1) -- default true (shown) so a
+  // transient settings-fetch failure never silently removes a working channel.
+  const [staffHandoverEnabled, setStaffHandoverEnabled] = useState(true);
 
   // Difference Calculator State
   const [isCalcOpen, setIsCalcOpen] = useState(false);
@@ -108,15 +115,17 @@ function NewDepositContent() {
           const deps = await api.getDeposits();
           const target = deps.find((d: any) => d.id === editId);
           if (target) {
-            setDepositType(target.deposit_type);
+            if (target.deposit_type === "staff" && target.recipient_staff_id) {
+              setDepositType("staff_person");
+              setSelectedStaffId(target.recipient_staff_id);
+            } else {
+              setDepositType(target.deposit_type);
+            }
             if (target.deposit_type === "portal" || target.deposit_type === "virtual") {
               setSelectedBankAccountId(target.bank_account_id);
             }
             if (target.deposit_type === "retailer" || target.deposit_type === "virtual") {
               setSelectedRetailerId(target.retailer_id);
-            }
-            if (target.deposit_type === "staff" && target.recipient_staff_id) {
-              setSelectedStaffId(target.recipient_staff_id);
             }
             if (target.remarks) {
               setRemarks(target.remarks);
@@ -221,9 +230,11 @@ function NewDepositContent() {
         }
         
         if (mappedPortals.length > 0) setSelectedPortalId(mappedPortals[0].id);
-        // Do not auto-select the first retailer on mount, keep it empty for search selection
+        // Do not auto-select the first retailer/staff recipient on mount -- for a
+        // money-moving handover this must be an explicit choice, not a default
+        // that could send cash to the wrong person if submitted unreviewed.
         setSelectedRetailerId("");
-        if (mappedStaff.length > 0) setSelectedStaffId(mappedStaff[0].id);
+        if (!editId) setSelectedStaffId("");
       } catch (err) {
         console.error("Failed to load deposit options:", err);
       }
@@ -234,7 +245,12 @@ function NewDepositContent() {
       try {
         const { api } = await import("../utils/api");
         const settings = await api.getAdminSettings().catch(() => null);
-        if (settings) setStaffCanChangeCashInDate(settings.staff_can_change_collection_date ?? false);
+        if (settings) {
+          setStaffCanChangeCashInDate(settings.staff_can_change_collection_date ?? false);
+          if (settings.feature_flags && "staff_handover" in settings.feature_flags) {
+            setStaffHandoverEnabled(!!settings.feature_flags.staff_handover);
+          }
+        }
       } catch (err) {
         console.error("Failed to load admin settings:", err);
       }
@@ -267,6 +283,10 @@ function NewDepositContent() {
       alert("Please specify a deposit amount greater than zero.");
       return;
     }
+    if (depositType === "staff_person" && !selectedStaffId) {
+      alert("Please select which staff member is receiving this handover.");
+      return;
+    }
 
     // Build target name for local store display
     let targetName = "";
@@ -279,13 +299,17 @@ function NewDepositContent() {
       const bankAccountName = portalAccounts.find(a => a.id === selectedBankAccountId)?.name || "Bank Account";
       const retailerName = retailers.find(r => r.id === selectedRetailerId)?.name || "Retailer";
       targetName = `Virtual: ${bankAccountName} → ${retailerName}`;
+    } else if (depositType === "staff_person") {
+      targetName = staffUsers.find(s => s.id === selectedStaffId)?.name || "Staff Member";
     } else {
       targetName = "Super Distributor";
     }
 
-    // Build proper backend payload with UUIDs
+    // Build proper backend payload with UUIDs. "staff_person" is a frontend-only
+    // distinction -- the backend's deposit_type is "staff" either way, split by
+    // to_office vs recipient_staff_id (see item #9).
     const backendPayload: any = {
-      deposit_type: depositType,
+      deposit_type: depositType === "staff_person" ? "staff" : depositType,
       payment_mode: depositType === "virtual" ? "online" : "unified",
       amount: totalAmount,
       denominations: denominations,
@@ -297,10 +321,15 @@ function NewDepositContent() {
     if (depositType === "staff") {
       backendPayload.to_office = true;
     }
+    if (depositType === "staff_person") {
+      backendPayload.recipient_staff_id = selectedStaffId;
+    }
 
-    // Local store payload (uses camelCase display fields)
+    // Local store payload (uses camelCase display fields). Mirrors the backend's
+    // canonical "staff" type -- "staff_person" only exists as a form-input
+    // distinction, never as a stored/displayed deposit type.
     const localDepData: any = {
-      depositType,
+      depositType: depositType === "staff_person" ? "staff" : depositType,
       targetName,
       amount: totalAmount,
       paymentMode: depositType === "virtual" ? "online" : "cash",
@@ -308,7 +337,7 @@ function NewDepositContent() {
       remarks: remarks,
       bank_account_id: (depositType === "portal" || depositType === "virtual") ? selectedBankAccountId : undefined,
       retailer_id: (depositType === "retailer" || depositType === "virtual") ? selectedRetailerId : undefined,
-      recipient_staff_id: depositType === "staff" ? selectedStaffId : undefined,
+      recipient_staff_id: depositType === "staff_person" ? selectedStaffId : undefined,
     };
 
     const submitOnline = async () => {
@@ -392,18 +421,19 @@ function NewDepositContent() {
             <label className="block text-[8px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500 mb-1 px-1">
               Where is money going? (Channel)
             </label>
-            <div className="grid grid-cols-3 gap-px rounded-sm overflow-hidden border border-slate-200 dark:border-slate-800">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-px rounded-sm overflow-hidden border border-slate-200 dark:border-slate-800">
               {[
                 { type: "portal", label: "Portals", desc: "Bank Acc" },
                 { type: "retailer", label: "Shops", desc: "Refund" },
-                { type: "staff", label: "Super Dist", desc: "Distributor" },
+                ...(staffHandoverEnabled ? [{ type: "staff_person", label: "Staff", desc: "Handover" }] : []),
+                { type: "staff", label: "Office", desc: "Distributor" },
               ].map((opt) => (
                 <button
                   key={opt.type}
                   type="button"
                   onClick={() => {
                     setDepositType(opt.type as any);
-                    if (opt.type === "staff") {
+                    if (opt.type === "staff" || opt.type === "staff_person") {
                       setDenominations(prev => ({
                         ...prev,
                         online_amount: 0,
@@ -425,8 +455,24 @@ function NewDepositContent() {
             </div>
           </div>
 
+          {/* Staff-to-staff handover: pick the recipient (item #9) */}
+          {depositType === "staff_person" && (
+            <div className="p-2 rounded-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 mb-1">
+                Select Recipient Staff Member
+              </label>
+              <InlineSelect
+                value={selectedStaffId}
+                onChange={(val) => setSelectedStaffId(val)}
+                options={staffUsers.filter((s) => s.id !== currentUser?.id).map((s) => ({ value: s.id, label: s.name }))}
+                placeholder="Choose Staff Member"
+                icon={<User className="w-3.5 h-3.5" />}
+              />
+            </div>
+          )}
+
           {/* Context details options selector */}
-          {depositType !== "staff" && (
+          {depositType !== "staff" && depositType !== "staff_person" && (
             <div className="p-2 rounded-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
               {depositType === "virtual" && (
                 <div className="space-y-2">
@@ -609,7 +655,7 @@ function NewDepositContent() {
                 </div>
               ))}
 
-              {depositType !== "staff" && (
+              {depositType !== "staff" && depositType !== "staff_person" && (
                 <div className="flex flex-col gap-1 px-2 py-1.5 border-t border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-1.5 justify-between">
                     <span
@@ -768,7 +814,7 @@ function NewDepositContent() {
                 Total Payout Amount
               </span>
               <div className="text-[8px] text-slate-500 dark:text-slate-400 mt-0.5 font-bold uppercase">
-                Channel: {depositType.toUpperCase()}
+                Channel: {depositType === "staff_person" ? "STAFF" : depositType.toUpperCase()}
               </div>
             </div>
             <div className="text-right">

@@ -247,7 +247,7 @@ export default function MobilePortals({
                   <Globe className="w-4.5 h-4.5 text-indigo-600 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-bold text-xs text-slate-900 dark:text-white truncate uppercase tracking-tight">{group.name}</span>
+                      <span className="font-bold text-xs text-slate-900 dark:text-white truncate">{group.name}</span>
                       {group.show_in_online_payment && (
                         <span className="px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-500 rounded-sm text-[8px] font-bold uppercase tracking-wider scale-90 origin-left">Online</span>
                       )}

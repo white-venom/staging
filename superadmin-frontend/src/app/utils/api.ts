@@ -1,3 +1,8 @@
+// Shared error-message extraction lives in ./errors.ts (same utility shape
+// used by the main tenant-facing app) so both apps read FastAPI error bodies
+// the same way instead of maintaining two ad hoc copies.
+import { extractErrorMessage } from "./errors";
+
 const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
@@ -12,26 +17,6 @@ const getApiBaseUrl = () => {
 };
 
 export const API_BASE_URL = getApiBaseUrl();
-
-// FastAPI error bodies come in two shapes: `detail` is a plain string for
-// HTTPException, but a list of {msg, loc} objects for Pydantic validation
-// (422) errors. Rendering the list directly (or passing it to `new Error()`)
-// stringifies it to "[object Object]" -- this always resolves to readable text.
-function extractErrorMessage(errorData: any): string {
-  const detail = errorData?.detail;
-  if (typeof detail === "string") return detail;
-  if (Array.isArray(detail)) {
-    return detail
-      .map((e: any) => {
-        const field = Array.isArray(e?.loc) ? e.loc[e.loc.length - 1] : null;
-        return field ? `${field}: ${e.msg}` : e?.msg;
-      })
-      .filter(Boolean)
-      .join("; ");
-  }
-  if (detail && typeof detail === "object") return JSON.stringify(detail);
-  return "";
-}
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = typeof window !== "undefined" ? localStorage.getItem("superadmin_token") : null;
@@ -66,6 +51,7 @@ export const superAdminApi = {
   }),
   getTenants: () => request<any[]>("/superadmin/tenants"),
   getTenantStats: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}/stats`),
+  getTenantHealth: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}/health`),
   createTenant: (data: any) => request<any>("/superadmin/tenants", {
     method: "POST",
     body: JSON.stringify(data),
@@ -81,10 +67,57 @@ export const superAdminApi = {
   deleteTenant: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}`, {
     method: "DELETE",
   }),
+  impersonateTenant: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}/impersonate`, {
+    method: "POST",
+  }),
+  getPlatformPulse: () => request<any>("/superadmin/platform/pulse"),
   getInfraStatus: () => request<any>("/superadmin/infra/status"),
   getInfraServices: () => request<any>("/superadmin/infra/services"),
   getSSLStatus: () => request<any>("/superadmin/ssl/status"),
   renewSSL: () => request<any>("/superadmin/ssl/renew", {
     method: "POST",
   }),
+  provisionSSL: (subdomain: string) => request<any>(`/superadmin/ssl/provision/${subdomain}`, {
+    method: "POST",
+  }),
+
+  // Per-tenant controls (items #2, #3, #4)
+  updateTenantControls: (tenantId: string, data: any) => request<any>(`/superadmin/tenants/${tenantId}/controls`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+
+  // Tenant entity management (items #3, #4)
+  getTenantRetailers: (tenantId: string) => request<any[]>(`/superadmin/tenants/${tenantId}/retailers`),
+  updateTenantRetailer: (tenantId: string, retailerId: string, data: any) => request<any>(`/superadmin/tenants/${tenantId}/retailers/${retailerId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  getTenantStaff: (tenantId: string) => request<any[]>(`/superadmin/tenants/${tenantId}/staff`),
+  updateTenantStaff: (tenantId: string, userId: string, data: any) => request<any>(`/superadmin/tenants/${tenantId}/staff/${userId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  getTenantStores: (tenantId: string, retailerId: string) => request<any[]>(`/superadmin/tenants/${tenantId}/retailers/${retailerId}/stores`),
+  updateTenantStore: (tenantId: string, storeId: string, data: any) => request<any>(`/superadmin/tenants/${tenantId}/stores/${storeId}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+
+  // Audit log (item #6)
+  searchAuditLog: (params: Record<string, string>) => {
+    const qs = new URLSearchParams(params).toString();
+    return request<any>(`/superadmin/audit-log${qs ? `?${qs}` : ""}`);
+  },
+  getAuditLogActions: () => request<any>("/superadmin/audit-log/actions"),
+
+  // Feature flags (Part 1)
+  getFeatureRegistry: () => request<any>("/superadmin/feature-flags/registry"),
+  getTenantFeatureFlags: (tenantId: string) => request<any>(`/superadmin/feature-flags/tenants/${tenantId}`),
+  setTenantFeatureFlag: (tenantId: string, featureKey: string, enabled: boolean) =>
+    request<any>(`/superadmin/feature-flags/tenants/${tenantId}/${featureKey}`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    }),
 };
+

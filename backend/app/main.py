@@ -20,6 +20,9 @@ from app.routers.reports import router as reports_router
 from app.routers.users import router as users_router
 from app.routers.admin_settings import router as admin_settings_router
 from app.routers.super_admin import router as super_admin_router
+from app.routers.super_admin_entities import router as super_admin_entities_router
+from app.routers.audit_log import router as audit_log_router
+from app.routers.super_admin_features import router as super_admin_features_router
 
 # Bootstraps the FastAPI Application
 app = FastAPI(
@@ -33,9 +36,23 @@ app = FastAPI(
 @app.on_event("startup")
 def startup_event():
     # Initialize master models
-    from app.database.master_models import Tenant, SuperAdmin
+    from app.database.master_models import Tenant, SuperAdmin, AuditLog, TenantFeatureFlags, TenantErrorLog
     Base.metadata.create_all(bind=master_engine)
-    
+
+    # Idempotent column additions for the master 'tenants' table (create_all only
+    # creates brand-new tables, it never alters an existing one) -- these back the
+    # superadmin-only, per-tenant edit/delete window and entity-edit controls.
+    try:
+        from sqlalchemy import text as _text
+        with master_engine.begin() as conn:
+            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS edit_window_minutes INTEGER NOT NULL DEFAULT 5"))
+            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS delete_window_minutes INTEGER NOT NULL DEFAULT 5"))
+            conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS tenant_admin_can_edit_entities BOOLEAN NOT NULL DEFAULT false"))
+        with master_engine.begin() as conn:
+            conn.execute(_text("ALTER TABLE super_admins ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'full'"))
+    except Exception as e:
+        print(f"[WARN] Failed to add superadmin control columns to tenants table: {e}")
+
     # 1. Automatically migrate 'do-it' subdomain to 'do-it-services' in master database
     try:
         from app.database.db import MasterSessionLocal
@@ -221,6 +238,13 @@ async def global_exception_handler(request: Request, exc: Exception):
     import traceback
     print(f"[ERROR] Unhandled exception: {exc}")
     traceback.print_exc()
+
+    try:
+        from app.logic.audit import log_tenant_error
+        log_tenant_error(request, error_type=type(exc).__name__, error_message=str(exc))
+    except Exception as log_err:
+        print(f"[WARN] Failed to record tenant error log: {log_err}")
+
     return JSONResponse(
         status_code=500,
         content={"detail": f"Internal server error: {str(exc)}"}
@@ -238,6 +262,9 @@ app.include_router(reports_router)
 app.include_router(users_router)
 app.include_router(admin_settings_router)
 app.include_router(super_admin_router)
+app.include_router(super_admin_entities_router)
+app.include_router(audit_log_router)
+app.include_router(super_admin_features_router)
 
 # Mount Static Files (For attendance meter images)
 from fastapi.staticfiles import StaticFiles

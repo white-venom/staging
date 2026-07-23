@@ -447,21 +447,20 @@ function NewCollectionContent() {
             >
               Retailer
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSourceType("staff");
-                setDenominations(prev => ({
-                  ...prev,
-                  online_amount: 0,
-                  online_bank_account_id: undefined
-                }));
-                setShowOnlineBankAccount(false);
-              }}
-              className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider transition-colors ${sourceType === "staff" ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950" : "bg-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}`}
-            >
-              Staff
-            </button>
+            {/* "Staff" is no longer a selectable source for NEW entries -- staff
+                handovers are now initiated by the SENDING staff via Cash Out >
+                To Staff (item #9), which auto-creates the matching Collection
+                here. This tab still renders (read-only selection) when editing
+                an existing from-staff entry so old records stay editable. */}
+            {editId && sourceType === "staff" && (
+              <button
+                type="button"
+                onClick={() => setSourceType("staff")}
+                className="flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider transition-colors bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950"
+              >
+                Staff
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {

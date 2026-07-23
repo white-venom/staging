@@ -675,12 +675,14 @@ export default function LedgerTab({
                         ${allTransactions.map(tx => {
                           const { old: txOld, new: txNew } = getTxBalances(tx);
                           const isCredit = txNew >= txOld;
+                          // Item #7a: cash-in prints red like on-screen, cosmetic only.
+                          const colorClass = tx.txType === 'cash-in' ? 'debit' : (isCredit ? 'credit' : 'debit');
                           return `<tr>
                             <td>${tx.date.split(' ')[0].split('-').reverse().join('-')}<br><small style="color:#94a3b8">${tx.date.split(' ')[1] || ''}</small></td>
                             <td style="font-weight:700">${tx.party || '-'}</td>
                             <td style="color:#64748b">${tx.staff}</td>
                             <td style="text-align:right; color:#64748b">&#8377;${txOld.toLocaleString()}</td>
-                            <td style="text-align:right" class="${isCredit ? 'credit' : 'debit'}">${isCredit ? '+' : '-'}&#8377;${(tx.credit || tx.debit).toLocaleString()}</td>
+                            <td style="text-align:right" class="${colorClass}">${isCredit ? '+' : '-'}&#8377;${(tx.credit || tx.debit).toLocaleString()}</td>
                             <td style="text-align:right" class="bal">&#8377;${txNew.toLocaleString()}</td>
                           </tr>`;
                         }).join('')}
@@ -825,11 +827,9 @@ export default function LedgerTab({
                           const timePart = tx.date.split(" ")[1];
                           if (!timePart) return "";
                           const parts = timePart.split(":");
-                          let hour = Number(parts[0]);
+                          const hour = Number(parts[0]);
                           const min = Number(parts[1]);
-                          const ampm = hour >= 12 ? 'PM' : 'AM';
-                          hour = hour % 12 || 12;
-                          return `${hour}:${min.toString().padStart(2, '0')} ${ampm}`;
+                          return `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
                         })()}
                       </span>
                     </div>
@@ -910,7 +910,12 @@ export default function LedgerTab({
                   <td className="p-2 border-r border-slate-50 dark:border-slate-800 text-right font-bold text-slate-500 text-xs font-mono tabular-nums">
                     ₹{txOld.toLocaleString()}
                   </td>
-                  <td className={`p-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${txNew >= txOld ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
+                  {/* Item #7a: cash-in (a retailer handing cash to staff) now displays
+                      red instead of green -- purely cosmetic, the underlying balance
+                      math (txNew/txOld, the +/- sign) is untouched. Everything else
+                      (virtual-transfer, move-to-dist, cash-out) keeps the original
+                      balance-direction-based color. */}
+                  <td className={`p-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${tx.txType === 'cash-in' ? 'text-red-700 dark:text-red-400 bg-red-50/10' : txNew >= txOld ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
                     {txNew >= txOld ? '+' : '-'}₹{(tx.credit || tx.debit).toLocaleString()}
                   </td>
                   <td className="p-2 text-right font-black text-xs font-mono tabular-nums text-blue-700 dark:text-blue-400 bg-blue-50/10 dark:bg-blue-950/5">

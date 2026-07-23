@@ -36,7 +36,10 @@ export default function BankAccountLedgerModal({
   fetchData
 }: BankAccountLedgerModalProps) {
   const [ledgerData, setLedgerData] = useState<any[]>([]);
-  const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
+  // Item #8: an individual BankAccount no longer has its own balance -- only
+  // the consolidated Portal ledger (isGroupLedger) returns outstanding_balance.
+  // Leaving this undefined for a single-account view hides the balance card.
+  const [ledgerOutstanding, setLedgerOutstanding] = useState<number | undefined>(0);
   const [loadingLedger, setLoadingLedger] = useState(false);
 
   // Edit Entry states (Bank Account Ledger)
@@ -102,7 +105,7 @@ export default function BankAccountLedgerModal({
         ? await api.getPortalLedger(t.id)
         : await api.getBankAccountLedger(t.id);
       setLedgerData(res.statement_history || []);
-      setLedgerOutstanding(res.outstanding_balance || 0);
+      setLedgerOutstanding(t.isGroupLedger ? (res.outstanding_balance || 0) : undefined);
     } catch (err: any) {
       showToastNotification("Failed to reload ledger: " + err.message);
     } finally {
@@ -119,7 +122,7 @@ export default function BankAccountLedgerModal({
             ? await api.getPortalLedger(target.id)
             : await api.getBankAccountLedger(target.id);
           setLedgerData(res.statement_history || []);
-          setLedgerOutstanding(res.outstanding_balance || 0);
+          setLedgerOutstanding(target.isGroupLedger ? (res.outstanding_balance || 0) : undefined);
         } catch (err: any) {
           console.error("Failed to load ledger:", err);
           alert("Failed to load ledger: " + err.message);

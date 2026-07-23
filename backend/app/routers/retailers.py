@@ -1,15 +1,15 @@
 import uuid
 from typing import List
 # pyrefly: ignore [missing-import]
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session, joinedload
 
-from app.database.db import get_db
+from app.database.db import get_db, get_current_tenant_row
 from app.database.models import Retailer, User, Ledger, Store
 from sqlalchemy import select, desc
 from app.schemas.retailer import RetailerCreate, RetailerUpdate, RetailerResponse, StoreCreate, StoreResponse
-from app.dependencies import require_admin, require_any_user
+from app.dependencies import require_admin, require_any_user, require_entity_edit_allowed
 
 router = APIRouter(prefix="/retailers", tags=["Retailers Directory"])
 
@@ -30,6 +30,20 @@ def create_retailer(
         if not staff:
             raise HTTPException(status_code=400, detail="Assigned staff member not found")
 
+    # Check for a duplicate retailer name among currently active retailers --
+    # case-insensitive so "Sharma Store" and "sharma store" don't both slip in.
+    existing_name = db.scalar(
+        select(Retailer).where(
+            func.lower(Retailer.retailer_name) == retailer_data.retailer_name.strip().lower(),
+            Retailer.is_active == True
+        )
+    )
+    if existing_name:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A retailer with this name already exists."
+        )
+
     # Check if retailer phone number already exists
     existing_retailer = db.scalar(select(Retailer).where(Retailer.phone == retailer_data.phone).with_for_update())
     if existing_retailer:
@@ -41,6 +55,8 @@ def create_retailer(
             existing_retailer.email = retailer_data.email
             existing_retailer.opening_to_give = retailer_data.opening_to_give
             existing_retailer.opening_to_take = retailer_data.opening_to_take
+            from app.core.timezone import ist_today
+            existing_retailer.opening_balance_set_on = ist_today()
             existing_retailer.category = retailer_data.category
             existing_retailer.is_active = True
             
@@ -59,6 +75,7 @@ def create_retailer(
                 detail="Retailer with this phone number already exists."
             )
 
+    from app.core.timezone import ist_today
     db_retailer = Retailer(
         retailer_name=retailer_data.retailer_name,
         address=retailer_data.address,
@@ -67,6 +84,7 @@ def create_retailer(
         phone=retailer_data.phone,
         opening_to_give=retailer_data.opening_to_give,
         opening_to_take=retailer_data.opening_to_take,
+        opening_balance_set_on=ist_today(),
         category=retailer_data.category
     )
     db.add(db_retailer)
@@ -123,9 +141,11 @@ def update_retailer(
     retailer_id: uuid.UUID,
     retailer_data: RetailerUpdate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_admin),
+    _edit_gate=Depends(require_entity_edit_allowed)
 ):
-    """Admin-only endpoint to update retailer information and staff assignments."""
+    """Admin-only endpoint to update retailer information and staff assignments.
+    Superadmin-gated per-tenant -- see items #3/#4."""
     retailer = db.scalar(select(Retailer).where(Retailer.id == retailer_id).with_for_update())
     if not retailer:
         raise HTTPException(status_code=404, detail="Retailer not found")
@@ -139,6 +159,21 @@ def update_retailer(
         new_take = (retailer.opening_to_take or Decimal("0.00")) + Decimal(str(retailer_data.opening_to_take))
         if new_take < 0:
             raise HTTPException(status_code=400, detail="To Take cannot be negative")
+
+    # Check for duplicate name collision (case-insensitive, active retailers only)
+    if retailer_data.retailer_name is not None and retailer_data.retailer_name.strip().lower() != retailer.retailer_name.strip().lower():
+        existing_name = db.scalar(
+            select(Retailer).where(
+                func.lower(Retailer.retailer_name) == retailer_data.retailer_name.strip().lower(),
+                Retailer.is_active == True,
+                Retailer.id != retailer_id
+            )
+        )
+        if existing_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Another retailer with this name already exists."
+            )
 
     # Check for duplicate phone collision
     if retailer_data.phone is not None and retailer.phone != retailer_data.phone:
@@ -249,9 +284,11 @@ def update_store(
     store_id: uuid.UUID,
     store_data: StoreCreate,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_admin),
+    _edit_gate=Depends(require_entity_edit_allowed)
 ):
-    """Admin-only endpoint to update a store under a retailer."""
+    """Admin-only endpoint to update a store under a retailer.
+    Superadmin-gated per-tenant -- see item #3."""
     store = db.scalar(select(Store).where(Store.id == store_id, Store.retailer_id == retailer_id))
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")

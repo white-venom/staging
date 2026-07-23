@@ -3,9 +3,9 @@ import os
 import httpx
 from datetime import datetime
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select, text, create_engine
+from sqlalchemy import select, text, create_engine, func
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.database.db import get_master_db, MasterSessionLocal, Base, get_tenant_connection_string, evict_tenant_cache
@@ -106,6 +106,7 @@ class SuperAdminTokenResponse(BaseModel):
     token_type: str
     name: str
     username: str
+    role: str = "full"
 
 class TenantCreateRequest(BaseModel):
     name: str = Field(..., max_length=100)
@@ -133,9 +134,21 @@ class TenantResponse(BaseModel):
     maintenance_mode: bool
     created_at: datetime
     admin_phone: Optional[str] = None
+    edit_window_minutes: int = 5
+    delete_window_minutes: int = 5
+    tenant_admin_can_edit_entities: bool = False
 
     class Config:
         from_attributes = True
+
+
+class TenantControlsRequest(BaseModel):
+    """Superadmin-only, per-tenant controls -- see items #2, #3, #4."""
+    edit_window_minutes: int = Field(5, description="-1 = unlimited")
+    delete_window_minutes: int = Field(5, description="-1 = unlimited")
+    tenant_admin_can_edit_entities: bool = Field(
+        False, description="If true, delegate Retailer/Staff/Store/balance editing back to this tenant's own admin."
+    )
 
 # Dependency to verify Super Admin
 def get_current_super_admin(
@@ -166,29 +179,52 @@ def get_current_super_admin(
     finally:
         master_db.close()
 
+
+def require_full_admin(current_admin: SuperAdmin = Depends(get_current_super_admin)) -> SuperAdmin:
+    """Item #3d: 'support' is a restricted, read-only superadmin role -- can
+    view tenants/audit log/health but cannot create/edit/delete/suspend a
+    tenant, change controls or feature flags, impersonate, or manage SSL.
+    Use this in place of get_current_super_admin on any mutating endpoint."""
+    if current_admin.role != "full":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your support role is read-only and cannot make changes. Ask a full superadmin."
+        )
+    return current_admin
+
 # Routes
 @router.post("/login", response_model=SuperAdminTokenResponse)
-def login(login_data: SuperAdminLoginRequest, db: Session = Depends(get_master_db)):
+def login(login_data: SuperAdminLoginRequest, request: Request, db: Session = Depends(get_master_db)):
     admin = db.scalar(select(SuperAdmin).where(SuperAdmin.username == login_data.username))
     if not admin or not verify_password(login_data.password, admin.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password"
         )
-    
+
     access_token = create_access_token(data={"sub": str(admin.id)})
+
+    from app.logic.audit import log_audit_event
+    log_audit_event(
+        request, actor_type="superadmin", action="login",
+        actor_id=admin.id, actor_name=admin.name,
+        entity_type="SuperAdmin", entity_id=admin.id,
+        description=f"Superadmin '{admin.name}' logged in",
+    )
+
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "name": admin.name,
-        "username": admin.username
+        "username": admin.username,
+        "role": admin.role
     }
 
 @router.post("/tenants", response_model=TenantResponse, status_code=status.HTTP_201_CREATED)
 def create_tenant(
     tenant_data: TenantCreateRequest,
     db: Session = Depends(get_master_db),
-    current_admin: SuperAdmin = Depends(get_current_super_admin)
+    current_admin: SuperAdmin = Depends(require_full_admin)
 ):
     # Check if subdomain already exists
     existing = db.scalar(select(Tenant).where(Tenant.subdomain == tenant_data.subdomain))
@@ -347,6 +383,139 @@ def get_tenant_stats(
     }
 
 
+@router.get("/tenants/{tenant_id}/backup")
+def download_tenant_backup(
+    tenant_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(require_full_admin)
+):
+    """Item #3e: on-demand backup for ONE tenant (distinct from the existing
+    cluster-wide nightly backup_postgres_r2.sh, which dumps every database
+    together and uploads to R2 -- not yet usable per-tenant, and R2 credentials
+    aren't configured yet anyway, see docs/VPS_INFRASTRUCTURE.md §5). This
+    doesn't depend on R2 at all: `postgresql-client` is already installed in
+    this container (see Dockerfile), so pg_dump runs directly and streams the
+    result back as a download -- no cloud storage leg required for this to work
+    today. Gated to full-role superadmins and audit-logged, since a database
+    dump contains every retailer/staff/financial record for that tenant."""
+    import gzip
+    import subprocess
+    from fastapi.responses import Response as FastAPIResponse
+
+    tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    env = os.environ.copy()
+    env["PGPASSWORD"] = settings.DB_PASSWORD
+    cmd = [
+        "pg_dump",
+        "-h", settings.DB_HOST,
+        "-p", str(settings.DB_PORT),
+        "-U", settings.DB_USER,
+        "-d", tenant.db_name,
+        "--no-owner", "--no-privileges",
+    ]
+    try:
+        result = subprocess.run(cmd, env=env, capture_output=True, timeout=120)
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=504, detail="Backup timed out after 120 seconds -- this tenant's database may be too large for an on-demand dump.")
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="pg_dump is not available on this server.")
+
+    if result.returncode != 0:
+        raise HTTPException(status_code=500, detail=f"pg_dump failed: {result.stderr.decode(errors='replace')[:300]}")
+
+    compressed = gzip.compress(result.stdout)
+    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"{tenant.subdomain}_backup_{timestamp}.sql.gz"
+
+    from app.logic.audit import log_audit_event
+    log_audit_event(
+        request, actor_type="superadmin", action="tenant.backup_download",
+        actor_id=current_admin.id, actor_name=current_admin.name,
+        entity_type="Tenant", entity_id=tenant.id,
+        description=f"Superadmin '{current_admin.name}' downloaded an on-demand backup of tenant '{tenant.name}' ({round(len(compressed) / (1024*1024), 2)} MB)",
+        tenant_override_subdomain=tenant.subdomain,
+    )
+
+    return FastAPIResponse(
+        content=compressed,
+        media_type="application/gzip",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/tenants/{tenant_id}/health")
+def get_tenant_health(
+    tenant_id: uuid.UUID,
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """Item #3b: per-tenant health visibility -- distinct from the global
+    /infra/status tab, this answers "is THIS ONE tenant okay" rather than "is
+    the whole platform okay." Combines a live DB-connectivity ping with recent
+    unhandled-exception history from tenant_error_logs."""
+    from app.database.master_models import TenantErrorLog
+    from datetime import timedelta
+
+    tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    db_reachable = True
+    db_error = None
+    try:
+        tenant_url = get_tenant_connection_string(tenant.db_name)
+        tenant_engine = create_engine(tenant_url, pool_timeout=5)
+        with tenant_engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except Exception as e:
+        db_reachable = False
+        db_error = str(e)[:200]
+
+    cutoff_24h = datetime.utcnow() - timedelta(hours=24)
+    cutoff_7d = datetime.utcnow() - timedelta(days=7)
+
+    error_count_24h = db.scalar(
+        select(func.count()).select_from(TenantErrorLog).where(
+            TenantErrorLog.tenant_id == tenant_id, TenantErrorLog.created_at >= cutoff_24h
+        )
+    ) or 0
+    error_count_7d = db.scalar(
+        select(func.count()).select_from(TenantErrorLog).where(
+            TenantErrorLog.tenant_id == tenant_id, TenantErrorLog.created_at >= cutoff_7d
+        )
+    ) or 0
+
+    recent_errors = db.scalars(
+        select(TenantErrorLog)
+        .where(TenantErrorLog.tenant_id == tenant_id)
+        .order_by(TenantErrorLog.created_at.desc())
+        .limit(10)
+    ).all()
+
+    return {
+        "tenant_status": tenant.status,
+        "maintenance_mode": tenant.maintenance_mode,
+        "db_reachable": db_reachable,
+        "db_error": db_error,
+        "error_count_24h": error_count_24h,
+        "error_count_7d": error_count_7d,
+        "recent_errors": [
+            {
+                "id": str(e.id),
+                "method": e.method,
+                "path": e.path,
+                "error_type": e.error_type,
+                "error_message": e.error_message,
+                "created_at": e.created_at.isoformat(),
+            } for e in recent_errors
+        ],
+    }
+
+
 @router.get("/tenants", response_model=List[TenantResponse])
 def list_tenants(
     db: Session = Depends(get_master_db),
@@ -381,7 +550,7 @@ def toggle_tenant_maintenance(
     tenant_id: uuid.UUID,
     payload: TenantMaintenanceRequest,
     db: Session = Depends(get_master_db),
-    current_admin: SuperAdmin = Depends(get_current_super_admin)
+    current_admin: SuperAdmin = Depends(require_full_admin)
 ):
     tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
     if not tenant:
@@ -396,7 +565,7 @@ def update_tenant(
     tenant_id: uuid.UUID,
     payload: TenantUpdateRequest,
     db: Session = Depends(get_master_db),
-    current_admin: SuperAdmin = Depends(get_current_super_admin)
+    current_admin: SuperAdmin = Depends(require_full_admin)
 ):
     tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
     if not tenant:
@@ -458,11 +627,40 @@ def update_tenant(
     res.admin_phone = admin_phone
     return res
 
+
+@router.put("/tenants/{tenant_id}/controls", response_model=TenantResponse)
+def update_tenant_controls(
+    tenant_id: uuid.UUID,
+    payload: TenantControlsRequest,
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(require_full_admin)
+):
+    """Superadmin-only per-tenant controls: staff edit/delete windows (item #2)
+    and whether this tenant's own admin may edit Retailer/Staff/Store records
+    and retailer balances directly, or whether that's superadmin-only (items
+    #3, #4). Tenant admins have no endpoint that can touch these fields."""
+    tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+
+    if payload.edit_window_minutes != -1 and payload.edit_window_minutes < 1:
+        raise HTTPException(status_code=400, detail="Edit window must be -1 (unlimited) or a positive number of minutes.")
+    if payload.delete_window_minutes != -1 and payload.delete_window_minutes < 1:
+        raise HTTPException(status_code=400, detail="Delete window must be -1 (unlimited) or a positive number of minutes.")
+
+    tenant.edit_window_minutes = payload.edit_window_minutes
+    tenant.delete_window_minutes = payload.delete_window_minutes
+    tenant.tenant_admin_can_edit_entities = payload.tenant_admin_can_edit_entities
+    db.commit()
+    db.refresh(tenant)
+    return tenant
+
+
 @router.delete("/tenants/{tenant_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_tenant(
     tenant_id: uuid.UUID,
     db: Session = Depends(get_master_db),
-    current_admin: SuperAdmin = Depends(get_current_super_admin)
+    current_admin: SuperAdmin = Depends(require_full_admin)
 ):
     tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
     if not tenant:
@@ -494,6 +692,94 @@ def delete_tenant(
     db.delete(tenant)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/tenants/{tenant_id}/impersonate")
+def impersonate_tenant_admin(
+    tenant_id: uuid.UUID,
+    request: Request,
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(require_full_admin)
+):
+    """Issue a real, fully valid access token for this tenant's admin account,
+    for support purposes -- 'log in as this tenant's admin' without knowing
+    their password. Every issuance is audit-logged (item #3a): this endpoint
+    IS the moment of use, since a token that's never picked up never does
+    anything. Restricted to full-role superadmins -- support/read-only cannot
+    impersonate."""
+    tenant = db.scalar(select(Tenant).where(Tenant.id == tenant_id))
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found")
+    if tenant.status != "active":
+        raise HTTPException(status_code=400, detail=f"Tenant is {tenant.status}, not active -- cannot impersonate.")
+
+    tenant_url = get_tenant_connection_string(tenant.db_name)
+    tenant_engine = create_engine(tenant_url)
+    TenantSession = sessionmaker(bind=tenant_engine)
+    tenant_db = TenantSession()
+    try:
+        from app.database import models
+        admin_user = tenant_db.query(models.User).filter(
+            models.User.role == "admin", models.User.is_active == True
+        ).first()
+        if not admin_user:
+            raise HTTPException(status_code=404, detail="This tenant has no active admin account to impersonate.")
+
+        access_token = create_access_token(data={"sub": str(admin_user.id)})
+
+        from app.logic.audit import log_audit_event
+        log_audit_event(
+            request, actor_type="superadmin", action="impersonate",
+            actor_id=current_admin.id, actor_name=current_admin.name,
+            entity_type="User", entity_id=admin_user.id,
+            description=f"Superadmin '{current_admin.name}' impersonated admin '{admin_user.name}' on tenant '{tenant.name}'",
+            tenant_override_subdomain=tenant.subdomain,
+        )
+
+        return {
+            "access_token": access_token,
+            "admin_id": str(admin_user.id),
+            "admin_name": admin_user.name,
+            "admin_phone": admin_user.phone,
+            "subdomain": tenant.subdomain,
+        }
+    finally:
+        tenant_db.close()
+
+
+@router.get("/platform/pulse")
+def get_platform_pulse(
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """Item #4: aggregate, always-visible platform vitals for the command
+    center header -- distinct from /infra/status (raw Postgres server
+    metrics) and /tenants/{id}/health (one tenant's detail). This is the
+    single-glance "is anything on fire right now" signal across every tenant."""
+    from app.database.master_models import TenantErrorLog
+    from datetime import timedelta
+
+    total_tenants = db.scalar(select(func.count()).select_from(Tenant)) or 0
+    active_tenants = db.scalar(select(func.count()).select_from(Tenant).where(Tenant.status == "active")) or 0
+    suspended_tenants = total_tenants - active_tenants
+
+    cutoff_24h = datetime.utcnow() - timedelta(hours=24)
+    errors_24h = db.scalar(
+        select(func.count()).select_from(TenantErrorLog).where(TenantErrorLog.created_at >= cutoff_24h)
+    ) or 0
+    tenants_with_errors_24h = db.scalar(
+        select(func.count(func.distinct(TenantErrorLog.tenant_id))).select_from(TenantErrorLog).where(
+            TenantErrorLog.created_at >= cutoff_24h, TenantErrorLog.tenant_id.is_not(None)
+        )
+    ) or 0
+
+    return {
+        "total_tenants": total_tenants,
+        "active_tenants": active_tenants,
+        "suspended_tenants": suspended_tenants,
+        "errors_24h": errors_24h,
+        "tenants_with_errors_24h": tenants_with_errors_24h,
+    }
 
 
 @router.get("/infra/status")
@@ -640,7 +926,7 @@ def get_ssl_status(
 
 @router.post("/ssl/renew")
 def trigger_ssl_renewal(
-    current_admin: SuperAdmin = Depends(get_current_super_admin)
+    current_admin: SuperAdmin = Depends(require_full_admin)
 ):
     try:
         trigger_ssl_provisioning()
@@ -652,4 +938,53 @@ def trigger_ssl_renewal(
         raise HTTPException(
             status_code=500,
             detail=f"Failed to write renewal trigger file: {str(e)}"
+        )
+
+@router.post("/ssl/provision/{subdomain}")
+def provision_ssl(
+    subdomain: str,
+    current_admin: SuperAdmin = Depends(require_full_admin)
+):
+    import time
+    try:
+        # 1. Trigger SSL provisioning
+        trigger_ssl_provisioning()
+        
+        # 2. Wait up to 90 seconds for the trigger file to be consumed
+        trigger_file = "/app/triggers/ssl_renew.trigger"
+        timeout = 90
+        start_time = time.time()
+        
+        while os.path.exists(trigger_file):
+            if time.time() - start_time > timeout:
+                return {
+                    "status": "warning",
+                    "message": f"Trigger sent but watcher didn't consume it within {timeout}s. SSL may still be provisioning."
+                }
+            time.sleep(2)
+            
+        # 3. Trigger consumed. Give nginx 2 seconds to reload just in case
+        time.sleep(2)
+        
+        # 4. Verify HTTPS works
+        verify_url = f"https://{subdomain}.{CF_DOMAIN}/"
+        
+        try:
+            with httpx.Client(verify=True, timeout=10.0) as client:
+                r = client.get(verify_url)
+                # Any response means SSL handshake succeeded
+                return {
+                    "status": "success",
+                    "message": f"SSL provisioned and verified for {subdomain}.{CF_DOMAIN}!"
+                }
+        except Exception as e:
+            return {
+                "status": "error",
+                "message": f"Trigger consumed, but HTTPS verification failed: {str(e)}"
+            }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to provision SSL: {str(e)}"
         )

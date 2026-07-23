@@ -581,12 +581,17 @@ export default function MobileLedger() {
                        )}
                      </div>
                    </td>
+                   {/* Item #7: color/label now driven by txType (cash-in / virtual-transfer /
+                       move-to-dist / cash-out) instead of the coarser `type` field, which
+                       incorrectly grouped move-to-dist refunds under "collection". Cash-in
+                       displays red (7a, cosmetic only); virtual-transfer stays green (7b);
+                       move-to-dist stays red (7c, confirmed). */}
                    <td className="py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-center">
-                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded-sm ${item.type === 'collection' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                         {item.type === 'collection' ? 'Cash In' : 'Cash Out'}
+                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded-sm ${item.txType === 'virtual-transfer' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                         {item.txType === 'cash-in' || item.txType === 'virtual-transfer' ? 'Cash In' : 'Cash Out'}
                       </span>
                    </td>
-                   <td className={`py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${item.type === 'collection' ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
+                   <td className={`py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${item.txType === 'virtual-transfer' ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
                      {item.type === 'collection' ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
                    </td>
                    <td className="py-1.5 px-2 text-right font-black text-slate-500 uppercase text-xs">

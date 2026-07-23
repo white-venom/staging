@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "./utils/store";
 import { Eye, EyeOff, Lock, Phone, ArrowRight } from "lucide-react";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { currentUser, setCurrentUser } = useAppStore();
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [sessionEndReason, setSessionEndReason] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -23,7 +25,32 @@ export default function LoginPage() {
       setPhone(savedPhone);
       setRememberMe(true);
     }
+    // Item #3d: if api.ts just force-logged us out (tenant suspended mid-session),
+    // show why instead of a silent redirect back to a blank login form.
+    const reason = sessionStorage.getItem("session_end_reason");
+    if (reason) {
+      setSessionEndReason(reason);
+      sessionStorage.removeItem("session_end_reason");
+    }
   }, []);
+
+  // Superadmin "Impersonate Admin" support tool (item #3a) lands here with a
+  // real, already-issued access token in the URL instead of a phone/password
+  // form submission. Picked up once on mount, then the URL is replaced so the
+  // token doesn't linger in browser history.
+  useEffect(() => {
+    if (!mounted) return;
+    const impersonateToken = searchParams.get("impersonate_token");
+    if (!impersonateToken) return;
+    setCurrentUser({
+      id: searchParams.get("impersonate_id") || "",
+      name: searchParams.get("impersonate_name") || "Admin",
+      phone: searchParams.get("impersonate_phone") || "",
+      role: "admin",
+      token: impersonateToken,
+    });
+    router.replace("/welcome");
+  }, [mounted, searchParams, router, setCurrentUser]);
 
   useEffect(() => {
     if (mounted && currentUser) {
@@ -86,6 +113,12 @@ export default function LoginPage() {
           />
 
           <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 tracking-wider uppercase text-center mb-6">User Login</h2>
+
+          {sessionEndReason && (
+            <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 text-amber-700 dark:text-amber-400 rounded-sm text-[11px] font-bold text-center leading-relaxed">
+              {sessionEndReason}
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="space-y-3">
             {error && (
@@ -164,5 +197,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-400 text-xs font-semibold">Loading...</div>
+      </div>
+    }>
+      <LoginPageContent />
+    </React.Suspense>
   );
 }

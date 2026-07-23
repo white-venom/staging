@@ -10,7 +10,6 @@ import {
   ShieldAlert,
   Clock,
   Save,
-  Infinity,
   CheckCircle2
 } from "lucide-react";
 import { api } from "../../../utils/api";
@@ -110,12 +109,10 @@ export default function AdministrationTab({
         late_threshold: current.late_threshold ?? "10:00",
         late_penalty: current.late_penalty ?? 100,
         auto_checkout_time: current.auto_checkout_time ?? "20:00",
-        edit_window_minutes: editPermanent ? -1 : (parseInt(editWindow) || 5),
-        delete_window_minutes: deletePermanent ? -1 : (parseInt(deleteWindow) || 5),
         opening_cash_in_hand: current.opening_cash_in_hand ?? 0,
         staff_can_change_collection_date: staffCanChangeCashInDate,
       });
-      showToastNotification("Entry window settings saved!");
+      showToastNotification("Entry settings saved!");
       fetchData();
     } catch (err: any) {
       alert("Failed to save: " + err.message);
@@ -132,8 +129,6 @@ export default function AdministrationTab({
         late_threshold: current.late_threshold ?? "10:00",
         late_penalty: current.late_penalty ?? 100,
         auto_checkout_time: current.auto_checkout_time ?? "20:00",
-        edit_window_minutes: current.edit_window_minutes ?? 5,
-        delete_window_minutes: current.delete_window_minutes ?? 5,
         opening_cash_in_hand: parseFloat(openingCashInHand) || 0,
       });
       showToastNotification("Opening cash balance saved!");
@@ -475,71 +470,16 @@ export default function AdministrationTab({
           </div>
         </div>
 
-        {/* Entry Window Settings Card */}
+        {/* Entry Settings Card */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-5">
           <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
             <Clock className="w-5 h-5 text-purple-600" />
             <div>
-              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Entry Edit / Delete Window</h3>
-              <p className="text-[10px] text-slate-400 font-medium mt-0.5">Define the time limit for staff to edit or delete their entries.</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
-            {/* Edit Window */}
-            <div className="space-y-2">
-              <label className="block text-[10px] text-slate-400 uppercase font-bold">Edit Window (Minutes)</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  value={editWindow}
-                  onChange={e => setEditWindow(e.target.value)}
-                  disabled={editPermanent}
-                  className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
-                  placeholder="e.g. 5"
-                />
-                <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={editPermanent}
-                    onChange={e => setEditPermanent(e.target.checked)}
-                    className="w-4 h-4 rounded text-purple-600 border-slate-300 dark:border-slate-700 cursor-pointer"
-                  />
-                  <span className="text-[9px] font-black text-purple-600 uppercase tracking-wider flex items-center gap-0.5">
-                    <Infinity className="w-3 h-3" /> Permanent
-                  </span>
-                </label>
-              </div>
-            </div>
-
-            {/* Delete Window */}
-            <div className="space-y-2">
-              <label className="block text-[10px] text-slate-400 uppercase font-bold">Delete Window (Minutes)</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  value={deleteWindow}
-                  onChange={e => setDeleteWindow(e.target.value)}
-                  disabled={deletePermanent}
-                  className="flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
-                  placeholder="e.g. 5"
-                />
-                <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={deletePermanent}
-                    onChange={e => setDeletePermanent(e.target.checked)}
-                    className="w-4 h-4 rounded text-red-500 border-slate-300 dark:border-slate-700 cursor-pointer"
-                  />
-                  <span className="text-[9px] font-black text-red-500 uppercase tracking-wider flex items-center gap-0.5">
-                    <Infinity className="w-3 h-3" /> Permanent
-                  </span>
-                </label>
-              </div>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Entry Settings</h3>
+              <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                The staff edit/delete time window is now controlled by CrediiFlow support (superadmin) for this account.
+                {" "}Currently: edit within {editPermanent ? "unlimited time" : `${editWindow} min`}, delete within {deletePermanent ? "unlimited time" : `${deleteWindow} min`}.
+              </p>
             </div>
           </div>
 
@@ -565,7 +505,7 @@ export default function AdministrationTab({
             className="w-full flex items-center justify-center gap-2 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-sm text-xs font-black transition-colors disabled:opacity-60"
           >
             <Save className="w-4 h-4" />
-            {savingWindows ? "Saving..." : "Save Window Settings"}
+            {savingWindows ? "Saving..." : "Save Entry Settings"}
           </button>
         </div>
 

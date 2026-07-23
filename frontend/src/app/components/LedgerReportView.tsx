@@ -104,7 +104,7 @@ interface LedgerReportViewProps {
   title: string;
   subtitle?: string;
   data: LedgerTransaction[];
-  outstandingBalance: number;
+  outstandingBalance?: number;
   isPublic?: boolean;
   onBack?: () => void;
   publicLink?: string;
@@ -137,6 +137,27 @@ export default function LedgerReportView({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // PDF/Excel export is a superadmin-controlled feature flag (Part 1). It has
+  // no separate backend call to gate -- generation happens entirely in the
+  // browser -- so this is enforced by hiding the buttons. Skipped on the
+  // public (unauthenticated) statement page; defaults to shown if the flag
+  // fetch fails, so a transient error never silently removes a working button.
+  const [pdfExportEnabled, setPdfExportEnabled] = useState(true);
+  useEffect(() => {
+    if (isPublic) return;
+    (async () => {
+      try {
+        const { api } = await import("../utils/api");
+        const settings = await api.getAdminSettings();
+        if (settings?.feature_flags && "pdf_export" in settings.feature_flags) {
+          setPdfExportEnabled(!!settings.feature_flags.pdf_export);
+        }
+      } catch {
+        // fail open -- keep the export buttons visible
+      }
+    })();
+  }, [isPublic]);
   const [filterType, setFilterType] = useState<"all" | "debit" | "credit">("all");
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isCopied, setIsCopied] = useState(false);
@@ -268,7 +289,7 @@ export default function LedgerReportView({
       const timePart = d.toLocaleTimeString("en-IN", {
         hour: "2-digit",
         minute: "2-digit",
-        hour12: true,
+        hour12: false,
         timeZone: "Asia/Kolkata"
       });
 
@@ -341,8 +362,7 @@ export default function LedgerReportView({
 
   const handleShare = async () => {
     const shareText = `Report of ${title}
-Outstanding Balance: ₹ ${Math.abs(outstandingBalance).toLocaleString("en-IN")}
-Total Entries: ${stats.entriesCount}
+${outstandingBalance !== undefined ? `Outstanding Balance: ₹ ${Math.abs(outstandingBalance).toLocaleString("en-IN")}\n` : ""}Total Entries: ${stats.entriesCount}
 You Gave: ₹ ${stats.youGave.toLocaleString("en-IN")}
 You Got: ₹ ${stats.youGot.toLocaleString("en-IN")}
 ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
@@ -584,7 +604,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 {filteredTransactions.map((tx) => {
                   const formattedIST = formatIST(tx.date);
                   const isDebit = tx.transaction_type === "debit"; // You Gave
-                  
+                  // Item #7a: a cash-in (Collection) entry displays red instead of
+                  // green -- purely cosmetic. It still counts under "You Got" (right
+                  // column, credit) exactly as before; only its rendered color flips.
+                  const isCashIn = !!tx.collection_id;
+
                   return (
                     <div 
                       key={tx.id} 
@@ -641,8 +665,10 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                         <div className="w-22 font-black text-red-500">
                           {isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
-                        {/* Got Column */}
-                        <div className="w-22 font-black text-emerald-600">
+                        {/* Got Column -- still the "You Got" bucket/total for a
+                            cash-in entry (position and figures unchanged), just
+                            rendered red instead of green (item #7a). */}
+                        <div className={`w-22 font-black ${isCashIn ? "text-red-500" : "text-emerald-600"}`}>
                           {!isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
                       </div>
@@ -657,15 +683,17 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
       {/* 6. Footer Buttons */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3.5 px-4 flex gap-3 z-40 max-w-lg mx-auto rounded-t-sm">
-        <button
-          onClick={handleDownloadPDF}
-          disabled={isDownloading || filteredTransactions.length === 0}
-          className="flex-1 py-3 px-4 rounded-sm border border-indigo-500 text-indigo-600 hover:bg-indigo-50 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
-        >
-          <FileDown className="w-4 h-4" />
-          {isDownloading ? "Downloading..." : "DOWNLOAD"}
-        </button>
-        
+        {pdfExportEnabled && (
+          <button
+            onClick={handleDownloadPDF}
+            disabled={isDownloading || filteredTransactions.length === 0}
+            className="flex-1 py-3 px-4 rounded-sm border border-indigo-500 text-indigo-600 hover:bg-indigo-50 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors disabled:opacity-50"
+          >
+            <FileDown className="w-4 h-4" />
+            {isDownloading ? "Downloading..." : "DOWNLOAD"}
+          </button>
+        )}
+
         <button
           onClick={handleShare}
           disabled={filteredTransactions.length === 0}
@@ -708,8 +736,10 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</span>
                 <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-sm ${
-                  selectedEntryForDetails.transaction_type === "credit" 
-                    ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400" 
+                  selectedEntryForDetails.collection_id
+                    ? "bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400"
+                    : selectedEntryForDetails.transaction_type === "credit"
+                    ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"
                     : "bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400"
                 }`}>
                   {cleanDescription(selectedEntryForDetails.description, selectedEntryForDetails)}
@@ -719,7 +749,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</span>
                 <span className={`text-base font-extrabold font-mono tabular-nums ${
-                  selectedEntryForDetails.transaction_type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
+                  selectedEntryForDetails.collection_id
+                    ? "text-red-500 dark:text-red-400"
+                    : selectedEntryForDetails.transaction_type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                 }`}>
                   ₹ {selectedEntryForDetails.amount.toLocaleString("en-IN")}
                 </span>

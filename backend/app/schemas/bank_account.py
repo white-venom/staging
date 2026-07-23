@@ -14,14 +14,16 @@ class BankAccountBase(BaseModel):
 
 class BankAccountCreate(BankAccountBase):
     portal_id: uuid.UUID
+    # Only meaningful at creation time, to seed the PARENT Portal's opening
+    # figures with whatever this physical account already held (e.g. onboarding
+    # an existing bank account with money in it) -- see item #8. Never stored on
+    # the BankAccount itself; BankAccount carries no balance of its own.
     opening_to_give: float = 0.0
     opening_to_take: float = 0.0
 
 
 class BankAccountUpdate(BankAccountBase):
     portal_id: Optional[uuid.UUID] = None
-    opening_to_give: Optional[float] = None
-    opening_to_take: Optional[float] = None
     show_in_online_payment: Optional[bool] = None
 
 
@@ -30,9 +32,6 @@ class BankAccountResponse(BankAccountBase):
     portal_id: Optional[uuid.UUID]
     portal_name: Optional[str] = None
     created_at: datetime
-    opening_to_give: float
-    opening_to_take: float
-    balance: float
 
     class Config:
         from_attributes = True

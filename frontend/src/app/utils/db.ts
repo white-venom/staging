@@ -21,7 +21,7 @@ export interface OfflineDeposit {
   bank_account_id?: string;
   retailer_id?: string;
   recipient_staff_id?: string;
-  depositType: "portal" | "retailer" | "staff" | "virtual";
+  depositType: "portal" | "retailer" | "staff" | "staff_person" | "virtual";
   targetName: string;
   amount: number;
   paymentMode: "cash" | "online";

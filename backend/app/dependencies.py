@@ -111,3 +111,20 @@ class RoleChecker:
 require_admin = RoleChecker(["admin"])
 require_staff = RoleChecker(["staff", "admin"])
 require_any_user = RoleChecker(["admin", "staff"])
+
+
+def require_entity_edit_allowed(request: Request):
+    """Backend-level gate for items #3/#4: editing Retailer/Staff/Store records
+    and adjusting a retailer's balance is superadmin-only by default, per tenant.
+    A tenant's own admin can still hit these endpoints with a valid admin token
+    (the RoleChecker alone would let them through), so this closes that gap with
+    a real 403 -- not just a hidden UI button -- unless the superadmin has
+    explicitly delegated the capability back to this tenant via
+    Tenant.tenant_admin_can_edit_entities."""
+    from app.database.db import get_current_tenant_row
+    tenant = get_current_tenant_row(request)
+    if tenant is not None and not tenant.tenant_admin_can_edit_entities:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Editing Retailer/Staff/Store records and retailer balances is managed by CrediiFlow support (superadmin) for this account."
+        )

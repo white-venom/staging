@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { superAdminApi } from "./utils/api";
+import TenantControlsPanel from "./components/TenantControlsPanel";
+import AuditLogPanel from "./components/AuditLogPanel";
 
 interface Tenant {
   id: string;
@@ -31,6 +33,14 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState("directory"); // "directory", "resources", "infrastructure"
   const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
+  // Directory search/filter/pagination (item #3c) -- client-side since the
+  // full tenant list is already fetched for other tabs/pickers anyway; this
+  // just keeps the table itself usable once there are many real tenants.
+  const [dirSearch, setDirSearch] = useState("");
+  const [dirStatusFilter, setDirStatusFilter] = useState<"all" | "active" | "suspended">("all");
+  const [dirPage, setDirPage] = useState(1);
+  const DIR_PAGE_SIZE = 15;
+
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -39,6 +49,9 @@ export default function DashboardPage() {
   // Profile data
   const [adminName, setAdminName] = useState("");
   const [username, setUsername] = useState("");
+  // Item #3d: "support" is a read-only role -- backend already 403s every
+  // mutating endpoint for it; this drives the read-only badge/messaging.
+  const [adminRole, setAdminRole] = useState<"full" | "support">("full");
 
   // Onboard Form States
   const [clientName, setClientName] = useState("");
@@ -49,6 +62,10 @@ export default function DashboardPage() {
   const [showOnboardPassword, setShowOnboardPassword] = useState(false);
   const [formError, setFormError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [createdTenantSubdomain, setCreatedTenantSubdomain] = useState("");
+  const [showAddSuccess, setShowAddSuccess] = useState(false);
+  const [provisioningSSL, setProvisioningSSL] = useState(false);
+  const [sslProvisionResult, setSslProvisionResult] = useState<{status: string, message: string} | null>(null);
 
   // Edit Form States
   const [editTenantId, setEditTenantId] = useState("");
@@ -91,6 +108,23 @@ export default function DashboardPage() {
   const [sslStatus, setSslStatus] = useState<any>(null);
   const [loadingSSL, setLoadingSSL] = useState(false);
   const [renewingSSL, setRenewingSSL] = useState(false);
+
+  // Platform Pulse -- aggregate, always-visible vitals strip (command-center
+  // signature element). Polls independently of whichever tab is open so it
+  // stays a constant situational-awareness signal, not a per-tab fetch.
+  const [pulse, setPulse] = useState<any>(null);
+  const [pulseError, setPulseError] = useState(false);
+
+  const fetchPlatformPulse = async () => {
+    try {
+      const data = await superAdminApi.getPlatformPulse();
+      setPulse(data);
+      setPulseError(false);
+    } catch (err: any) {
+      console.error("Failed to fetch platform pulse:", err);
+      setPulseError(true);
+    }
+  };
 
   // Infrastructure status (real DB connection count + version)
   const [infraStatus, setInfraStatus] = useState<any>(null);
@@ -179,6 +213,22 @@ export default function DashboardPage() {
     }
   };
 
+  const handleProvisionSSL = async (sub: string) => {
+    try {
+      setProvisioningSSL(true);
+      setSslProvisionResult(null);
+      const data = await superAdminApi.provisionSSL(sub);
+      setSslProvisionResult({ status: data.status, message: data.message });
+      if (data.status === "success") {
+        fetchSSLStatus();
+      }
+    } catch (err: any) {
+      setSslProvisionResult({ status: "error", message: err.message || "Failed to provision SSL." });
+    } finally {
+      setProvisioningSSL(false);
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("superadmin_token");
     if (!token) {
@@ -186,10 +236,14 @@ export default function DashboardPage() {
       return;
     }
     setAdminName(localStorage.getItem("superadmin_name") || "Admin");
+    setAdminRole(localStorage.getItem("superadmin_role") === "support" ? "support" : "full");
     setUsername(localStorage.getItem("superadmin_username") || "superadmin");
     fetchTenants();
     fetchSSLStatus();
     fetchInfraStatus();
+    fetchPlatformPulse();
+    const pulseInterval = setInterval(fetchPlatformPulse, 30000);
+    return () => clearInterval(pulseInterval);
   }, [router]);
 
   // Fetch real resource stats whenever the selected tenant changes or the Resources tab is opened
@@ -258,20 +312,25 @@ export default function DashboardPage() {
     setCreating(true);
 
     try {
+      const finalSubdomain = sanitizeSubdomain(subdomain);
       await superAdminApi.createTenant({
         name: clientName,
-        subdomain: sanitizeSubdomain(subdomain),
+        subdomain: finalSubdomain,
         admin_name: tenantAdminName,
         admin_phone: tenantAdminPhone,
         admin_password: tenantAdminPassword,
       });
+
+      setCreatedTenantSubdomain(finalSubdomain);
+      setShowAddSuccess(true);
+      setSslProvisionResult(null);
 
       setClientName("");
       setSubdomain("");
       setTenantAdminName("");
       setTenantAdminPhone("");
       setTenantAdminPassword("");
-      setShowAddModal(false);
+      
       triggerToast("New client database cluster provisioned successfully!");
       fetchTenants();
     } catch (err: any) {
@@ -362,6 +421,21 @@ export default function DashboardPage() {
     }
   };
 
+  // Directory search/filter/pagination (item #3c)
+  const filteredTenants = tenants.filter(t => {
+    if (dirStatusFilter !== "all" && t.status !== dirStatusFilter) return false;
+    if (dirSearch.trim()) {
+      const q = dirSearch.trim().toLowerCase();
+      if (!t.name.toLowerCase().includes(q) && !t.subdomain.toLowerCase().includes(q) && !t.db_name.toLowerCase().includes(q)) {
+        return false;
+      }
+    }
+    return true;
+  });
+  const dirTotalPages = Math.max(1, Math.ceil(filteredTenants.length / DIR_PAGE_SIZE));
+  const dirPageSafe = Math.min(dirPage, dirTotalPages);
+  const pagedTenants = filteredTenants.slice((dirPageSafe - 1) * DIR_PAGE_SIZE, dirPageSafe * DIR_PAGE_SIZE);
+
   return (
     <div className={`relative min-h-screen overflow-x-hidden font-sans ${theme === "dark" ? "dark bg-slate-950 text-slate-100" : "bg-[#f8fafc] text-slate-800"}`}>
       {/* Toast Notification */}
@@ -384,7 +458,14 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <p className="text-[10px] font-black uppercase text-slate-100 tracking-wider">{adminName}</p>
+            <div className="flex items-center justify-end gap-1.5">
+              <p className="text-[10px] font-black uppercase text-slate-100 tracking-wider">{adminName}</p>
+              {adminRole === "support" && (
+                <span className="px-1.5 py-0.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[8px] font-black uppercase tracking-widest rounded-sm">
+                  View-Only
+                </span>
+              )}
+            </div>
             <p className="text-[8px] font-bold text-blue-200/70 uppercase mt-0.5">@{username}</p>
           </div>
           <button
@@ -410,6 +491,48 @@ export default function DashboardPage() {
           </button>
         </div>
       </header>
+
+      {/* Platform Pulse -- signature always-visible vitals strip. Independent
+          of the active tab: this is the single-glance "is anything on fire"
+          signal, distinct from the per-tab Infrastructure/Resources detail. */}
+      <div className="sticky top-[44px] z-30 bg-[#0a1530] border-b border-blue-900/30 px-3.5 py-1.5 overflow-x-auto">
+        <div className="flex items-center gap-5 max-w-7xl mx-auto text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className={`relative flex h-1.5 w-1.5 ${pulseError ? "" : "animate-pulse"}`}>
+              <span className={`absolute inline-flex h-full w-full rounded-full ${
+                pulseError ? "bg-slate-500" : pulse?.errors_24h > 0 ? "bg-red-400" : "bg-cyan-400"
+              }`} />
+            </span>
+            <span className="text-cyan-300/90 font-black tracking-widest">Platform Pulse</span>
+          </div>
+
+          {pulseError ? (
+            <span className="text-slate-500">Vitals unavailable</span>
+          ) : !pulse ? (
+            <span className="text-slate-500">Loading vitals…</span>
+          ) : (
+            <>
+              <span className="text-blue-200/40">|</span>
+              <span className="text-slate-300">
+                Tenants <b className="text-slate-100 font-mono">{pulse.total_tenants}</b>
+              </span>
+              <span className="text-emerald-400">
+                Active <b className="font-mono">{pulse.active_tenants}</b>
+              </span>
+              <span className={pulse.suspended_tenants > 0 ? "text-amber-400" : "text-slate-500"}>
+                Suspended <b className="font-mono">{pulse.suspended_tenants}</b>
+              </span>
+              <span className="text-blue-200/40">|</span>
+              <span className={pulse.errors_24h > 0 ? "text-red-400" : "text-slate-500"}>
+                Errors (24h) <b className="font-mono">{pulse.errors_24h}</b>
+              </span>
+              <span className={pulse.tenants_with_errors_24h > 0 ? "text-red-400" : "text-slate-500"}>
+                Tenants Affected <b className="font-mono">{pulse.tenants_with_errors_24h}</b>
+              </span>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Content Area */}
       <main className="max-w-7xl mx-auto px-4 py-4 relative z-10">
@@ -460,18 +583,34 @@ export default function DashboardPage() {
           >
             Infrastructure Health
           </button>
+          <button
+            onClick={() => setActiveTab("controls")}
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-colors duration-250 cursor-pointer ${
+              activeTab === "controls"
+                ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-slate-100/50 dark:bg-slate-800/50"
+                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+            }`}
+          >
+            Tenant Controls
+          </button>
+          <button
+            onClick={() => setActiveTab("audit")}
+            className={`px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border-b-2 transition-colors duration-250 cursor-pointer ${
+              activeTab === "audit"
+                ? "border-blue-600 text-blue-600 dark:text-blue-400 bg-slate-100/50 dark:bg-slate-800/50"
+                : "border-transparent text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
+            }`}
+          >
+            Audit Log
+          </button>
         </div>
 
         {/* ─── TAB 1: DIRECTORY ─── */}
         {activeTab === "directory" && (
           <div className="space-y-4">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-3">
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">Total Active Tenants</p>
-                <p className="text-lg font-black mt-1 text-blue-600 dark:text-blue-400 font-mono tabular-nums">{tenants.length}</p>
-                <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold mt-1 uppercase tracking-wide">Isolated DB-Per-Client Model</p>
-              </div>
+            {/* Stats Grid -- tenant counts now live in the Platform Pulse strip
+                above (header), so this only surfaces detail not already there. */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm p-3">
                 <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-black">PostgreSQL Server Status</p>
                 <p className={`text-lg font-black mt-1 ${
@@ -494,7 +633,7 @@ export default function DashboardPage() {
 
             {/* Table */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-sm overflow-hidden">
-              <div className="px-3.5 py-2 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between">
+              <div className="px-3.5 py-2 border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 flex items-center justify-between gap-3 flex-wrap">
                 <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Registered Tenant Clusters</h2>
                 <button
                   onClick={fetchTenants}
@@ -502,6 +641,37 @@ export default function DashboardPage() {
                 >
                   Refresh Data
                 </button>
+              </div>
+
+              <div className="px-3.5 py-2.5 border-b border-slate-200/80 dark:border-slate-800 flex items-center gap-2 flex-wrap">
+                <div className="relative flex-1 min-w-[180px] max-w-xs">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={dirSearch}
+                    onChange={(e) => { setDirSearch(e.target.value); setDirPage(1); }}
+                    placeholder="Search name, subdomain, database..."
+                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-[11px] font-semibold focus:outline-none focus:border-blue-400"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  {(["all", "active", "suspended"] as const).map(s => (
+                    <button
+                      key={s}
+                      onClick={() => { setDirStatusFilter(s); setDirPage(1); }}
+                      className={`px-2.5 py-1 rounded-sm text-[9px] font-black uppercase tracking-wider cursor-pointer transition-colors ${
+                        dirStatusFilter === s
+                          ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950"
+                          : "bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[9px] font-bold text-slate-400 ml-auto">{filteredTenants.length} of {tenants.length}</span>
               </div>
 
               {loading ? (
@@ -526,6 +696,10 @@ export default function DashboardPage() {
                 <div className="p-16 text-center text-slate-400 dark:text-slate-500 text-sm font-semibold">
                   No clients onboarded yet. Click "+ Onboard New Client" to provision the first client!
                 </div>
+              ) : filteredTenants.length === 0 ? (
+                <div className="p-16 text-center text-slate-400 dark:text-slate-500 text-sm font-semibold">
+                  No tenants match "{dirSearch}"{dirStatusFilter !== "all" ? ` with status "${dirStatusFilter}"` : ""}.
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
@@ -540,7 +714,7 @@ export default function DashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-[10px] text-slate-700 dark:text-slate-300">
-                      {tenants.map((t) => (
+                      {pagedTenants.map((t) => (
                         <tr
                           key={t.id}
                           onClick={() => setSelectedTenant(t)}
@@ -621,6 +795,31 @@ export default function DashboardPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+
+              {!loading && !fetchError && filteredTenants.length > DIR_PAGE_SIZE && (
+                <div className="px-3.5 py-2.5 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-[9px] font-bold text-slate-400">
+                    Showing {(dirPageSafe - 1) * DIR_PAGE_SIZE + 1}–{Math.min(dirPageSafe * DIR_PAGE_SIZE, filteredTenants.length)} of {filteredTenants.length}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={dirPageSafe <= 1}
+                      onClick={() => setDirPage(p => Math.max(1, p - 1))}
+                      className="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 disabled:opacity-30 hover:text-slate-800 dark:hover:text-slate-100 cursor-pointer"
+                    >
+                      ← Prev
+                    </button>
+                    <span className="text-[9px] font-bold text-slate-400">Page {dirPageSafe} / {dirTotalPages}</span>
+                    <button
+                      disabled={dirPageSafe >= dirTotalPages}
+                      onClick={() => setDirPage(p => Math.min(dirTotalPages, p + 1))}
+                      className="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 disabled:opacity-30 hover:text-slate-800 dark:hover:text-slate-100 cursor-pointer"
+                    >
+                      Next →
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -816,7 +1015,7 @@ export default function DashboardPage() {
                 <div>
                   <h3 className="text-[10px] font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Live Service Reachability</h3>
                   <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">
-                    {infraServices?.checked_at ? `Last checked ${new Date(infraServices.checked_at).toLocaleTimeString()}` : "Probed over the internal service network on each load"}
+                    {infraServices?.checked_at ? `Last checked ${new Date(infraServices.checked_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}` : "Probed over the internal service network on each load"}
                   </p>
                 </div>
                 <button
@@ -871,6 +1070,16 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        {/* ─── TAB 4: TENANT CONTROLS (items #2, #3, #4) ─── */}
+        {activeTab === "controls" && (
+          <TenantControlsPanel tenants={tenants} showToast={(m: string) => setToastMessage(m)} />
+        )}
+
+        {/* ─── TAB 5: AUDIT LOG (item #6) ─── */}
+        {activeTab === "audit" && (
+          <AuditLogPanel tenants={tenants} />
+        )}
       </main>
 
       {/* ─── FOOTER ─── */}
@@ -908,6 +1117,48 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {showAddSuccess ? (
+              <div className="p-6 text-center space-y-4">
+                <div className="mx-auto w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 uppercase">Tenant Provisioned</h4>
+                  <p className="text-[10px] text-slate-500 mt-1">Database and initial config ready for <strong>{createdTenantSubdomain}</strong>.crediiflow.in</p>
+                </div>
+                
+                {sslProvisionResult ? (
+                  <div className={`mt-4 p-3 rounded-sm border ${sslProvisionResult.status === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : sslProvisionResult.status === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                    <p className="text-[10px] font-bold">{sslProvisionResult.message}</p>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <button
+                      onClick={() => handleProvisionSSL(createdTenantSubdomain)}
+                      disabled={provisioningSSL}
+                      className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-sm transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {provisioningSSL ? (
+                        <>
+                          <svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                          Provisioning SSL...
+                        </>
+                      ) : "Provision / Verify SSL"}
+                    </button>
+                    <p className="text-[9px] text-slate-400 mt-2 text-center">Requests an instant SSL cert for the new subdomain and verifies HTTPS connectivity.</p>
+                  </div>
+                )}
+                
+                <div className="pt-4 mt-2 border-t border-slate-100 flex justify-center">
+                   <button
+                    onClick={() => { setShowAddModal(false); setShowAddSuccess(false); setSslProvisionResult(null); }}
+                    className="px-6 py-2 border border-slate-200 text-slate-500 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-wider rounded-sm"
+                   >
+                     Close
+                   </button>
+                </div>
+              </div>
+            ) : (
             <form onSubmit={handleCreateTenant} className="p-3.5 space-y-2.5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div>
@@ -1015,6 +1266,7 @@ export default function DashboardPage() {
                 </button>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}
@@ -1127,6 +1379,25 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="p-2.5 bg-slate-50/50 border border-slate-200/60 rounded-sm space-y-2 mb-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">SSL Certificate Management</p>
+                  <button
+                    type="button"
+                    onClick={() => handleProvisionSSL(editSubdomain)}
+                    disabled={provisioningSSL || !editSubdomain}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[9px] font-black uppercase tracking-widest rounded transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                  >
+                    {provisioningSSL ? "Provisioning..." : "Provision / Verify SSL"}
+                  </button>
+                </div>
+                {sslProvisionResult && (
+                  <div className={`mt-2 p-2 rounded-sm border ${sslProvisionResult.status === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : sslProvisionResult.status === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-red-50 border-red-200 text-red-700'}`}>
+                    <p className="text-[9px] font-bold">{sslProvisionResult.message}</p>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2.5 border-t border-slate-100">

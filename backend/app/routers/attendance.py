@@ -8,6 +8,7 @@ from app.database.db import get_db
 from app.database.models import Attendance, BusinessSettings
 from app.schemas.attendance import CheckInRequest, CheckOutRequest, AttendanceResponse
 from app.dependencies import require_staff, require_admin
+from app.logic.feature_flags import require_feature
 
 router = APIRouter(prefix="/attendance", tags=["Attendance & Shifts"])
 
@@ -90,7 +91,8 @@ def save_base64_image(base64_str: str, folder: str) -> str:
 def check_in(
     payload: CheckInRequest,
     db: Session = Depends(get_db),
-    current_user=Depends(require_staff)
+    current_user=Depends(require_staff),
+    _feature=Depends(require_feature("attendance_tracking"))
 ):
     """Staff checks in for the day, logging their starting vehicle KM, meter image, and GPS location."""
     # Trigger auto-checkout check first to complete any pending shifts
@@ -175,7 +177,8 @@ def check_in(
 def check_out(
     payload: CheckOutRequest,
     db: Session = Depends(get_db),
-    current_user=Depends(require_staff)
+    current_user=Depends(require_staff),
+    _feature=Depends(require_feature("attendance_tracking"))
 ):
     """Staff checks out, logging ending KM, checkout meter image, and GPS location to complete shift."""
     active_shift = db.scalar(
