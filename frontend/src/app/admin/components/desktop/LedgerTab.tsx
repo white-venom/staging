@@ -6,7 +6,7 @@ import { Edit2, X, Save, Trash2, ChevronDown, Share2 } from "lucide-react";
 import { api } from "../../../utils/api";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
 import InlineSelect from "../../../components/InlineSelect";
-import { getISTDateString } from "../../../utils/dateHelpers";
+import { getISTDateString, buildDisplayDate } from "../../../utils/dateHelpers";
 
 function getExportFilename() {
   return `Ledger_${Date.now()}.csv`;
@@ -328,7 +328,7 @@ export default function LedgerTab({
     // need their own mapping here rather than fitting the two shapes above.
     ...(openingBalanceEntries || []).map((e: any) => ({
       id: e.id,
-      date: (e.created_at || "").replace("T", " ").split(".")[0],
+      date: buildDisplayDate(e.created_at),
       partyId: e.retailer_id,
       party: e.retailer_name || "Retailer",
       store_name: null,
