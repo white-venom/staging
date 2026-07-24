@@ -20,12 +20,14 @@ interface LedgerTabProps {
 }
 
 export default function LedgerTab({
-  collections = [],
-  deposits = [],
+  collections: propsCollections,
+  deposits: propsDeposits,
   retailerDirectory: propsRetailerDir,
   portalDirectory: propsBankAccountDir
 }: LedgerTabProps) {
   const adminContext = useAdmin();
+  const collections = (propsCollections && propsCollections.length > 0) ? propsCollections : (adminContext.collections || []);
+  const deposits = (propsDeposits && propsDeposits.length > 0) ? propsDeposits : (adminContext.deposits || []);
   const retailerDirectory = propsRetailerDir || adminContext.retailerDirectory;
   const portalDirectory = propsBankAccountDir || adminContext.portalDirectory;
   const getTodayDateString = () => {
