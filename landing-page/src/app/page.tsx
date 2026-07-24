@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import {
   Shield,
@@ -472,14 +473,17 @@ export default function LandingPage() {
           <div className="flex items-center">
             {/* Logo and Brand Name combination */}
             <a href="#" className={`flex items-center transition-all duration-500 group ${scrolled ? 'gap-2.5' : 'gap-3.5'}`}>
-              <img
+              <Image
                 src="/logo-icon.png"
                 alt="CrediiFlow Logo"
-                className={`transition-all duration-500 object-contain group-hover:scale-[1.03] ${scrolled ? 'h-9' : 'h-14'}`}
+                width={548}
+                height={455}
+                priority
+                className={`transition-all duration-500 object-contain group-hover:scale-[1.03] w-auto ${scrolled ? 'h-9' : 'h-14'}`}
               />
               <span className={`transition-all duration-500 tracking-tight text-slate-955 select-none font-display ${scrolled ? 'text-xl' : 'text-3xl'}`}>
                 <span className="font-extrabold text-slate-900">Credii</span>
-                <span className="font-semibold text-cyan-600">Flow</span>
+                <span className="font-semibold text-cyan-700">Flow</span>
               </span>
             </a>
           </div>
@@ -560,6 +564,7 @@ export default function LandingPage() {
                   <input
                     type="email"
                     required
+                    aria-label="Professional email address"
                     placeholder="Enter your professional email"
                     value={demoEmail}
                     onChange={(e) => setDemoEmail(e.target.value)}
@@ -623,10 +628,10 @@ export default function LandingPage() {
                   <div className="w-full md:w-56 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 p-5 flex flex-col justify-between shrink-0 select-none">
                     <div className="space-y-6">
                       <div className="flex items-center gap-2 px-1 font-display">
-                        <img src="/logo-icon.png" alt="Icon" className="h-5.5 w-auto object-contain" />
+                        <Image src="/logo-icon.png" alt="Icon" width={548} height={455} className="h-5.5 w-auto object-contain" />
                         <span className="text-sm tracking-tight text-slate-900 select-none">
                           <span className="font-extrabold text-slate-850">Credii</span>
-                          <span className="font-semibold text-cyan-600">Flow</span>
+                          <span className="font-semibold text-cyan-700">Flow</span>
                         </span>
                       </div>
                       <nav className="space-y-1">
@@ -667,8 +672,8 @@ export default function LandingPage() {
                   <div className="flex-1 p-6 lg:p-8 overflow-y-auto space-y-6 bg-slate-50/50">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Management</h4>
-                        <h2 className="text-lg font-extrabold text-slate-900 mt-1">Operational Overview</h2>
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Management</p>
+                        <p className="text-lg font-extrabold text-slate-900 mt-1">Operational Overview</p>
                       </div>
                       <span className="text-[9px] bg-emerald-55 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider animate-pulse flex items-center gap-1 text-emerald-600">
                         <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Live
@@ -679,17 +684,17 @@ export default function LandingPage() {
                     <div className="grid grid-cols-3 gap-3">
                       <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs hover:shadow-sm transition-all">
                         <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400">Total Today</span>
-                        <h4 className="text-lg lg:text-xl font-black text-slate-800 mt-0.5">₹ 84,200</h4>
+                        <p className="text-lg lg:text-xl font-black text-slate-800 mt-0.5">₹ 84,200</p>
                         <span className="text-[8px] text-emerald-605 font-bold block mt-0.5">● Synced</span>
                       </div>
                       <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs hover:shadow-sm transition-all">
                         <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400">Compliance</span>
-                        <h4 className="text-lg lg:text-xl font-black text-slate-800 mt-0.5">99.8%</h4>
+                        <p className="text-lg lg:text-xl font-black text-slate-800 mt-0.5">99.8%</p>
                         <span className="text-[8px] text-slate-500 font-medium block mt-0.5">Tally correct</span>
                       </div>
                       <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs hover:shadow-sm transition-all">
                         <span className="text-[9px] uppercase font-bold tracking-widest text-slate-400">Routes</span>
-                        <h4 className="text-lg lg:text-xl font-black text-slate-800 mt-0.5">12 / 12</h4>
+                        <p className="text-lg lg:text-xl font-black text-slate-800 mt-0.5">12 / 12</p>
                         <span className="text-[8px] text-emerald-605 font-bold block mt-0.5">Active</span>
                       </div>
                     </div>
@@ -712,7 +717,7 @@ export default function LandingPage() {
                       {/* Log Column */}
                       <div className="lg:col-span-5 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between h-44">
                         <div>
-                          <h4 className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Verification Log</h4>
+                          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Verification Log</p>
                           <div className="space-y-1.5">
                             {mockRetailers.slice(0, 2).map((r, i) => (
                               <div key={i} className="p-2 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-between text-[9px]">
@@ -725,7 +730,7 @@ export default function LandingPage() {
                             ))}
                           </div>
                         </div>
-                        <div className="text-[8px] text-slate-400 font-bold border-t border-slate-100 pt-2 flex justify-between">
+                        <div className="text-[8px] text-slate-600 font-bold border-t border-slate-100 pt-2 flex justify-between">
                           <span>SMTP Receipts: On</span>
                           <span>v2.1.0</span>
                         </div>
@@ -746,7 +751,7 @@ export default function LandingPage() {
                   <Activity className="w-5 h-5" />
                 </div>
                 <div>
-                  <h5 className="text-xs font-bold text-white leading-none mb-1 font-sans">Live Collection synced</h5>
+                  <p className="text-xs font-bold text-white leading-none mb-1 font-sans">Live Collection synced</p>
                   <p className="text-[10px] text-slate-400 font-sans">₹8,400 from Nova Retailers</p>
                   <span className="text-[8px] text-cyan-400 block mt-1 font-sans">2 seconds ago</span>
                 </div>
@@ -762,9 +767,9 @@ export default function LandingPage() {
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h5 className="text-xs font-bold text-slate-800 leading-none mb-1 font-sans">Odometer Complied</h5>
+                  <p className="text-xs font-bold text-slate-800 leading-none mb-1 font-sans">Odometer Complied</p>
                   <p className="text-[10px] text-slate-500 font-sans">Ramesh K. checked out</p>
-                  <span className="text-[9px] text-emerald-600 font-bold block mt-1 font-sans">Start: 124km | End: 145km</span>
+                  <span className="text-[9px] text-emerald-700 font-bold block mt-1 font-sans">Start: 124km | End: 145km</span>
                 </div>
               </motion.div>
 
@@ -778,7 +783,7 @@ export default function LandingPage() {
                   <Shield className="w-4 h-4" />
                 </div>
                 <div>
-                  <h5 className="text-[11px] font-bold text-white leading-none font-sans">Secure Workspace</h5>
+                  <p className="text-[11px] font-bold text-white leading-none font-sans">Secure Workspace</p>
                   <p className="text-[9px] text-cyan-400 font-mono mt-1">workspace.crediiflow.in</p>
                 </div>
               </motion.div>
@@ -825,10 +830,10 @@ export default function LandingPage() {
                 <div className="space-y-4 pt-4 text-left">
                   <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] font-black text-slate-400 uppercase font-sans">Sync Queue</span>
-                      <h4 className="text-lg font-black text-slate-800 font-sans">2 Transactions Pending</h4>
+                      <span className="text-[10px] font-black text-slate-600 uppercase font-sans">Sync Queue</span>
+                      <p className="text-lg font-black text-slate-800 font-sans">2 Transactions Pending</p>
                     </div>
-                    <span className="text-xs bg-amber-100 text-amber-600 px-3 py-1 rounded-full font-bold font-sans">Awaiting Signal</span>
+                    <span className="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-bold font-sans">Awaiting Signal</span>
                   </div>
                   <div className="space-y-2.5 opacity-60">
                     <div className="p-3 bg-slate-50/50 border border-slate-200 rounded-xl flex items-center justify-between text-xs font-sans">
@@ -848,12 +853,12 @@ export default function LandingPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center py-16">
               {/* Graphic Mock 2 */}
               <div className="bg-white/60 backdrop-blur-md p-8 rounded-3xl border border-slate-200/80 shadow-lg text-left order-2 lg:order-1">
-                <h4 className="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider font-sans">Retailer Statement Sheet</h4>
+                <p className="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider font-sans">Retailer Statement Sheet</p>
                 <div className="space-y-3">
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex justify-between items-center">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase font-sans">Outstanding Balance</p>
-                      <h3 className="text-2xl font-black text-slate-900 font-sans">₹ 84,000</h3>
+                      <p className="text-[10px] font-bold text-slate-600 uppercase font-sans">Outstanding Balance</p>
+                      <p className="text-2xl font-black text-slate-900 font-sans">₹ 84,000</p>
                     </div>
                     <button className="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-1.5 transition-all cursor-pointer font-sans">
                       <FileText className="w-3.5 h-3.5" /> PDF Statement
@@ -861,7 +866,7 @@ export default function LandingPage() {
                   </div>
 
                   <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
-                    <div className="bg-slate-50 p-2.5 border-b border-slate-200 font-bold flex justify-between text-[9px] text-slate-400 uppercase font-sans">
+                    <div className="bg-slate-50 p-2.5 border-b border-slate-200 font-bold flex justify-between text-[9px] text-slate-600 uppercase font-sans">
                       <span>Date / Type</span>
                       <span>Collection</span>
                       <span>Balance</span>
@@ -964,14 +969,14 @@ export default function LandingPage() {
                   <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2 shrink-0 font-display">
-                        <img src="/logo-icon.png" alt="Logo" className="h-6 w-auto object-contain" />
+                        <Image src="/logo-icon.png" alt="Logo" width={548} height={455} className="h-6 w-auto object-contain" />
                         <span className="text-sm tracking-tight text-slate-900 select-none">
                           <span className="font-extrabold text-slate-900">Credii</span>
-                          <span className="font-semibold text-cyan-600">Flow</span>
+                          <span className="font-semibold text-cyan-700">Flow</span>
                         </span>
                       </div>
                       <div>
-                        <h1 className="text-[11px] font-black text-slate-800 uppercase tracking-wider leading-none mb-1 font-sans">Cash In Entry</h1>
+                        <p className="text-[11px] font-black text-slate-800 uppercase tracking-wider leading-none mb-1 font-sans">Cash In Entry</p>
                         <p className="text-[9px] text-slate-400 font-bold leading-none font-sans">Record payment details.</p>
                       </div>
                     </div>
@@ -1000,21 +1005,21 @@ export default function LandingPage() {
                       <button
                         type="button"
                         onClick={() => setSourceType("retailer")}
-                        className={`flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${sourceType === "retailer" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400"}`}
+                        className={`flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${sourceType === "retailer" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"}`}
                       >
                         Retailer
                       </button>
                       <button
                         type="button"
                         onClick={() => setSourceType("staff")}
-                        className={`flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${sourceType === "staff" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400"}`}
+                        className={`flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${sourceType === "staff" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"}`}
                       >
                         Staff
                       </button>
                       <button
                         type="button"
                         onClick={() => setSourceType("office")}
-                        className={`flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${sourceType === "office" ? "bg-white text-slate-900 shadow-sm" : "text-slate-400"}`}
+                        className={`flex-1 py-1.5 rounded-md text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${sourceType === "office" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600"}`}
                       >
                         Super Distributor
                       </button>
@@ -1024,9 +1029,10 @@ export default function LandingPage() {
                     {sourceType === "retailer" ? (
                       <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs space-y-2 font-sans">
                         <div>
-                          <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 mb-1">Select Retailer</label>
+                          <label className="block text-[8px] uppercase tracking-wider font-black text-slate-600 mb-1">Select Retailer</label>
                           <div className="relative">
                             <select
+                              aria-label="Select Retailer"
                               value={selectedRetailer.id}
                               onChange={(e) => {
                                 const match = mockRetailers.find(r => r.id === e.target.value);
@@ -1046,14 +1052,14 @@ export default function LandingPage() {
                           <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" />
                           <div>
                             <span className="font-extrabold text-slate-700">{selectedRetailer.name}</span>
-                            <span className="text-slate-400 block text-[8px] font-bold">Balance: ₹{selectedRetailer.balance.toLocaleString()}</span>
+                            <span className="text-slate-600 block text-[8px] font-bold">Balance: ₹{selectedRetailer.balance.toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
                     ) : sourceType === "staff" ? (
                       <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs font-sans">
-                        <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 mb-1">Select Staff Member</label>
-                        <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-800 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all">
+                        <label className="block text-[8px] uppercase tracking-wider font-black text-slate-600 mb-1">Select Staff Member</label>
+                        <select aria-label="Select Staff Member" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-800 focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all">
                           <option>Ramesh Kumar</option>
                           <option>Amit Singh</option>
                           <option>Suresh P.</option>
@@ -1069,7 +1075,7 @@ export default function LandingPage() {
                     <div className="p-3 rounded-lg bg-white border border-slate-200 shadow-xs font-sans">
                       <div className="flex items-center gap-1.5 mb-2">
                         <Coins className="w-3.5 h-3.5 text-slate-500" />
-                        <h2 className="text-[10px] font-black uppercase tracking-wider text-slate-700">Counting Details (Notes)</h2>
+                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-700">Counting Details (Notes)</p>
                       </div>
 
                       <div className="space-y-2">
@@ -1087,6 +1093,7 @@ export default function LandingPage() {
                             </button>
                             <input
                               type="number"
+                              aria-label="Number of ₹500 notes"
                               value={notes500 === 0 ? "" : notes500}
                               onChange={(e) => setNotes500(Math.max(0, parseInt(e.target.value) || 0))}
                               className="w-10 py-0.5 bg-slate-50 border border-slate-200 rounded text-center text-xs text-slate-800 font-extrabold focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all"
@@ -1118,6 +1125,7 @@ export default function LandingPage() {
                             </button>
                             <input
                               type="number"
+                              aria-label="Number of ₹200 notes"
                               value={notes200 === 0 ? "" : notes200}
                               onChange={(e) => setNotes200(Math.max(0, parseInt(e.target.value) || 0))}
                               className="w-10 py-0.5 bg-slate-50 border border-slate-200 rounded text-center text-xs text-slate-800 font-extrabold focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all"
@@ -1149,6 +1157,7 @@ export default function LandingPage() {
                             </button>
                             <input
                               type="number"
+                              aria-label="Number of ₹100 notes"
                               value={notes100 === 0 ? "" : notes100}
                               onChange={(e) => setNotes100(Math.max(0, parseInt(e.target.value) || 0))}
                               className="w-10 py-0.5 bg-slate-50 border border-slate-200 rounded text-center text-xs text-slate-800 font-extrabold focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all"
@@ -1174,6 +1183,7 @@ export default function LandingPage() {
                               <span className="text-slate-300 text-xs font-bold">+</span>
                               <input
                                 type="number"
+                                aria-label="Online UPI amount"
                                 placeholder="₹0.00"
                                 value={onlineAmount || ""}
                                 onChange={(e) => setOnlineAmount(Math.max(0, parseInt(e.target.value) || 0))}
@@ -1188,8 +1198,8 @@ export default function LandingPage() {
                     {/* Total display card */}
                     <div className="p-3 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-between font-sans">
                       <div>
-                        <span className="text-[8px] uppercase font-black tracking-wider text-slate-400">Total Amount</span>
-                        <div className="text-[9px] text-slate-500 mt-0.5 font-bold">
+                        <span className="text-[8px] uppercase font-black tracking-wider text-slate-600">Total Amount</span>
+                        <div className="text-[9px] text-slate-600 mt-0.5 font-bold">
                           Cash: ₹{totalCashAmount.toLocaleString()} | UPI: ₹{onlineAmount.toLocaleString()}
                         </div>
                       </div>
@@ -1205,6 +1215,7 @@ export default function LandingPage() {
                       <label className="block text-[8px] uppercase tracking-wider font-black text-slate-400 px-1">Collection Date</label>
                       <input
                         type="date"
+                        aria-label="Collection Date"
                         value={new Date().toISOString().substring(0, 10)}
                         readOnly
                         className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 font-bold focus:outline-none cursor-pointer"
@@ -1218,6 +1229,7 @@ export default function LandingPage() {
                         <FileText className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-400" />
                         <input
                           type="text"
+                          aria-label="Remarks"
                           value={remarks}
                           onChange={(e) => setRemarks(e.target.value)}
                           className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-800 font-bold focus:outline-none focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/10 transition-all"
@@ -1274,29 +1286,29 @@ export default function LandingPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                     <div className="bg-white/80 border border-slate-200 rounded-2xl p-4 hover:bg-slate-100 transition-colors">
                       <p className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Today's Total</p>
-                      <h4 className="text-lg font-black text-slate-900 mt-1">₹ {totalToday.toLocaleString()}</h4>
+                      <p className="text-lg font-black text-slate-900 mt-1">₹ {totalToday.toLocaleString()}</p>
                     </div>
 
                     <div className="bg-white/80 border border-slate-200 rounded-2xl p-4 hover:bg-slate-100 transition-colors">
                       <p className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Local Queue</p>
-                      <h4 className={`text-lg font-black mt-1 ${offlineQueue.length > 0 ? 'text-amber-500' : 'text-slate-400'}`}>{offlineQueue.length} Logged</h4>
+                      <p className={`text-lg font-black mt-1 ${offlineQueue.length > 0 ? 'text-amber-500' : 'text-slate-400'}`}>{offlineQueue.length} Logged</p>
                     </div>
 
                     <div className="bg-white/80 border border-slate-200 rounded-2xl p-4 hover:bg-slate-100 transition-colors">
                       <p className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Shifts Active</p>
-                      <h4 className="text-lg font-black text-slate-900 mt-1">4 / 5 Staff</h4>
+                      <p className="text-lg font-black text-slate-900 mt-1">4 / 5 Staff</p>
                     </div>
 
                     <div className="bg-white/80 border border-slate-200 rounded-2xl p-4 hover:bg-slate-100 transition-colors">
                       <p className="text-[9px] uppercase font-bold text-slate-400 tracking-widest">Tally Match</p>
-                      <h4 className="text-lg font-black text-emerald-600 mt-1">100%</h4>
+                      <p className="text-lg font-black text-emerald-600 mt-1">100%</p>
                     </div>
                   </div>
 
                   {/* Ledger Logs Table */}
                   <div>
                     <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Collections Log Verification</h4>
+                      <p className="text-xs font-bold text-slate-700 uppercase tracking-wider">Collections Log Verification</p>
                       <span className="text-[9px] text-slate-400 font-bold">Auto-sync updates live</span>
                     </div>
 
@@ -1322,7 +1334,7 @@ export default function LandingPage() {
                                 <td className="p-3 text-slate-500 font-medium">{log.staff}</td>
                                 <td className="p-3 font-black text-slate-900">₹ {log.amount.toLocaleString()}</td>
                                 <td className="p-3 text-center">
-                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${log.status === "verified" ? 'bg-green-50 text-emerald-600 border border-green-200' : 'bg-amber-50 text-amber-500 border border-amber-200'
+                                  <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${log.status === "verified" ? 'bg-green-50 text-emerald-700 border border-green-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                                     }`}>
                                     {log.status}
                                   </span>
@@ -1332,7 +1344,7 @@ export default function LandingPage() {
                                     <button
                                       type="button"
                                       onClick={() => verifyRecord(log.id, log.amount)}
-                                      className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer"
+                                      className="px-2.5 py-1 bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer"
                                     >
                                       Verify
                                     </button>
@@ -1445,12 +1457,12 @@ export default function LandingPage() {
                   >
                     <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mx-auto text-base font-black transition-all duration-300 border ${activeStep === index
                         ? 'bg-[#0d1b3e] text-cyan-400 border-slate-950 shadow-lg scale-110 shadow-cyan-500/10'
-                        : 'bg-white text-slate-400 border-slate-200 group-hover:border-slate-300 group-hover:scale-105'
+                        : 'bg-white text-slate-600 border-slate-200 group-hover:border-slate-300 group-hover:scale-105'
                       }`}>
                       {item.step}
                     </div>
                     <div>
-                      <h4 className={`text-xs sm:text-sm font-extrabold transition-colors duration-300 ${activeStep === index ? 'text-cyan-600' : 'text-slate-800'}`}>{item.title}</h4>
+                      <h3 className={`text-xs sm:text-sm font-extrabold transition-colors duration-300 ${activeStep === index ? 'text-cyan-600' : 'text-slate-800'}`}>{item.title}</h3>
                       <p className="text-[10px] text-slate-400 mt-2 px-1 font-light leading-relaxed">{item.desc}</p>
                     </div>
                   </div>
@@ -1600,7 +1612,7 @@ export default function LandingPage() {
                     SK
                   </div>
                   <div>
-                    <h5 className="text-xs font-bold text-slate-800">Sanjay K.</h5>
+                    <h3 className="text-xs font-bold text-slate-800">Sanjay K.</h3>
                     <p className="text-[10px] text-slate-400">Head of Operations, Apex Distributors</p>
                   </div>
                 </div>
@@ -1616,7 +1628,7 @@ export default function LandingPage() {
                     VP
                   </div>
                   <div>
-                    <h5 className="text-xs font-bold text-slate-800">Vikram P.</h5>
+                    <h3 className="text-xs font-bold text-slate-800">Vikram P.</h3>
                     <p className="text-[10px] text-slate-400">Director of Finance, Metro NBFC</p>
                   </div>
                 </div>
@@ -1644,9 +1656,10 @@ export default function LandingPage() {
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2">Workspace Subdomain</label>
                   <div className="relative flex items-center bg-slate-950/80 border border-white/10 rounded-2xl focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-500/15 transition-all overflow-hidden p-1">
-                    <span className="pl-4 text-sm font-bold text-slate-500 select-none shrink-0">https://</span>
+                    <span className="pl-4 text-sm font-bold text-slate-400 select-none shrink-0">https://</span>
                     <input
                       type="text"
+                      aria-label="Workspace Subdomain"
                       placeholder="your-company"
                       value={workspaceName}
                       onChange={(e) => setWorkspaceName(e.target.value)}
@@ -1750,24 +1763,26 @@ export default function LandingPage() {
           <div className="space-y-4">
             <div className="flex items-center">
               <div className="flex items-center gap-2.5 shrink-0 group font-display">
-                <img 
-                  src="/logo-icon.png" 
-                  alt="CrediiFlow Logo Icon" 
-                  className="h-7 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]" 
+                <Image
+                  src="/logo-icon.png"
+                  alt="CrediiFlow Logo Icon"
+                  width={548}
+                  height={455}
+                  className="h-7 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                 />
                 <span className="text-lg tracking-tight text-slate-900 select-none">
                   <span className="font-extrabold text-slate-900">Credii</span>
-                  <span className="font-semibold text-cyan-600">Flow</span>
+                  <span className="font-semibold text-cyan-700">Flow</span>
                 </span>
               </div>
             </div>
-            <p className="text-[11px] text-slate-400 font-normal leading-relaxed max-w-xs font-sans">
+            <p className="text-[11px] text-slate-600 font-normal leading-relaxed max-w-xs font-sans">
               Enterprise-grade cash collection, denomination tallies, and retailer ledgers. Dynamic tenant database routing, secure isolation.
             </p>
           </div>
 
           <div>
-            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-5 font-sans">Product</h5>
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-5 font-sans">Product</h3>
             <ul className="space-y-3.5 text-xs text-slate-500 font-semibold font-sans">
               <li><a href="#overview" className="hover:text-slate-900 transition-colors">Overview</a></li>
               <li><a href="#features" className="hover:text-slate-900 transition-colors">Features</a></li>
@@ -1776,7 +1791,7 @@ export default function LandingPage() {
           </div>
 
           <div>
-            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-5 font-sans">System</h5>
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-5 font-sans">System</h3>
             <ul className="space-y-3.5 text-xs text-slate-500 font-semibold font-sans">
               <li><a href="#security" className="hover:text-slate-900 transition-colors">Security Guard</a></li>
               <li><a href="#subdomains" className="hover:text-slate-900 transition-colors">Multi-Tenant Subdomains</a></li>
@@ -1787,7 +1802,7 @@ export default function LandingPage() {
           </div>
 
           <div>
-            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-5 font-sans">Contact Info</h5>
+            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-5 font-sans">Contact Info</h3>
             <ul className="space-y-3.5 text-xs text-slate-500 font-semibold font-sans">
               <li className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 text-slate-400" />
@@ -1797,12 +1812,12 @@ export default function LandingPage() {
                 <Phone className="w-3.5 h-3.5 text-slate-400" />
                 <a href="tel:+918010115618" className="hover:underline">+91 80101 15618</a>
               </li>
-              <li className="text-[10px] text-slate-400 leading-relaxed pt-1.5 font-normal">
+              <li className="text-[10px] text-slate-600 leading-relaxed pt-1.5 font-normal">
                 1908 Iconic Corenthum,<br />
                 Sector 62, Noida,<br />
                 Uttar Pradesh - 201309
               </li>
-              <li className="text-[10px] text-slate-400 uppercase font-bold tracking-wider pt-2">Security: AES-256 / SHA-256</li>
+              <li className="text-[10px] text-slate-600 uppercase font-bold tracking-wider pt-2">Security: AES-256 / SHA-256</li>
             </ul>
           </div>
 
@@ -1816,9 +1831,11 @@ export default function LandingPage() {
             <div className="flex items-center gap-2">
               <span>Developed and managed by</span>
               <a href="https://xcplllp.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity">
-                <img
+                <Image
                   src="/logo-xc.png"
                   alt="Xenelasia Group Logo"
+                  width={516}
+                  height={484}
                   className="h-5.5 w-auto object-contain align-middle"
                 />
                 <span className="font-semibold">Xenelasia</span>
@@ -1954,6 +1971,7 @@ export default function LandingPage() {
                         <input
                           type="text"
                           required
+                          aria-label="Business / Company Name"
                           placeholder="e.g. Apex Grocers"
                           value={demoCompanyName}
                           onChange={(e) => handleCompanyNameChange(e.target.value)}
@@ -1971,6 +1989,7 @@ export default function LandingPage() {
                           <input
                             type="text"
                             required
+                            aria-label="Subdomain Prefix"
                             placeholder="subdomain"
                             value={demoSubdomain}
                             onChange={(e) => setDemoSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
@@ -1989,6 +2008,7 @@ export default function LandingPage() {
                         <input
                           type="text"
                           required
+                          aria-label="Admin Full Name"
                           placeholder="e.g. Sanjay Kumar"
                           value={demoAdminName}
                           onChange={(e) => setDemoAdminName(e.target.value)}
@@ -2005,6 +2025,7 @@ export default function LandingPage() {
                         <input
                           type="email"
                           required
+                          aria-label="Professional Email"
                           placeholder="e.g. sanjay@apex.com"
                           value={demoEmailAddress}
                           onChange={(e) => setDemoEmailAddress(e.target.value)}
@@ -2021,6 +2042,7 @@ export default function LandingPage() {
                         <input
                           type="tel"
                           required
+                          aria-label="Phone Number"
                           placeholder="e.g. +91 99999-99999"
                           value={demoPhoneNumber}
                           onChange={(e) => setDemoPhoneNumber(e.target.value)}
@@ -2035,6 +2057,7 @@ export default function LandingPage() {
                       <div className="relative flex items-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus-within:border-cyan-500 focus-within:ring-4 focus-within:ring-cyan-500/10 focus-within:bg-white transition-all">
                         <HardDrive className="w-4 h-4 text-slate-400 shrink-0 mr-2.5" />
                         <select
+                          aria-label="Demo Package Level"
                           value={demoPackagePlan}
                           onChange={(e) => setDemoPackagePlan(e.target.value)}
                           className="w-full bg-transparent text-sm font-semibold text-slate-800 focus:outline-none cursor-pointer pr-8"
