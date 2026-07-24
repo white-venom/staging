@@ -278,7 +278,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
       <main className="flex-1 ml-64 p-6 min-h-screen">
         <header className="flex items-center justify-between mb-6">
           <div>
-             <h2 className="text-xl font-black text-slate-900 dark:text-white capitalize">{activeTab === "admin" ? "Dashboard" : activeTab === "wallet-transfer" ? "Virtual Money Transfer" : activeTab === "virtual-ledger" ? "Virtual Ledger" : activeTab}</h2>
+             <h2 className="text-xl font-black text-slate-900 dark:text-white capitalize">{activeTab === "admin" ? "Dashboard" : activeTab === "wallet-transfer" ? "Virtual Money Transfer" : activeTab === "virtual-ledger" ? "Virtual Ledger" : activeTab === "bankAccounts" ? "Portals" : activeTab}</h2>
              <p className="text-xs text-slate-400 font-semibold mt-1">Welcome back, {currentUser?.name}</p>
           </div>
         </header>
