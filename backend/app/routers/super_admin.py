@@ -1,15 +1,16 @@
 import uuid
 import os
+import secrets
 import httpx
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
-from pydantic import BaseModel, Field
-from sqlalchemy import select, text, create_engine, func
+from pydantic import BaseModel, Field, EmailStr, field_validator
+from sqlalchemy import select, text, create_engine, func, desc
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.database.db import get_master_db, MasterSessionLocal, Base, get_tenant_connection_string, evict_tenant_cache
-from app.database.master_models import Tenant, SuperAdmin
+from app.database.master_models import Tenant, SuperAdmin, SuperAdminPasswordReset
 from app.core.config import settings
 from app.core.security import (
     verify_password,
@@ -185,6 +186,11 @@ def get_current_super_admin(
         admin = master_db.query(SuperAdmin).filter(SuperAdmin.id == uuid.UUID(admin_id_str)).first()
         if not admin or not admin.is_active:
             raise credentials_exception
+        # A password reset bumps token_version, immediately invalidating every
+        # token issued before it -- otherwise these JWTs are stateless and
+        # would keep working right through a reset.
+        if payload.get("tv") != admin.token_version:
+            raise credentials_exception
         master_db.expunge(admin)
         return admin
     finally:
@@ -213,7 +219,7 @@ def login(login_data: SuperAdminLoginRequest, request: Request, db: Session = De
             detail="Incorrect username or password"
         )
 
-    access_token = create_access_token(data={"sub": str(admin.id)})
+    access_token = create_access_token(data={"sub": str(admin.id), "tv": admin.token_version})
 
     from app.logic.audit import log_audit_event
     log_audit_event(
@@ -230,6 +236,204 @@ def login(login_data: SuperAdminLoginRequest, request: Request, db: Session = De
         "username": admin.username,
         "role": admin.role
     }
+
+
+class SuperAdminProfileResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    username: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    role: str
+
+    class Config:
+        from_attributes = True
+
+
+class SuperAdminProfileUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = Field(None, max_length=20)
+
+
+@router.get("/profile", response_model=SuperAdminProfileResponse)
+def get_own_profile(current_admin: SuperAdmin = Depends(get_current_super_admin)):
+    return current_admin
+
+
+@router.put("/profile", response_model=SuperAdminProfileResponse)
+def update_own_profile(
+    payload: SuperAdminProfileUpdate,
+    request: Request,
+    db: Session = Depends(get_master_db),
+    current_admin: SuperAdmin = Depends(get_current_super_admin)
+):
+    """Part 1: self-service profile edit (name/email/phone) -- no OTP, direct
+    update. Any superadmin (full or support) can edit their own profile; this
+    isn't a tenant-mutating action so it isn't gated by require_full_admin."""
+    admin = db.scalar(select(SuperAdmin).where(SuperAdmin.id == current_admin.id))
+    if not admin:
+        raise HTTPException(status_code=404, detail="Superadmin account not found")
+
+    before = {"name": admin.name, "email": admin.email, "phone": admin.phone}
+    changed = {}
+
+    if payload.name is not None and payload.name != admin.name:
+        admin.name = payload.name
+        changed["name"] = payload.name
+    if payload.email is not None and payload.email != admin.email:
+        existing = db.scalar(select(SuperAdmin).where(SuperAdmin.email == payload.email, SuperAdmin.id != admin.id))
+        if existing:
+            raise HTTPException(status_code=400, detail="That email is already registered to another superadmin account.")
+        admin.email = payload.email
+        changed["email"] = payload.email
+    if payload.phone is not None and payload.phone != admin.phone:
+        admin.phone = payload.phone
+        changed["phone"] = payload.phone
+
+    if changed:
+        db.commit()
+        db.refresh(admin)
+
+        from app.logic.audit import log_audit_event
+        log_audit_event(
+            request, actor_type="superadmin", action="update_own_profile",
+            actor_id=admin.id, actor_name=admin.name,
+            entity_type="SuperAdmin", entity_id=admin.id,
+            before=before, after=changed,
+            description=f"Superadmin '{admin.name}' updated their own profile ({', '.join(changed.keys())})",
+        )
+
+    return admin
+
+
+# ─── Part 2: forgot-password via email OTP ──────────────────────────────────
+OTP_EXPIRY_MINUTES = 10
+OTP_RATE_LIMIT_MAX = 3
+OTP_RATE_LIMIT_WINDOW_MINUTES = 15
+OTP_MAX_FAILED_ATTEMPTS = 5
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str = Field(..., min_length=6, max_length=6)
+    new_password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_strength(cls, v: str) -> str:
+        if not any(c.isalpha() for c in v) or not any(c.isdigit() for c in v):
+            raise ValueError("Password must be at least 8 characters and include at least one letter and one digit.")
+        return v
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest, request: Request, db: Session = Depends(get_master_db)):
+    """Always returns the same generic message regardless of whether the email
+    is registered, so this endpoint can't be used to enumerate superadmin
+    accounts. Rate-limited per account (not globally) to 3 requests / 15 min."""
+    from app.logic.audit import log_audit_event
+    generic_response = {"message": "If that email is registered to a superadmin account, a verification code has been sent."}
+
+    admin = db.scalar(select(SuperAdmin).where(SuperAdmin.email == payload.email))
+    if not admin or not admin.is_active:
+        return generic_response
+
+    cutoff = datetime.utcnow() - timedelta(minutes=OTP_RATE_LIMIT_WINDOW_MINUTES)
+    recent_count = db.scalar(
+        select(func.count()).select_from(SuperAdminPasswordReset)
+        .where(SuperAdminPasswordReset.super_admin_id == admin.id, SuperAdminPasswordReset.created_at >= cutoff)
+    ) or 0
+    if recent_count >= OTP_RATE_LIMIT_MAX:
+        log_audit_event(
+            request, actor_type="superadmin", action="forgot_password_rate_limited",
+            actor_id=admin.id, actor_name=admin.name,
+            entity_type="SuperAdmin", entity_id=admin.id,
+            description=f"Password reset request for '{admin.email}' blocked -- {recent_count} requests in the last {OTP_RATE_LIMIT_WINDOW_MINUTES} minutes",
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=f"Too many reset requests. Please wait a few minutes and try again."
+        )
+
+    otp = f"{secrets.randbelow(1000000):06d}"
+    db.add(SuperAdminPasswordReset(
+        super_admin_id=admin.id,
+        otp_hash=get_password_hash(otp),
+        expires_at=datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES),
+    ))
+    db.commit()
+
+    log_audit_event(
+        request, actor_type="superadmin", action="forgot_password_requested",
+        actor_id=admin.id, actor_name=admin.name,
+        entity_type="SuperAdmin", entity_id=admin.id,
+        description=f"Password reset OTP requested for '{admin.email}'",
+    )
+
+    try:
+        from app.logic.email import send_password_reset_otp_email
+        send_password_reset_otp_email(to_email=admin.email, admin_name=admin.name, otp=otp, expiry_minutes=OTP_EXPIRY_MINUTES)
+    except Exception as e:
+        print(f"[EMAIL] Failed to send password reset OTP to {admin.email}: {e}")
+
+    return generic_response
+
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest, request: Request, db: Session = Depends(get_master_db)):
+    from app.logic.audit import log_audit_event
+    invalid_response = HTTPException(status_code=400, detail="Invalid or expired verification code.")
+
+    admin = db.scalar(select(SuperAdmin).where(SuperAdmin.email == payload.email))
+    if not admin or not admin.is_active:
+        raise invalid_response
+
+    reset_row = db.scalar(
+        select(SuperAdminPasswordReset)
+        .where(SuperAdminPasswordReset.super_admin_id == admin.id, SuperAdminPasswordReset.used == False)
+        .order_by(desc(SuperAdminPasswordReset.created_at))
+        .limit(1)
+    )
+
+    def fail(reason: str):
+        log_audit_event(
+            request, actor_type="superadmin", action="reset_password_failed",
+            actor_id=admin.id, actor_name=admin.name,
+            entity_type="SuperAdmin", entity_id=admin.id,
+            description=f"Failed password reset attempt for '{admin.email}': {reason}",
+        )
+        raise invalid_response
+
+    if not reset_row:
+        fail("no pending verification code")
+    if reset_row.expires_at < datetime.utcnow():
+        fail("verification code expired")
+    if not verify_password(payload.otp, reset_row.otp_hash):
+        reset_row.failed_attempts += 1
+        if reset_row.failed_attempts >= OTP_MAX_FAILED_ATTEMPTS:
+            reset_row.used = True  # burn it -- forces a fresh forgot-password request
+        db.commit()
+        fail(f"incorrect verification code (attempt {reset_row.failed_attempts}/{OTP_MAX_FAILED_ATTEMPTS})")
+
+    reset_row.used = True
+    admin.password_hash = get_password_hash(payload.new_password)
+    admin.token_version += 1  # invalidates every token issued before this reset
+    db.commit()
+
+    log_audit_event(
+        request, actor_type="superadmin", action="reset_password_succeeded",
+        actor_id=admin.id, actor_name=admin.name,
+        entity_type="SuperAdmin", entity_id=admin.id,
+        description=f"Password reset succeeded for '{admin.email}'; all existing sessions invalidated",
+    )
+
+    return {"message": "Password reset successfully. Please sign in with your new password."}
+
 
 @router.post("/tenants", response_model=TenantResponse, status_code=status.HTTP_201_CREATED)
 def create_tenant(

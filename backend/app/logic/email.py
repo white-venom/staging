@@ -110,3 +110,56 @@ def send_tenant_onboarding_email(
     except Exception as e:
         print(f"[EMAIL] Failed to send onboarding email to {to_email} for tenant '{tenant_name}': {e}")
         return False
+
+
+def _otp_html(admin_name: str, otp: str, expiry_minutes: int) -> str:
+    return f"""
+<div style="font-family:Inter,Arial,sans-serif;background:#f8fafc;padding:32px 16px;">
+  <div style="max-width:420px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;overflow:hidden;">
+    <div style="background:#0d1b3e;padding:20px 28px;">
+      <span style="color:#ffffff;font-weight:900;font-size:18px;letter-spacing:-0.02em;">CrediiFlow</span>
+    </div>
+    <div style="padding:28px;">
+      <p style="font-size:9px;font-weight:900;letter-spacing:0.1em;text-transform:uppercase;color:#2563eb;margin:0 0 6px;">Password Reset</p>
+      <h1 style="font-size:16px;font-weight:900;color:#0f172a;margin:0 0 16px;">Hi {admin_name}, here's your code</h1>
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:20px;margin:0 0 20px;text-align:center;">
+        <span style="font-family:monospace;font-size:32px;font-weight:900;letter-spacing:0.15em;color:#0f172a;">{otp}</span>
+      </div>
+      <p style="font-size:13px;color:#475569;line-height:1.6;margin:0;">
+        This code expires in <strong>{expiry_minutes} minutes</strong>. If you didn't request a password reset, you can safely ignore this email — your password hasn't changed.
+      </p>
+    </div>
+  </div>
+</div>
+""".strip()
+
+
+def send_password_reset_otp_email(to_email: str, admin_name: str, otp: str, expiry_minutes: int = 10) -> bool:
+    """Same best-effort/never-raises contract as send_tenant_onboarding_email."""
+    config = _smtp_config()
+    if not config:
+        print(f"[EMAIL] SMTP not configured -- skipped password reset OTP to {to_email}. "
+              f"Set SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASSWORD/SMTP_FROM to enable (see docs/VPS_INFRASTRUCTURE.md).")
+        return False
+
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = "Your CrediiFlow password reset code"
+        msg["From"] = config["from_addr"]
+        msg["To"] = to_email
+        msg.set_content(
+            f"Hi {admin_name},\n\n"
+            f"Your CrediiFlow password reset code is: {otp}\n\n"
+            f"This code expires in {expiry_minutes} minutes. If you didn't request this, ignore this email."
+        )
+        msg.add_alternative(_otp_html(admin_name, otp, expiry_minutes), subtype="html")
+
+        with smtplib.SMTP(config["host"], config["port"], timeout=15) as server:
+            server.starttls(context=ssl.create_default_context())
+            if config["user"] and config["password"]:
+                server.login(config["user"], config["password"])
+            server.send_message(msg)
+        return True
+    except Exception as e:
+        print(f"[EMAIL] Failed to send password reset OTP to {to_email}: {e}")
+        return False

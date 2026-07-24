@@ -49,6 +49,19 @@ export const superAdminApi = {
     method: "POST",
     body: JSON.stringify(data),
   }),
+  getProfile: () => request<any>("/superadmin/profile"),
+  updateProfile: (data: { name?: string; email?: string; phone?: string }) => request<any>("/superadmin/profile", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  }),
+  forgotPassword: (email: string) => request<any>("/superadmin/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  }),
+  resetPassword: (data: { email: string; otp: string; new_password: string }) => request<any>("/superadmin/reset-password", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }),
   getTenants: () => request<any[]>("/superadmin/tenants"),
   getTenantStats: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}/stats`),
   getTenantHealth: (tenantId: string) => request<any>(`/superadmin/tenants/${tenantId}/health`),

@@ -36,7 +36,7 @@ app = FastAPI(
 @app.on_event("startup")
 def startup_event():
     # Initialize master models
-    from app.database.master_models import Tenant, SuperAdmin, AuditLog, TenantFeatureFlags, TenantErrorLog
+    from app.database.master_models import Tenant, SuperAdmin, AuditLog, TenantFeatureFlags, TenantErrorLog, SuperAdminPasswordReset
     Base.metadata.create_all(bind=master_engine)
 
     # Idempotent column additions for the master 'tenants' table (create_all only
@@ -61,6 +61,10 @@ def startup_event():
             conn.execute(_text("UPDATE tenants SET delete_window_minutes = 10 WHERE delete_window_minutes = 5"))
         with master_engine.begin() as conn:
             conn.execute(_text("ALTER TABLE super_admins ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'full'"))
+            # Superadmin profile-edit + forgot-password-via-OTP feature.
+            conn.execute(_text("ALTER TABLE super_admins ADD COLUMN IF NOT EXISTS email VARCHAR(255) UNIQUE"))
+            conn.execute(_text("ALTER TABLE super_admins ADD COLUMN IF NOT EXISTS phone VARCHAR(20)"))
+            conn.execute(_text("ALTER TABLE super_admins ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0"))
     except Exception as e:
         print(f"[WARN] Failed to add superadmin control columns to tenants table: {e}")
 

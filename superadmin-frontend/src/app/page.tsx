@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { superAdminApi } from "./utils/api";
+import { toUserMessage } from "./utils/errors";
 import TenantControlsPanel from "./components/TenantControlsPanel";
 import AuditLogPanel from "./components/AuditLogPanel";
 
@@ -52,6 +53,52 @@ export default function DashboardPage() {
   // Item #3d: "support" is a read-only role -- backend already 403s every
   // mutating endpoint for it; this drives the read-only badge/messaging.
   const [adminRole, setAdminRole] = useState<"full" | "support">("full");
+
+  // Edit Profile modal (Part 1)
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileError, setProfileError] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  const handleOpenProfile = async () => {
+    setShowProfileModal(true);
+    setProfileError("");
+    setProfileLoading(true);
+    try {
+      const data = await superAdminApi.getProfile();
+      setProfileName(data.name || "");
+      setProfileEmail(data.email || "");
+      setProfilePhone(data.phone || "");
+    } catch (err: any) {
+      setProfileError(toUserMessage(err));
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileError("");
+    setProfileSaving(true);
+    try {
+      const data = await superAdminApi.updateProfile({
+        name: profileName,
+        email: profileEmail || undefined,
+        phone: profilePhone || undefined,
+      });
+      setAdminName(data.name);
+      localStorage.setItem("superadmin_name", data.name);
+      triggerToast("Profile updated successfully.");
+      setShowProfileModal(false);
+    } catch (err: any) {
+      setProfileError(toUserMessage(err));
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   // Onboard Form States
   const [clientName, setClientName] = useState("");
@@ -471,6 +518,12 @@ export default function DashboardPage() {
             </div>
             <p className="text-[8px] font-bold text-blue-200/70 uppercase mt-0.5">@{username}</p>
           </div>
+          <button
+            onClick={handleOpenProfile}
+            className="px-2.5 py-1 border border-blue-800 hover:border-blue-400 text-blue-200 hover:text-white rounded-sm text-[10px] font-bold uppercase tracking-wider transition-colors duration-200 cursor-pointer"
+          >
+            Edit Profile
+          </button>
           <button
             onClick={toggleTheme}
             className="p-1.5 border border-blue-800 hover:border-blue-500 text-blue-200 hover:text-white rounded-sm transition-colors duration-200 cursor-pointer"
@@ -1494,6 +1547,49 @@ export default function DashboardPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal (Part 1) */}
+      {showProfileModal && (
+        <div className="fixed inset-0 bg-slate-950/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Edit My Profile</h3>
+              <button onClick={() => setShowProfileModal(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 cursor-pointer">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {profileError && (
+              <div className="p-3 text-[10px] bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 rounded-sm text-center font-bold">
+                {profileError}
+              </div>
+            )}
+
+            {profileLoading ? (
+              <p className="text-[10px] text-slate-400 font-bold text-center py-4">Loading profile...</p>
+            ) : (
+              <form onSubmit={handleSaveProfile} className="space-y-4 text-xs font-semibold">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Full Name</label>
+                  <input autoComplete="off" type="text" value={profileName} onChange={(e) => setProfileName(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white" required />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Email</label>
+                  <input autoComplete="off" type="email" value={profileEmail} onChange={(e) => setProfileEmail(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white" placeholder="you@crediiflow.in" />
+                  <p className="text-[9px] text-slate-400 font-bold ml-1 mt-0.5">Used for password-reset codes.</p>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Phone Number</label>
+                  <input autoComplete="off" type="tel" value={profilePhone} onChange={(e) => setProfilePhone(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white" />
+                </div>
+                <button type="submit" disabled={profileSaving} className="w-full py-2.5 bg-slate-900 text-white dark:bg-white dark:text-slate-950 rounded-sm font-bold hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors uppercase tracking-wider text-[10px] cursor-pointer disabled:opacity-50">
+                  {profileSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}

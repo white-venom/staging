@@ -51,6 +51,34 @@ class SuperAdmin(Base):
     # tenants/audit log/health but cannot create/edit/delete/suspend tenants,
     # cannot change feature flags or controls, cannot impersonate. See item #3d.
     role: Mapped[str] = mapped_column(String(20), default="full", server_default="full", nullable=False)
+    # Profile fields (superadmin profile-edit feature). email doubles as the
+    # forgot-password OTP destination -- unique so an OTP request unambiguously
+    # resolves to one account (Postgres allows multiple NULLs under UNIQUE).
+    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    # Bumped on every password reset; embedded in the JWT at login and checked
+    # on every request (see get_current_super_admin) so a reset immediately
+    # invalidates every token issued before it -- JWTs are otherwise stateless
+    # and don't expire early on their own.
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+
+
+class SuperAdminPasswordReset(Base):
+    """Forgot-password OTP records. One row per requested OTP; superseded rows
+    are left in place (not deleted) so they double as the rate-limit signal --
+    counting rows created in the last 15 minutes needs no separate table."""
+    __tablename__ = "super_admin_password_resets"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    super_admin_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("super_admins.id", ondelete="CASCADE"), nullable=False, index=True)
+    otp_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Brute-force guard on top of the 10-minute expiry: a 6-digit OTP is only
+    # ~1M possibilities, guessable well within that window without this. Burns
+    # the OTP (used=True) after 5 wrong guesses, same as expiring it.
+    failed_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
 
 class TenantFeatureFlags(Base):
