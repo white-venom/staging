@@ -39,8 +39,8 @@ export default function LedgerTab({
   };
 
   const { ledgerSearchTerm, setLedgerSearchTerm, openingBalanceEntries } = adminContext;
-  const [dateFrom, setDateFrom] = React.useState(getTodayDateString());
-  const [dateTo, setDateTo] = React.useState(getTodayDateString());
+  const [dateFrom, setDateFrom] = React.useState("");
+  const [dateTo, setDateTo] = React.useState("");
   const [selectedTypes, setSelectedTypes] = React.useState<string[]>([
     "cash-in",
     "cash-out",
