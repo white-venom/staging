@@ -423,41 +423,40 @@ export default function LedgerTab({
       snapshots.set(tx.id, { old, new: newVal });
     });
 
-    // Single source of truth for a row's (Opening, Party Bal) pair. Prefers the
-    // backend's own stored balance_snapshot over the locally-recomputed
-    // `snapshots` map above wherever available. Now that every row upstream
-    // carries a correctly-signed (debit, credit) pair matching the backend's
-    // own credit-adds/debit-subtracts convention (see recalculate_balances()
-    // and create_deposit()'s virtual-transfer branch), one formula covers
-    // every row type: new = old + credit - debit, so old = new - credit + debit.
-    const getTxBalances = (tx: any): { old: number; new: number } => {
-      if (tx.balance_snapshot !== undefined && tx.balance_snapshot !== null) {
-        const txNew = Number(tx.balance_snapshot);
-        // Opening Balance is always the first ledger row ever created for its
-        // retailer, so there's nothing before it regardless of credit/debit.
-        const txOld = tx.type === 'opening-balance' ? 0
-          : txNew - Number(tx.credit) + Number(tx.debit);
-        return { old: txOld, new: txNew };
-      }
-      return snapshots.get(tx.id) || { old: 0, new: 0 };
-    };
-
     // 3. Report-level Running Balance (Global column)
+    const isFilteredView = partyFilter !== "all" || bankAccountFilter !== "all";
     let totalInitial = 0;
-    if (partyFilter !== "all" || bankAccountFilter !== "all") {
+    if (isFilteredView) {
         totalInitial = initialBalance;
     } else {
         // For 'All' view, start from 0 to track "Cash in Hand" (Inflow - Outflow)
         totalInitial = 0;
     }
 
-    const isFilteredView = partyFilter !== "all" || bankAccountFilter !== "all";
     let reportRunning = totalInitial; 
-    const globalSnapshots = new Map<string, number>();
+    const globalSnapshots = new Map<string, { old: number; new: number }>();
     chronological.forEach(tx => {
+      const old = reportRunning;
       reportRunning += isFilteredView ? (tx.debit - tx.credit) : (tx.credit - tx.debit);
-      globalSnapshots.set(tx.id, reportRunning);
+      globalSnapshots.set(tx.id, { old, new: reportRunning });
     });
+
+    // Single source of truth for a row's (Opening, Party Bal) pair.
+    // In 'All Parties' mode, use globalSnapshots so the running balance tracks
+    // the overall Cash Flow (matching Staff Ledger). When filtered to a single
+    // party, use the party's own balance_snapshot/snapshots.
+    const getTxBalances = (tx: any): { old: number; new: number } => {
+      if (!isFilteredView) {
+        return globalSnapshots.get(tx.id) || { old: 0, new: 0 };
+      }
+      if (tx.balance_snapshot !== undefined && tx.balance_snapshot !== null) {
+        const txNew = Number(tx.balance_snapshot);
+        const txOld = tx.type === 'opening-balance' ? 0
+          : txNew - Number(tx.credit) + Number(tx.debit);
+        return { old: txOld, new: txNew };
+      }
+      return snapshots.get(tx.id) || { old: 0, new: 0 };
+    };
 
     const totalCredit = allTransactions.reduce((s, c) => s + c.credit, 0);
     const totalDebit = allTransactions.reduce((s, d) => s + d.debit, 0);
