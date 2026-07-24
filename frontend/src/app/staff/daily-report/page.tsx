@@ -11,8 +11,8 @@ import {
   RefreshCw,
   FileText
 } from "lucide-react";
-import Script from "next/script";
 import { getISTDateString, getUtcDate } from "../../utils/dateHelpers";
+import { downloadElementAsPdf } from "../../utils/downloadElementAsPdf";
 
 export default function DailyReportPage() {
   const router = useRouter();
@@ -288,63 +288,17 @@ export default function DailyReportPage() {
 
   const downloadPDF = () => {
     setIsDownloading(true);
-    const element = document.getElementById("report-content");
-    if (!element) {
-      setIsDownloading(false);
-      return;
-    }
 
     const staffNameClean = (currentUser?.name || "Staff").trim().replace(/\s+/g, "_");
     const dateStrClean = selectedDate.trim().replace(/\s+/g, "_");
     const filename = `${staffNameClean}_${dateStrClean}.pdf`;
 
-    const opt = {
-      margin:       [0.3, 0.3, 0.3, 0.3],
-      filename:     filename,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false },
-      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-    };
-
-    const runDownload = () => {
-      try {
-        (window as any).html2pdf().set(opt).from(element).save().then(() => {
-          setIsDownloading(false);
-        }).catch((e: any) => {
-          console.error("PDF generation failed, falling back to print:", e);
-          window.print();
-          setIsDownloading(false);
-        });
-      } catch (err) {
-        console.error("html2pdf call failed, falling back to print:", err);
+    downloadElementAsPdf("report-content", filename, 0.3)
+      .catch((e: any) => {
+        console.error("PDF generation failed, falling back to print:", e);
         window.print();
-        setIsDownloading(false);
-      }
-    };
-
-    const loadAndRun = () => {
-      if ((window as any).html2pdf) {
-        runDownload();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "/html2pdf.bundle.min.js";
-      script.onload = () => {
-        if ((window as any).html2pdf) {
-          runDownload();
-        } else {
-          window.print();
-          setIsDownloading(false);
-        }
-      };
-      script.onerror = () => {
-        window.print();
-        setIsDownloading(false);
-      };
-      document.head.appendChild(script);
-    };
-
-    loadAndRun();
+      })
+      .finally(() => setIsDownloading(false));
   };
 
   return (

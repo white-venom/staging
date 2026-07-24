@@ -6,6 +6,7 @@ import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
 import InlineSelect from "../../../components/InlineSelect";
 import { getISTDateString } from "../../../utils/dateHelpers";
+import { downloadElementAsPdf } from "../../../utils/downloadElementAsPdf";
 
 export default function VirtualLedgerTab() {
   const adminContext = useAdmin();
@@ -413,63 +414,17 @@ export default function VirtualLedgerTab() {
 
   const handleDownloadPDF = () => {
     setIsDownloading(true);
-    const element = document.getElementById("pdf-virtual-ledger-report");
-    if (!element) {
-      setIsDownloading(false);
-      return;
-    }
 
     const nameClean = "Universal_Ledger";
     const dateRangeStr = dateFrom === dateTo ? (dateFrom || "All_Time") : `${dateFrom || "Start"}_to_${dateTo || "End"}`;
     const filename = `${nameClean}_${dateRangeStr}.pdf`;
 
-    const opt = {
-      margin:       [0.4, 0.4, 0.4, 0.4],
-      filename:     filename,
-      image:        { type: "jpeg", quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false },
-      jsPDF:        { unit: "in", format: "a4", orientation: "portrait" }
-    };
-
-    const runDownload = () => {
-      try {
-        (window as any).html2pdf().set(opt).from(element).save().then(() => {
-          setIsDownloading(false);
-        }).catch((e: any) => {
-          console.error("PDF generation failed, falling back to print:", e);
-          window.print();
-          setIsDownloading(false);
-        });
-      } catch (err) {
-        console.error("html2pdf call failed, falling back to print:", err);
+    downloadElementAsPdf("pdf-virtual-ledger-report", filename, 0.4)
+      .catch((e: any) => {
+        console.error("PDF generation failed, falling back to print:", e);
         window.print();
-        setIsDownloading(false);
-      }
-    };
-
-    const loadAndRun = () => {
-      if ((window as any).html2pdf) {
-        runDownload();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "/html2pdf.bundle.min.js";
-      script.onload = () => {
-        if ((window as any).html2pdf) {
-          runDownload();
-        } else {
-          window.print();
-          setIsDownloading(false);
-        }
-      };
-      script.onerror = () => {
-        window.print();
-        setIsDownloading(false);
-      };
-      document.head.appendChild(script);
-    };
-
-    loadAndRun();
+      })
+      .finally(() => setIsDownloading(false));
   };
 
   const handleShare = async () => {

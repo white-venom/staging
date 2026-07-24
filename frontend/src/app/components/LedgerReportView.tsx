@@ -17,8 +17,8 @@ import {
   Store,
   X
 } from "lucide-react";
-import Script from "next/script";
 import { getISTDateString } from "../utils/dateHelpers";
+import { downloadElementAsPdf } from "../utils/downloadElementAsPdf";
 
 const cleanDescription = (desc: string, tx?: any): string => {
   if (!desc) return "";
@@ -301,63 +301,17 @@ export default function LedgerReportView({
 
   const handleDownloadPDF = () => {
     setIsDownloading(true);
-    const element = document.getElementById("pdf-ledger-report");
-    if (!element) {
-      setIsDownloading(false);
-      return;
-    }
 
     const nameClean = title.trim().replace(/\s+/g, "_");
     const dateRangeStr = startDate === endDate ? startDate : `${startDate}_to_${endDate}`;
     const filename = `${nameClean}_${dateRangeStr}.pdf`;
 
-    const opt = {
-      margin:       [0.4, 0.4, 0.4, 0.4],
-      filename:     filename,
-      image:        { type: "jpeg", quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, logging: false },
-      jsPDF:        { unit: "in", format: "a4", orientation: "portrait" }
-    };
-
-    const runDownload = () => {
-      try {
-        (window as any).html2pdf().set(opt).from(element).save().then(() => {
-          setIsDownloading(false);
-        }).catch((e: any) => {
-          console.error("PDF generation failed, falling back to print:", e);
-          window.print();
-          setIsDownloading(false);
-        });
-      } catch (err) {
-        console.error("html2pdf call failed, falling back to print:", err);
+    downloadElementAsPdf("pdf-ledger-report", filename, 0.4)
+      .catch((e: any) => {
+        console.error("PDF generation failed, falling back to print:", e);
         window.print();
-        setIsDownloading(false);
-      }
-    };
-
-    const loadAndRun = () => {
-      if ((window as any).html2pdf) {
-        runDownload();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "/html2pdf.bundle.min.js";
-      script.onload = () => {
-        if ((window as any).html2pdf) {
-          runDownload();
-        } else {
-          window.print();
-          setIsDownloading(false);
-        }
-      };
-      script.onerror = () => {
-        window.print();
-        setIsDownloading(false);
-      };
-      document.head.appendChild(script);
-    };
-
-    loadAndRun();
+      })
+      .finally(() => setIsDownloading(false));
   };
 
   const handleShare = async () => {

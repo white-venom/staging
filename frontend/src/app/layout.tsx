@@ -22,9 +22,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
-      <head>
-        <script src="/html2pdf.bundle.min.js" defer></script>
-      </head>
       <body className="min-h-full flex flex-col font-sans transition-colors duration-200" suppressHydrationWarning>
         <PWARegister />
         <QueryProvider>
