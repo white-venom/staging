@@ -1165,23 +1165,26 @@ export default function MobileRetailers({
                 {/* PORTAL SELECTOR (only for Online collections) */}
                 {!editingIsDeposit && selectedNewPaymentMode === "online" && (
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">BankAccount Channel</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Online Payment Portal</label>
                     <InlineSelect
-                      value={selectedNewBankAccountId}
-                      onChange={setSelectedNewBankAccountId}
+                      value={
+                        portalDirectory.find((group: any) =>
+                          (group.bankAccounts || []).some((ba: any) => String(ba.id) === selectedNewBankAccountId)
+                        )?.id || ""
+                      }
+                      onChange={(portalId) => {
+                        const account = portalDirectory
+                          .find((group: any) => String(group.id) === String(portalId))
+                          ?.bankAccounts?.find((ba: any) => ba.show_in_online_payment);
+                        setSelectedNewBankAccountId(account ? String(account.id) : "");
+                      }}
                       options={[
-                        { value: "", label: "Select Bank Account" },
+                        { value: "", label: "Select Portal" },
                         ...portalDirectory
-                          .flatMap((group: any) =>
-                            (group.bankAccounts || [])
-                              .filter((ba: any) => ba.show_in_online_payment)
-                              .map((ba: any) => ({
-                                value: String(ba.id),
-                                label: `${group.name} — ${ba.bank_account_name}`,
-                              }))
-                          )
+                          .filter((group: any) => (group.bankAccounts || []).some((ba: any) => ba.show_in_online_payment))
+                          .map((group: any) => ({ value: String(group.id), label: group.name }))
                       ]}
-                      placeholder="Select Bank Account"
+                      placeholder="Select Portal"
                     />
                   </div>
                 )}

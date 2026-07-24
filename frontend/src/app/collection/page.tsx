@@ -54,6 +54,13 @@ function NewCollectionContent() {
   const [sourceType, setSourceType] = useState<"retailer" | "staff" | "office">("retailer");
   const [staffMembers, setStaffMembers] = useState<any[]>([]);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  // Item #2 follow-up: the online-routing picker now shows Portals, not
+  // individual BankAccounts (balance is Portal-level; which specific account
+  // under it receives the online payment is resolved automatically). Kept
+  // separate from `bankAccounts` above since that flat list is still needed
+  // to resolve a portal's first online-eligible account id.
+  const [onlinePortals, setOnlinePortals] = useState<{ id: string; name: string }[]>([]);
+  const [selectedOnlinePortalId, setSelectedOnlinePortalId] = useState("");
   const [showOnlineBankAccount, setShowOnlineBankAccount] = useState(false);
 
   // Fetch stores when retailer changes
@@ -140,6 +147,16 @@ function NewCollectionContent() {
     }
   }, [editId, mounted, retailers]);
 
+  // Keep the Portal picker's value in sync with whichever account id is
+  // actually selected (e.g. once bankAccounts loads after an edit-prefill
+  // already set online_bank_account_id from the existing entry).
+  useEffect(() => {
+    const accountId = denominations.online_bank_account_id;
+    if (!accountId) return;
+    const owner = bankAccounts.find(p => p.id === accountId);
+    if (owner) setSelectedOnlinePortalId(owner.portalId);
+  }, [denominations.online_bank_account_id, bankAccounts]);
+
   // Calculate dynamic cash totals
   const totalCashAmount = (
     denominations.note_500 * 500 +
@@ -199,25 +216,35 @@ function NewCollectionContent() {
 
         const groups = await api.getPortals();
         setPortals(groups);
-        // Flatten: only individual bankAccount accounts marked show_in_online_payment=true
-        const onlineBankAccounts: { id: string; name: string }[] = [];
+        // Flatten: only individual bankAccount accounts marked show_in_online_payment=true.
+        // Still needed (not shown directly) to resolve a chosen Portal down to
+        // a specific account id for the backend payload.
+        const onlineBankAccounts: { id: string; name: string; portalId: string }[] = [];
+        const onlinePortalList: { id: string; name: string }[] = [];
         for (const g of groups) {
+          let portalHasOnlineAccount = false;
           for (const p of (g.bank_accounts || [])) {
             if (p.show_in_online_payment) {
               onlineBankAccounts.push({
                 id: p.id,
-                name: g.bank_accounts.length > 1 ? `${g.name} - ${p.bank_account_name}` : g.name
+                name: g.bank_accounts.length > 1 ? `${g.name} - ${p.bank_account_name}` : g.name,
+                portalId: g.id,
               });
+              portalHasOnlineAccount = true;
             }
           }
+          if (portalHasOnlineAccount) onlinePortalList.push({ id: g.id, name: g.name });
         }
         setBankAccounts(onlineBankAccounts);
-        
-        // Auto default to last used online bankAccount if not editing
+        setOnlinePortals(onlinePortalList);
+
+        // Auto default to last used online Portal if not editing
         if (!editId && typeof window !== "undefined") {
-          const lastUsedBankAccountId = localStorage.getItem("last_used_online_bank_account_id");
-          if (lastUsedBankAccountId && onlineBankAccounts.some(p => p.id === lastUsedBankAccountId)) {
-            setDenominations(prev => ({ ...prev, online_bank_account_id: lastUsedBankAccountId }));
+          const lastUsedPortalId = localStorage.getItem("last_used_online_portal_id");
+          const firstAccount = lastUsedPortalId ? onlineBankAccounts.find(p => p.portalId === lastUsedPortalId) : undefined;
+          if (lastUsedPortalId && firstAccount) {
+            setSelectedOnlinePortalId(lastUsedPortalId);
+            setDenominations(prev => ({ ...prev, online_bank_account_id: firstAccount.id }));
             setShowOnlineBankAccount(true);
           }
         }
@@ -470,6 +497,7 @@ function NewCollectionContent() {
                   online_amount: 0,
                   online_bank_account_id: undefined
                 }));
+                setSelectedOnlinePortalId("");
                 setShowOnlineBankAccount(false);
               }}
               className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider transition-colors ${sourceType === "office" ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-950" : "bg-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}`}
@@ -652,18 +680,25 @@ function NewCollectionContent() {
                   {(showOnlineBankAccount || denominations.online_amount > 0) && (
                     <div>
                       <InlineSelect
-                        value={denominations.online_bank_account_id || ""}
-                        onChange={(val) => {
-                          handleDenomChange("online_bank_account_id", val);
-                          if (val && typeof window !== "undefined") {
-                            localStorage.setItem("last_used_online_bank_account_id", val);
+                        value={selectedOnlinePortalId}
+                        onChange={(portalId) => {
+                          setSelectedOnlinePortalId(portalId);
+                          // Item #2 follow-up: only the Portal is a visible choice --
+                          // resolve to that portal's first online-eligible account
+                          // internally (balance is Portal-level, so which specific
+                          // account carries the FK no longer matters to the user).
+                          const account = bankAccounts.find(p => p.portalId === portalId);
+                          const accountId = account?.id || "";
+                          handleDenomChange("online_bank_account_id", accountId);
+                          if (portalId && typeof window !== "undefined") {
+                            localStorage.setItem("last_used_online_portal_id", portalId);
                           }
                         }}
                         options={[
-                          { value: "", label: "Select Bank Account..." },
-                          ...bankAccounts.map(p => ({ value: p.id, label: p.name }))
+                          { value: "", label: "Select Portal..." },
+                          ...onlinePortals.map(p => ({ value: p.id, label: p.name }))
                         ]}
-                        placeholder="Select Bank Account..."
+                        placeholder="Select Portal..."
                       />
                     </div>
                   )}

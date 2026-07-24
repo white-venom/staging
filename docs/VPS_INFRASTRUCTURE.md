@@ -25,6 +25,23 @@ own config at `/etc/nginx/sites-enabled/crediiflow.conf` (crediiflow domains,
 containers publish) and `/etc/nginx/sites-enabled/worrkin.conf`. That host
 nginx is the **actual production reverse proxy** for crediiflow.in today.
 
+```
+Internet
+   │
+   ▼
+HOST nginx.service  (systemd, port 80/443, /etc/nginx/sites-enabled/*.conf)
+   │
+   ├─ crediiflow.conf ──▶ 127.0.0.1:3000  (crediiflow_frontend container)
+   │                  ──▶ 127.0.0.1:3001  (crediiflow_superadmin_frontend)
+   │                  ──▶ 127.0.0.1:3002  (crediiflow_landing_page)
+   │                  ──▶ 127.0.0.1:8000  (crediiflow_backend)
+   │
+   └─ worrkin.conf    ──▶ 127.0.0.1:8080  (unrelated app, not in this repo)
+
+docker-compose.yml's `nginx` service (crediiflow_nginx container, port
+80/443) is DISABLED -- it would fight the host nginx for the same ports.
+```
+
 The `nginx` service in `docker-compose.yml` is now **commented out**. Left
 enabled, it competed for the exact same ports as the host nginx: it either
 lost the race silently (container runs, but `docker port` shows no bound
@@ -33,6 +50,22 @@ if the host nginx was ever stopped first, it took the whole site (and
 worrkin.in) down until the host nginx was manually restored. **Do not
 re-enable the docker-compose `nginx` service without first decommissioning
 the host-level one** (or vice versa) — never run both.
+
+**Incident record (2026-07-23, ~12:13–12:17 UTC):** while diagnosing this,
+the host nginx got stopped to test the port-conflict theory, which took down
+crediiflow.in *and* worrkin.in for real (not the docker container — it
+never actually held the port). Confirmed from `journalctl -u nginx`:
+`Stopped` 12:13:27 UTC, `Started` 12:17:19 UTC — **3m52s**. The restart at
+12:17:19 was a human (SSH session from `122.161.53.180`, connected and ran
+one command in the same second), not this fix — that session then
+immediately used worrkin.in's admin login (visible in
+`/var/log/nginx/access.log`), two failed attempts. No crediiflow.in traffic
+is logged in the gap (silence isn't proof of zero impact — nginx wasn't
+running to log failed connection attempts either way). Root cause (the
+docker-compose service definition + the certbot hooks pointing at it) fixed
+and deployed the same session; the next deploy (`548a80e`) succeeded cleanly
+in GitHub Actions where the prior ones had been silently failing on this
+exact conflict.
 
 Practical implications:
 - `systemctl status nginx` / `systemctl restart nginx` (not `docker

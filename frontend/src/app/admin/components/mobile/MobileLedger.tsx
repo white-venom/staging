@@ -728,21 +728,24 @@ export default function MobileLedger() {
 
                   {/* BankAccount Select */}
                   <div className="space-y-0.5">
-                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">BankAccount Channel</label>
+                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Online Payment Portal</label>
                     <InlineSelect
-                      value={selectedNewBankAccountId}
-                      onChange={setSelectedNewBankAccountId}
+                      value={
+                        portalDirectory.find((group: any) =>
+                          (group.bankAccounts || []).some((ba: any) => String(ba.id) === selectedNewBankAccountId)
+                        )?.id || ""
+                      }
+                      onChange={(portalId) => {
+                        const account = portalDirectory
+                          .find((group: any) => String(group.id) === String(portalId))
+                          ?.bankAccounts?.find((ba: any) => ba.show_in_online_payment);
+                        setSelectedNewBankAccountId(account ? String(account.id) : "");
+                      }}
                       options={[
                         { value: "", label: "None / Cash" },
                         ...portalDirectory
-                          .flatMap((group: any) =>
-                            (group.bankAccounts || [])
-                              .filter((ba: any) => ba.show_in_online_payment)
-                              .map((ba: any) => ({
-                                value: String(ba.id),
-                                label: `${group.name} — ${ba.bank_account_name}`,
-                              }))
-                          )
+                          .filter((group: any) => (group.bankAccounts || []).some((ba: any) => ba.show_in_online_payment))
+                          .map((group: any) => ({ value: String(group.id), label: group.name }))
                       ]}
                       placeholder="None / Cash"
                     />

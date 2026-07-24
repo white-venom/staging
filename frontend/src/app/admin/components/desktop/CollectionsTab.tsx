@@ -604,23 +604,27 @@ export default function CollectionsTab({
                   </div>
                 )}
 
-                {/* BankAccount Select */}
+                {/* Online Payment Portal Select -- Portal only (balance is Portal-level);
+                    resolves to that portal's first online-eligible BankAccount internally. */}
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">BankAccount Channel</label>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Online Payment Portal</label>
                   <InlineSelect
-                    value={selectedNewBankAccountId}
-                    onChange={setSelectedNewBankAccountId}
+                    value={
+                      portalDirectory.find((group: any) =>
+                        (group.bankAccounts || []).some((ba: any) => String(ba.id) === selectedNewBankAccountId)
+                      )?.id || ""
+                    }
+                    onChange={(portalId) => {
+                      const account = portalDirectory
+                        .find((group: any) => String(group.id) === String(portalId))
+                        ?.bankAccounts?.find((ba: any) => ba.show_in_online_payment);
+                      setSelectedNewBankAccountId(account ? String(account.id) : "");
+                    }}
                     options={[
                       { value: "", label: "None / Cash" },
                       ...portalDirectory
-                        .flatMap((group: any) =>
-                          (group.bankAccounts || [])
-                            .filter((ba: any) => ba.show_in_online_payment)
-                            .map((ba: any) => ({
-                              value: String(ba.id),
-                              label: `${group.name} — ${ba.bank_account_name}`,
-                            }))
-                        )
+                        .filter((group: any) => (group.bankAccounts || []).some((ba: any) => ba.show_in_online_payment))
+                        .map((group: any) => ({ value: String(group.id), label: group.name }))
                     ]}
                     placeholder="None / Cash"
                   />
