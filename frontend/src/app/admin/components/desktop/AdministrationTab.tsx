@@ -337,14 +337,14 @@ export default function AdministrationTab({
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-6 space-y-6">
             <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
               <Globe className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Register BankAccount & Bank</h3>
+              <h3 className="text-sm font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">Register Portal & Bank</h3>
             </div>
             
             <form onSubmit={handleRegisterBankAccount} className="space-y-6">
               <div className="space-y-4">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-l-2 border-indigo-500 pl-2">add bankAccount details</span>
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block border-l-2 border-indigo-500 pl-2">add portal details</span>
                 <div>
-                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">BankAccount Name</label>
+                  <label className="block text-[10px] text-slate-400 uppercase font-bold mb-1">Portal Name</label>
                   <input autoComplete="one-time-code" type="text" value={pName} onChange={e => setPName(e.target.value)} placeholder="e.g. RevaPay" className="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none" required />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -420,7 +420,7 @@ export default function AdministrationTab({
               </div>
 
               <button type="submit" className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-sm text-xs font-black transition-colors">
-                Register BankAccount & Bank
+                Register Portal & Bank
               </button>
             </form>
           </div>

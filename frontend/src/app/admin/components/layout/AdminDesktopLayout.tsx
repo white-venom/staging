@@ -344,7 +344,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
         <div className="fixed inset-0 bg-slate-900/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm w-full max-w-sm p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Register BankAccount</h3>
+              <h3 className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">Register Portal</h3>
               <button onClick={() => setShowPortalDrawer(false)} className="p-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
                 <X className="w-4 h-4" />
               </button>
@@ -352,7 +352,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
             <form onSubmit={handleCreatePortal} className="space-y-6 text-xs font-semibold">
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">BankAccount Name</label>
+                  <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Portal Name</label>
                   <input autoComplete="one-time-code" type="text" placeholder="e.g. RevaPay" value={pGroupName} onChange={(e) => setPGroupName(e.target.value)} className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 font-bold" required />
                 </div>
                 <div className="space-y-1">
@@ -379,7 +379,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                   </label>
                 </div>
               </div>
-              <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-sm font-bold hover:bg-blue-700 transition-colors text-xs uppercase tracking-wider">Register BankAccount</button>
+              <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-sm font-bold hover:bg-blue-700 transition-colors text-xs uppercase tracking-wider">Register Portal</button>
             </form>
           </div>
         </div>
