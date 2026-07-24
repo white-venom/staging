@@ -29,6 +29,21 @@ def _smtp_config():
     }
 
 
+def _connect_smtp(config: dict) -> smtplib.SMTP:
+    """Port 465 (e.g. Hostinger's smtp.hostinger.com) is implicit TLS -- the
+    whole connection is wrapped in SSL from the first byte, so it needs
+    SMTP_SSL, not SMTP()+starttls() (that's for STARTTLS ports like 587,
+    which negotiate plaintext-then-upgrade instead)."""
+    if config["port"] == 465:
+        server = smtplib.SMTP_SSL(config["host"], config["port"], timeout=15, context=ssl.create_default_context())
+    else:
+        server = smtplib.SMTP(config["host"], config["port"], timeout=15)
+        server.starttls(context=ssl.create_default_context())
+    if config["user"] and config["password"]:
+        server.login(config["user"], config["password"])
+    return server
+
+
 def _onboarding_html(tenant_name: str, subdomain: str, admin_name: str, admin_phone: str, admin_password: str, login_url: str) -> str:
     # Matches the app's established visual language (Inter font, #2563eb blue
     # accent, slate neutrals, dense uppercase labels) so this reads as the
@@ -101,10 +116,7 @@ def send_tenant_onboarding_email(
             subtype="html"
         )
 
-        with smtplib.SMTP(config["host"], config["port"], timeout=15) as server:
-            server.starttls(context=ssl.create_default_context())
-            if config["user"] and config["password"]:
-                server.login(config["user"], config["password"])
+        with _connect_smtp(config) as server:
             server.send_message(msg)
         return True
     except Exception as e:
@@ -154,10 +166,7 @@ def send_password_reset_otp_email(to_email: str, admin_name: str, otp: str, expi
         )
         msg.add_alternative(_otp_html(admin_name, otp, expiry_minutes), subtype="html")
 
-        with smtplib.SMTP(config["host"], config["port"], timeout=15) as server:
-            server.starttls(context=ssl.create_default_context())
-            if config["user"] and config["password"]:
-                server.login(config["user"], config["password"])
+        with _connect_smtp(config) as server:
             server.send_message(msg)
         return True
     except Exception as e:
