@@ -326,10 +326,26 @@ export default function LedgerTab({
     // whenever a retailer's opening_to_give/opening_to_take is set at creation
     // or edited later, but not tied to a collection_id or deposit_id -- so they
     // need their own mapping here rather than fitting the two shapes above.
-    ...(openingBalanceEntries || []).map((e: any) => ({
-      id: e.id,
-      date: (e.created_at || "").replace("T", " ").split(".")[0],
-      partyId: e.retailer_id,
+    ...(openingBalanceEntries || []).map((e: any) => {
+      let dtStr = (e.created_at || "").replace("T", " ").split(".")[0];
+      if (e.created_at) {
+        try {
+          const cleanCreatedAt = e.created_at.replace(" ", "T");
+          const dateObj = new Date(cleanCreatedAt + (cleanCreatedAt.includes("Z") ? "" : "Z"));
+          const formatted = new Intl.DateTimeFormat('en-GB', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', hour12: false,
+            timeZone: 'Asia/Kolkata'
+          }).format(dateObj).replace(',', '').replace(/\//g, '-');
+          const [datePart, timePart] = formatted.split(' ');
+          const [day, month, year] = datePart.split('-');
+          dtStr = `${year}-${month}-${day} ${timePart}`;
+        } catch (_) {}
+      }
+      return {
+        id: e.id,
+        date: dtStr,
+        partyId: e.retailer_id,
       party: e.retailer_name || "Retailer",
       store_name: null,
       bankAccount: null,
