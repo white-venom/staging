@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore, DenominationCounts } from "../utils/store";
 import { db, seedOfflineRetailers, CachedRetailer } from "../utils/db";
-import { getISTDateString } from "../utils/dateHelpers";
+import { getISTDateString, buildDisplayDate } from "../utils/dateHelpers";
 import InlineSelect from "../components/InlineSelect";
 import { 
   ArrowLeft, 
@@ -346,7 +346,10 @@ function NewCollectionContent() {
         totalAmount: totalCollectionAmount,
         denominations,
         remarks: remarks || "Offline transaction logs",
-        date: new Date().toISOString().replace("T", " ").substring(0, 16),
+        // buildDisplayDate converts to IST -- a bare toISOString() is UTC and
+        // was showing the Waiting List entry ~5.5 hours behind the time it
+        // actually appears at once synced (which does go through this helper).
+        date: buildDisplayDate(new Date().toISOString()),
         synced: 0
       });
       alert("[Offline Mode]  Collection saved to local device browser database. It will automatically sync as soon as you connect to internet!");
@@ -416,7 +419,10 @@ function NewCollectionContent() {
           totalAmount: totalCollectionAmount,
           denominations,
           remarks: remarks || "Queued (online submission failed)",
-          date: new Date().toISOString().replace("T", " ").substring(0, 16),
+          // buildDisplayDate converts to IST -- a bare toISOString() is UTC and
+        // was showing the Waiting List entry ~5.5 hours behind the time it
+        // actually appears at once synced (which does go through this helper).
+        date: buildDisplayDate(new Date().toISOString()),
           synced: 0
         });
 

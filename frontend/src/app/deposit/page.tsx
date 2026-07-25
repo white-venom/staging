@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore, DenominationCounts } from "../utils/store";
 import { db } from "../utils/db";
 import InlineSelect from "../components/InlineSelect";
-import { getISTDateString } from "../utils/dateHelpers";
+import { getISTDateString, buildDisplayDate } from "../utils/dateHelpers";
 import { 
   ArrowLeft, 
   Layers, 
@@ -375,7 +375,10 @@ function NewDepositContent() {
           paymentMode: depositType === "virtual" ? "online" : "cash",
           denominations,
           remarks: remarks,
-          date: new Date().toISOString().replace("T", " ").substring(0, 16),
+          // buildDisplayDate converts to IST -- a bare toISOString() is UTC and
+          // was showing the Waiting List entry ~5.5 hours behind the time it
+          // actually appears at once synced (which does go through this helper).
+          date: buildDisplayDate(new Date().toISOString()),
           synced: 0
         });
 
