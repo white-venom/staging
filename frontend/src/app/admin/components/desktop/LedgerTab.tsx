@@ -440,6 +440,25 @@ export default function LedgerTab({
       snapshots.set(tx.id, { old, new: newVal });
     });
 
+    // Single source of truth for a row's (Opening, Party Bal) pair. Prefers the
+    // backend's own stored balance_snapshot over the locally-recomputed
+    // `snapshots` map above wherever available. Now that every row upstream
+    // carries a correctly-signed (debit, credit) pair matching the backend's
+    // own credit-adds/debit-subtracts convention (see recalculate_balances()
+    // and create_deposit()'s virtual-transfer branch), one formula covers
+    // every row type: new = old + credit - debit, so old = new - credit + debit.
+    const getTxBalances = (tx: any): { old: number; new: number } => {
+      if (tx.balance_snapshot !== undefined && tx.balance_snapshot !== null) {
+        const txNew = Number(tx.balance_snapshot);
+        // Opening Balance is always the first ledger row ever created for its
+        // retailer, so there's nothing before it regardless of credit/debit.
+        const txOld = tx.type === 'opening-balance' ? 0
+          : txNew - Number(tx.credit) + Number(tx.debit);
+        return { old: txOld, new: txNew };
+      }
+      return snapshots.get(tx.id) || { old: 0, new: 0 };
+    };
+
     // 3. Report-level Running Balance (Global column)
     let totalInitial = 0;
     if (partyFilter !== "all" || bankAccountFilter !== "all") {
@@ -456,30 +475,6 @@ export default function LedgerTab({
       reportRunning += isFilteredView ? (tx.debit - tx.credit) : (tx.credit - tx.debit);
       globalSnapshots.set(tx.id, reportRunning);
     });
-
-    // Single source of truth for a row's (Opening, Party Bal) pair. Prefers the
-    // backend's own stored balance_snapshot over the locally-recomputed
-    // `snapshots` map above wherever available. Now that every row upstream
-    // carries a correctly-signed (debit, credit) pair matching the backend's
-    // own credit-adds/debit-subtracts convention (see recalculate_balances()
-    // and create_deposit()'s virtual-transfer branch), one formula covers
-    // every row type: new = old + credit - debit, so old = new - credit + debit.
-    const getTxBalances = (tx: any): { old: number; new: number } => {
-      if (staffFilter !== "all") {
-        const txNew = globalSnapshots.get(tx.id) || 0;
-        const txOld = txNew - Number(tx.credit) + Number(tx.debit);
-        return { old: txOld, new: txNew };
-      }
-      if (tx.balance_snapshot !== undefined && tx.balance_snapshot !== null) {
-        const txNew = Number(tx.balance_snapshot);
-        // Opening Balance is always the first ledger row ever created for its
-        // retailer, so there's nothing before it regardless of credit/debit.
-        const txOld = tx.type === 'opening-balance' ? 0
-          : txNew - Number(tx.credit) + Number(tx.debit);
-        return { old: txOld, new: txNew };
-      }
-      return snapshots.get(tx.id) || { old: 0, new: 0 };
-    };
 
     const totalCredit = allTransactions.reduce((s, c) => s + c.credit, 0);
     const totalDebit = allTransactions.reduce((s, d) => s + d.debit, 0);
@@ -833,9 +828,7 @@ export default function LedgerTab({
                 <th className="p-2 border-r border-slate-100 dark:border-slate-800">Description</th>
                 <th className="p-2 border-r border-slate-100 dark:border-slate-800 text-right w-24">Opening Balance</th>
                 <th className="p-2 border-r border-slate-100 dark:border-slate-800 text-right bg-slate-100/50 dark:bg-slate-800/50 w-24">Received</th>
-                <th className="p-2 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24">
-                  {staffFilter !== "all" ? "Staff Cash" : "Party Bal"}
-                </th>
+                <th className="p-2 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24">Party Bal</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
