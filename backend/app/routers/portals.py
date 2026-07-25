@@ -198,7 +198,7 @@ def get_portal_ledger(
     current_user=Depends(require_any_user)
 ):
     """Fetch chronological consolidated transaction ledger for a portal (e.g. PAYNEARBY)."""
-    from sqlalchemy import and_, select
+    from sqlalchemy import and_, or_, select
     from sqlalchemy.orm import joinedload
     from app.database.models import BankDeposit, Collection
 
@@ -238,13 +238,24 @@ def get_portal_ledger(
     accounts = db.scalars(select(BankAccount).where(BankAccount.portal_id == portal_id)).all()
     account_ids = [a.id for a in accounts]
 
-    # Fetch verified deposits for these accounts (empty account_ids naturally yields no rows)
+    # Fetch verified deposits for these accounts (empty account_ids naturally yields no rows).
+    # Portal-to-portal transfers must also be matched on from_bank_account_id --
+    # otherwise the sending portal's ledger never sees its own outgoing transfers
+    # (bank_account_id on that row points at the destination portal's account).
     deposits = db.scalars(
         select(BankDeposit)
-        .options(joinedload(BankDeposit.retailer), joinedload(BankDeposit.bank_account), joinedload(BankDeposit.denominations))
+        .options(
+            joinedload(BankDeposit.retailer),
+            joinedload(BankDeposit.bank_account).joinedload(BankAccount.portal),
+            joinedload(BankDeposit.from_bank_account).joinedload(BankAccount.portal),
+            joinedload(BankDeposit.denominations),
+        )
         .where(
             and_(
-                BankDeposit.bank_account_id.in_(account_ids),
+                or_(
+                    BankDeposit.bank_account_id.in_(account_ids),
+                    BankDeposit.from_bank_account_id.in_(account_ids),
+                ),
                 BankDeposit.status == "verified"
             )
         )
@@ -346,6 +357,21 @@ def get_portal_ledger(
                 tx_type = "debit"
                 amount = float(d.amount)
                 desc_text = f"Virtual Transfer to {tx_store_name}" if tx_store_name else "Virtual Transfer"
+            if fallback_remarks:
+                desc_text += f" ({fallback_remarks})"
+        elif d.deposit_type == "portal_transfer":
+            if d.bank_account_id in account_ids:
+                # This portal is the receiving side of the transfer.
+                tx_type = "credit"
+                amount = float(d.amount)
+                from_portal_name = d.from_bank_account.portal.name if (d.from_bank_account and d.from_bank_account.portal) else None
+                desc_text = f"Portal Transfer from {from_portal_name}" if from_portal_name else "Portal Transfer"
+            else:
+                # This portal is the sending side.
+                tx_type = "debit"
+                amount = float(d.amount)
+                to_portal_name = d.bank_account.portal.name if (d.bank_account and d.bank_account.portal) else None
+                desc_text = f"Portal Transfer to {to_portal_name}" if to_portal_name else "Portal Transfer"
             if fallback_remarks:
                 desc_text += f" ({fallback_remarks})"
         else:
