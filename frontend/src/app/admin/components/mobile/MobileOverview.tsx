@@ -221,7 +221,20 @@ export default function MobileOverview({
         store_id: c.store_id,
         bank_account_id: c.bank_account_id
       })),
-      ...(deposits || []).map(d => ({
+      // A staff-to-staff handover shows up as two rows at the API level: the
+      // sender's BankDeposit (deposit_type "staff") and a mirrored Collection
+      // auto-created on the recipient's side so their balance updates too.
+      // Every other ledger view in the app dedupes this pair down to one
+      // entry -- this one didn't, so every handover showed up twice here.
+      ...(deposits || [])
+        .filter(d =>
+          !(
+            d.depositType === "staff" &&
+            d.recipient_staff_id &&
+            (collections || []).some(c => c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
+          )
+        )
+        .map(d => ({
         id: d.id,
         date: d.date,
         created_at: d.created_at || d.date,
