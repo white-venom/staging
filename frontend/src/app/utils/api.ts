@@ -196,11 +196,15 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
         }
       }
 
-      throw new Error(detail || response.statusText);
+      const apiError = new Error(detail || response.statusText) as Error & { status?: number };
+      apiError.status = response.status;
+      throw apiError;
     } else {
       const text = await response.text();
       console.error(`Non-JSON error from ${endpoint}:`, text.substring(0, 200));
-      throw new Error(`Server returned ${response.status} ${response.statusText}`);
+      const apiError = new Error(`Server returned ${response.status} ${response.statusText}`) as Error & { status?: number };
+      apiError.status = response.status;
+      throw apiError;
     }
   }
 

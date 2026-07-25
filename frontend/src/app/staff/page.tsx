@@ -748,7 +748,9 @@ export default function StaffDashboard() {
         </div>
 
         {/* Offline Queues */}
-        {(offlineCollections.length > 0 || offlineDeposits.length > 0) && (
+        {(offlineCollections.length > 0 || offlineDeposits.length > 0) && (() => {
+          const hasErrors = offlineCollections.some(c => c.syncError) || offlineDeposits.some(d => d.syncError);
+          return (
           <div className="p-2 rounded-sm bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 space-y-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
@@ -757,54 +759,75 @@ export default function StaffDashboard() {
                   Waiting List ({offlineCollections.length + offlineDeposits.length})
                 </span>
               </div>
-              <span className="text-[8px] uppercase font-bold text-amber-600 dark:text-amber-500 flex items-center gap-1 bg-amber-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-sm border border-amber-200 dark:border-amber-900/40">
-                <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Waiting...
-              </span>
+              {hasErrors ? (
+                <span className="text-[8px] uppercase font-bold text-red-600 dark:text-red-400 flex items-center gap-1 bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 rounded-sm border border-red-200 dark:border-red-900/40">
+                  <AlertTriangle className="w-2.5 h-2.5" /> Needs Attention
+                </span>
+              ) : (
+                <span className="text-[8px] uppercase font-bold text-amber-600 dark:text-amber-500 flex items-center gap-1 bg-amber-100 dark:bg-amber-950/40 px-1.5 py-0.5 rounded-sm border border-amber-200 dark:border-amber-900/40">
+                  <RefreshCw className="w-2.5 h-2.5 animate-spin" /> Waiting...
+                </span>
+              )}
             </div>
 
             <div className="space-y-1">
               {offlineCollections.map((col, index) => (
-                <div key={index} className="py-1 px-2 rounded-sm bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between">
-                  <div>
-                    <span className="font-black text-slate-800 dark:text-slate-200">{col.retailerName}</span>
-                    <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash In • {col.date}</span>
+                <div key={index} className={`py-1 px-2 rounded-sm bg-white dark:bg-slate-900 border text-[11px] ${col.syncError ? "border-red-300 dark:border-red-900/60" : "border-amber-200/60 dark:border-amber-950/40"}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-black text-slate-800 dark:text-slate-200">{col.retailerName}</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash In • {col.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-slate-800 dark:text-slate-100 font-mono tabular-nums">₹{col.totalAmount.toLocaleString()}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOfflineItem("collection", col.id)}
+                        className="text-red-400 hover:text-red-600 transition-colors cursor-pointer"
+                        title="Remove stuck entry"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-800 dark:text-slate-100 font-mono tabular-nums">₹{col.totalAmount.toLocaleString()}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteOfflineItem("collection", col.id)}
-                      className="text-red-400 hover:text-red-600 transition-colors cursor-pointer"
-                      title="Remove stuck entry"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {col.syncError && (
+                    <div className="mt-1 pt-1 border-t border-red-100 dark:border-red-900/40 text-[9px] font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <AlertTriangle className="w-2.5 h-2.5 shrink-0" /> {col.syncError} — edit or remove this entry.
+                    </div>
+                  )}
                 </div>
               ))}
 
               {offlineDeposits.map((dep, index) => (
-                <div key={index} className="py-1 px-2 rounded-sm bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-amber-950/40 text-[11px] flex items-center justify-between">
-                  <div>
-                    <span className="font-black text-slate-800 dark:text-slate-200">{dep.targetName}</span>
-                    <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash Out • {dep.date}</span>
+                <div key={index} className={`py-1 px-2 rounded-sm bg-white dark:bg-slate-900 border text-[11px] ${dep.syncError ? "border-red-300 dark:border-red-900/60" : "border-amber-200/60 dark:border-amber-950/40"}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-black text-slate-800 dark:text-slate-200">{dep.targetName}</span>
+                      <span className="text-[8px] text-slate-400 dark:text-slate-500 block mt-0.5 font-bold uppercase tracking-wider">Cash Out • {dep.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-slate-800 dark:text-slate-100 font-mono tabular-nums">₹{dep.amount.toLocaleString()}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOfflineItem("deposit", dep.id)}
+                        className="text-red-400 hover:text-red-600 transition-colors cursor-pointer"
+                        title="Remove stuck entry"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-800 dark:text-slate-100 font-mono tabular-nums">₹{dep.amount.toLocaleString()}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteOfflineItem("deposit", dep.id)}
-                      className="text-red-400 hover:text-red-600 transition-colors cursor-pointer"
-                      title="Remove stuck entry"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {dep.syncError && (
+                    <div className="mt-1 pt-1 border-t border-red-100 dark:border-red-900/40 text-[9px] font-bold text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <AlertTriangle className="w-2.5 h-2.5 shrink-0" /> {dep.syncError} — edit or remove this entry.
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* HISTORY LEDGER */}
         <div className="mt-1.5">

@@ -81,8 +81,15 @@ export async function syncOfflineData(): Promise<number> {
           });
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Sync failed for collection:", col, err);
+      // A 4xx means the server has permanently rejected this payload (bad
+      // denomination sum, deleted retailer, etc.) -- retrying it unchanged
+      // every 2 minutes will never succeed. Record why, so the Waiting List
+      // can show the user a real reason instead of an endless spinner.
+      if (col.id && err?.status >= 400 && err.status < 500) {
+        await db.collections.update(col.id, { syncError: err.message || "Rejected by server" });
+      }
     }
   }
 
@@ -124,8 +131,12 @@ export async function syncOfflineData(): Promise<number> {
           bankName: dep.bankName
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Sync failed for deposit:", dep, err);
+      // See the matching comment in the collections loop above.
+      if (dep.id && err?.status >= 400 && err.status < 500) {
+        await db.deposits.update(dep.id, { syncError: err.message || "Rejected by server" });
+      }
     }
   }
 

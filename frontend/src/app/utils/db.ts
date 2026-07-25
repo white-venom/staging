@@ -14,6 +14,11 @@ export interface OfflineCollection {
   remarks?: string;
   date: string;
   synced: number; // 0 = unsynced, 1 = synced
+  // Set when the server rejected this entry for a reason a retry can't fix
+  // (validation error, deleted retailer, etc.) -- distinguishes "still
+  // waiting for a network connection" from "stuck and needs the user's
+  // attention" instead of retrying forever with no visible reason.
+  syncError?: string;
 }
 
 export interface OfflineDeposit {
@@ -31,6 +36,8 @@ export interface OfflineDeposit {
   bankName?: string;
   date: string;
   synced: number; // 0 = unsynced, 1 = synced
+  // See OfflineCollection.syncError.
+  syncError?: string;
 }
 
 export interface CachedRetailer {
