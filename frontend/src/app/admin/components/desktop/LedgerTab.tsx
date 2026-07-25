@@ -434,8 +434,8 @@ export default function LedgerTab({
     chronological.forEach(tx => {
       const currentPartyBal = partyRunningBalances.get(tx.partyId) || 0;
       const old = currentPartyBal;
-      // Matches ledger.py's recalculate_balances(): credit SUBTRACTS, debit ADDS.
-      const newVal = old + (tx.debit - tx.credit);
+      // Matches ledger.py's recalculate_balances(): credit ADDS, debit SUBTRACTS.
+      const newVal = old + (tx.credit - tx.debit);
       partyRunningBalances.set(tx.partyId, newVal);
       snapshots.set(tx.id, { old, new: newVal });
     });
@@ -461,9 +461,9 @@ export default function LedgerTab({
     // backend's own stored balance_snapshot over the locally-recomputed
     // `snapshots` map above wherever available. Now that every row upstream
     // carries a correctly-signed (debit, credit) pair matching the backend's
-    // own credit-subtracts/debit-adds convention (see recalculate_balances()
+    // own credit-adds/debit-subtracts convention (see recalculate_balances()
     // and create_deposit()'s virtual-transfer branch), one formula covers
-    // every row type: new = old - credit + debit, so old = new + credit - debit.
+    // every row type: new = old + credit - debit, so old = new - credit + debit.
     const getTxBalances = (tx: any): { old: number; new: number } => {
       if (staffFilter !== "all") {
         const txNew = globalSnapshots.get(tx.id) || 0;
@@ -475,7 +475,7 @@ export default function LedgerTab({
         // Opening Balance is always the first ledger row ever created for its
         // retailer, so there's nothing before it regardless of credit/debit.
         const txOld = tx.type === 'opening-balance' ? 0
-          : txNew + Number(tx.credit) - Number(tx.debit);
+          : txNew - Number(tx.credit) + Number(tx.debit);
         return { old: txOld, new: txNew };
       }
       return snapshots.get(tx.id) || { old: 0, new: 0 };
