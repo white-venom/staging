@@ -357,8 +357,9 @@ export default function LedgerTab({
       depositType: null,
       txType: 'opening-balance',
       rawRecord: e
-    })
-  ];
+    };
+  })
+];
 
   const partyList = Array.from(new Set(
     allTransactions.map(tx => tx.party).filter(Boolean)
