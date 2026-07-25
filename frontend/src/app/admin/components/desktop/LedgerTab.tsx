@@ -826,14 +826,13 @@ export default function LedgerTab({
               <tr className="bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
                 <th className="p-2 border-r border-slate-100 dark:border-slate-800 w-32">Date & Time</th>
                 <th className="p-2 border-r border-slate-100 dark:border-slate-800">Description</th>
-                <th className="p-2 border-r border-slate-100 dark:border-slate-800 text-right w-24">Opening Balance</th>
                 <th className="p-2 border-r border-slate-100 dark:border-slate-800 text-right bg-slate-100/50 dark:bg-slate-800/50 w-24">Received</th>
                 <th className="p-2 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24">Party Bal</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {allTransactions.length === 0 ? (
-                <tr><td colSpan={5} className="p-10 text-center text-slate-400 italic font-bold">No entries match your filters.</td></tr>
+                <tr><td colSpan={4} className="p-10 text-center text-slate-400 italic font-bold">No entries match your filters.</td></tr>
               ) : allTransactions.map((tx) => {
                 const { old: txOld, new: txNew } = getTxBalances(tx);
 
@@ -931,9 +930,6 @@ export default function LedgerTab({
                       </div>
                     </div>
                   </td>
-                  <td className="p-2 border-r border-slate-50 dark:border-slate-800 text-right font-bold text-slate-500 text-xs font-mono tabular-nums">
-                    ₹{txOld.toLocaleString()}
-                  </td>
                   {/* Item #7a: cash-in (a retailer handing cash to staff) now displays
                       red instead of green -- purely cosmetic, the underlying balance
                       math (txNew/txOld, the +/- sign) is untouched. Everything else
@@ -948,7 +944,7 @@ export default function LedgerTab({
                 </tr>
                 {isExpanded && (
                   <tr key={`${tx.id}-expand`} className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-100 dark:border-slate-800">
-                    <td colSpan={5} className="px-4 pb-3 pt-2">
+                    <td colSpan={4} className="px-4 pb-3 pt-2">
                       <div className="flex flex-wrap gap-4 items-start">
                         <div>
                           <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block mb-1">Cash Breakdown</span>
@@ -985,7 +981,7 @@ export default function LedgerTab({
             {allTransactions.length > 0 && (
               <tfoot>
                 <tr className="bg-slate-100 dark:bg-slate-950 font-black border-t-2 border-slate-200 dark:border-slate-800">
-                  <td colSpan={3} className="p-2 text-right text-slate-500 uppercase tracking-wide text-[10px]">Grand Total</td>
+                  <td colSpan={2} className="p-2 text-right text-slate-500 uppercase tracking-wide text-[10px]">Grand Total</td>
                   <td className="p-2 text-right border-r border-slate-200 dark:border-slate-800 bg-slate-100/50">
                     <div className="flex flex-col items-end gap-1 text-xs font-mono tabular-nums whitespace-nowrap">
                       {totalCredit > 0 && (
