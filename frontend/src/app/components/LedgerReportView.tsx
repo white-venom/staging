@@ -558,10 +558,6 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 {filteredTransactions.map((tx) => {
                   const formattedIST = formatIST(tx.date);
                   const isDebit = tx.transaction_type === "debit"; // You Gave
-                  // Item #7a: a cash-in (Collection) entry displays red instead of
-                  // green -- purely cosmetic. It still counts under "You Got" (right
-                  // column, credit) exactly as before; only its rendered color flips.
-                  const isCashIn = !!tx.collection_id;
 
                   return (
                     <div 
@@ -619,10 +615,8 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                         <div className="w-22 font-black text-red-500">
                           {isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
-                        {/* Got Column -- still the "You Got" bucket/total for a
-                            cash-in entry (position and figures unchanged), just
-                            rendered red instead of green (item #7a). */}
-                        <div className={`w-22 font-black ${isCashIn ? "text-red-500" : "text-emerald-600"}`}>
+                        {/* Got Column: money in is always green, no per-type exception. */}
+                        <div className="w-22 font-black text-emerald-600">
                           {!isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
                       </div>

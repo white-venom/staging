@@ -699,8 +699,7 @@ export default function LedgerTab({
                         ${allTransactions.map(tx => {
                           const { old: txOld, new: txNew } = getTxBalances(tx);
                           const isCredit = txNew >= txOld;
-                          // Item #7a: cash-in prints red like on-screen, cosmetic only.
-                          const colorClass = tx.txType === 'cash-in' ? 'debit' : (isCredit ? 'credit' : 'debit');
+                          const colorClass = isCredit ? 'credit' : 'debit';
                           return `<tr>
                             <td>${tx.date.split(' ')[0].split('-').reverse().join('-')}<br><small style="color:#94a3b8">${tx.date.split(' ')[1] || ''}</small></td>
                             <td style="font-weight:700">${tx.party || '-'}</td>
@@ -930,12 +929,10 @@ export default function LedgerTab({
                       </div>
                     </div>
                   </td>
-                  {/* Item #7a: cash-in (a retailer handing cash to staff) now displays
-                      red instead of green -- purely cosmetic, the underlying balance
-                      math (txNew/txOld, the +/- sign) is untouched. Everything else
-                      (virtual-transfer, move-to-dist, cash-out) keeps the original
-                      balance-direction-based color. */}
-                  <td className={`p-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${tx.txType === 'cash-in' ? 'text-red-700 dark:text-red-400 bg-red-50/10' : txNew >= txOld ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
+                  {/* Universal rule: money in = green, money out = red, no exceptions
+                      per transaction type -- driven purely by the balance direction
+                      (txNew vs txOld). */}
+                  <td className={`p-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${txNew >= txOld ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
                     {txNew >= txOld ? '+' : '-'}₹{(tx.credit || tx.debit).toLocaleString()}
                   </td>
                   <td className="p-2 text-right font-black text-xs font-mono tabular-nums text-blue-700 dark:text-blue-400 bg-blue-50/10 dark:bg-blue-950/5">
