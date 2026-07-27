@@ -133,6 +133,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           depositType: d.deposit_type,
           targetName: d.target_name || "Direct Deposit",
           bankAccountName: d.bank_account_name || null,
+          fromPortalName: d.from_portal_name || null,
+          fromBankAccountName: d.from_bank_account_name || null,
           amount: parseFloat(d.amount),
           balance_snapshot: d.balance_snapshot,
           paymentMode: d.payment_mode,

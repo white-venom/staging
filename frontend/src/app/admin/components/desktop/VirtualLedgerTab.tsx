@@ -53,7 +53,8 @@ export default function VirtualLedgerTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>([
     "virtual-transfer",
-    "move-to-dist"
+    "move-to-dist",
+    "portal-transfer"
   ]);
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isDownloading, setIsDownloading] = useState(false);
@@ -120,13 +121,16 @@ export default function VirtualLedgerTab() {
     // Add deposits
     (deposits || []).forEach((d: any) => {
       const isVirtual = d.depositType === "virtual";
+      const isPortalTransfer = d.depositType === "portal_transfer";
       const isRefund = d.isRefund === true || d.paymentMode === "refund" || d.payment_mode === "refund";
-      
+
       let type = "cash-out";
       if (isVirtual) {
         type = isRefund ? "move-to-dist" : "virtual-transfer";
+      } else if (isPortalTransfer) {
+        type = "portal-transfer";
       }
-      
+
       const bankAccountName = d.portalName || d.bankAccountName || "Bank Account";
       let targetNameClean = d.targetName || "Retailer/Staff";
       if (d.depositType === "staff") {
@@ -134,9 +138,13 @@ export default function VirtualLedgerTab() {
       } else if (d.depositType === "retailer") {
         targetNameClean = d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
       }
-      
-      const narrationFrom = isRefund ? targetNameClean : bankAccountName;
-      const narrationTo = isRefund ? bankAccountName : targetNameClean;
+
+      let narrationFrom = isRefund ? targetNameClean : bankAccountName;
+      let narrationTo = isRefund ? bankAccountName : targetNameClean;
+      if (isPortalTransfer) {
+        narrationFrom = d.fromPortalName || d.fromBankAccountName || "Portal";
+        narrationTo = bankAccountName;
+      }
 
       combined.push({
         id: d.id,
@@ -145,7 +153,7 @@ export default function VirtualLedgerTab() {
         remarks: d.remarks || "",
         reference_no: d.reference_no || d.referenceNo || "",
         staffName: d.staffName || "Admin",
-        type: type, // "cash-out" | "virtual-transfer" | "move-to-dist"
+        type: type, // "cash-out" | "virtual-transfer" | "move-to-dist" | "portal-transfer"
         isRefund: isRefund,
         narrationFrom,
         narrationTo,
@@ -173,9 +181,10 @@ export default function VirtualLedgerTab() {
         
         // Search filter
         const narration = `${tx.narrationFrom} to ${tx.narrationTo}`;
-        const typeLabel = tx.type === "cash-in" ? "Cash In" 
-          : tx.type === "cash-out" ? "Cash Out" 
-          : tx.type === "virtual-transfer" ? "Virtual Transfer" 
+        const typeLabel = tx.type === "cash-in" ? "Cash In"
+          : tx.type === "cash-out" ? "Cash Out"
+          : tx.type === "virtual-transfer" ? "Virtual Transfer"
+          : tx.type === "portal-transfer" ? "Portal Transfer"
           : "Move to Distributor";
         
         const q = searchQuery.toLowerCase();
@@ -208,17 +217,22 @@ export default function VirtualLedgerTab() {
   }, [allTransactions, dateFrom, dateTo, searchQuery, selectedTypes, sortBy]);
 
   const stats = useMemo(() => {
-    let totalGave = 0; // cash-out & virtual-transfer
-    let totalGot = 0;  // cash-in & move-to-dist
-    
+    let totalGave = 0; // cash-out & move-to-dist (money out)
+    let totalGot = 0;  // cash-in & virtual-transfer (money in)
+
     filteredTransfers.forEach((tx: any) => {
-      if (tx.type === "cash-in" || tx.type === "move-to-dist") {
+      // Portal-to-portal transfers move money between the business's own
+      // accounts -- net-zero for the business, so they don't belong in
+      // either bucket (counting them as a "gave" would make Net Balance
+      // look like a real loss that never happened).
+      if (tx.type === "portal-transfer") return;
+      if (tx.type === "cash-in" || tx.type === "virtual-transfer") {
         totalGot += tx.amount || 0;
       } else {
         totalGave += tx.amount || 0;
       }
     });
-    
+
     return {
       entriesCount: filteredTransfers.length,
       totalGave,
@@ -533,20 +547,25 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
           <div className="flex flex-wrap gap-2 items-center">
             {[
               { id: "virtual-transfer", label: "Virtual Transfer", color: "blue" },
-              { id: "move-to-dist", label: "Move to Distributor", color: "purple" }
+              { id: "move-to-dist", label: "Move to Distributor", color: "purple" },
+              { id: "portal-transfer", label: "Portal Transfer", color: "indigo" }
             ].map((t) => {
               const isActive = selectedTypes.includes(t.id);
               let colorClasses = "";
               if (t.color === "blue") {
-                colorClasses = isActive 
+                colorClasses = isActive
                   ? "bg-blue-100 dark:bg-blue-950/80 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-800"
                   : "bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
               } else if (t.color === "purple") {
-                colorClasses = isActive 
+                colorClasses = isActive
                   ? "bg-purple-100 dark:bg-purple-950/80 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-800"
                   : "bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
+              } else if (t.color === "indigo") {
+                colorClasses = isActive
+                  ? "bg-indigo-100 dark:bg-indigo-950/80 text-indigo-800 dark:text-indigo-300 border-indigo-300 dark:border-indigo-800"
+                  : "bg-slate-50 dark:bg-slate-900/40 text-slate-500 dark:text-slate-500 border-slate-200 dark:border-slate-800 hover:bg-slate-100";
               }
-              
+
               return (
                 <button
                   key={t.id}
@@ -569,7 +588,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
             
             <button
               type="button"
-              onClick={() => setSelectedTypes(["virtual-transfer", "move-to-dist"])}
+              onClick={() => setSelectedTypes(["virtual-transfer", "move-to-dist", "portal-transfer"])}
               className="px-2.5 py-1.5 rounded-sm text-[9px] font-black uppercase tracking-wider text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors ml-auto cursor-pointer"
             >
               Select All
@@ -614,8 +633,15 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
               <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {paginatedTransfers.map((tx: any) => {
                   const formatted = formatIST(tx.rawRecord?.created_at || tx.date);
-                  const isGot = tx.type === "cash-in" || tx.type === "move-to-dist";
-                  
+                  // Universal rule: money in = green, out = red. Cash-in and a
+                  // virtual-transfer load both increase this ledger; move-to-dist
+                  // (a refund) decreases it, same as cash-out.
+                  const isGot = tx.type === "cash-in" || tx.type === "virtual-transfer";
+                  // Portal-to-portal transfers move money between two of the
+                  // business's own accounts -- net-zero for the business as a
+                  // whole, so neither green nor red applies; shown neutral.
+                  const isPortalTransferRow = tx.type === "portal-transfer";
+
                   let badgeLabel = "";
                   let badgeColor = "";
                   if (tx.type === "cash-in") {
@@ -627,6 +653,9 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                   } else if (tx.type === "virtual-transfer") {
                     badgeLabel = "Virtual Transfer";
                     badgeColor = "bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300";
+                  } else if (tx.type === "portal-transfer") {
+                    badgeLabel = "Portal Transfer";
+                    badgeColor = "bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300";
                   } else {
                     badgeLabel = "Move to Dist";
                     badgeColor = "bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300";
@@ -664,7 +693,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider self-start ${badgeColor}`}>
                             {badgeLabel}
                           </span>
-                          <div className={`text-xs font-black flex items-center gap-1 mt-1 ${isGot ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                          <div className={`text-xs font-black flex items-center gap-1 mt-1 ${isPortalTransferRow ? 'text-indigo-700 dark:text-indigo-400' : isGot ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
                             <span className="truncate max-w-[80px]" title={tx.narrationFrom}>{tx.narrationFrom}</span>
                             <span className="text-slate-500">→</span>
                             <span className="truncate max-w-[80px]" title={tx.narrationTo}>{tx.narrationTo}</span>
@@ -685,16 +714,27 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                         </div>
                       </div>
                       
-                      {/* Right: Gave (Debit) vs Got (Credit) columns */}
+                      {/* Right: Gave (Debit) vs Got (Credit) columns -- a portal
+                          transfer is an internal move between the business's own
+                          accounts, neither a real gain nor loss, so it gets its
+                          own neutral indigo figure instead of picking a side. */}
                       <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono tabular-nums text-xs">
-                        {/* Gave Column */}
-                        <div className="w-22 font-black text-rose-500">
-                          {!isGot ? `₹ ${Math.round(tx.amount || 0).toLocaleString("en-IN")}` : "—"}
-                        </div>
-                        {/* Got Column */}
-                        <div className="w-22 font-black text-emerald-600 dark:text-emerald-400">
-                          {isGot ? `₹ ${Math.round(tx.amount || 0).toLocaleString("en-IN")}` : "—"}
-                        </div>
+                        {isPortalTransferRow ? (
+                          <div className="w-44 font-black text-indigo-600 dark:text-indigo-400">
+                            ₹ {Math.round(tx.amount || 0).toLocaleString("en-IN")}
+                          </div>
+                        ) : (
+                          <>
+                            {/* Gave Column */}
+                            <div className="w-22 font-black text-rose-500">
+                              {!isGot ? `₹ ${Math.round(tx.amount || 0).toLocaleString("en-IN")}` : "—"}
+                            </div>
+                            {/* Got Column */}
+                            <div className="w-22 font-black text-emerald-600 dark:text-emerald-400">
+                              {isGot ? `₹ ${Math.round(tx.amount || 0).toLocaleString("en-IN")}` : "—"}
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -820,8 +860,9 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
             <div className="bg-white border border-slate-200 rounded-sm overflow-hidden divide-y divide-slate-100">
               {filteredTransfers.map((tx: any) => {
                 const formatted = formatIST(tx.rawRecord?.created_at || tx.date);
-                const isGot = tx.type === "cash-in" || tx.type === "move-to-dist";
-                
+                const isGot = tx.type === "cash-in" || tx.type === "virtual-transfer";
+                const isPortalTransferRow = tx.type === "portal-transfer";
+
                 return (
                   <div key={tx.id} className="p-3 flex items-center justify-between">
                     <div className="flex flex-col gap-1 w-32 shrink-0">
@@ -839,8 +880,14 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       {tx.reference_no && <div className="text-[10px] text-slate-400">Ref: {tx.reference_no}</div>}
                     </div>
                     <div className="flex items-center gap-3 w-40 shrink-0 text-right font-mono tabular-nums text-xs">
-                      <div className="w-20 text-rose-500 font-bold">{!isGot ? `₹${Math.round(tx.amount || 0).toLocaleString()}` : "—"}</div>
-                      <div className="w-20 text-emerald-600 font-bold">{isGot ? `₹${Math.round(tx.amount || 0).toLocaleString()}` : "—"}</div>
+                      {isPortalTransferRow ? (
+                        <div className="w-40 text-indigo-600 font-bold">₹{Math.round(tx.amount || 0).toLocaleString()}</div>
+                      ) : (
+                        <>
+                          <div className="w-20 text-rose-500 font-bold">{!isGot ? `₹${Math.round(tx.amount || 0).toLocaleString()}` : "—"}</div>
+                          <div className="w-20 text-emerald-600 font-bold">{isGot ? `₹${Math.round(tx.amount || 0).toLocaleString()}` : "—"}</div>
+                        </>
+                      )}
                     </div>
                   </div>
                 );
