@@ -115,6 +115,11 @@ interface LedgerReportViewProps {
   onEditEntry?: (entry: any) => void;
   onDeleteEntry?: (entry: any) => void;
   hideBankNames?: boolean;
+  // "You Gave / You Got" only makes sense when there's a real counterparty
+  // relationship being described (a retailer). A staff member or a portal
+  // (a payment gateway account) isn't a "you" in that sense, so those views
+  // use neutral Total In / Total Out labels instead.
+  subjectType?: "retailer" | "staff" | "portal";
 }
 
 export default function LedgerReportView({
@@ -125,6 +130,7 @@ export default function LedgerReportView({
   isPublic = false,
   onBack,
   publicLink,
+  subjectType = "retailer",
   onEditRetailer,
   onDeleteRetailer,
   onManageStores,
@@ -317,8 +323,8 @@ export default function LedgerReportView({
   const handleShare = async () => {
     const shareText = `Report of ${title}
 ${outstandingBalance !== undefined ? `Outstanding Balance: ₹ ${Math.abs(outstandingBalance).toLocaleString("en-IN")}\n` : ""}Total Entries: ${stats.entriesCount}
-You Gave: ₹ ${stats.youGave.toLocaleString("en-IN")}
-You Got: ₹ ${stats.youGot.toLocaleString("en-IN")}
+${subjectType === "retailer" && !isPublic ? "You Gave" : "Total Out"}: ₹ ${stats.youGave.toLocaleString("en-IN")}
+${subjectType === "retailer" && !isPublic ? "You Got" : "Total In"}: ₹ ${stats.youGot.toLocaleString("en-IN")}
 ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
     if (navigator.share) {
@@ -537,11 +543,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 <span className="text-xs font-bold text-slate-700 mt-0.5 block">{stats.entriesCount} Entries</span>
               </div>
               <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-red-500">You Gave</span>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-red-500">{subjectType === "retailer" && !isPublic ? "You Gave" : "Total Out"}</span>
                 <span className="text-xs font-bold text-red-500 mt-0.5 block font-mono tabular-nums">₹ {stats.youGave.toLocaleString("en-IN")}</span>
               </div>
               <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-emerald-600">You Got</span>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-emerald-600">{subjectType === "retailer" && !isPublic ? "You Got" : "Total In"}</span>
                 <span className="text-xs font-bold text-emerald-600 mt-0.5 block font-mono tabular-nums">₹ {stats.youGot.toLocaleString("en-IN")}</span>
               </div>
             </div>

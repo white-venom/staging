@@ -410,12 +410,13 @@ export default function StaffTab({
               <div className="w-6 h-6 border-2 border-slate-700 border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : (
-            <LedgerReportView 
+            <LedgerReportView
               title={`${ledgerStaff.name}'s Statement`}
               subtitle={`Role: ${ledgerStaff.role.toUpperCase()} • Phone: ${ledgerStaff.phone}`}
               data={ledgerData}
               outstandingBalance={ledgerOutstanding}
               isPublic={false}
+              subjectType="staff"
               onBack={() => {
                 setIsLedgerModalOpen(false);
                 setLedgerStaff(null);

@@ -316,6 +316,7 @@ export default function BankAccountLedgerModal({
             data={ledgerData}
             outstandingBalance={ledgerOutstanding}
             isPublic={false}
+            subjectType="portal"
             onBack={onClose}
             onEditEntry={handleStartEditEntry}
             onDeleteEntry={handleDeleteEntry}
