@@ -1518,7 +1518,7 @@ export default function DashboardPage() {
 
               <div>
                 <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
-                  Type <span className="text-slate-900 font-black">{deleteClientName}</span> to confirm:
+                  Type <span className="text-slate-900 font-black normal-case">{deleteClientName}</span> to confirm:
                 </label>
                 <input
                   type="text"
