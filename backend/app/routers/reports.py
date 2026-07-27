@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
@@ -122,10 +122,19 @@ def get_public_ledger(
         # backdated entry shows up correctly dated to the retailer. Row order and
         # running_balance still follow created_at (recalculate_balances() computes
         # `balance` in that same order) -- only the displayed date changes.
+        #
+        # created_at is UTC, but the frontend's formatIST() blindly treats this
+        # "date" string as UTC and adds +5:30. Naively combining the tx's own date
+        # with created_at's raw UTC time-of-day breaks for entries created between
+        # 00:00-05:29 IST (UTC calendar date is still "yesterday" then), landing
+        # the display one day ahead. Convert to IST first, combine, then subtract
+        # 5:30 to pre-cancel the frontend's own conversion.
         if tx.collection:
-            display_date = datetime.combine(tx.collection.collection_date, tx.created_at.time())
+            created_ist = tx.created_at + timedelta(hours=5, minutes=30)
+            display_date = datetime.combine(tx.collection.collection_date, created_ist.time()) - timedelta(hours=5, minutes=30)
         elif tx.deposit:
-            display_date = datetime.combine(tx.deposit.deposit_date, tx.created_at.time())
+            created_ist = tx.created_at + timedelta(hours=5, minutes=30)
+            display_date = datetime.combine(tx.deposit.deposit_date, created_ist.time()) - timedelta(hours=5, minutes=30)
         else:
             display_date = tx.created_at
 
@@ -623,7 +632,19 @@ def get_staff_ledger(
         # Display under collection_date/deposit_date (the day the entry claims to
         # represent), not created_at -- row order and running_balance still follow
         # created_at (the real chronological submission order).
-        display_date = datetime.combine(tx["tx_date"], tx["created_at"].time()) if tx.get("tx_date") else tx["created_at"]
+        #
+        # created_at is UTC, but the frontend's formatIST() blindly treats this
+        # "date" string as UTC and adds +5:30. Naively combining tx_date with
+        # created_at's raw UTC time-of-day breaks for entries created between
+        # 00:00-05:29 IST (UTC calendar date is still "yesterday" then), landing
+        # the display one day ahead of tx_date. Convert to IST first, combine,
+        # then subtract 5:30 to pre-cancel the frontend's own conversion.
+        if tx.get("tx_date"):
+            created_ist = tx["created_at"] + timedelta(hours=5, minutes=30)
+            combined_ist = datetime.combine(tx["tx_date"], created_ist.time())
+            display_date = combined_ist - timedelta(hours=5, minutes=30)
+        else:
+            display_date = tx["created_at"]
 
         formatted_txs.append({
             "id": tx["id"],

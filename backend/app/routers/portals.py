@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -89,6 +89,15 @@ def list_portals(
         db.commit()
         # Re-fetch healed groups
         groups = db.scalars(select(Portal).options(joinedload(Portal.bank_accounts)).order_by(Portal.name)).unique().all()
+
+    # Recompute each portal's balance the same way its ledger does, instead of
+    # trusting the separately-maintained Portal.balance cache column -- this is
+    # what made the dashboard's portal card disagree with that portal's own
+    # ledger total. Set in-memory only (no commit) so this is purely a display
+    # correction, not a silent data rewrite.
+    for group in groups:
+        _, _, running_balance = _compute_portal_ledger(db, group.id)
+        group.balance = Decimal(str(running_balance))
 
     return groups
 
@@ -191,20 +200,20 @@ def list_portal_accounts(
     return accounts
 
 
-@router.get("/{portal_id}/ledger")
-def get_portal_ledger(
-    portal_id: uuid.UUID,
-    db: Session = Depends(get_db),
-    current_user=Depends(require_any_user)
-):
-    """Fetch chronological consolidated transaction ledger for a portal (e.g. PAYNEARBY)."""
+def _compute_portal_ledger(db: Session, portal_id: uuid.UUID):
+    """Shared by GET /{portal_id}/ledger and the portal list endpoint, so the
+    dashboard's displayed balance and the ledger's own balance can never
+    drift apart -- both are this same fresh computation, not the separately
+    (and historically unreliably) maintained Portal.balance cache column.
+    Returns (group, formatted_txs, running_balance) or (None, [], 0.0) if the
+    portal doesn't exist."""
     from sqlalchemy import and_, or_, select
     from sqlalchemy.orm import joinedload
     from app.database.models import BankDeposit, Collection
 
     group = db.scalar(select(Portal).where(Portal.id == portal_id))
     if not group:
-        raise HTTPException(status_code=404, detail="Portal group not found")
+        return None, [], 0.0
 
     # Manual "Adjust Balance" edits, shown as their own line items in the ledger
     adjustments = db.scalars(
@@ -474,7 +483,23 @@ def get_portal_ledger(
         # Display under collection_date/deposit_date, not created_at (PortalAdjustment
         # rows have no such field and keep falling back to created_at). Row order and
         # running_balance still follow created_at (real submission order).
-        display_date = datetime.combine(tx["tx_date"], tx["created_at"].time()) if tx.get("tx_date") else tx["created_at"]
+        #
+        # created_at is stored in UTC, but the frontend's formatIST() blindly treats
+        # this "date" string as UTC and adds +5:30 for display. Naively combining
+        # tx_date with created_at's raw UTC time-of-day breaks for any entry created
+        # between 00:00-05:29 IST: at that instant the UTC calendar date is still
+        # "yesterday", so gluing today's tx_date onto yesterday's UTC clock reading
+        # produces a value that, after the frontend's +5:30, lands on tomorrow's
+        # date -- a backdated (or just very-late-night) entry for the 27th could
+        # display as the 28th. Convert to IST first, combine, then subtract 5:30 to
+        # pre-cancel the frontend's own conversion, so the net result is always
+        # exactly tx_date at the real IST time of day.
+        if tx.get("tx_date"):
+            created_ist = tx["created_at"] + timedelta(hours=5, minutes=30)
+            combined_ist = datetime.combine(tx["tx_date"], created_ist.time())
+            display_date = combined_ist - timedelta(hours=5, minutes=30)
+        else:
+            display_date = tx["created_at"]
 
         formatted_txs.append({
             "id": tx["id"],
@@ -498,8 +523,28 @@ def get_portal_ledger(
             "denominations": tx["denominations"]
         })
 
+    return group, formatted_txs, running_balance
+
+
+@router.get("/{portal_id}/ledger")
+def get_portal_ledger(
+    portal_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_any_user)
+):
+    """Fetch chronological consolidated transaction ledger for a portal (e.g. PAYNEARBY)."""
+    group, formatted_txs, running_balance = _compute_portal_ledger(db, portal_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Portal group not found")
+
+    # running_balance is the fresh total after walking every transaction --
+    # authoritative. group.balance is a separately-maintained cached column
+    # that can drift from it (e.g. a transaction type the ledger query used to
+    # miss, or an edit path that updates one but not the other); returning
+    # group.balance here made this endpoint's own "Current Outstanding" figure
+    # disagree with its own last row's running balance.
     return {
         "portal_name": group.name,
-        "outstanding_balance": float(group.balance or Decimal("0.00")),
+        "outstanding_balance": running_balance,
         "statement_history": formatted_txs
     }

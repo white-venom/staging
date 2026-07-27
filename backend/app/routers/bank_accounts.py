@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -386,7 +386,19 @@ def get_bank_account_ledger(
     for tx in tx_list:
         # Display under collection_date/deposit_date, not created_at -- row order
         # still follows created_at (real submission order).
-        display_date = datetime.combine(tx["tx_date"], tx["created_at"].time()) if tx.get("tx_date") else tx["created_at"]
+        #
+        # created_at is UTC, but the frontend's formatIST() blindly treats this
+        # "date" string as UTC and adds +5:30. Naively combining tx_date with
+        # created_at's raw UTC time-of-day breaks for entries created between
+        # 00:00-05:29 IST (UTC calendar date is still "yesterday" then), landing
+        # the display one day ahead of tx_date. Convert to IST first, combine,
+        # then subtract 5:30 to pre-cancel the frontend's own conversion.
+        if tx.get("tx_date"):
+            created_ist = tx["created_at"] + timedelta(hours=5, minutes=30)
+            combined_ist = datetime.combine(tx["tx_date"], created_ist.time())
+            display_date = combined_ist - timedelta(hours=5, minutes=30)
+        else:
+            display_date = tx["created_at"]
 
         formatted_txs.append({
             "id": tx["id"],
