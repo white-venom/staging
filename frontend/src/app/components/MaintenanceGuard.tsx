@@ -66,8 +66,11 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
             return;
           }
           setIsMaintenance(data.maintenance_mode);
-          if (data.name) {
-            setTenantName(data.name);
+          // Show the subdomain (e.g. "suji"), not the tenant's stored
+          // display name -- that field holds the owner/company name
+          // (e.g. "Jafer Khan"), not something meant to identify the site.
+          if (data.subdomain) {
+            setTenantName(data.subdomain);
           }
         } else {
           if (res.status === 404) {
