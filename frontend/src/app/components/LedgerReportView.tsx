@@ -87,6 +87,7 @@ interface LedgerTransaction {
   bank_account_name?: string | null;
   bank_name?: string | null;
   portal_name?: string | null;
+  staff_name?: string | null;
   deposit_type?: string | null;
   denominations?: {
     note_500: number;
@@ -615,7 +616,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                             Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
                           </div>
                         )}
-                        {isDebit && (tx.bank_account_name || tx.portal_name) && (
+                        {/* Was gated on isDebit (real transaction_type) --
+                            a virtual transfer LOAD is a credit, so its own
+                            portal never showed. Shown now whenever there's a
+                            portal/bank account to name, for every type. */}
+                        {(tx.bank_account_name || tx.portal_name) && (
                           <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
                             {tx.deposit_type === "retailer"
                               ? `Retailer - ${tx.bank_account_name}`
@@ -624,6 +629,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                               : hideBankNames
                               ? (tx.portal_name || "Portal")
                               : (tx.portal_name ? `${tx.portal_name}${tx.bank_account_name ? ` (${tx.bank_account_name})` : ""}` : tx.bank_account_name)}
+                          </div>
+                        )}
+                        {!isPublic && tx.staff_name && (
+                          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                            Staff: <span className="uppercase">{tx.staff_name}</span>
                           </div>
                         )}
                         {tx.remarks && (
@@ -742,6 +752,15 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Store Name</span>
                   <span className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
                     {selectedEntryForDetails.store_name}
+                  </span>
+                </div>
+              )}
+
+              {!isPublic && selectedEntryForDetails.staff_name && (
+                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Staff</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                    {selectedEntryForDetails.staff_name}
                   </span>
                 </div>
               )}

@@ -36,10 +36,12 @@ def get_public_ledger(
             joinedload(Ledger.collection).joinedload(Collection.denominations),
             joinedload(Ledger.collection).joinedload(Collection.store),
             joinedload(Ledger.collection).joinedload(Collection.bank_account).joinedload(BankAccount.portal),
+            joinedload(Ledger.collection).joinedload(Collection.staff),
             joinedload(Ledger.deposit).joinedload(BankDeposit.denominations),
             joinedload(Ledger.deposit).joinedload(BankDeposit.bank_account).joinedload(BankAccount.portal),
             joinedload(Ledger.deposit).joinedload(BankDeposit.retailer),
-            joinedload(Ledger.deposit).joinedload(BankDeposit.recipient_staff)
+            joinedload(Ledger.deposit).joinedload(BankDeposit.recipient_staff),
+            joinedload(Ledger.deposit).joinedload(BankDeposit.staff)
         )
         .order_by(Ledger.created_at)
     ).all()
@@ -61,7 +63,13 @@ def get_public_ledger(
         elif tx.deposit and tx.deposit.remarks:
             remarks = tx.deposit.remarks
         reference_no = tx.deposit.reference_no if (tx.deposit and tx.deposit.reference_no) else ""
-        
+
+        staff_name = None
+        if tx.collection and tx.collection.staff:
+            staff_name = tx.collection.staff.name
+        elif tx.deposit and tx.deposit.staff:
+            staff_name = tx.deposit.staff.name
+
         # Get store name and bank_account name if available
         store_name = None
         bank_account_name = None
@@ -153,6 +161,7 @@ def get_public_ledger(
             "bank_account_name": bank_account_name,
             "bank_name": bank_name,
             "portal_name": portal_name,
+            "staff_name": staff_name,
             "deposit_type": tx.deposit.deposit_type if tx.deposit else None,
             "denominations": denom_dict
         })
