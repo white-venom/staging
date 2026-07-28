@@ -261,7 +261,11 @@ export default function LedgerReportView({
     let youGave = 0;
     let youGot = 0;
     filteredTransactions.forEach((tx) => {
-      if (tx.transaction_type === "debit") {
+      const isDebit = tx.transaction_type === "debit";
+      // Virtual transfers bucket the opposite way from their real money
+      // direction -- see the matching comment on the row render below.
+      const isGaveForDisplay = tx.deposit_type === "virtual" ? !isDebit : isDebit;
+      if (isGaveForDisplay) {
         youGave += tx.amount;
       } else {
         youGot += tx.amount;
@@ -563,7 +567,20 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <div className="divide-y divide-slate-100">
                 {filteredTransactions.map((tx) => {
                   const formattedIST = formatIST(tx.date);
-                  const isDebit = tx.transaction_type === "debit"; // You Gave
+                  const isDebit = tx.transaction_type === "debit";
+                  // "You Gave / You Got" is a business-perspective bookkeeping
+                  // question (did the business hand out or take in money) --
+                  // for a virtual transfer that's the OPPOSITE of the
+                  // retailer's own money-in/out direction (which drives the
+                  // red/green color, confirmed correct and left unchanged
+                  // here): a LOAD is money arriving at the retailer (green)
+                  // but the business is the one who gave it, so it belongs in
+                  // the Gave bucket; a REFUND takes money back from the
+                  // retailer (red) but the business is the one who got it
+                  // back, so it belongs in the Got bucket.
+                  const isVirtual = tx.deposit_type === "virtual";
+                  const isGaveForDisplay = isVirtual ? !isDebit : isDebit;
+                  const amountColor = isDebit ? "text-red-500" : "text-emerald-600";
 
                   return (
                     <div 
@@ -615,15 +632,20 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                         )}
                       </div>
                       
-                      {/* Right: Gave (Debit) vs Got (Credit) numeric columns */}
+                      {/* Right: Gave vs Got numeric columns. Placement follows
+                          isGaveForDisplay (business-perspective bucketing);
+                          color follows the real retailer-side money direction
+                          (isDebit) regardless of which column it lands in, so
+                          a virtual load still reads green even while sitting
+                          in the Gave column. */}
                       <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono tabular-nums text-base">
                         {/* Gave Column */}
-                        <div className="w-22 font-black text-red-500">
-                          {isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
+                        <div className={`w-22 font-black ${amountColor}`}>
+                          {isGaveForDisplay ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
-                        {/* Got Column: money in is always green, no per-type exception. */}
-                        <div className="w-22 font-black text-emerald-600">
-                          {!isDebit ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
+                        {/* Got Column */}
+                        <div className={`w-22 font-black ${amountColor}`}>
+                          {!isGaveForDisplay ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
                         </div>
                       </div>
                     </div>
