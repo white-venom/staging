@@ -22,18 +22,13 @@ import { downloadElementAsPdf } from "../utils/downloadElementAsPdf";
 
 const cleanDescription = (desc: string, tx?: any): string => {
   if (!desc) return "";
-  let cleaned = desc
+  // Used to append the portal name into this title (e.g. "move to
+  // distributor vidcom") -- now redundant and duplicated, since the portal
+  // is always shown as its own subtitle line below the title.
+  return desc
     .replace(/\s*\(auto-verified\)/gi, "")
     .replace(/cash payout/gi, "cash out")
     .replace(/cash collection/gi, "cash in");
-    
-  if (cleaned.toLowerCase().startsWith("move to distributor")) {
-    const portal = tx?.portal_name || tx?.bank_account_name || "";
-    if (portal) {
-      cleaned = `move to distributor ${portal.toLowerCase()}`;
-    }
-  }
-  return cleaned;
 };
 
 const renderDenominations = (denom: any) => {

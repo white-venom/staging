@@ -243,7 +243,12 @@ def submit_deposit(
             else:
                 new_balance = prev_balance + payload.amount
                 transaction_type = "credit"
-                desc_text = bank_account.portal.name if (bank_account and bank_account.portal) else (bank_account.bank_account_name if bank_account else "virtual transfer")
+                # Was the portal name itself (e.g. "VIDCOM") -- since the
+                # portal is already shown as its own subtitle (bank_account_id
+                # on this deposit drives that independently), the title just
+                # duplicated it. "virtual transfer" matches the "move to
+                # distributor" label used for the refund direction above.
+                desc_text = "virtual transfer"
             
             # Step C: Log entry in Retailer's Ledger
             ledger_entry = Ledger(
@@ -834,8 +839,7 @@ def update_deposit(
                 # Matches submit_deposit's convention: load="credit" (adds),
                 # refund="debit" (subtracts).
                 txn_type = "debit" if payload.payment_mode == "refund" else "credit"
-                bank_account = db.scalar(select(BankAccount).options(joinedload(BankAccount.portal)).where(BankAccount.id == deposit.bank_account_id))
-                desc = "move to distributor" if payload.payment_mode == "refund" else (bank_account.portal.name if (bank_account and bank_account.portal) else (bank_account.bank_account_name if bank_account else "virtual transfer"))
+                desc = "move to distributor" if payload.payment_mode == "refund" else "virtual transfer"
                 
             if not ledger_entry:
                 ledger_entry = Ledger(
