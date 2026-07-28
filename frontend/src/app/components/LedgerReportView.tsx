@@ -264,7 +264,11 @@ export default function LedgerReportView({
       const isDebit = tx.transaction_type === "debit";
       // Virtual transfers bucket the opposite way from their real money
       // direction -- see the matching comment on the row render below.
-      const isGaveForDisplay = tx.deposit_type === "virtual" ? !isDebit : isDebit;
+      let isGaveForDisplay = tx.deposit_type === "virtual" ? !isDebit : isDebit;
+      // The public link is the RETAILER's own statement, not the admin's --
+      // whatever the business "Got" is what the retailer "Gave" and vice
+      // versa, so the whole bucket flips for that audience.
+      if (isPublic) isGaveForDisplay = !isGaveForDisplay;
       if (isGaveForDisplay) {
         youGave += tx.amount;
       } else {
@@ -278,7 +282,7 @@ export default function LedgerReportView({
       youGot,
       netBalance: youGave - youGot
     };
-  }, [filteredTransactions]);
+  }, [filteredTransactions, isPublic]);
 
   const formatIST = (dateStr: string) => {
     try {
@@ -327,8 +331,8 @@ export default function LedgerReportView({
   const handleShare = async () => {
     const shareText = `Report of ${title}
 ${outstandingBalance !== undefined ? `Outstanding Balance: ₹ ${Math.abs(outstandingBalance).toLocaleString("en-IN")}\n` : ""}Total Entries: ${stats.entriesCount}
-${subjectType === "retailer" && !isPublic ? "You Gave" : "Total Out"}: ₹ ${stats.youGave.toLocaleString("en-IN")}
-${subjectType === "retailer" && !isPublic ? "You Got" : "Total In"}: ₹ ${stats.youGot.toLocaleString("en-IN")}
+${subjectType === "retailer" ? "You Gave" : "Total Out"}: ₹ ${stats.youGave.toLocaleString("en-IN")}
+${subjectType === "retailer" ? "You Got" : "Total In"}: ₹ ${stats.youGot.toLocaleString("en-IN")}
 ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
     if (navigator.share) {
@@ -547,11 +551,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 <span className="text-xs font-bold text-slate-700 mt-0.5 block">{stats.entriesCount} Entries</span>
               </div>
               <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-red-500">{subjectType === "retailer" && !isPublic ? "You Gave" : "Total Out"}</span>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-red-500">{subjectType === "retailer" ? "You Gave" : "Total Out"}</span>
                 <span className="text-xs font-bold text-red-500 mt-0.5 block font-mono tabular-nums">₹ {stats.youGave.toLocaleString("en-IN")}</span>
               </div>
               <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-emerald-600">{subjectType === "retailer" && !isPublic ? "You Got" : "Total In"}</span>
+                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-emerald-600">{subjectType === "retailer" ? "You Got" : "Total In"}</span>
                 <span className="text-xs font-bold text-emerald-600 mt-0.5 block font-mono tabular-nums">₹ {stats.youGot.toLocaleString("en-IN")}</span>
               </div>
             </div>
@@ -577,7 +581,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                   // business is the one handing money out on a load, and
                   // taking it back on a refund.
                   const isVirtual = tx.deposit_type === "virtual";
-                  const isGaveForDisplay = isVirtual ? !isDebit : isDebit;
+                  let isGaveForDisplay = isVirtual ? !isDebit : isDebit;
+                  // The public link is the RETAILER's own statement, not the
+                  // admin's -- whatever the business "Got" is what the
+                  // retailer "Gave" and vice versa, so the bucket flips.
+                  if (isPublic) isGaveForDisplay = !isGaveForDisplay;
                   const amountColor = isGaveForDisplay ? "text-red-500" : "text-emerald-600";
 
                   return (
@@ -679,10 +687,18 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
       </div>
 
       {/* Transaction Details Bottom Sheet */}
-      {selectedEntryForDetails && (
+      {selectedEntryForDetails && (() => {
+        const detailIsDebit = selectedEntryForDetails.transaction_type === "debit";
+        const detailIsVirtual = selectedEntryForDetails.deposit_type === "virtual";
+        let detailIsGaveForDisplay = detailIsVirtual ? !detailIsDebit : detailIsDebit;
+        if (isPublic) detailIsGaveForDisplay = !detailIsGaveForDisplay;
+        const detailColorClass = detailIsGaveForDisplay ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400";
+        const detailBgClass = detailIsGaveForDisplay ? "bg-red-50 dark:bg-red-950/20" : "bg-emerald-50 dark:bg-emerald-950";
+
+        return (
         <div className="fixed inset-0 z-50 flex items-end justify-center select-none">
           {/* Backdrop */}
-          <div 
+          <div
             className="absolute inset-0 bg-slate-900/60"
             onClick={() => setSelectedEntryForDetails(null)}
           />
@@ -709,24 +725,14 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             <div className="space-y-3.5 text-slate-700 dark:text-slate-300 max-h-[50vh] overflow-y-auto pr-1">
               <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Type</span>
-                <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-sm ${
-                  selectedEntryForDetails.collection_id
-                    ? "bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400"
-                    : selectedEntryForDetails.transaction_type === "credit"
-                    ? "bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400"
-                    : "bg-red-50 dark:bg-red-950/20 text-red-500 dark:text-red-400"
-                }`}>
+                <span className={`text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-sm ${detailBgClass} ${detailColorClass}`}>
                   {cleanDescription(selectedEntryForDetails.description, selectedEntryForDetails)}
                 </span>
               </div>
 
               <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</span>
-                <span className={`text-base font-extrabold font-mono tabular-nums ${
-                  selectedEntryForDetails.collection_id
-                    ? "text-red-500 dark:text-red-400"
-                    : selectedEntryForDetails.transaction_type === "credit" ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
-                }`}>
+                <span className={`text-base font-extrabold font-mono tabular-nums ${detailColorClass}`}>
                   ₹ {selectedEntryForDetails.amount.toLocaleString("en-IN")}
                 </span>
               </div>
@@ -870,7 +876,8 @@ ${entry.store_name ? `Store: ${entry.store_name}\n` : ''}${entry.bank_account_na
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
