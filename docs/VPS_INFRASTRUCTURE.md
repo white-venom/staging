@@ -10,7 +10,7 @@ Server: `187.127.176.149` (root SSH). Repo checked out at `/opt/crediiflow`.
 Deploys via `.github/workflows/deploy.yml` (`git pull` + `docker compose up -d
 --build` over SSH on every push to `main`).
 
-Last verified against the live server: 2026-07-23.
+Last verified against the live server: 2026-07-28.
 
 ---
 
@@ -278,10 +278,46 @@ systemctl start nginx
 
 ```
 Certificate Name: api.crediiflow.in
-Domains: api.crediiflow.in app.crediiflow.in crediiflow.in do-it-services.crediiflow.in superadmin.crediiflow.in www.crediiflow.in
+Domains: api.crediiflow.in app.crediiflow.in crediiflow.in do-it-services.crediiflow.in suji.crediiflow.in superadmin.crediiflow.in www.crediiflow.in
 Authenticator: standalone
 Key type: ECDSA
 ```
+
+### Incident: nginx was serving a different, stale cert (2026-07-28)
+
+**The watcher above was never broken.** Every tenant onboarding correctly
+ran `certbot certonly --expand --cert-name api.crediiflow.in`, so
+`/etc/letsencrypt/live/api.crediiflow.in/` always had an up-to-date SAN list.
+The bug was in `/etc/nginx/sites-enabled/crediiflow.conf`: all four HTTPS
+`server` blocks (`crediiflow.in`/`www`, the `*.crediiflow.in` wildcard app
+block, `superadmin.crediiflow.in`, `api.crediiflow.in`) had `ssl_certificate`
+pointed at `/etc/letsencrypt/live/crediiflow.in/` instead —  a **second,
+separate** cert that predates the watcher automation and is never touched by
+it. That cert's SAN list still had a leftover `aayir.crediiflow.in` from
+whenever it was last issued by hand, and had never picked up newer tenant
+subdomains (`suji.crediiflow.in` at the time this was caught) — so any tenant
+onboarded after that manual cert existed got a certificate name-mismatch
+warning in the browser, even though a perfectly valid cert covering them
+already existed on disk, unused.
+
+Fixed by repointing all four `ssl_certificate`/`ssl_certificate_key` lines in
+`crediiflow.conf` from `live/crediiflow.in/` to `live/api.crediiflow.in/`,
+then `nginx -t && systemctl reload nginx`. This is the actual permanent
+fix — nginx now serves the one cert the watcher automation keeps in sync, so
+every future tenant onboarding (which already correctly triggers the
+watcher) will "just work" without ever needing this repointing again.
+
+**If a stray `crediiflow.conf.bak-*` file ever ends up back in
+`/etc/nginx/sites-enabled/`, remove or move it out before running `nginx
+-t`** — `nginx.conf`'s `include /etc/nginx/sites-enabled/*;` is a wildcard
+and will load it too, producing a wall of "conflicting server name...
+ignored" warnings from the duplicate server blocks (harmless to the running
+config, but confusing, and a sign the backup wasn't moved out properly).
+
+The orphaned `crediiflow.in` cert (`/etc/letsencrypt/live/crediiflow.in/`)
+is now unused by anything but was left in place rather than deleted —
+harmless as dead weight, and deleting a live cert on a whim is not worth the
+risk for the disk space it saves.
 
 ---
 
