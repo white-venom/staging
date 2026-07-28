@@ -568,19 +568,17 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 {filteredTransactions.map((tx) => {
                   const formattedIST = formatIST(tx.date);
                   const isDebit = tx.transaction_type === "debit";
-                  // "You Gave / You Got" is a business-perspective bookkeeping
-                  // question (did the business hand out or take in money) --
-                  // for a virtual transfer that's the OPPOSITE of the
-                  // retailer's own money-in/out direction (which drives the
-                  // red/green color, confirmed correct and left unchanged
-                  // here): a LOAD is money arriving at the retailer (green)
-                  // but the business is the one who gave it, so it belongs in
-                  // the Gave bucket; a REFUND takes money back from the
-                  // retailer (red) but the business is the one who got it
-                  // back, so it belongs in the Got bucket.
+                  // Cash-in and a virtual refund are both money arriving --
+                  // green, You Got. Cash-out and a virtual transfer (load)
+                  // are both money leaving -- red, You Gave. A virtual
+                  // transfer's real transaction_type is "credit" (it adds to
+                  // the retailer's own balance) but for this business-facing
+                  // You Gave/You Got bucketing it's the opposite: the
+                  // business is the one handing money out on a load, and
+                  // taking it back on a refund.
                   const isVirtual = tx.deposit_type === "virtual";
                   const isGaveForDisplay = isVirtual ? !isDebit : isDebit;
-                  const amountColor = isDebit ? "text-red-500" : "text-emerald-600";
+                  const amountColor = isGaveForDisplay ? "text-red-500" : "text-emerald-600";
 
                   return (
                     <div 
