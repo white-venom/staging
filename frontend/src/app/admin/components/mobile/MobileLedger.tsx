@@ -90,6 +90,22 @@ export default function MobileLedger() {
     fetchStores();
   }, [selectedNewRetailerId, editingCollection]);
 
+  React.useEffect(() => {
+    if (editingIsDeposit && (selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified")) {
+      const sum = (
+        (selectedNewDenoms.note_500 || 0) * 500 +
+        (selectedNewDenoms.note_200 || 0) * 200 +
+        (selectedNewDenoms.note_100 || 0) * 100 +
+        (selectedNewDenoms.note_50 || 0) * 50 +
+        (selectedNewDenoms.note_20 || 0) * 20 +
+        (selectedNewDenoms.note_10 || 0) * 10 +
+        (selectedNewDenoms.coins || 0) +
+        (selectedNewPaymentMode === "unified" ? (selectedNewDenoms.online_amount || 0) : 0)
+      );
+      setSelectedNewAmount(sum);
+    }
+  }, [selectedNewDenoms, selectedNewPaymentMode, editingIsDeposit]);
+
   const handleStartEditCollection = (item: any) => {
     const isDeposit = item.depositType != null || item.deposit_type != null;
     setEditingIsDeposit(isDeposit);
@@ -102,8 +118,8 @@ export default function MobileLedger() {
     setSelectedNewRemarks(item.remarks || "");
     
     if (isDeposit) {
-      setSelectedNewDepositType(item.deposit_type || item.depositType || "virtual");
-      setSelectedNewPaymentMode(item.payment_mode || item.paymentMode || "online");
+      setSelectedNewDepositType((item.deposit_type || item.depositType || "virtual").toLowerCase());
+      setSelectedNewPaymentMode((item.payment_mode || item.paymentMode || "online").toLowerCase());
       setSelectedNewAmount(Number(item.amount || item.totalAmount || item.total_amount || 0));
       setSelectedNewDate(item.deposit_date ? item.deposit_date : (item.date || "").split(" ")[0]);
       setSelectedNewRefNo(item.reference_no || item.referenceNo || "");
@@ -171,7 +187,7 @@ export default function MobileLedger() {
           deposit_date: selectedNewDate || getISTDateString(),
           reference_no: selectedNewRefNo || null,
           remarks: selectedNewRemarks || "",
-          denominations: selectedNewPaymentMode === "cash" ? selectedNewDenoms : null
+          denominations: (selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified") ? selectedNewDenoms : null
         });
       } else {
         const computedCollectionTotal = (
@@ -1021,11 +1037,7 @@ export default function MobileLedger() {
                             placeholder="Select Staff Member"
                           />
                         </div>
-                      )}
-                    </>
-                  )}
-
-                   {/* Payment Mode */}
+                              {/* Payment Mode */}
                   {selectedNewDepositType !== "virtual" && (
                     <div className="space-y-0.5">
                       <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Payment Mode</label>
@@ -1034,22 +1046,88 @@ export default function MobileLedger() {
                         onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
                         className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                       >
+                        <option value="unified">Unified</option>
                         <option value="cash">Cash</option>
                         <option value="online">Online</option>
                       </select>
                     </div>
                   )}
 
+                  {/* Denominations editor for Deposit */}
+                  {(selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified") && (
+                    <div className="border border-slate-100 dark:border-slate-800 rounded-sm p-3 bg-slate-50/50 dark:bg-slate-950/50 space-y-1">
+                      <span className="text-[8px] text-slate-400 font-black uppercase block mb-1">Counting Details (Notes)</span>
+                      <div className="space-y-1">
+                        {[
+                          { label: "₹500 Notes", key: "note_500", factor: 500 },
+                          { label: "₹200 Notes", key: "note_200", factor: 200 },
+                          { label: "₹100 Notes", key: "note_100", factor: 100 },
+                          { label: "₹50 Notes",  key: "note_50",  factor: 50  },
+                          { label: "₹20 Notes",  key: "note_20",  factor: 20  },
+                          { label: "₹10 Notes",  key: "note_10",  factor: 10  },
+                          { label: "Coins / ₹1", key: "coins",    factor: 1   },
+                        ].map(item => (
+                          <div key={item.key} className="flex items-center gap-2 justify-between py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">{item.label}</span>
+                            <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
+                            <input autoComplete="one-time-code"
+                              type="number"
+                              inputMode={item.key === "coins" ? "decimal" : "numeric"}
+                              value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || ""}
+                              onChange={(e) => {
+                                const val = item.key === "coins" ? (parseFloat(e.target.value) || 0) : (parseInt(e.target.value) || 0);
+                                setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
+                              }}
+                              className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-black outline-none focus:border-slate-500 dark:focus:border-slate-400"
+                            />
+                            <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
+                            <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0 font-mono tabular-nums">
+                              ₹{(Number(selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0) * item.factor).toLocaleString()}
+                            </span>
+                          </div>
+                        ))}
+                        {/* UPI / Online Amount row (only for unified mode) */}
+                        {selectedNewPaymentMode === "unified" && (
+                          <div className="flex items-center gap-2 justify-between pt-1.5 border-t border-slate-200 dark:border-slate-800">
+                            <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 w-20 shrink-0">UPI / Online</span>
+                            <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">+</span>
+                            <input autoComplete="one-time-code"
+                              type="number"
+                              inputMode="decimal"
+                              value={selectedNewDenoms.online_amount || ""}
+                              onChange={(e) => {
+                                const val = Math.max(0, parseFloat(e.target.value) || 0);
+                                setSelectedNewDenoms(prev => ({ ...prev, online_amount: val }));
+                              }}
+                              className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-black outline-none focus:border-slate-500 dark:focus:border-slate-400"
+                            />
+                            <span className="text-slate-300 dark:text-slate-600 text-[9px] font-bold">＝</span>
+                            <span className="text-xs font-black text-slate-700 dark:text-slate-300 text-right w-14 shrink-0 font-mono tabular-nums">
+                              ₹{Number(selectedNewDenoms.online_amount || 0).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Amount */}
                   <div className="space-y-0.5">
-                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">Amount</label>
+                    <label className="text-[8px] text-slate-400 font-black uppercase block ml-0.5">
+                      {selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified" ? "Total Amount (Calculated)" : "Amount"}
+                    </label>
                     <input autoComplete="one-time-code"
                       type="number"
                       inputMode="decimal"
                       value={selectedNewAmount}
                       onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className="w-full px-2 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
+                      className={`w-full px-2 py-1.5 border rounded-sm text-right font-mono tabular-nums text-[10px] font-black focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white ${
+                        selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified"
+                          ? "bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-850 dark:text-slate-150 font-black"
+                          : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 text-slate-800 dark:text-white"
+                      }`}
                       required
+                      readOnly={selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified"}
                     />
                   </div>
 
