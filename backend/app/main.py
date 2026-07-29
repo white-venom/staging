@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
-# Build Trigger: v1.0.2
+# Build Trigger: v1.0.3
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.database.db import get_db, Base, master_engine, get_tenant_session
@@ -219,7 +219,7 @@ origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if orig
 
 # Enable wildcard origin regex in local/development mode for easy Wi-Fi testing
 is_development = settings.ENVIRONMENT == "development"
-allow_origin_regex = r"https?://.*" if is_development else r"https://([a-zA-Z0-9-]+\.)*crediiflow\.in"
+allow_origin_regex = r"https?://.*" if is_development else r"https?://([a-zA-Z0-9-]+\.)*crediiflow\.in(:[0-9]+)?"
 
 app.add_middleware(
     CORSMiddleware,

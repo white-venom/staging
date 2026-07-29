@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     DB_PASSWORD: str = "securepassword"
     DB_HOST: str = "localhost"
     DB_PORT: str = "5432"
+    TEST_TENANT_ID: Optional[str] = None
+
 
     ENVIRONMENT: str = "production"
     JWT_SECRET_KEY: str = "dev-secret-key-change-in-production"

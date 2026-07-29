@@ -668,7 +668,7 @@ export default function DepositsTab({
                     )}
                   </>
                 )}
-                           {/* Payment Mode */}
+                                 {/* Payment Mode */}
                 {selectedNewDepositType !== "virtual" && (
                   <div className="space-y-1">
                     <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Payment Mode</label>
@@ -677,22 +677,83 @@ export default function DepositsTab({
                       onChange={(e) => setSelectedNewPaymentMode(e.target.value)}
                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
                     >
+                      <option value="unified">Unified</option>
                       <option value="cash">Cash</option>
                       <option value="online">Online</option>
                     </select>
                   </div>
                 )}
 
+                {/* Denominations editor for Cash Deposits */}
+                {(selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified") && (
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-sm space-y-0.5">
+                    <div className="px-2 py-1.5 border-b border-slate-100 dark:border-slate-800/60">
+                      <span className="text-[10px] text-slate-400 font-bold uppercase">Counting Details (Notes)</span>
+                    </div>
+                    {[
+                      { label: "₹500 Notes", key: "note_500", factor: 500 },
+                      { label: "₹200 Notes", key: "note_200", factor: 200 },
+                      { label: "₹100 Notes", key: "note_100", factor: 100 },
+                      { label: "₹50 Notes", key: "note_50", factor: 50 },
+                      { label: "₹20 Notes", key: "note_20", factor: 20 },
+                      { label: "₹10 Notes", key: "note_10", factor: 10 },
+                    ].map(item => (
+                      <div key={item.key} className="flex items-center gap-2 justify-between px-2 py-0.5 border-b border-slate-100 dark:border-slate-800/40 last:border-b-0">
+                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">{item.label}</span>
+                        <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
+                        <input autoComplete="one-time-code"
+                          type="number"
+                          inputMode="numeric"
+                          value={selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setSelectedNewDenoms(prev => ({ ...prev, [item.key]: val }));
+                          }}
+                          className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-extrabold focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none"
+                        />
+                        <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                        <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">
+                          ₹{(Number(selectedNewDenoms[item.key as keyof typeof selectedNewDenoms] || 0) * item.factor).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 justify-between px-2 py-0.5">
+                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 w-16 text-left">Coins</span>
+                      <span className="text-slate-400 dark:text-slate-600 text-xs font-bold">&times;</span>
+                      <input autoComplete="one-time-code"
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        value={selectedNewDenoms.coins}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 0;
+                          setSelectedNewDenoms(prev => ({ ...prev, coins: val }));
+                        }}
+                        className="w-14 px-1.5 py-0.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-extrabold focus:border-slate-500 dark:focus:border-slate-400 focus:outline-none"
+                      />
+                      <span className="text-slate-300 dark:text-slate-500 text-[9px] font-bold">＝</span>
+                      <span className="text-xs font-black text-right w-16 font-mono tabular-nums text-slate-700 dark:text-slate-300">₹{Number(selectedNewDenoms.coins || 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Amount */}
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">Amount</label>
+                  <label className="text-[10px] text-slate-400 font-bold uppercase block ml-1">
+                    {selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified" ? "Total Amount (Calculated)" : "Amount"}
+                  </label>
                   <input autoComplete="one-time-code"
                     type="number"
                     inputMode="decimal"
                     value={selectedNewAmount}
                     onChange={(e) => setSelectedNewAmount(Math.max(0, parseFloat(e.target.value) || 0))}
-                    className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
+                    className={`w-full px-3 py-2 border rounded-sm text-right font-mono tabular-nums text-xs font-bold focus:outline-none ${
+                      selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified"
+                        ? "bg-slate-100 dark:bg-slate-955 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 font-black"
+                        : "bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600 focus:border-slate-500 dark:focus:border-slate-400 dark:text-white"
+                    }`}
                     required
+                    readOnly={selectedNewPaymentMode === "cash" || selectedNewPaymentMode === "unified"}
                   />
                 </div>
 

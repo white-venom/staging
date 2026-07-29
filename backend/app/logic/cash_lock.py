@@ -125,9 +125,10 @@ def enforce_collection_edit_lock(collection: Collection, current_user, tenant, a
             detail=f"{who} can only {action} collections within {window} minutes of creation."
         )
 
-    if is_collection_locked_by_downstream_use(collection, db):
+    if not is_admin and is_collection_locked_by_downstream_use(collection, db):
         raise HTTPException(
             status_code=403,
             detail="This collection's cash has already been used in a later cash-out/deposit, "
                    "so it's locked to protect denomination accuracy. Contact an admin if this needs correcting."
         )
+

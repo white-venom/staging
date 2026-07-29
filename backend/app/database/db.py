@@ -142,10 +142,11 @@ def resolve_tenant_subdomain(request: Request = None) -> str | None:
                     tenant_id = None
 
     if not tenant_id:
-        # Fallback for dev scripts / pytest
-        tenant_id = os.getenv("TEST_TENANT_ID")
+        # Fallback for dev scripts / pytest / localhost
+        tenant_id = os.getenv("TEST_TENANT_ID") or settings.TEST_TENANT_ID
 
     return tenant_id
+
 
 
 def get_current_tenant_row(request: Request = None):
