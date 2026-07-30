@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field, EmailStr, field_validator
 from sqlalchemy import select, text, create_engine, func, desc
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.database.db import get_master_db, MasterSessionLocal, Base, get_tenant_connection_string, evict_tenant_cache
+from app.database.db import get_master_db, MasterSessionLocal, Base, get_tenant_connection_string, get_tenant_engine, evict_tenant_cache
 from app.database.master_models import Tenant, SuperAdmin, SuperAdminPasswordReset
 from app.core.config import settings
 from app.core.security import (
@@ -468,24 +468,20 @@ def create_tenant(
         # Create physical database and schema
         pg_url = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
         pg_engine = create_engine(pg_url, isolation_level="AUTOCOMMIT")
-        with pg_engine.connect() as conn:
-            result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname='{db_name}'"))
-            if result.fetchone():
-                # Already ruled out a *tracked* collision above -- if the physical
-                # database exists anyway, it's an orphan (e.g. a previous tenant
-                # deletion's DROP DATABASE step failed silently). Reusing it as-is
-                # is exactly how this class of bug bites: it's already seeded, so
-                # the insert below fails with a confusing duplicate-key error deep
-                # inside someone else's leftover data. Refuse cleanly instead.
-                raise HTTPException(
-                    status_code=409,
-                    detail=f"Database '{db_name}' already exists on the server but isn't registered to any tenant (likely an orphan from a previous deletion). It must be dropped manually before this subdomain can be used."
-                )
-            conn.execute(text(f"CREATE DATABASE {db_name}"))
+        try:
+            with pg_engine.connect() as conn:
+                result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname='{db_name}'"))
+                if result.fetchone():
+                    raise HTTPException(
+                        status_code=409,
+                        detail=f"Database '{db_name}' already exists on the server but isn't registered to any tenant (likely an orphan from a previous deletion). It must be dropped manually before this subdomain can be used."
+                    )
+                conn.execute(text(f"CREATE DATABASE {db_name}"))
+        finally:
+            pg_engine.dispose()
         
         # Populate tables
-        tenant_url = get_tenant_connection_string(db_name)
-        tenant_engine = create_engine(tenant_url)
+        tenant_engine = get_tenant_engine(db_name)
         
         # Import models inside to avoid circular reference issues and bind Base
         from app.database import models
@@ -590,8 +586,7 @@ def get_tenant_stats(
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
 
-    tenant_url = get_tenant_connection_string(tenant.db_name)
-    tenant_engine = create_engine(tenant_url)
+    tenant_engine = get_tenant_engine(tenant.db_name)
     try:
         with tenant_engine.connect() as conn:
             db_size_bytes = conn.execute(
@@ -701,8 +696,7 @@ def get_tenant_health(
     db_reachable = True
     db_error = None
     try:
-        tenant_url = get_tenant_connection_string(tenant.db_name)
-        tenant_engine = create_engine(tenant_url, pool_timeout=5)
+        tenant_engine = get_tenant_engine(tenant.db_name)
         with tenant_engine.connect() as conn:
             conn.execute(text("SELECT 1"))
     except Exception as e:
@@ -760,8 +754,7 @@ def list_tenants(
     for t in tenants:
         admin_phone = None
         try:
-            tenant_url = get_tenant_connection_string(t.db_name)
-            tenant_engine = create_engine(tenant_url)
+            tenant_engine = get_tenant_engine(t.db_name)
             TenantSession = sessionmaker(bind=tenant_engine)
             tenant_db = TenantSession()
             try:
@@ -824,8 +817,7 @@ def update_tenant(
     admin_phone = None
     # Update admin credentials in the isolated tenant database if provided
     try:
-        tenant_url = get_tenant_connection_string(tenant.db_name)
-        tenant_engine = create_engine(tenant_url)
+        tenant_engine = get_tenant_engine(tenant.db_name)
         TenantSession = sessionmaker(bind=tenant_engine)
         tenant_db = TenantSession()
         try:
@@ -911,15 +903,18 @@ def delete_tenant(
     try:
         pg_url = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
         pg_engine = create_engine(pg_url, isolation_level="AUTOCOMMIT")
-        with pg_engine.connect() as conn:
-            # Terminate active connections to the database to prevent drop database locks
-            conn.execute(text(
-                f"SELECT pg_terminate_backend(pg_stat_activity.pid) "
-                f"FROM pg_stat_activity "
-                f"WHERE pg_stat_activity.datname = '{tenant.db_name}' "
-                f"AND pid <> pg_backend_pid()"
-            ))
-            conn.execute(text(f"DROP DATABASE IF EXISTS {tenant.db_name}"))
+        try:
+            with pg_engine.connect() as conn:
+                # Terminate active connections to the database to prevent drop database locks
+                conn.execute(text(
+                    f"SELECT pg_terminate_backend(pg_stat_activity.pid) "
+                    f"FROM pg_stat_activity "
+                    f"WHERE pg_stat_activity.datname = '{tenant.db_name}' "
+                    f"AND pid <> pg_backend_pid()"
+                ))
+                conn.execute(text(f"DROP DATABASE IF EXISTS {tenant.db_name}"))
+        finally:
+            pg_engine.dispose()
     except Exception as e:
         # Log error but don't crash if DB was already dropped or has issues
         print(f"Failed to drop database {tenant.db_name}: {str(e)}")
@@ -954,8 +949,7 @@ def impersonate_tenant_admin(
     if tenant.status != "active":
         raise HTTPException(status_code=400, detail=f"Tenant is {tenant.status}, not active -- cannot impersonate.")
 
-    tenant_url = get_tenant_connection_string(tenant.db_name)
-    tenant_engine = create_engine(tenant_url)
+    tenant_engine = get_tenant_engine(tenant.db_name)
     TenantSession = sessionmaker(bind=tenant_engine)
     tenant_db = TenantSession()
     try:

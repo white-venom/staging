@@ -160,37 +160,26 @@ def startup_event():
                 print(f"[INFO] Running database schema checks for tenant '{tenant.subdomain}'...")
                 try:
                     tenant_db = get_tenant_session(tenant.subdomain)
-                    tenant_engine = tenant_db.bind
+                    try:
+                        tenant_engine = tenant_db.bind
 
-                    # Each ALTER runs in its OWN transaction, and uses IF NOT EXISTS so it
-                    # succeeds as a no-op instead of erroring once the column already exists.
-                    # Previously all three shared a single `tenant_engine.begin()` transaction:
-                    # the first statement (auto_checkout_time) already existed on every boot
-                    # after its first deploy, so it always errored -- which aborted that shared
-                    # Postgres transaction and silently discarded every later statement in the
-                    # same block too, including brand new columns that had never actually been
-                    # applied. That's exactly how online_routing_deposit_id below shipped to
-                    # collections.py's queries without ever reaching the real tenant's schema,
-                    # 500ing every collection endpoint (2026-07-18) until this was caught and
-                    # fixed the same day. Never share a transaction across independent idempotent
-                    # DDL checks like this again.
-                    schema_statements = [
-                        ("business_settings.auto_checkout_time",
-                         "ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS auto_checkout_time VARCHAR(10) DEFAULT '20:00'"),
-                        ("business_settings.opening_cash_in_hand",
-                         "ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS opening_cash_in_hand DOUBLE PRECISION DEFAULT 0.0"),
-                        ("collections.online_routing_deposit_id",
-                         "ALTER TABLE collections ADD COLUMN IF NOT EXISTS online_routing_deposit_id UUID "
-                         "REFERENCES bank_deposits(id) ON DELETE SET NULL"),
-                    ]
-                    for label, stmt in schema_statements:
-                        try:
-                            with tenant_engine.begin() as conn:
-                                conn.execute(text(stmt))
-                        except Exception as col_err:
-                            print(f"[WARN] Schema check '{label}' failed for tenant '{tenant.subdomain}': {col_err}")
-
-                    tenant_db.close()
+                        schema_statements = [
+                            ("business_settings.auto_checkout_time",
+                             "ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS auto_checkout_time VARCHAR(10) DEFAULT '20:00'"),
+                            ("business_settings.opening_cash_in_hand",
+                             "ALTER TABLE business_settings ADD COLUMN IF NOT EXISTS opening_cash_in_hand DOUBLE PRECISION DEFAULT 0.0"),
+                            ("collections.online_routing_deposit_id",
+                             "ALTER TABLE collections ADD COLUMN IF NOT EXISTS online_routing_deposit_id UUID "
+                             "REFERENCES bank_deposits(id) ON DELETE SET NULL"),
+                        ]
+                        for label, stmt in schema_statements:
+                            try:
+                                with tenant_engine.begin() as conn:
+                                    conn.execute(text(stmt))
+                            except Exception as col_err:
+                                print(f"[WARN] Schema check '{label}' failed for tenant '{tenant.subdomain}': {col_err}")
+                    finally:
+                        tenant_db.close()
                 except Exception as t_err:
                     print(f"[ERROR] Failed to run database updates/corrections for tenant '{tenant.subdomain}': {t_err}")
         finally:

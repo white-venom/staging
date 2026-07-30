@@ -6,7 +6,7 @@ from sqlalchemy import select, func, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from pydantic import BaseModel, Field
 
-from app.database.db import get_master_db, get_tenant_connection_string
+from app.database.db import get_master_db, get_tenant_connection_string, get_tenant_engine
 from app.database.master_models import Tenant, SuperAdmin
 from app.routers.super_admin import get_current_super_admin, require_full_admin
 from app.core.security import get_password_hash
@@ -23,7 +23,7 @@ def _get_tenant(tenant_id: uuid.UUID, master_db: Session) -> Tenant:
 
 
 def _tenant_session(tenant: Tenant) -> Session:
-    engine = create_engine(get_tenant_connection_string(tenant.db_name))
+    engine = get_tenant_engine(tenant.db_name)
     return sessionmaker(bind=engine)()
 
 
