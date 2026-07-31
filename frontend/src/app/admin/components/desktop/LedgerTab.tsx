@@ -890,9 +890,7 @@ export default function LedgerTab({
                               <span className="text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-violet-100 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400 uppercase tracking-wider">Virtual</span>
                             )}
                             {tx.type === 'opening-balance' && (
-                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 uppercase tracking-wider">
-                                {tx.credit > 0 ? "To Giver" : tx.debit > 0 ? "To Take" : "Opening Balance"}
-                              </span>
+                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded-sm bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 uppercase tracking-wider">Opening Balance</span>
                             )}
                             {tx.rawRecord?.remarks && (
                               <button
