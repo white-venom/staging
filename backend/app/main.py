@@ -238,6 +238,14 @@ def startup_event():
         HELLO_SEEDING_ERROR = str(e)
         print(f"[ERROR] Failed to run hello tenant database seeding: {str(e)}")
 
+    # Run reverse portal migration to transfer specific portal retailers back to the Retailer directory
+    try:
+        from scripts.migrate_portals_back import run_reverse_migration
+        run_reverse_migration()
+    except Exception as e:
+        print(f"[ERROR] Failed to run reverse portal migration: {str(e)}")
+
+
 
 
 
