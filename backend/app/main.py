@@ -32,9 +32,12 @@ app = FastAPI(
     redoc_url="/redoc"     # Alternate ReDoc API representation
 )
 
+HELLO_SEEDING_ERROR = None
+
 # Automatic Table Creation (Crucial for ephemeral cloud storage like Render's /tmp)
 @app.on_event("startup")
 def startup_event():
+    global HELLO_SEEDING_ERROR
     # Initialize master models
     from app.database.master_models import Tenant, SuperAdmin, AuditLog, TenantFeatureFlags, TenantErrorLog, SuperAdminPasswordReset
     Base.metadata.create_all(bind=master_engine)
@@ -232,6 +235,7 @@ def startup_event():
         from scripts.seed_hello import run_hello_seeding
         run_hello_seeding()
     except Exception as e:
+        HELLO_SEEDING_ERROR = str(e)
         print(f"[ERROR] Failed to run hello tenant database seeding: {str(e)}")
 
 
@@ -281,6 +285,7 @@ def check_hello_db():
             "tenant_exists": tenant_exists,
             "retailer_count": retailer_count,
             "retailers": retailers_list,
+            "seeding_error": HELLO_SEEDING_ERROR,
             "error": error
         }
     except Exception as e:
