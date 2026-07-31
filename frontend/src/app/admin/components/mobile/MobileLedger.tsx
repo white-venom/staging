@@ -1040,7 +1040,6 @@ export default function MobileLedger() {
                       )}
                     </>
                   )}
-
                   {/* Payment Mode */}
                   {selectedNewDepositType !== "virtual" && (
                     <div className="space-y-0.5">
