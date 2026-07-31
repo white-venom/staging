@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
-# Build Trigger: v1.0.4
+# Build Trigger: v1.0.5
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.database.db import get_db, Base, master_engine, get_tenant_session
