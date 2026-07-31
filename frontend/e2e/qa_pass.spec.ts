@@ -1,5 +1,4 @@
 import { test, expect, type Page } from "@playwright/test";
-import fs from "fs";
 
 // Config
 const API_BASE = "https://api.crediiflow.in";
@@ -111,11 +110,18 @@ test.beforeAll(async () => {
   console.log("🚀 STARTING PRODUCTION UI-LEVEL PASS SAFETY SETUP");
   console.log("--------------------------------------------------");
 
+  // Never hardcode real do-it-services credentials in a committed test file --
+  // pass them at runtime via env instead.
+  const missing = ["DOIT_ADMIN_PHONE", "DOIT_ADMIN_PASSWORD", "DOIT_STAFF_PHONE", "DOIT_STAFF_PASSWORD"].filter((k) => !process.env[k]);
+  if (missing.length) {
+    throw new Error(`Set these env vars before running this suite: ${missing.join(", ")}`);
+  }
+
   // Authenticate and get tokens
-  const adminLogin = await apiCall("POST", "/auth/login", undefined, { phone: "7861882200", password: "Abcd1234" });
+  const adminLogin = await apiCall("POST", "/auth/login", undefined, { phone: process.env.DOIT_ADMIN_PHONE, password: process.env.DOIT_ADMIN_PASSWORD });
   adminToken = adminLogin.access_token;
-  
-  const staffLogin = await apiCall("POST", "/auth/login", undefined, { phone: "9917683494", password: "abcd1234" });
+
+  const staffLogin = await apiCall("POST", "/auth/login", undefined, { phone: process.env.DOIT_STAFF_PHONE, password: process.env.DOIT_STAFF_PASSWORD });
   staffToken = staffLogin.access_token;
 
   // Never hardcode the real superadmin password in a committed test file --
@@ -192,19 +198,28 @@ test.afterAll(async () => {
 });
 
 // Helper for UI logging in
-async function loginAsStaff(page: Page) {
+// Clears any existing session first -- tests may switch roles (e.g. staff
+// then admin) on the same page, and a stale token skips straight past the
+// login form to that role's dashboard instead of showing the login inputs.
+async function clearSession(page: Page) {
   await page.goto("/");
-  await page.fill('input[placeholder="Mobile Number"]', "9917683494");
-  await page.fill('input[placeholder="Password"]', "abcd1234");
+  await page.evaluate(() => { localStorage.clear(); sessionStorage.clear(); });
+  await page.goto("/");
+}
+
+async function loginAsStaff(page: Page) {
+  await clearSession(page);
+  await page.fill('input[placeholder="Mobile Number"]', process.env.DOIT_STAFF_PHONE!);
+  await page.fill('input[placeholder="Password"]', process.env.DOIT_STAFF_PASSWORD!);
   await page.click('button:has-text("Secure Login")');
   await expect(page).toHaveURL(/.*\/welcome/);
   await expect(page).toHaveURL(/.*\/staff/, { timeout: 8000 });
 }
 
 async function loginAsAdmin(page: Page) {
-  await page.goto("/");
-  await page.fill('input[placeholder="Mobile Number"]', "7861882200");
-  await page.fill('input[placeholder="Password"]', "Abcd1234");
+  await clearSession(page);
+  await page.fill('input[placeholder="Mobile Number"]', process.env.DOIT_ADMIN_PHONE!);
+  await page.fill('input[placeholder="Password"]', process.env.DOIT_ADMIN_PASSWORD!);
   await page.click('button:has-text("Secure Login")');
   await expect(page).toHaveURL(/.*\/welcome/);
   await expect(page).toHaveURL(/.*\/admin/, { timeout: 8000 });
@@ -313,15 +328,15 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
 
     // Select Source Portal
     await page.locator('div:has(> label:has-text("Choose Portal"))').locator('button').first().click();
-    // Select RELI PAY portal option
-    await page.click('button:has-text("RELI PAY")');
+    // Select TestPay portal option
+    await page.click('button:has-text("TestPay")');
 
     // Wait for bank accounts to load dynamically
     await page.waitForTimeout(2000);
 
     // Select bank account
     await page.locator('div:has(> label:has-text("Choose Bank Account"))').locator('button').first().click();
-    await page.click('button:has-text("BANK OF INDIA CDM")');
+    await page.click('button:has-text("Primary Account")');
 
     // Fill denominations: 500x2 = 1000
     await page.locator('div.flex', { has: page.locator('> span', { hasText: /^₹500 Notes$/ }) }).locator('input').fill("2");
@@ -334,28 +349,27 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
 
     // Verify ledger
     await page.goto("/staff/ledger");
-    const item = page.locator('div.rounded-sm.border', { hasText: 'RELI PAY' }).filter({ hasText: '1,000' }).first();
+    const item = page.locator('div.rounded-sm.border', { hasText: 'TestPay' }).filter({ hasText: '1,000' }).first();
     await item.click();
     await expect(item.locator('span:has-text("PLAYWRIGHT_E2E_CASH_OUT")')).toBeVisible({ timeout: 5000 });
   });
 
   test("4. Staff Handover Picker Regression - Logged-in staff member does NOT appear in their own picker", async ({ page }) => {
     console.log("➡️ Running Test 4: Staff Handover self-picker regression check");
+    // Item #9: handover is sender-initiated via Cash Out -> To Staff on
+    // /deposit now, not the old receiver-initiated /collection flow -- that
+    // page's "Staff" source type only exists when editing a legacy entry.
+    const me = await apiCall("GET", "/auth/me", staffToken);
     await loginAsStaff(page);
-    await page.goto("/collection");
+    await page.goto("/deposit");
+    await page.click('button:has-text("Staff"):has-text("Handover")');
+    await page.locator('div:has(> label:has-text("Select Recipient Staff Member"))').locator('button').first().click();
 
-    // Switch to Staff Handover source type
-    await page.click('button:text-is("Staff")');
-
-    // Click selector dropdown
-    await page.locator('div:has(> label:has-text("Select Staff Member"))').locator('button').first().click();
-
-    // Verify the currently logged-in staff member ("Rishikesh Sharma" - 9917683494) is NOT in options
-    const optionsText = await page.locator('div.max-h-56 button').allInnerTexts();
+    const optionsText = await page.locator('div.max-h-56 button, div[role="listbox"] button').allInnerTexts();
     for (const text of optionsText) {
-      expect(text.toLowerCase()).not.toContain("rishikesh");
+      expect(text.toLowerCase()).not.toContain(me.name.toLowerCase());
     }
-    console.log("✅ Verified: Staff member is excluded from their own handover picker.");
+    console.log(`✅ Verified: ${me.name} is excluded from their own handover picker.`);
   });
 
   test("5. Edit an entry - Modify remarks and verify persistence", async ({ page }) => {
@@ -427,16 +441,10 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
     // Toggle tab to Virtual Transfer (default, but verify)
     await page.click('button:has-text("Virtual Transfer")');
 
-    // Select Source Portal
+    // Select Source Portal -- item #2: no separate BankAccount step anymore,
+    // balance is Portal-level and the account FK is resolved internally.
     await page.locator('div:has(> label:has-text("Source Portal"))').locator('button').first().click();
-    await page.click('button:has-text("RELI PAY")');
-
-    // Wait for bank accounts to load dynamically
-    await page.waitForTimeout(2000);
-
-    // Select Source Bank Account
-    await page.locator('div:has(> label:has-text("Source BankAccount"))').locator('button').first().click();
-    await page.click('button:has-text("BANK OF INDIA CDM")');
+    await page.click('button:has-text("TestPay")');
 
     // Select Destination Retailer
     await page.locator('div:has(> label:has-text("Destination Retailer"))').locator('button').first().click();
@@ -445,18 +453,26 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
     // Fill amount ₹2000
     await page.fill('input[placeholder="e.g. 15000"]', "2000");
 
-    // Submit
-    await page.click('button:has-text("Virtual Transfer")');
+    // Submit -- scope to the form's submit button; "Virtual Transfer" text
+    // also matches the tab-switcher button above the form.
+    const beforeSubmit = Date.now();
+    await page.locator('form button:has-text("Virtual Transfer")').click();
 
     // Wait for success response or verification
     // Since /admin-settings/virtual-transfer does not return deposit ID, we fetch the deposit list to intercept it
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
     const depositsList = await apiCall("GET", "/bank-deposits", adminToken);
-    // Find the virtual transfer we just created
-    const recentVT = depositsList.find((d: any) => d.deposit_type === "virtual" && Number(d.amount) === 2000);
+    // Find the virtual transfer we just created -- match by type/amount AND
+    // recency (created within this test), not amount+type alone, to avoid
+    // grabbing a pre-existing/orphaned deposit that happens to share the amount.
+    const recentVT = depositsList
+      .filter((d: any) => d.deposit_type === "virtual" && Number(d.amount) === 2000)
+      .find((d: any) => new Date(d.created_at.endsWith("Z") ? d.created_at : d.created_at.replace(" ", "T") + "Z").getTime() >= beforeSubmit - 5000);
     if (recentVT && recentVT.id) {
       createdDeposits.push(recentVT.id);
       console.log(`[Manual Intercept] Captured Virtual Transfer Deposit ID: ${recentVT.id}`);
+    } else {
+      throw new Error("Virtual Transfer submission did not produce a matching recent deposit -- submission likely failed.");
     }
   });
 
@@ -472,79 +488,29 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
     await page.waitForSelector('button:has-text("DOWNLOAD")');
     await page.waitForTimeout(3000);
 
-    // Intercept dummy PDF requests to serve them as downloadable attachments
-    await page.route("**/dummy-report.pdf", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/pdf",
-        headers: {
-          "Content-Disposition": 'attachment; filename="report.pdf"'
-        },
-        body: Buffer.from("%PDF-1.4 dummy content")
-      });
-    });
+    // Use the REAL html2pdf.bundle.min.js flow (no mocking) -- this is the
+    // actual code path a real user hits, so it's the true test of whether
+    // PDF download works. Real canvas rendering (scale:2) can be slow, so
+    // give it a generous timeout rather than the previous mocked 10s.
+    // Exact text match -- the sidebar nav also has a "Download App" button/link
+    // which case-insensitively substring-matches "DOWNLOAD" and was being
+    // clicked instead of the report's actual download button.
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 30000 }),
+      page.getByRole("button", { name: "DOWNLOAD", exact: true }).click()
+    ]);
 
-    // Mock html2pdf to trigger download in headless/test environment
-    await page.evaluate(() => {
-      (window as any).html2pdf = () => {
-        return {
-          set: function() { return this; },
-          from: function() { return this; },
-          save: async function() {
-            const a = document.createElement("a");
-            a.href = "/dummy-report.pdf";
-            a.download = "report.pdf";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          }
-        };
-      };
-    });
-
-    // Inspect the DOWNLOAD button DOM state
-    const btnInfo = await page.evaluate(() => {
-      const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent && b.textContent.includes("DOWNLOAD"));
-      if (!btn) return "not found";
-      return {
-        disabled: (btn as HTMLButtonElement).disabled,
-        outerHTML: btn.outerHTML,
-        className: btn.className,
-        textContent: btn.textContent
-      };
-    });
-    fs.writeFileSync("e2e_diag.txt", `BUTTON INFO: ${JSON.stringify(btnInfo, null, 2)}\n`);
-
-    // Intercept download event
-    try {
-      const [download] = await Promise.all([
-        page.waitForEvent("download", { timeout: 10000 }),
-        page.click('button:has-text("DOWNLOAD")')
-      ]);
-
-      const path = await download.path();
-      expect(path).not.toBeNull();
-      console.log(`✅ Download triggered. Path: ${path}`);
-    } catch (err: any) {
-      let mockCalled = "error";
-      let html2pdfType = "error";
-      try {
-        mockCalled = await page.evaluate(() => String((window as any).mockCalled));
-      } catch (e: any) {
-        mockCalled = "eval_failed: " + e.message;
-      }
-      try {
-        html2pdfType = await page.evaluate(() => typeof (window as any).html2pdf);
-      } catch (e: any) {
-        html2pdfType = "eval_failed: " + e.message;
-      }
-      fs.appendFileSync("e2e_diag.txt", `ERR: ${err.message}\nmockCalled: ${mockCalled}\nhtml2pdfType: ${html2pdfType}\n`);
-      throw err;
-    }
+    const path = await download.path();
+    expect(path).not.toBeNull();
+    console.log(`✅ Download triggered via real html2pdf flow. Path: ${path}`);
   });
 
   test("9. Superadmin Complete Panel Test - Onboard, Toggle Maintenance, Resource Visualizer, Health, Edit, Delete", async ({ page }) => {
     console.log("➡️ Running Test 9: Complete Superadmin Panel audit pass");
+    page.on("dialog", (dialog) => {
+      console.log(`[DIALOG] ${dialog.type()}: ${dialog.message()}`);
+      dialog.accept();
+    });
     await page.goto("https://superadmin.crediiflow.in/login");
     await page.fill('input[placeholder="Enter superadmin username"]', "superadmin");
     await page.fill('input[placeholder="••••••••"]', process.env.SUPERADMIN_TEST_PASSWORD || "");
@@ -553,20 +519,25 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
 
     // 1. Onboard Tenant
     await page.click('button:has-text("+ Onboard New Client")');
-    await page.fill('input[placeholder="Enter client / company name"]', "Temp Playwright");
-    await page.fill('input[placeholder="e.g. acme-corp"]', "temp-pw-tenant");
-    await page.fill('input[placeholder="Full Name"]', "Temp PW Admin");
-    await page.fill('input[placeholder="10-digit mobile number"]', "9876543210");
-    await page.fill('input[placeholder="Set admin password"]', "Password123");
+    await page.fill('input[placeholder="e.g. Acme Corporation"]', "Temp Playwright");
+    await page.fill('input[placeholder="e.g. acme"]', "temp-pw-tenant");
+    await page.fill('input[placeholder="e.g. John Doe"]', "Temp PW Admin");
+    await page.fill('input[placeholder="e.g. 9876543210"]', "9876543210");
+    await page.fill('input[placeholder="••••••••"]', "Password123");
 
     // Click submit
-    await page.click('button:has-text("Onboard Tenant Cluster")');
+    await page.click('button:has-text("Deploy Instance")');
 
     // Verify successful creation
-    await expect(page.locator('div:has-text("New client database cluster provisioned successfully!")')).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('div:has-text("New client database cluster provisioned successfully!")').first()).toBeVisible({ timeout: 20000 });
     // Verify it is on screen and no [object Object] is rendered
     await expect(page.locator("body")).not.toContainText("[object Object]");
     console.log("✅ Onboarded throwaway tenant successfully. No validation object-errors found.");
+
+    // Success view stays open in a "Tenant Provisioned" sub-panel with its
+    // own explicit Close button -- must dismiss it before the modal overlay
+    // stops blocking clicks on the underlying client table.
+    await page.click('button:has-text("Close")');
 
     // 2. Toggle Maintenance Mode
     // Find the row containing "Temp Playwright"
@@ -575,11 +546,11 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
     
     // Toggle ON
     await row.locator('button:has-text("OFF (Live)")').click();
-    await expect(page.locator('div:has-text("Client put in Maintenance Mode")')).toBeVisible({ timeout: 5000 });
-    
+    await expect(page.locator('div:has-text("Client put in Maintenance Mode")').first()).toBeVisible({ timeout: 5000 });
+
     // Toggle OFF
     await row.locator('button:has-text("ON (Maintenance)")').click();
-    await expect(page.locator('div:has-text("Client cluster restored Live")')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('div:has-text("Client cluster restored Live")').first()).toBeVisible({ timeout: 5000 });
     console.log("✅ Maintenance mode toggles successfully checked.");
 
     // 3. Resource Visualizer
@@ -603,16 +574,16 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
     const rowForEdit = page.locator('tr:has-text("Temp Playwright")');
     await rowForEdit.locator('button[title="Edit Client Config"]').click();
     await page.fill('input[value="Temp Playwright"]', "Temp Playwright Edited");
-    await page.click('button:has-text("Update Tenant Cluster")');
-    await expect(page.locator('div:has-text("Client credentials and configurations updated!")')).toBeVisible({ timeout: 5000 });
+    await page.click('button:has-text("Save Config")');
+    await expect(page.locator('div:has-text("Client credentials and configurations updated!")').first()).toBeVisible({ timeout: 5000 });
     console.log("✅ Tenant update checked.");
 
     // 6. Delete Tenant
     const rowForDelete = page.locator('tr:has-text("Temp Playwright Edited")');
     await rowForDelete.locator('button[title="Delete Tenant"]').click();
-    await page.fill('input[placeholder="Type the company name to confirm"]', "Temp Playwright Edited");
-    await page.click('button:has-text("Wipe Cluster & Terminate")');
-    await expect(page.locator('div:has-text("Client cluster completely removed and data wiped.")')).toBeVisible({ timeout: 10000 });
+    await page.fill('input[placeholder="Enter company name exactly"]', "Temp Playwright Edited");
+    await page.click('button:has-text("Permanently Destroy Cluster")');
+    await expect(page.locator('div:has-text("Client cluster completely removed and data wiped.")').first()).toBeVisible({ timeout: 10000 });
     console.log("✅ Tenant deletion and database wipe checked.");
   });
 
@@ -657,25 +628,26 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
   // Edge cases tests
   test("Edge 1: Attempt to backdate an entry as staff when the setting is off", async ({ page }) => {
     console.log("➡️ Running Edge 1: Backdating block check");
-    
-    // Admin sets Backdating to OFF
+
+    // Admin sets Backdating to OFF. Item #2: the edit/delete TIME WINDOW is
+    // now superadmin-only and this page only shows it read-only -- the one
+    // control tenant admin still has here is "Staff Can Change Cash-In Date".
     await loginAsAdmin(page);
     await page.goto("/admin/administration");
-    
-    // Check toggle switch state (if already off, do nothing. If on, click to switch off)
-    const switchEl = page.locator('div.relative.inline-flex.h-5.w-9');
+
+    const switchEl = page.locator('label:has-text("Staff Can Change Cash-In Date")').locator('div.relative.inline-flex.h-5.w-9');
     const isSwitchOn = await switchEl.evaluate((node) => node.classList.contains('bg-purple-600'));
     if (isSwitchOn) {
       await switchEl.click();
     }
-    await page.click('button:has-text("Save Window Settings")');
-    await expect(page.locator('div:has-text("Entry window settings saved!")')).toBeVisible({ timeout: 5000 });
+    await page.click('button:has-text("Save Entry Settings")');
+    await expect(page.locator('div:has-text("Entry settings saved!")').first()).toBeVisible({ timeout: 5000 });
 
     // Log in as staff, go to collection page, verify collection date picker is NOT visible / is today fixed
     await loginAsStaff(page);
     await page.goto("/collection");
     await expect(page.locator('label:has-text("Collection Date") >> xpath=.. >> input[type="date"]')).not.toBeAttached();
-    await expect(page.locator('div:has-text("Collection Date") >> xpath=.. >> div.bg-slate-50')).toBeVisible();
+    await expect(page.locator('label:has-text("Collection Date") >> xpath=.. >> div.bg-slate-50').last()).toBeVisible();
     console.log("✅ Verified: Staff is blocked from changing cash-in date when settings are off.");
   });
 
@@ -706,37 +678,32 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
 
     await page.fill('input[placeholder="Type remark..."]', "PLAYWRIGHT_MISMATCH");
 
-    // Submit and intercept alert dialog
-    let alertText = "";
-    page.on("dialog", async (dialog) => {
-      alertText = dialog.message();
-      await dialog.accept();
-    });
-    
+    // For a new (non-edit) retailer collection, a failed submission is queued
+    // for background retry rather than shown via a blocking alert() -- so the
+    // real, durable assertion is that the backend itself rejects the
+    // tampered payload with a 422 denomination-mismatch error, not that a
+    // dialog appears.
+    const responsePromise = page.waitForResponse(
+      (resp) => resp.url().includes("/collections") && resp.request().method() === "POST"
+    );
     await page.click('button:has-text("Submit Cash In Entry")');
-    await page.waitForTimeout(1000);
+    const response = await responsePromise;
 
-    expect(alertText.toLowerCase()).toContain("failed");
-    console.log("✅ Verified: Denomination mismatch blocks submission and alerts.");
+    expect(response.status()).toBe(422);
+    const body = await response.json();
+    expect(JSON.stringify(body).toLowerCase()).toContain("denomination total");
+    console.log("✅ Verified: Denomination mismatch is rejected by the backend (422).");
   });
 
-  test("Edge 3: Try editing an entry inside vs outside allowed edit-window", async ({ page }) => {
-    console.log("➡️ Running Edge 3: Edit window boundary check");
-    
-    // Set edit window to 1 minute via Admin
-    await loginAsAdmin(page);
-    await page.goto("/admin/administration");
-    await page.fill('label:has-text("Edit Window (Minutes)") >> xpath=.. >> input[type="number"]', "1");
-    // Ensure "Permanent" checkbox is unchecked
-    const permCheckbox = page.locator('label:has-text("Permanent") >> input[type="checkbox"]').first();
-    const isChecked = await permCheckbox.isChecked();
-    if (isChecked) {
-      await permCheckbox.uncheck();
-    }
-    await page.click('button:has-text("Save Window Settings")');
-    await expect(page.locator('div:has-text("Entry window settings saved!")')).toBeVisible({ timeout: 5000 });
-
-    // Log in as staff, create entry
+  test("Edge 3: A freshly-created entry has its Edit button visible (within the default window)", async ({ page }) => {
+    console.log("➡️ Running Edge 3: Fresh-entry edit-window check");
+    // Item #3: the edit/delete window is now superadmin-only, per-tenant
+    // configurable (staff/admin values + a downstream-cash-use auto-lock) --
+    // it's not something tenant admin can change on real do-it-services
+    // production anymore, and the full boundary-crossing + auto-lock
+    // scenario is already covered live against a throwaway tenant in
+    // session_changes.spec.ts (test 6), where the window can safely be
+    // manipulated. This just confirms a fresh entry isn't locked immediately.
     await loginAsStaff(page);
     await page.goto("/collection");
     await page.locator('div:has(> label:has-text("Select Retailer"))').locator('button').first().click();
@@ -746,31 +713,11 @@ test.describe("CrediiFlow E2E Visual QA Suite", () => {
     await page.click('button:has-text("Submit Cash In Entry")');
     await expect(page).toHaveURL(/.*\/staff/);
 
-    // Verify edit button is visible immediately (inside 1-minute window)
     await page.goto("/staff/ledger");
     const item = page.locator('div.rounded-sm.border', { hasText: 'CMS' }).filter({ hasText: '1,000' }).first();
     await item.click();
     await expect(item.locator('button:has-text("Edit")')).toBeVisible({ timeout: 3000 });
-    console.log("   — Edit button is visible immediately after creation.");
-
-    // Wait 65 seconds (exceeding the 1-minute edit window)
-    console.log("   — Waiting 65 seconds to test boundary...");
-    await page.waitForTimeout(65000);
-
-    // Refresh page/check details again
-    await page.reload();
-    const reloadedItem = page.locator('div.rounded-sm.border', { hasText: 'CMS' }).filter({ hasText: '1,000' }).first();
-    await reloadedItem.click();
-    // Verify edit button is now hidden
-    await expect(reloadedItem.locator('button:has-text("Edit")')).not.toBeVisible();
-    console.log("✅ Verified: Edit button disappears outside the edit window.");
-
-    // Reset settings to default (5 mins)
-    await loginAsAdmin(page);
-    await page.goto("/admin/administration");
-    await page.fill('label:has-text("Edit Window (Minutes)") >> xpath=.. >> input[type="number"]', "5");
-    await page.click('button:has-text("Save Window Settings")');
-    await expect(page.locator('div:has-text("Entry window settings saved!")')).toBeVisible({ timeout: 5000 });
+    console.log("✅ Verified: Edit button is visible immediately after creation.");
   });
 
   test("Edge 4: Attempt admin-only action as staff", async ({ page }) => {

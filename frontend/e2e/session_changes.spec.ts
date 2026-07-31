@@ -211,3 +211,94 @@ test("9. Superadmin: duplicate tenant subdomain is rejected cleanly (no raw/[obj
   await expect(page.locator("body")).not.toContainText("[object Object]");
   await expect(page.locator("text=/already registered|already exists/i")).toBeVisible({ timeout: 8000 });
 });
+
+// ============= Color-scheme + balance-math re-verification =============
+// Item #7: cash-in shows RED (display only), virtual-transfer LOAD shows
+// GREEN, move-to-distributor (virtual REFUND) shows RED -- and in every
+// case the underlying balance must move the mathematically correct amount
+// in the same test, not just "some" color appearing somewhere.
+
+async function openRetailerLedgerFilteredRow(page: Page, retailerName: string) {
+  await page.goto(`${TENANT_URL}/admin/ledger`);
+  await page.locator('input[placeholder="Search party or staff..."]').fill(retailerName);
+  await page.waitForTimeout(800);
+}
+
+test("10. Cash-in (retailer collection) displays RED and correctly increases retailer balance", async ({ page }) => {
+  const before = (await apiCall("GET", "/retailers", adminToken, TENANT)).find((r: any) => r.id === retailerId);
+  const denom = { note_500: 1, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: "0", online_amount: "0" };
+  const col = await apiCall("POST", "/collections", adminToken, TENANT, { retailer_id: retailerId, total_amount: "500.00", denominations: denom });
+  created.collections.push(col.id);
+  const after = (await apiCall("GET", "/retailers", adminToken, TENANT)).find((r: any) => r.id === retailerId);
+  expect(Number(after.balance) - Number(before.balance)).toBeCloseTo(500, 2);
+
+  await loginAdmin(page);
+  await openRetailerLedgerFilteredRow(page, `PW_Retailer_${suffix}`);
+  const row = page.locator("tr", { hasText: "500" }).first();
+  await expect(row).toHaveClass(/text-red-700|text-red-400/, { timeout: 8000 }).catch(async () => {
+    // Class may live on a child <td>, not the <tr> itself.
+    await expect(row.locator("td.text-red-700, td.text-red-400").first()).toBeVisible({ timeout: 8000 });
+  });
+});
+
+test("11. Virtual Transfer LOAD displays GREEN and increases retailer balance / decreases portal balance", async ({ page }) => {
+  const retBefore = (await apiCall("GET", "/retailers", adminToken, TENANT)).find((r: any) => r.id === retailerId);
+  const portBefore = (await apiCall("GET", "/portals", adminToken, TENANT)).find((p: any) => p.id === portalId);
+
+  await loginAdmin(page);
+  await page.goto(`${TENANT_URL}/admin/wallet-transfer`);
+  await page.click('button:has-text("Virtual Transfer")');
+  await page.locator('div:has(> label:has-text("Source Portal"))').locator('button').first().click();
+  await page.getByRole("button", { name: new RegExp(`PW_Portal_${suffix}`) }).click();
+  await page.locator('div:has(> label:has-text("Destination Retailer"))').locator('button').first().click();
+  await page.getByRole("button", { name: new RegExp(`PW_Retailer_${suffix}`) }).click();
+  await page.fill('input[placeholder*="15000"]', "300");
+  // "Virtual Transfer" text also matches the tab button above the form --
+  // scope to the actual <form> submit button to avoid re-clicking the tab.
+  await page.locator('form button:has-text("Virtual Transfer")').click();
+  await page.waitForTimeout(1500);
+
+  const retAfter = (await apiCall("GET", "/retailers", adminToken, TENANT)).find((r: any) => r.id === retailerId);
+  const portAfter = (await apiCall("GET", "/portals", adminToken, TENANT)).find((p: any) => p.id === portalId);
+  expect(Number(retAfter.balance) - Number(retBefore.balance)).toBeCloseTo(300, 2);
+  expect(Number(portAfter.balance) - Number(portBefore.balance)).toBeCloseTo(-300, 2);
+
+  const deposits = await apiCall("GET", "/bank-deposits", adminToken, TENANT);
+  const vt = deposits.find((d: any) => d.deposit_type === "virtual" && Number(d.amount) === 300 && d.payment_mode !== "refund");
+  if (vt) created.deposits.push(vt.id);
+
+  await openRetailerLedgerFilteredRow(page, `PW_Retailer_${suffix}`);
+  const row = page.locator("tr", { hasText: "300" }).first();
+  await expect(row.locator("td.text-emerald-700, td.text-emerald-400").first()).toBeVisible({ timeout: 8000 });
+});
+
+test("12. Move-to-distributor (virtual REFUND) displays RED and decreases retailer balance / increases portal balance", async ({ page }) => {
+  const retBefore = (await apiCall("GET", "/retailers", adminToken, TENANT)).find((r: any) => r.id === retailerId);
+  const portBefore = (await apiCall("GET", "/portals", adminToken, TENANT)).find((p: any) => p.id === portalId);
+
+  await loginAdmin(page);
+  await page.goto(`${TENANT_URL}/admin/wallet-transfer`);
+  await page.click('button:has-text("Virtual Transfer")');
+  await page.selectOption("select", "refund");
+  // Refund direction relabels: Portal -> "Destination Portal", Retailer -> "Source Retailer".
+  await page.locator('div:has(> label:has-text("Destination Portal"))').locator('button').first().click();
+  await page.getByRole("button", { name: new RegExp(`PW_Portal_${suffix}`) }).click();
+  await page.locator('div:has(> label:has-text("Source Retailer"))').locator('button').first().click();
+  await page.getByRole("button", { name: new RegExp(`PW_Retailer_${suffix}`) }).click();
+  await page.fill('input[placeholder="e.g. 15000"]', "100");
+  await page.click('button:has-text("Move to Distributor")');
+  await page.waitForTimeout(1500);
+
+  const retAfter = (await apiCall("GET", "/retailers", adminToken, TENANT)).find((r: any) => r.id === retailerId);
+  const portAfter = (await apiCall("GET", "/portals", adminToken, TENANT)).find((p: any) => p.id === portalId);
+  expect(Number(retAfter.balance) - Number(retBefore.balance)).toBeCloseTo(-100, 2);
+  expect(Number(portAfter.balance) - Number(portBefore.balance)).toBeCloseTo(100, 2);
+
+  const deposits = await apiCall("GET", "/bank-deposits", adminToken, TENANT);
+  const mtd = deposits.find((d: any) => d.deposit_type === "virtual" && Number(d.amount) === 100 && d.payment_mode === "refund");
+  if (mtd) created.deposits.push(mtd.id);
+
+  await openRetailerLedgerFilteredRow(page, `PW_Retailer_${suffix}`);
+  const row = page.locator("tr", { hasText: "100" }).first();
+  await expect(row.locator("td.text-red-700, td.text-red-400").first()).toBeVisible({ timeout: 8000 });
+});
