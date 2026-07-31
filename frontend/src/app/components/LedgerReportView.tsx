@@ -258,9 +258,7 @@ export default function LedgerReportView({
     let youGot = 0;
     filteredTransactions.forEach((tx) => {
       const isDebit = tx.transaction_type === "debit";
-      // Virtual transfers bucket the opposite way from their real money
-      // direction -- see the matching comment on the row render below.
-      let isGaveForDisplay = tx.deposit_type === "virtual" ? !isDebit : isDebit;
+      let isGaveForDisplay = isDebit;
       // The public link is the RETAILER's own statement, not the admin's --
       // whatever the business "Got" is what the retailer "Gave" and vice
       // versa, so the whole bucket flips for that audience.
@@ -568,16 +566,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 {filteredTransactions.map((tx) => {
                   const formattedIST = formatIST(tx.date);
                   const isDebit = tx.transaction_type === "debit";
-                  // Cash-in and a virtual refund are both money arriving --
-                  // green, You Got. Cash-out and a virtual transfer (load)
-                  // are both money leaving -- red, You Gave. A virtual
-                  // transfer's real transaction_type is "credit" (it adds to
-                  // the retailer's own balance) but for this business-facing
-                  // You Gave/You Got bucketing it's the opposite: the
-                  // business is the one handing money out on a load, and
-                  // taking it back on a refund.
-                  const isVirtual = tx.deposit_type === "virtual";
-                  let isGaveForDisplay = isVirtual ? !isDebit : isDebit;
+                  // Cash-in and virtual refund are both money arriving (You Got, green).
+                  // Cash-out and virtual transfer are both money leaving (You Gave, red).
+                  let isGaveForDisplay = isDebit;
                   // The public link is the RETAILER's own statement, not the
                   // admin's -- whatever the business "Got" is what the
                   // retailer "Gave" and vice versa, so the bucket flips.
@@ -691,11 +682,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
         </button>
       </div>
 
-      {/* Transaction Details Bottom Sheet */}
       {selectedEntryForDetails && (() => {
         const detailIsDebit = selectedEntryForDetails.transaction_type === "debit";
-        const detailIsVirtual = selectedEntryForDetails.deposit_type === "virtual";
-        let detailIsGaveForDisplay = detailIsVirtual ? !detailIsDebit : detailIsDebit;
+        let detailIsGaveForDisplay = detailIsDebit;
         if (isPublic) detailIsGaveForDisplay = !detailIsGaveForDisplay;
         const detailColorClass = detailIsGaveForDisplay ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400";
         const detailBgClass = detailIsGaveForDisplay ? "bg-red-50 dark:bg-red-950/20" : "bg-emerald-50 dark:bg-emerald-950";
