@@ -513,12 +513,6 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 )}
                 <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
               </div>
-              <div className="text-right">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Net Balance</span>
-                <span className="text-base font-black text-slate-900 font-mono tabular-nums">
-                  ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
-                </span>
-              </div>
             </div>
           </div>
 
@@ -532,14 +526,8 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 </span>
               </div>
             )}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">Net Balance (Period)</span>
-              <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
-                ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
-              </span>
-            </div>
 
-            <div className="border-t border-slate-100 pt-3 grid grid-cols-3 gap-2 text-center">
+            <div className="grid grid-cols-3 gap-2 text-center">
               <div>
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
                 <span className="text-xs font-bold text-slate-700 mt-0.5 block">{stats.entriesCount} Entries</span>
