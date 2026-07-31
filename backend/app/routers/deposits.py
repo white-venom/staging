@@ -237,12 +237,12 @@ def submit_deposit(
             # a "refund" reverses that, moving money back to the bank_account
             # (opposite direction -> "debit", subtracts).
             if payload.payment_mode == "refund":
-                new_balance = prev_balance - payload.amount
-                transaction_type = "debit"
-                desc_text = "move to distributor"
-            else:
                 new_balance = prev_balance + payload.amount
                 transaction_type = "credit"
+                desc_text = "move to distributor"
+            else:
+                new_balance = prev_balance - payload.amount
+                transaction_type = "debit"
                 # Was the portal name itself (e.g. "VIDCOM") -- since the
                 # portal is already shown as its own subtitle (bank_account_id
                 # on this deposit drives that independently), the title just
@@ -836,9 +836,9 @@ def update_deposit(
             txn_type = "debit"
             desc = "cash out"
             if dt == "virtual":
-                # Matches submit_deposit's convention: load="credit" (adds),
-                # refund="debit" (subtracts).
-                txn_type = "debit" if payload.payment_mode == "refund" else "credit"
+                # Matches submit_deposit's convention: load="debit" (subtracts),
+                # refund="credit" (adds).
+                txn_type = "credit" if payload.payment_mode == "refund" else "debit"
                 desc = "move to distributor" if payload.payment_mode == "refund" else "virtual transfer"
                 
             if not ledger_entry:
