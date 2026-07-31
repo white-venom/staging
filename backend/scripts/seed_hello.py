@@ -88,8 +88,9 @@ def run_hello_seeding():
         tenant_db.commit()
 
         # Check if retailers are already seeded
-        retailer_count = tenant_db.query(Retailer).count()
-        if retailer_count == 0:
+        non_cms_count = tenant_db.query(Retailer).filter(Retailer.retailer_name != "CMS").count()
+        if non_cms_count == 0:
+
             print(f"Seeding {len(RETAILERS_TO_SEED)} retailers from PDF data...")
             for idx, r in enumerate(RETAILERS_TO_SEED):
                 new_retailer = Retailer(
