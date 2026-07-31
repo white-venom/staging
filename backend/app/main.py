@@ -227,6 +227,14 @@ def startup_event():
     except Exception as e:
         print(f"[ERROR] Failed to start background image cleanup thread: {str(e)}")
 
+    # Seed hello tenant database with retailers from the PDF
+    try:
+        from scripts.seed_hello import run_hello_seeding
+        run_hello_seeding()
+    except Exception as e:
+        print(f"[ERROR] Failed to run hello tenant database seeding: {str(e)}")
+
+
 
 # Configure CORS Middleware
 origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
