@@ -19,7 +19,7 @@ def lock_portal(db: Session, bank_account):
         db.scalar(select(Portal).where(Portal.id == bank_account.portal_id).with_for_update())
 
 
-def recalculate_balances(retailer_id, db: Session):
+def recalculate_balances(retailer_id, db: Session, update_opening_timestamp: bool = False):
     """
     Recalculates all balances for a retailer's ledger from scratch to ensure consistency.
     Also robustly manages and synchronizes the "Opening Balance" ledger entry and updates linked balance snapshots.
@@ -66,7 +66,10 @@ def recalculate_balances(retailer_id, db: Session):
             primary_ledger = opening_ledgers[0]
             primary_ledger.transaction_type = "credit" if net_opening_balance > 0 else "debit"
             primary_ledger.amount = abs(net_opening_balance)
-            primary_ledger.created_at = get_opening_datetime(primary_ledger.created_at)
+            if update_opening_timestamp:
+                primary_ledger.created_at = ist_now_utc_naive()
+            else:
+                primary_ledger.created_at = get_opening_datetime(primary_ledger.created_at)
             # Delete any extra duplicate Opening Balance entries
             for extra_ledger in opening_ledgers[1:]:
                 db.delete(extra_ledger)

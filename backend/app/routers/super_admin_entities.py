@@ -129,7 +129,8 @@ def update_tenant_retailer(
             if new_take < 0:
                 raise HTTPException(status_code=400, detail="To Take cannot be negative")
 
-        if payload.opening_to_give is not None or payload.opening_to_take is not None:
+        has_ob_change = (payload.opening_to_give is not None or payload.opening_to_take is not None)
+        if has_ob_change:
             from app.core.timezone import ist_today
             retailer.opening_balance_set_on = ist_today()
         if payload.opening_to_give is not None:
@@ -137,10 +138,9 @@ def update_tenant_retailer(
         if payload.opening_to_take is not None:
             delta_take = Decimal(str(payload.opening_to_take))
             retailer.opening_to_take = (retailer.opening_to_take or Decimal("0.00")) + delta_take
-            retailer.balance = (retailer.balance or Decimal("0.00")) + delta_take
 
         tenant_db.commit()
-        recalculate_balances(retailer_id, tenant_db)
+        recalculate_balances(retailer_id, tenant_db, update_opening_timestamp=has_ob_change)
         tenant_db.commit()
         tenant_db.refresh(retailer)
 
