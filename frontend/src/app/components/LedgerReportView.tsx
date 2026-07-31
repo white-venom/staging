@@ -22,6 +22,14 @@ import { downloadElementAsPdf } from "../utils/downloadElementAsPdf";
 
 const cleanDescription = (desc: string, tx?: any): string => {
   if (!desc) return "";
+  if (desc === "Opening Balance") {
+    if (tx && tx.transaction_type === "credit") {
+      return "To Giver";
+    }
+    if (tx && tx.transaction_type === "debit") {
+      return "To Take";
+    }
+  }
   // Used to append the portal name into this title (e.g. "move to
   // distributor vidcom") -- now redundant and duplicated, since the portal
   // is always shown as its own subtitle line below the title.

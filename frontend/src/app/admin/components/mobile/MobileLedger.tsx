@@ -1037,6 +1037,9 @@ export default function MobileLedger() {
                             placeholder="Select Staff Member"
                           />
                         </div>
+                      )}
+                    </>
+                  )}
                               {/* Payment Mode */}
                   {selectedNewDepositType !== "virtual" && (
                     <div className="space-y-0.5">
