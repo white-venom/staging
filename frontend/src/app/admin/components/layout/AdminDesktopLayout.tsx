@@ -303,7 +303,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
               <input autoComplete="one-time-code" type="text" placeholder="Category (e.g. Supermarket, Wholesaler)" value={retailerCategory} onChange={(e) => setRetailerCategory(e.target.value)} className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 rounded-sm focus:outline-none focus:border-slate-500 dark:focus:border-slate-400" />
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-red-500 uppercase ml-1">To Take</label>
+                  <label className="text-[10px] font-black text-red-500 uppercase ml-1">To Give</label>
                   <input autoComplete="one-time-code"
                     type="number"
                     inputMode="decimal"
@@ -318,7 +318,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black text-emerald-500 uppercase ml-1">To Give</label>
+                  <label className="text-[10px] font-black text-emerald-500 uppercase ml-1">To Take</label>
                   <input autoComplete="one-time-code"
                     type="number"
                     inputMode="decimal"
