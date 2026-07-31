@@ -256,40 +256,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/api/check-hello-db")
-def check_hello_db():
-    try:
-        from app.database.db import MasterSessionLocal, get_tenant_session
-        from app.database.master_models import Tenant
-        from app.database.models import Retailer
-        
-        master_db = MasterSessionLocal()
-        tenant = master_db.query(Tenant).filter(Tenant.subdomain == "hello").first()
-        tenant_exists = tenant is not None
-        master_db.close()
-        
-        retailer_count = -1
-        retailers_list = []
-        error = None
-        if tenant_exists:
-            try:
-                db = get_tenant_session("hello")
-                retailer_count = db.query(Retailer).count()
-                for r in db.query(Retailer).limit(3).all():
-                    retailers_list.append({"name": r.retailer_name, "bal": float(r.balance)})
-                db.close()
-            except Exception as ex:
-                error = str(ex)
-                
-        return {
-            "tenant_exists": tenant_exists,
-            "retailer_count": retailer_count,
-            "retailers": retailers_list,
-            "seeding_error": HELLO_SEEDING_ERROR,
-            "error": error
-        }
-    except Exception as e:
-        return {"error": str(e)}
 
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
