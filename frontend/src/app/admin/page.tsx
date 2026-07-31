@@ -26,12 +26,11 @@ export default function AdminPage() {
   // (balance > 0 => they owe us / to-take, balance < 0 => we owe them / to-give),
   // matching the sign convention used for the per-row Due display in OverviewTab.
   const totalToTake =
-    (retailerDirectory || []).reduce((s, r) => s + (r.balance > 0 ? r.balance : 0), 0) +
-    (portalDirectory || []).reduce((s, p) => s + (p.balance > 0 ? p.balance : 0), 0);
+    (retailerDirectory || []).reduce((s, r) => s + (r.balance < 0 ? -r.balance : 0), 0);
 
   const totalToGive =
-    (retailerDirectory || []).reduce((s, r) => s + (r.balance < 0 ? -r.balance : 0), 0) +
-    (portalDirectory || []).reduce((s, p) => s + (p.balance < 0 ? -p.balance : 0), 0);
+    (retailerDirectory || []).reduce((s, r) => s + (r.balance > 0 ? r.balance : 0), 0);
+
 
   if (isMobile) {
     return (
