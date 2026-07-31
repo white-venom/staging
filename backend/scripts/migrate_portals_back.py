@@ -62,7 +62,8 @@ def run_reverse_migration():
         "cash portal",
         "dheeraj tomar reli pay portal",
         "jafer khan retailer portal soul pay",
-        "nitish bhati reli pay portal"
+        "nitish bhati reli pay portal",
+        "rizwan retailer portal reli pay"
     }
     
     # 1. Backup Master Database
@@ -127,7 +128,8 @@ def run_reverse_migration():
                         "cash portal": "9999900015",
                         "dheeraj tomar reli pay portal": "9999900050",
                         "jafer khan retailer portal soul pay": "9999900046",
-                        "nitish bhati reli pay portal": "9999900107"
+                        "nitish bhati reli pay portal": "9999900107",
+                        "rizwan retailer portal reli pay": "9999900013"
                     }
                     mapped_phone = phone_mapping.get(p_name.lower())
                     if mapped_phone:
