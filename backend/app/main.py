@@ -1,7 +1,7 @@
 import os
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
-# Build Trigger: v1.0.3
+# Build Trigger: v1.0.4
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from app.database.db import get_db, Base, master_engine, get_tenant_session
@@ -178,6 +178,31 @@ def startup_event():
                                     conn.execute(text(stmt))
                             except Exception as col_err:
                                 print(f"[WARN] Schema check '{label}' failed for tenant '{tenant.subdomain}': {col_err}")
+
+                        # One-time migration to correct virtual ledger transaction types
+                        try:
+                            from app.database.models import Ledger, BankDeposit
+                            from app.logic.ledger import recalculate_balances
+                            
+                            wrong_ledgers = tenant_db.query(Ledger).join(BankDeposit, Ledger.deposit_id == BankDeposit.id).filter(
+                                BankDeposit.deposit_type == "virtual"
+                            ).all()
+                            
+                            mismatched_retailer_ids = set()
+                            for entry in wrong_ledgers:
+                                expected_type = "credit" if entry.deposit.payment_mode == "refund" else "debit"
+                                if entry.transaction_type != expected_type:
+                                    entry.transaction_type = expected_type
+                                    mismatched_retailer_ids.add(entry.retailer_id)
+                            
+                            if mismatched_retailer_ids:
+                                tenant_db.commit()
+                                print(f"[INFO] Corrected virtual ledger entries for {len(mismatched_retailer_ids)} retailers. Recalculating...")
+                                for r_id in mismatched_retailer_ids:
+                                    recalculate_balances(r_id, tenant_db)
+                                tenant_db.commit()
+                        except Exception as migration_err:
+                            print(f"[WARN] Virtual ledger migration failed for tenant '{tenant.subdomain}': {migration_err}")
                     finally:
                         tenant_db.close()
                 except Exception as t_err:
