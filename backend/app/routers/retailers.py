@@ -194,8 +194,8 @@ def update_retailer(
         if field not in ["opening_to_give", "opening_to_take"]:
             setattr(retailer, field, value)
 
-    from decimal import Decimal
-    if retailer_data.opening_to_give is not None or retailer_data.opening_to_take is not None:
+    has_ob_change = (retailer_data.opening_to_give is not None or retailer_data.opening_to_take is not None)
+    if has_ob_change:
         from app.core.timezone import ist_today
         retailer.opening_balance_set_on = ist_today()
     if retailer_data.opening_to_give is not None:
@@ -203,13 +203,12 @@ def update_retailer(
     if retailer_data.opening_to_take is not None:
         delta_take = Decimal(str(retailer_data.opening_to_take))
         retailer.opening_to_take = (retailer.opening_to_take or Decimal("0.00")) + delta_take
-        retailer.balance = (retailer.balance or Decimal("0.00")) + delta_take
 
     db.commit()
     
     # Recalculate ledger balances in case opening balances were changed
     from app.logic.ledger import recalculate_balances
-    recalculate_balances(retailer_id, db)
+    recalculate_balances(retailer_id, db, update_opening_timestamp=has_ob_change)
     db.commit()
     
     db.refresh(retailer)

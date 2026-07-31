@@ -26,7 +26,7 @@ def process_tenant(db, apply_fix: bool) -> int:
     retailers = db.scalars(select(Retailer)).all()
     count = 0
     for r in retailers:
-        net_opening = (r.opening_to_take or 0) - (r.opening_to_give or 0)
+        net_opening = (r.opening_to_give or 0) - (r.opening_to_take or 0)
         if net_opening != 0:
             count += 1
             if apply_fix:
