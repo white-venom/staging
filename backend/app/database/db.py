@@ -7,8 +7,10 @@ from fastapi import Request, HTTPException
 # Master DB setup for central routing
 master_engine = create_engine(
     settings.MASTER_DATABASE_URL,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30,
+    pool_recycle=1800,
     pool_pre_ping=True
 )
 MasterSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=master_engine)
@@ -25,9 +27,10 @@ def get_master_db():
     finally:
         db.close()
 
-# Dictionaries to cache engines & sessionmakers per database
+# Dictionaries to cache engines, sessionmakers, & db_names per tenant
 _tenant_engines = {}
 _tenant_sessionmakers = {}
+_tenant_db_names = {}
 
 import urllib.parse
 
@@ -38,17 +41,12 @@ def get_tenant_connection_string(db_name: str) -> str:
 def get_tenant_engine(db_name: str):
     if db_name not in _tenant_engines:
         db_url = get_tenant_connection_string(db_name)
-        # Kept conservative on purpose: these engines are cached forever once a
-        # tenant is first accessed (no idle eviction), so pool_size is really a
-        # per-tenant floor on Postgres connections, not a per-request cap. At
-        # pool_size=10 the server's max_connections=100 caps out around ~9
-        # ever-accessed tenants; at 2-3 the same server comfortably supports
-        # 50-100+. Revisit alongside PgBouncer/idle-eviction before this
-        # becomes the bottleneck again.
         _tenant_engines[db_name] = create_engine(
             db_url,
-            pool_size=3,
-            max_overflow=5,
+            pool_size=10,
+            max_overflow=20,
+            pool_timeout=30,
+            pool_recycle=1800,
             pool_pre_ping=True
         )
     return _tenant_engines[db_name]
@@ -64,23 +62,26 @@ class TenantSuspendedError(Exception):
 
 
 def get_tenant_session(tenant_subdomain: str) -> Session:
-    # 1. Fetch tenant from master database to resolve their DB name
-    master_db = MasterSessionLocal()
-    try:
-        from app.database.master_models import Tenant
-        tenant = master_db.query(Tenant).filter(Tenant.subdomain == tenant_subdomain).first()
-        if not tenant:
-            # Fallback/compatibility check: try to fall back between do-it and do-it-services
-            fallback_subdomain = "do-it-services" if tenant_subdomain == "do-it" else ("do-it" if tenant_subdomain == "do-it-services" else None)
-            if fallback_subdomain:
-                tenant = master_db.query(Tenant).filter(Tenant.subdomain == fallback_subdomain).first()
-        if not tenant:
-            raise ValueError(f"Tenant '{tenant_subdomain}' not found")
-        if tenant.status != "active":
-            raise TenantSuspendedError(tenant_subdomain, tenant.status)
-        db_name = tenant.db_name
-    finally:
-        master_db.close()
+    # 1. Check in-memory cache first to avoid master DB round-trip on every request
+    db_name = _tenant_db_names.get(tenant_subdomain)
+    if not db_name:
+        master_db = MasterSessionLocal()
+        try:
+            from app.database.master_models import Tenant
+            tenant = master_db.query(Tenant).filter(Tenant.subdomain == tenant_subdomain).first()
+            if not tenant:
+                # Fallback/compatibility check: try to fall back between do-it and do-it-services
+                fallback_subdomain = "do-it-services" if tenant_subdomain == "do-it" else ("do-it" if tenant_subdomain == "do-it-services" else None)
+                if fallback_subdomain:
+                    tenant = master_db.query(Tenant).filter(Tenant.subdomain == fallback_subdomain).first()
+            if not tenant:
+                raise ValueError(f"Tenant '{tenant_subdomain}' not found")
+            if tenant.status != "active":
+                raise TenantSuspendedError(tenant_subdomain, tenant.status)
+            db_name = tenant.db_name
+            _tenant_db_names[tenant_subdomain] = db_name
+        finally:
+            master_db.close()
 
     # 2. Get or create sessionmaker for this tenant DB
     if db_name not in _tenant_sessionmakers:
@@ -118,6 +119,9 @@ def evict_tenant_cache(db_name: str):
     don't linger and bypass the 404 check in get_db."""
     engine = _tenant_engines.pop(db_name, None)
     _tenant_sessionmakers.pop(db_name, None)
+    for sub, db in list(_tenant_db_names.items()):
+        if db == db_name:
+            _tenant_db_names.pop(sub, None)
     if engine:
         try:
             engine.dispose()

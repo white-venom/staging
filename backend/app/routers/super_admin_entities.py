@@ -6,7 +6,7 @@ from sqlalchemy import select, func, create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from pydantic import BaseModel, Field
 
-from app.database.db import get_master_db, get_tenant_connection_string
+from app.database.db import get_master_db, get_tenant_connection_string, get_tenant_engine
 from app.database.master_models import Tenant, SuperAdmin
 from app.routers.super_admin import get_current_super_admin, require_full_admin
 from app.core.security import get_password_hash
@@ -23,7 +23,7 @@ def _get_tenant(tenant_id: uuid.UUID, master_db: Session) -> Tenant:
 
 
 def _tenant_session(tenant: Tenant) -> Session:
-    engine = create_engine(get_tenant_connection_string(tenant.db_name))
+    engine = get_tenant_engine(tenant.db_name)
     return sessionmaker(bind=engine)()
 
 
@@ -129,7 +129,8 @@ def update_tenant_retailer(
             if new_take < 0:
                 raise HTTPException(status_code=400, detail="To Take cannot be negative")
 
-        if payload.opening_to_give is not None or payload.opening_to_take is not None:
+        has_ob_change = (payload.opening_to_give is not None or payload.opening_to_take is not None)
+        if has_ob_change:
             from app.core.timezone import ist_today
             retailer.opening_balance_set_on = ist_today()
         if payload.opening_to_give is not None:
@@ -137,10 +138,9 @@ def update_tenant_retailer(
         if payload.opening_to_take is not None:
             delta_take = Decimal(str(payload.opening_to_take))
             retailer.opening_to_take = (retailer.opening_to_take or Decimal("0.00")) + delta_take
-            retailer.balance = (retailer.balance or Decimal("0.00")) + delta_take
 
         tenant_db.commit()
-        recalculate_balances(retailer_id, tenant_db)
+        recalculate_balances(retailer_id, tenant_db, update_opening_timestamp=has_ob_change)
         tenant_db.commit()
         tenant_db.refresh(retailer)
 
