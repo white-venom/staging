@@ -709,6 +709,7 @@ export default function LedgerTab({
                     <div class="summary">
                       <div><span class="label">Total Debit (Out)</span><span class="value red">&#8377;${totalDebit.toLocaleString()}.00</span></div>
                       <div><span class="label">Total Credit (In)</span><span class="value green">&#8377;${totalCredit.toLocaleString()}.00</span></div>
+                      <div><span class="label">Net Balance</span><span class="value blue">&#8377;${Math.abs(netBalance).toLocaleString()}.00 ${netBalance >= 0 ? 'Dr' : 'Cr'}</span></div>
                     </div>
                     <table>
                       <thead><tr><th>Date &amp; Time</th><th>Party</th><th>Staff</th><th style="text-align:right">Opening Bal</th><th style="text-align:right">Received / Paid</th><th style="text-align:right">Balance</th></tr></thead>
@@ -795,7 +796,7 @@ export default function LedgerTab({
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-2 mt-4">
+        <div className="grid grid-cols-3 gap-0 divide-x divide-slate-100 dark:divide-slate-800 border border-slate-100 dark:border-slate-800 rounded-sm overflow-hidden">
           <div className="p-3 bg-slate-50/50 dark:bg-slate-950/50 text-center">
             <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Total Debit(-)</span>
             <span className="text-sm font-black text-red-600 font-mono tabular-nums">₹{totalDebit.toLocaleString()}.00</span>
@@ -803,6 +804,12 @@ export default function LedgerTab({
           <div className="p-3 bg-slate-50/50 dark:bg-slate-950/50 text-center">
             <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Total Credit(+)</span>
             <span className="text-sm font-black text-emerald-600 font-mono tabular-nums">₹{totalCredit.toLocaleString()}.00</span>
+          </div>
+          <div className="p-3 bg-slate-50/50 dark:bg-slate-950/50 text-center">
+            <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Net Balance</span>
+            <span className={`text-sm font-black font-mono tabular-nums ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
+              ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
+            </span>
           </div>
         </div>
       </div>
@@ -817,9 +824,15 @@ export default function LedgerTab({
                 <span className="text-[10px] block uppercase text-slate-400 font-black mb-1">Total Debit</span>
                 <span className="text-xl font-black text-red-600 font-mono tabular-nums">₹{totalDebit.toLocaleString()}.00</span>
              </div>
-             <div className="text-center border-l pl-10">
+             <div className="text-center border-x px-10">
                 <span className="text-[10px] block uppercase text-slate-400 font-black mb-1">Total Credit</span>
                 <span className="text-xl font-black text-emerald-600 font-mono tabular-nums">₹{totalCredit.toLocaleString()}.00</span>
+             </div>
+             <div className="text-center">
+                <span className="text-[10px] block uppercase text-slate-400 font-black mb-1">Net Balance</span>
+                <span className={`text-xl font-black font-mono tabular-nums ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
+                  ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
+                </span>
              </div>
           </div>
         </div>

@@ -443,6 +443,7 @@ export default function VirtualLedgerTab() {
 
   const handleShare = async () => {
     const shareText = `Universal Ledger Report
+Net Balance: ₹ ${Math.abs(stats.netBalance).toLocaleString("en-IN")}
 Total Entries: ${stats.entriesCount}
 Total Gave (Debit): ₹ ${stats.totalGave.toLocaleString("en-IN")}
 Total Got (Credit): ₹ ${stats.totalGot.toLocaleString("en-IN")}
@@ -598,8 +599,15 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
         {/* SCREEN LEDGER VIEW (With Pagination) */}
         <div className="space-y-4 text-slate-800 dark:text-slate-200">
           {/* Net Balance Card */}
-          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm p-4">
-            <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500">Net Balance</span>
+              <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`}>
+                ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
+              </span>
+            </div>
+            
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-3 grid grid-cols-3 gap-2 text-center">
               <div>
                 <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
                 <span className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-0.5 block">{stats.entriesCount} Entries</span>
@@ -817,10 +825,23 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 </p>
                 <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
               </div>
+              <div className="text-right">
+                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Net Balance</span>
+                <span className="text-base font-black text-slate-900 font-mono tabular-nums">
+                  ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
+                </span>
+              </div>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-sm p-4 mb-4">
-              <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="bg-slate-50 border border-slate-200 rounded-sm p-4 flex flex-col gap-3 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Net Balance</span>
+                <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600" : "text-slate-500"}`}>
+                  ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
+                </span>
+              </div>
+              
+              <div className="border-t border-slate-200 pt-3 grid grid-cols-3 gap-2 text-center">
                 <div>
                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
                   <span className="text-xs font-bold text-slate-700 mt-0.5 block">{stats.entriesCount} Entries</span>
