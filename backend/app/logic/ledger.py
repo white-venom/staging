@@ -34,8 +34,8 @@ def recalculate_balances(retailer_id, db: Session):
     if not retailer:
         return
 
-    # Calculate net opening balance
-    net_opening_balance = (retailer.opening_to_take or Decimal("0.00")) - (retailer.opening_to_give or Decimal("0.00"))
+    # Calculate net opening balance: opening_to_give = Credit (+), opening_to_take = Debit (-)
+    net_opening_balance = (retailer.opening_to_give or Decimal("0.00")) - (retailer.opening_to_take or Decimal("0.00"))
 
     # Sync "Opening Balance" ledger entry, cleaning up any duplicate entries if present
     opening_ledgers = db.scalars(
