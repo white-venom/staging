@@ -97,7 +97,6 @@ def run_hello_seeding():
                     retailer_name=r["name"],
                     phone=r["phone"],
                     address="New Delhi",
-                    area="Route 1",
                     opening_to_take=r["take"],
                     opening_to_give=r["give"],
                     balance=0.0
