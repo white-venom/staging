@@ -22,14 +22,17 @@ export default function AdminPage() {
   const todayDeposited = (deposits || []).filter(d => d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual').reduce((s, d) => s + (d.amount || 0), 0);
   const todayCount = (collections || []).filter(c => c.date?.startsWith(todayStr)).length;
 
-  // Live "Due" totals derived from each entity's current running balance
-  // (balance > 0 => they owe us / to-take, balance < 0 => we owe them / to-give),
-  // matching the sign convention used for the per-row Due display in OverviewTab.
-  const totalToTake =
-    (retailerDirectory || []).reduce((s, r) => s + (r.balance < 0 ? -r.balance : 0), 0);
+  // Live "Due" totals derived from each entity's current running balance.
+  // Retailer receivables/payables:
+  const retailerToTake = (retailerDirectory || []).reduce((s, r) => s + (r.balance < 0 ? -r.balance : 0), 0);
+  const retailerToGive = (retailerDirectory || []).reduce((s, r) => s + (r.balance > 0 ? r.balance : 0), 0);
 
-  const totalToGive =
-    (retailerDirectory || []).reduce((s, r) => s + (r.balance > 0 ? r.balance : 0), 0);
+  // Portal receivables/payables (positive = asset/to-take, negative = liability/to-give):
+  const portalToTake = (portalDirectory || []).reduce((s, p) => s + (p.balance > 0 ? p.balance : 0), 0);
+  const portalToGive = (portalDirectory || []).reduce((s, p) => s + (p.balance < 0 ? -p.balance : 0), 0);
+
+  const totalToTake = retailerToTake + portalToTake;
+  const totalToGive = retailerToGive + portalToGive;
 
 
   if (isMobile) {
@@ -42,6 +45,10 @@ export default function AdminPage() {
         netCashBalance={netCashBalanceVal}
         totalToTake={totalToTake}
         totalToGive={totalToGive}
+        retailerToTake={retailerToTake}
+        retailerToGive={retailerToGive}
+        portalToTake={portalToTake}
+        portalToGive={portalToGive}
         fetchData={fetchData}
         todayCount={todayCount}
         userDirectory={userDirectory}
@@ -59,6 +66,10 @@ export default function AdminPage() {
       netCashBalance={netCashBalanceVal}
       totalToTake={totalToTake}
       totalToGive={totalToGive}
+      retailerToTake={retailerToTake}
+      retailerToGive={retailerToGive}
+      portalToTake={portalToTake}
+      portalToGive={portalToGive}
       fetchData={fetchData}
       todayCount={todayCount}
       userDirectory={userDirectory}

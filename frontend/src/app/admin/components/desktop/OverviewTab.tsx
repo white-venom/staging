@@ -82,6 +82,10 @@ interface OverviewTabProps {
   netCashBalance: number;
   totalToTake: number;
   totalToGive: number;
+  retailerToTake?: number;
+  retailerToGive?: number;
+  portalToTake?: number;
+  portalToGive?: number;
   fetchData: () => void;
   todayCount?: number;
   userDirectory?: any[];
@@ -96,6 +100,10 @@ export default function OverviewTab({
   netCashBalance,
   totalToTake,
   totalToGive,
+  retailerToTake,
+  retailerToGive,
+  portalToTake,
+  portalToGive,
   fetchData,
   todayCount,
   userDirectory,
@@ -558,6 +566,11 @@ export default function OverviewTab({
               <span className="text-2xl font-black text-emerald-600 dark:text-emerald-500 tracking-tight font-mono tabular-nums">
                 ₹{(totalToGive || 0).toLocaleString()}
               </span>
+              <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1 select-none">
+                <span>Retailer: ₹{(retailerToGive || 0).toLocaleString()}</span>
+                <span>|</span>
+                <span>Portal: ₹{(portalToGive || 0).toLocaleString()}</span>
+              </div>
             </div>
 
             {/* You will Get (Hum Lenge) */}
@@ -566,6 +579,11 @@ export default function OverviewTab({
               <span className="text-2xl font-black text-red-600 dark:text-red-500 tracking-tight font-mono tabular-nums">
                 ₹{(totalToTake || 0).toLocaleString()}
               </span>
+              <div className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-1 select-none">
+                <span>Retailer: ₹{(retailerToTake || 0).toLocaleString()}</span>
+                <span>|</span>
+                <span>Portal: ₹{(portalToTake || 0).toLocaleString()}</span>
+              </div>
             </div>
           </div>
           

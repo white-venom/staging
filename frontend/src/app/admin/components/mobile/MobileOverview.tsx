@@ -77,6 +77,10 @@ interface MobileOverviewProps {
   netCashBalance: number;
   totalToTake: number;
   totalToGive: number;
+  retailerToTake?: number;
+  retailerToGive?: number;
+  portalToTake?: number;
+  portalToGive?: number;
   fetchData: () => void;
   todayCount: number;
   userDirectory: any[];
@@ -91,6 +95,10 @@ export default function MobileOverview({
   netCashBalance,
   totalToTake,
   totalToGive,
+  retailerToTake,
+  retailerToGive,
+  portalToTake,
+  portalToGive,
   fetchData,
   todayCount,
   userDirectory,
@@ -870,13 +878,19 @@ export default function MobileOverview({
 
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-16">
+        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-1">
           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">To Take</p>
           <p className="text-sm font-black text-red-500 font-mono tabular-nums">₹{totalToTake.toLocaleString()}</p>
+          <p className="text-[7px] font-bold text-slate-400 dark:text-slate-500 truncate">
+            Ret: ₹{(retailerToTake || 0).toLocaleString()} | Port: ₹{(portalToTake || 0).toLocaleString()}
+          </p>
         </div>
-        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between h-16">
+        <div className="bg-white dark:bg-slate-900 p-2.5 rounded-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-1">
           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">To Give</p>
           <p className="text-sm font-black text-emerald-500 font-mono tabular-nums">₹{totalToGive.toLocaleString()}</p>
+          <p className="text-[7px] font-bold text-slate-400 dark:text-slate-500 truncate">
+            Ret: ₹{(retailerToGive || 0).toLocaleString()} | Port: ₹{(portalToGive || 0).toLocaleString()}
+          </p>
         </div>
       </div>
 
