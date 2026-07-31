@@ -293,7 +293,7 @@ export default function AdministrationTab({
                </div>
                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-red-500 uppercase">You Gave</label>
+                    <label className="text-[10px] font-black text-red-500 uppercase">To Take</label>
                     <input autoComplete="one-time-code" 
                       type="number" inputMode="decimal" 
                       min="0"
@@ -307,7 +307,7 @@ export default function AdministrationTab({
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black text-emerald-500 uppercase">You Got</label>
+                    <label className="text-[10px] font-black text-emerald-500 uppercase">To Give</label>
                     <input autoComplete="one-time-code" 
                       type="number" inputMode="decimal" 
                       min="0"

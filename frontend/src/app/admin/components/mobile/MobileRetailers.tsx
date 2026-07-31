@@ -631,7 +631,7 @@ export default function MobileRetailers({
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Opening You Gave (₹)</label>
+                <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Opening To Take (₹)</label>
                 <input autoComplete="one-time-code"
                   type="number"
                   inputMode="decimal"
@@ -643,7 +643,7 @@ export default function MobileRetailers({
                 />
               </div>
               <div>
-                <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Opening You Got (₹)</label>
+                <label className="block text-[8px] font-bold text-slate-400 uppercase mb-0.5">Opening To Give (₹)</label>
                 <input autoComplete="one-time-code"
                   type="number"
                   inputMode="decimal"
@@ -843,7 +843,7 @@ export default function MobileRetailers({
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-wider">Opening Balance Adjustment</p>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="block text-[8px] font-bold text-red-500 uppercase mb-0.5">You Gave (₹)</label>
+                      <label className="block text-[8px] font-bold text-red-500 uppercase mb-0.5">To Take (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"
@@ -857,7 +857,7 @@ export default function MobileRetailers({
                       />
                     </div>
                     <div>
-                      <label className="block text-[8px] font-bold text-emerald-500 uppercase mb-0.5">You Got (₹)</label>
+                      <label className="block text-[8px] font-bold text-emerald-500 uppercase mb-0.5">To Give (₹)</label>
                       <input
                         autoComplete="one-time-code"
                         type="number"
