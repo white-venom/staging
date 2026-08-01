@@ -65,7 +65,7 @@ input[type=number] {
   -moz-appearance: textfield;
 }
 
-/* Print CSS to isolate PDF report-content */
+/* Print CSS to isolate PDF report-content & ledger reports */
 @media print {
   body {
     background-color: white !important;
@@ -74,10 +74,15 @@ input[type=number] {
   body * {
     visibility: hidden;
   }
-  #report-content, #report-content * {
+  #report-content, #report-content *,
+  #pdf-ledger-report, #pdf-ledger-report *,
+  #pdf-virtual-ledger-report, #pdf-virtual-ledger-report * {
     visibility: visible;
   }
-  #report-content {
+  .pdf-only {
+    display: flex !important;
+  }
+  #report-content, #pdf-ledger-report, #pdf-virtual-ledger-report {
     position: absolute;
     left: 0;
     top: 0;
@@ -86,3 +91,4 @@ input[type=number] {
     padding: 0;
   }
 }
+

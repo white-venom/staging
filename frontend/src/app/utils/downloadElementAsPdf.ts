@@ -9,38 +9,100 @@ import html2canvas from "html2canvas-pro";
 export async function downloadElementAsPdf(
   elementId: string,
   filename: string,
-  marginIn: number = 0.4
+  marginIn: number = 0.3
 ): Promise<void> {
   const element = document.getElementById(elementId);
   if (!element) {
     throw new Error(`Element #${elementId} not found`);
   }
 
-  const canvas = await html2canvas(element, {
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    backgroundColor: "#ffffff",
+  // Clone element into isolated offscreen container to preserve A4 layout
+  // without modifying live screen DOM or causing responsive shifts
+  const clone = element.cloneNode(true) as HTMLElement;
+
+  // Copy live values for any form inputs/selects/textareas inside clone
+  const originalInputs = element.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea");
+  const clonedInputs = clone.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>("input, select, textarea");
+  originalInputs.forEach((input, i) => {
+    if (clonedInputs[i]) {
+      clonedInputs[i].value = input.value;
+    }
   });
-  const imgData = canvas.toDataURL("image/jpeg", 0.98);
 
-  const pdf = new jsPDF({ unit: "in", format: "a4", orientation: "portrait" });
-  const pageWidth = pdf.internal.pageSize.getWidth() - marginIn * 2;
-  const pageHeight = pdf.internal.pageSize.getHeight() - marginIn * 2;
-  const imgWidth = pageWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  // Make all .pdf-only elements visible in clone
+  clone.querySelectorAll<HTMLElement>(".pdf-only").forEach((el) => {
+    el.style.setProperty("display", "flex", "important");
+  });
 
-  let heightLeft = imgHeight;
-  let position = marginIn;
-  pdf.addImage(imgData, "JPEG", marginIn, position, imgWidth, imgHeight);
-  heightLeft -= pageHeight;
+  // Ensure scroll wrappers are visible in clone
+  clone.querySelectorAll<HTMLElement>(".overflow-x-auto, .overflow-y-auto, .overflow-hidden").forEach((el) => {
+    el.style.setProperty("overflow", "visible", "important");
+  });
 
-  while (heightLeft > 0) {
-    position = heightLeft - imgHeight - marginIn;
-    pdf.addPage();
-    pdf.addImage(imgData, "JPEG", marginIn, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+  // Create isolated container set to standard A4 width (794px @ 96 DPI)
+  const container = document.createElement("div");
+  container.style.position = "absolute";
+  container.style.left = "0px";
+  container.style.top = "0px";
+  container.style.zIndex = "-999999";
+  container.style.width = "794px";
+  container.style.minWidth = "794px";
+  container.style.maxWidth = "794px";
+  container.style.backgroundColor = "#ffffff";
+  container.style.color = "#0f172a";
+  container.style.boxSizing = "border-box";
+  container.style.padding = "0px";
+  container.style.margin = "0px";
+
+  clone.style.width = "794px";
+  clone.style.maxWidth = "none";
+  clone.style.minWidth = "794px";
+  clone.style.boxSizing = "border-box";
+  clone.style.backgroundColor = "#ffffff";
+  clone.style.display = "block";
+
+  container.appendChild(clone);
+  document.body.appendChild(container);
+
+  try {
+    const canvas = await html2canvas(clone, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+      windowWidth: 1280,
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.98);
+    const pdf = new jsPDF({ unit: "in", format: "a4", orientation: "portrait" });
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const printableWidth = pdfWidth - marginIn * 2;
+    const printableHeight = pdfHeight - marginIn * 2;
+
+    const imgWidth = printableWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let pageIndex = 0;
+
+    while (heightLeft > 0) {
+      if (pageIndex > 0) {
+        pdf.addPage();
+      }
+      const position = marginIn - pageIndex * printableHeight;
+      pdf.addImage(imgData, "JPEG", marginIn, position, imgWidth, imgHeight);
+      heightLeft -= printableHeight;
+      pageIndex++;
+    }
+
+    pdf.save(filename);
+  } finally {
+    if (container.parentNode) {
+      container.parentNode.removeChild(container);
+    }
   }
-
-  pdf.save(filename);
 }
+
