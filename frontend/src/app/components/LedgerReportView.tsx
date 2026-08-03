@@ -496,7 +496,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
             </div>
           </div>
-             {/* Printable/Export Content container */}
+        </div>
+
+        {/* Printable/Export Content container */}
         <div id="pdf-ledger-report" className="space-y-4 bg-transparent text-slate-800 p-0.5">
           
           {/* Premium Heading block matching daily cash report */}
