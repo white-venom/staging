@@ -29,9 +29,16 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
 
-          # Prune old dangling images & build cache to free memory/disk before building
-          docker image prune -f || true
-          docker builder prune -f || true
+          # Stop containers cleanly with fallback
+          docker compose down --remove-orphans || docker-compose down --remove-orphans || true
 
-          # Rebuild and start all services
-          docker compose up -d --build
+          # Force-remove any stale named containers that may conflict
+          docker rm -f crediiflow_db crediiflow_backend crediiflow_frontend crediiflow_superadmin_frontend crediiflow_landing_page crediiflow_nginx 2>/dev/null || true
+
+          # Safely prune stopped containers and unused networks to clear space
+          docker container prune -f || true
+          docker network prune -f || true
+          docker image prune -f || true
+
+          # Rebuild and start all services with fallback for docker-compose
+          docker compose up -d --build || docker-compose up -d --build
