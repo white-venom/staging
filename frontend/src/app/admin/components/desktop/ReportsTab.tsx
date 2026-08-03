@@ -167,7 +167,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return Array.from(names).map(n => ({ id: n, name: n }));
   }, [portalDirectory, deposits, collections]);
 
-  // Filtered Daybook Summary Data (Tally Day Book Format)
+  // Filtered Daybook Summary Data (Complete Unfiltered Daily Statement for that Day)
   const filteredDaybook = useMemo(() => {
     const combined: any[] = [];
 
@@ -176,19 +176,6 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       const cDate = c.collection_date || getISTDateString(getUtcDate(c.created_at));
       if (dateFrom && cDate < dateFrom) return;
       if (dateTo && cDate > dateTo) return;
-
-      if (selectedRetailerId !== "all") {
-        const matchesId = String(c.retailer_id) === String(selectedRetailerId);
-        const matchesName = c.retailer_name === selectedRetailerId;
-        if (!matchesId && !matchesName) return;
-      }
-
-      if (selectedStaffId !== "all") {
-        const sName = getStaffName(c);
-        const matchesStaffId = String(c.from_staff_id || c.staff_id) === String(selectedStaffId);
-        const matchesStaffName = sName === selectedStaffId || sName.toLowerCase() === selectedStaffId.toLowerCase();
-        if (!matchesStaffId && !matchesStaffName) return;
-      }
 
       const mainTitle = c.retailer_name || "Cash Collection";
       const subTitle = [c.store_name ? `Store: ${c.store_name}` : null, `Staff: ${getStaffName(c)}`].filter(Boolean).join(" | ");
@@ -212,19 +199,6 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       if (dateFrom && dDate < dateFrom) return;
       if (dateTo && dDate > dateTo) return;
-
-      if (selectedPortalId !== "all") {
-        const matchesId = String(d.portal_id) === String(selectedPortalId);
-        const matchesName = d.portal_name === selectedPortalId;
-        if (!matchesId && !matchesName) return;
-      }
-
-      if (selectedStaffId !== "all") {
-        const sName = getStaffName(d);
-        const matchesStaffId = String(d.staff_id) === String(selectedStaffId);
-        const matchesStaffName = sName === selectedStaffId || sName.toLowerCase() === selectedStaffId.toLowerCase();
-        if (!matchesStaffId && !matchesStaffName) return;
-      }
 
       let vchType = "Payment";
       if (d.deposit_type === "transfer") vchType = "Journal";
@@ -262,7 +236,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     }
 
     return result.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
-  }, [collections, deposits, dateFrom, dateTo, selectedRetailerId, selectedPortalId, selectedStaffId, searchQuery, userDirectory]);
+  }, [collections, deposits, dateFrom, dateTo, searchQuery, userDirectory]);
 
   // Filtered Retailer Ledger Data
   const filteredRetailerLedger = useMemo(() => {
@@ -558,7 +532,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             </button>
             <div>
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{reportTitle}</h2>
-              <p className="text-[10px] text-slate-400 font-bold">Interactive data filter & statement generator</p>
+              <p className="text-[10px] text-slate-400 font-bold">
+                {selectedReport === "daybook" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator"}
+              </p>
             </div>
           </div>
 
@@ -584,91 +560,139 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
         {/* Filter Panel */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {/* SEARCH */}
-            <div>
-              <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Search</label>
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+          {selectedReport === "daybook" ? (
+            /* Daybook Specific Clean Bar: Search + Date Picker */
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {/* SEARCH */}
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Search Daybook</label>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                  <input autoComplete="one-time-code"
+                    type="text"
+                    placeholder="Search voucher, party, remarks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* DATE FROM */}
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Select Day (Date From)</label>
                 <input autoComplete="one-time-code"
-                  type="text"
-                  placeholder="Search party, voucher or staff..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => {
+                    setDateFrom(e.target.value);
+                    setDateTo(e.target.value);
+                  }}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                />
+              </div>
+
+              {/* DATE TO */}
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date To</label>
+                <input autoComplete="one-time-code"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
                 />
               </div>
             </div>
+          ) : (
+            /* Standard Filters Panel for other reports */
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* SEARCH */}
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Search</label>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                    <input autoComplete="one-time-code"
+                      type="text"
+                      placeholder="Search party or staff..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                </div>
 
-            {/* FILTER BY RETAILER/PARTY */}
-            <div>
-              <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Retailer/Party</label>
-              <select
-                value={selectedRetailerId}
-                onChange={(e) => setSelectedRetailerId(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-              >
-                <option value="all">All Parties / Retailers</option>
-                {retailerOptions.map((r: any) => (
-                  <option key={r.id} value={r.id}>{r.name}</option>
-                ))}
-              </select>
-            </div>
+                {/* FILTER BY RETAILER/PARTY */}
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Retailer/Party</label>
+                  <select
+                    value={selectedRetailerId}
+                    onChange={(e) => setSelectedRetailerId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">All Parties / Retailers</option>
+                    {retailerOptions.map((r: any) => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* FILTER BY PORTAL/BANK */}
-            <div>
-              <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Portal/Bank</label>
-              <select
-                value={selectedPortalId}
-                onChange={(e) => setSelectedPortalId(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-              >
-                <option value="all">All Portals</option>
-                {portalOptions.map((p: any) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-            </div>
-          </div>
+                {/* FILTER BY PORTAL/BANK */}
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Portal/Bank</label>
+                  <select
+                    value={selectedPortalId}
+                    onChange={(e) => setSelectedPortalId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">All Portals</option>
+                    {portalOptions.map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-            {/* STAFF */}
-            <div>
-              <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Staff</label>
-              <select
-                value={selectedStaffId}
-                onChange={(e) => setSelectedStaffId(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-              >
-                <option value="all">All Staff</option>
-                {staffList.map((s: any) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                {/* STAFF */}
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Staff</label>
+                  <select
+                    value={selectedStaffId}
+                    onChange={(e) => setSelectedStaffId(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">All Staff</option>
+                    {staffList.map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* DATE FROM */}
-            <div>
-              <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date From</label>
-              <input autoComplete="one-time-code"
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-              />
-            </div>
+                {/* DATE FROM */}
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date From</label>
+                  <input autoComplete="one-time-code"
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  />
+                </div>
 
-            {/* DATE TO */}
-            <div>
-              <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date To</label>
-              <input autoComplete="one-time-code"
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-              />
-            </div>
-          </div>
+                {/* DATE TO */}
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date To</label>
+                  <input autoComplete="one-time-code"
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Exportable Report Content Section */}
@@ -694,7 +718,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             </div>
           </div>
 
-          {/* DAYBOOK SUMMARY VIEW (Tally Day Book Format in CrediiFlow Theme) */}
+          {/* DAYBOOK SUMMARY VIEW (Complete Daily Statement) */}
           {selectedReport === "daybook" && (() => {
             const totalReceipts = filteredDaybook.reduce((sum, tx) => sum + (tx.isReceipt ? tx.amount : 0), 0);
             const totalPayments = filteredDaybook.reduce((sum, tx) => sum + (!tx.isReceipt ? tx.amount : 0), 0);
@@ -724,11 +748,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                   </div>
                 </div>
 
-                {/* Day Book Table (Matching Screenshot Columns: Date, Particulars, Vch Type, Vch No, Debit Amount, Credit Amount) */}
+                {/* Day Book Table */}
                 <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
                   {filteredDaybook.length === 0 ? (
                     <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
-                      No daybook transactions found matching the selected filters.
+                      No daybook transactions found for {dateFrom}.
                     </div>
                   ) : (
                     <table className="w-full text-xs text-left border-collapse table-fixed">
