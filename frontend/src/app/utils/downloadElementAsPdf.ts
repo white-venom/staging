@@ -82,19 +82,35 @@ export async function downloadElementAsPdf(
     const printableWidth = pdfWidth - marginIn * 2;
     const printableHeight = pdfHeight - marginIn * 2;
 
-    const imgWidth = printableWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
+    let sourceY = 0;
+    const sWidth = canvas.width;
+    const sHeight = (printableHeight * canvas.width) / printableWidth;
     let pageIndex = 0;
 
-    while (heightLeft > 0) {
+    while (sourceY < canvas.height) {
       if (pageIndex > 0) {
         pdf.addPage();
       }
-      const position = marginIn - pageIndex * printableHeight;
-      pdf.addImage(imgData, "JPEG", marginIn, position, imgWidth, imgHeight);
-      heightLeft -= printableHeight;
+
+      const pageCanvas = document.createElement("canvas");
+      pageCanvas.width = sWidth;
+      pageCanvas.height = Math.min(sHeight, canvas.height - sourceY);
+
+      const ctx = pageCanvas.getContext("2d");
+      if (ctx) {
+        ctx.drawImage(
+          canvas,
+          0, sourceY, sWidth, pageCanvas.height,
+          0, 0, sWidth, pageCanvas.height
+        );
+      }
+
+      const pageImgData = pageCanvas.toDataURL("image/jpeg", 0.98);
+      const destHeight = (pageCanvas.height * printableWidth) / sWidth;
+
+      pdf.addImage(pageImgData, "JPEG", marginIn, marginIn, printableWidth, destHeight);
+
+      sourceY += sHeight;
       pageIndex++;
     }
 

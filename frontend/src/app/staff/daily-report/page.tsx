@@ -421,10 +421,10 @@ export default function DailyReportPage() {
                     <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
                       <th className="py-2 px-1 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
                       <th className="py-2 px-1 border-r border-slate-200 text-center w-[12%] text-[9px] uppercase">Date</th>
-                      <th className="py-2 px-2 border-r border-slate-200 text-center w-[39%] text-[9px] uppercase">Description</th>
-                      <th className="py-2 px-2 border-r border-slate-200 text-center w-[16%] text-[9px] uppercase">In</th>
-                      <th className="py-2 px-2 border-r border-slate-200 text-center w-[16%] text-[9px] uppercase">Out</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[12%] text-[9px] uppercase">Notes</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[33%] text-[9px] uppercase">Description</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[9px] uppercase">In</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[9px] uppercase">Out</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[14%] text-[9px] uppercase">Notes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -435,10 +435,10 @@ export default function DailyReportPage() {
                       <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-slate-900 uppercase text-[9.5px] tracking-wider">
                         OPENING BALANCE
                       </td>
-                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-blue-900 text-[10px] font-mono tabular-nums">
+                      <td className="py-2 px-1 border-r border-slate-200 text-center font-black text-blue-900 text-[10px] font-mono tabular-nums">
                         ₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2 px-2 border-r border-slate-200 text-center text-slate-400">-</td>
+                      <td className="py-2 px-1 border-r border-slate-200 text-center text-slate-400">-</td>
                       <td className="py-2 px-1 align-middle bg-slate-50/50 text-right">
                         {renderNetDenomBreakdown(openingDenom)}
                       </td>
@@ -506,12 +506,12 @@ export default function DailyReportPage() {
                             </td>
                             
                             {/* In */}
-                            <td className="py-2 px-2 border-r border-slate-200 text-center font-extrabold text-emerald-600 text-[10px] font-mono tabular-nums">
+                            <td className="py-2 px-1 border-r border-slate-200 text-center font-extrabold text-emerald-600 text-[10px] font-mono tabular-nums">
                               {isCol ? `₹${Number(item.inAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
                             
                             {/* Out */}
-                            <td className="py-2 px-2 border-r border-slate-200 text-center font-extrabold text-red-600 text-[10px] font-mono tabular-nums">
+                            <td className="py-2 px-1 border-r border-slate-200 text-center font-extrabold text-red-600 text-[10px] font-mono tabular-nums">
                               {!isCol ? `-₹${Number(item.outAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
                             
