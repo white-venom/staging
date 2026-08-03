@@ -793,48 +793,48 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return (
       <div className="space-y-4 pb-20">
         {/* Navigation & Header */}
-        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-sm">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-sm w-full max-w-full">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setSelectedReport(null)}
-              className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-sm cursor-pointer transition-colors"
+              className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-sm cursor-pointer transition-colors shrink-0"
               title="Back to Reports Overview"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <div>
-              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{reportTitle}</h2>
-              <p className="text-[10px] text-slate-400 font-bold">
+            <div className="min-w-0">
+              <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider truncate">{reportTitle}</h2>
+              <p className="text-[10px] text-slate-400 font-bold truncate">
                 {selectedReport === "daybook" || selectedReport === "cashbook" || selectedReport === "tally_import" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator"}
               </p>
             </div>
           </div>
 
-          {/* Export Action Buttons - 3 Buttons inline in one row */}
-          <div className="flex items-center gap-1.5 shrink-0 flex-nowrap overflow-x-auto max-w-full">
+          {/* Export Action Buttons - Fully Responsive 3 Buttons */}
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0 max-w-full">
             {selectedReport === "tally_import" && (
               <button
                 onClick={handleExportXml}
-                className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors whitespace-nowrap"
               >
                 <Book className="w-3.5 h-3.5" />
-                <span>Download Tally XML</span>
+                <span>Tally XML</span>
               </button>
             )}
             <button
               onClick={() => handleExportCsv(selectedReport)}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Download Excel (CSV)</span>
+              <span>Excel (CSV)</span>
             </button>
             <button
               onClick={handleDownloadPdfReport}
               disabled={isDownloadingPdf}
-              className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-[11px] font-bold disabled:opacity-50 cursor-pointer transition-colors whitespace-nowrap shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-[11px] font-bold disabled:opacity-50 cursor-pointer transition-colors whitespace-nowrap"
             >
               <FileDown className="w-3.5 h-3.5" />
-              <span>{isDownloadingPdf ? "Downloading..." : "Download PDF"}</span>
+              <span>{isDownloadingPdf ? "Downloading..." : "PDF"}</span>
             </button>
           </div>
         </div>
