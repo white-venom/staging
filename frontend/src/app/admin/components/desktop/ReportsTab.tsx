@@ -558,19 +558,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         </div>
 
-        {/* Filter Panel */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
-          {selectedReport === "daybook" ? (
-            /* Daybook Specific Clean Bar: Search + Date Picker */
+        {/* Filter Panel (Hidden for Daybook Summary as per request) */}
+        {selectedReport !== "daybook" && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* SEARCH */}
               <div>
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Search Daybook</label>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Search</label>
                 <div className="relative">
                   <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
                   <input autoComplete="one-time-code"
                     type="text"
-                    placeholder="Search voucher, party, remarks..."
+                    placeholder="Search party or staff..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
@@ -578,16 +577,60 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </div>
               </div>
 
+              {/* FILTER BY RETAILER/PARTY */}
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Retailer/Party</label>
+                <select
+                  value={selectedRetailerId}
+                  onChange={(e) => setSelectedRetailerId(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Parties / Retailers</option>
+                  {retailerOptions.map((r: any) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* FILTER BY PORTAL/BANK */}
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Portal/Bank</label>
+                <select
+                  value={selectedPortalId}
+                  onChange={(e) => setSelectedPortalId(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Portals</option>
+                  {portalOptions.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+              {/* STAFF */}
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Staff</label>
+                <select
+                  value={selectedStaffId}
+                  onChange={(e) => setSelectedStaffId(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Staff</option>
+                  {staffList.map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* DATE FROM */}
               <div>
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Select Day (Date From)</label>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date From</label>
                 <input autoComplete="one-time-code"
                   type="date"
                   value={dateFrom}
-                  onChange={(e) => {
-                    setDateFrom(e.target.value);
-                    setDateTo(e.target.value);
-                  }}
+                  onChange={(e) => setDateFrom(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
                 />
               </div>
@@ -603,97 +646,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 />
               </div>
             </div>
-          ) : (
-            /* Standard Filters Panel for other reports */
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* SEARCH */}
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Search</label>
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
-                    <input autoComplete="one-time-code"
-                      type="text"
-                      placeholder="Search party or staff..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* FILTER BY RETAILER/PARTY */}
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Retailer/Party</label>
-                  <select
-                    value={selectedRetailerId}
-                    onChange={(e) => setSelectedRetailerId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">All Parties / Retailers</option>
-                    {retailerOptions.map((r: any) => (
-                      <option key={r.id} value={r.id}>{r.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* FILTER BY PORTAL/BANK */}
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Portal/Bank</label>
-                  <select
-                    value={selectedPortalId}
-                    onChange={(e) => setSelectedPortalId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">All Portals</option>
-                    {portalOptions.map((p: any) => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
-                {/* STAFF */}
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Staff</label>
-                  <select
-                    value={selectedStaffId}
-                    onChange={(e) => setSelectedStaffId(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-                  >
-                    <option value="all">All Staff</option>
-                    {staffList.map((s: any) => (
-                      <option key={s.id} value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* DATE FROM */}
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date From</label>
-                  <input autoComplete="one-time-code"
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-                  />
-                </div>
-
-                {/* DATE TO */}
-                <div>
-                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date To</label>
-                  <input autoComplete="one-time-code"
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-                  />
-                </div>
-              </div>
-            </>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Exportable Report Content Section */}
         <div id="report-export-content" className="bg-white text-black p-3 rounded-sm border border-slate-200 space-y-3 font-sans">
