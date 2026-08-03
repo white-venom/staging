@@ -16,7 +16,10 @@ import {
   IndianRupee,
   Activity,
   ArrowLeft,
-  FileDown
+  FileDown,
+  ChevronDown,
+  Check,
+  X
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { getISTDateString, getUtcDate } from "../../../utils/dateHelpers";
@@ -25,6 +28,147 @@ import { downloadElementAsPdf } from "../../../utils/downloadElementAsPdf";
 interface ReportsTabProps {
   collections: any[];
   deposits: any[];
+}
+
+interface MultiSelectDropdownProps {
+  label: string;
+  placeholder: string;
+  options: { id: string; name: string }[];
+  selectedIds: string[];
+  onChange: (ids: string[]) => void;
+}
+
+function MultiSelectDropdown({ label, placeholder, options, selectedIds, onChange }: MultiSelectDropdownProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [filterSearch, setFilterSearch] = useState("");
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const isAllSelected = selectedIds.length === 0 || selectedIds.includes("all");
+  const isNoneSelected = selectedIds.includes("__none__");
+
+  const filteredOptions = options.filter(opt =>
+    opt.name.toLowerCase().includes(filterSearch.toLowerCase())
+  );
+
+  const toggleOption = (id: string) => {
+    if (isAllSelected || isNoneSelected) {
+      onChange([id]);
+    } else if (selectedIds.includes(id)) {
+      const next = selectedIds.filter(item => item !== id);
+      onChange(next.length === 0 ? [] : next);
+    } else {
+      const next = [...selectedIds, id];
+      if (next.length === options.length) {
+        onChange([]);
+      } else {
+        onChange(next);
+      }
+    }
+  };
+
+  const selectAll = () => {
+    onChange([]);
+    setFilterSearch("");
+  };
+
+  const clearAll = () => {
+    onChange(["__none__"]);
+  };
+
+  let displayText = placeholder;
+  if (!isAllSelected && !isNoneSelected && selectedIds.length > 0) {
+    if (selectedIds.length === 1) {
+      const found = options.find(o => String(o.id) === String(selectedIds[0]));
+      displayText = found ? found.name : selectedIds[0];
+    } else {
+      displayText = `${selectedIds.length} Selected (Multi)`;
+    }
+  } else if (isNoneSelected) {
+    displayText = "None Selected";
+  }
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+        {label}
+      </label>
+      
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between bg-slate-50 dark:bg-slate-950 border ${!isAllSelected && !isNoneSelected ? 'border-blue-500 ring-1 ring-blue-500/20' : 'border-slate-200 dark:border-slate-800'} rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer hover:border-slate-300 transition-colors`}
+      >
+        <span className="truncate pr-2">
+          {displayText}
+        </span>
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 shrink-0 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm shadow-xl z-50 p-2 space-y-2 max-h-64 overflow-y-auto min-w-[200px]">
+          {options.length > 4 && (
+            <input
+              type="text"
+              placeholder="Search options..."
+              value={filterSearch}
+              onChange={(e) => setFilterSearch(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-2 py-1 text-[10px] font-semibold text-slate-800 dark:text-slate-200 focus:outline-none"
+            />
+          )}
+
+          <div className="flex items-center justify-between text-[9px] font-bold border-b border-slate-100 dark:border-slate-800 pb-1.5 px-1">
+            <button
+              type="button"
+              onClick={selectAll}
+              className={`hover:text-blue-600 cursor-pointer ${isAllSelected ? 'text-blue-600 font-black' : 'text-slate-500'}`}
+            >
+              ✓ Select All
+            </button>
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-slate-400 hover:text-red-500 cursor-pointer"
+            >
+              Clear
+            </button>
+          </div>
+
+          <div className="space-y-1">
+            {filteredOptions.map((opt) => {
+              const isChecked = isAllSelected || selectedIds.includes(opt.id);
+              return (
+                <label
+                  key={opt.id}
+                  className="flex items-center gap-2 px-1.5 py-1 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xs cursor-pointer text-[10.5px] font-bold text-slate-700 dark:text-slate-200"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleOption(opt.id)}
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="truncate">{opt.name}</span>
+                </label>
+              );
+            })}
+            {filteredOptions.length === 0 && (
+              <p className="text-[10px] text-slate-400 italic text-center py-2">No matching items found</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ReportsTab({ collections: propCols = [], deposits: propDeps = [] }: ReportsTabProps) {
@@ -39,11 +183,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   // Active Selected Report View: null = Overview cards, string = report type
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
 
-  // Filters State
+  // Filters State (Multi-Select & Single-Select Capable)
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRetailerId, setSelectedRetailerId] = useState("all");
-  const [selectedPortalId, setSelectedPortalId] = useState("all");
-  const [selectedStaffId, setSelectedStaffId] = useState("all");
+  const [selectedRetailerIds, setSelectedRetailerIds] = useState<string[]>([]);
+  const [selectedPortalIds, setSelectedPortalIds] = useState<string[]>([]);
+  const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState(getISTDateString());
   const [dateTo, setDateTo] = useState(getISTDateString());
 
@@ -307,26 +451,34 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       netCashBalance,
       netBankBalance
     };
-  }, [collections, deposits, dateFrom, dateTo, userDirectory]);
-
-  // Filtered Retailer Ledger Data
+  }, [collections, deposits, dateFrom, dateTo, userDirectory]);  // Filtered Retailer Ledger Data
   const filteredRetailerLedger = useMemo(() => {
     return collections.filter((c: any) => {
       const cDate = c.collection_date || getISTDateString(getUtcDate(c.created_at));
       if (dateFrom && cDate < dateFrom) return false;
       if (dateTo && cDate > dateTo) return false;
 
-      if (selectedRetailerId !== "all") {
-        const matchesId = String(c.retailer_id) === String(selectedRetailerId);
-        const matchesName = c.retailer_name === selectedRetailerId;
-        if (!matchesId && !matchesName) return false;
+      // Multi-Retailer Filter
+      if (selectedRetailerIds.length > 0 && !selectedRetailerIds.includes("all")) {
+        if (selectedRetailerIds.includes("__none__")) return false;
+        const matches = selectedRetailerIds.some(id =>
+          String(c.retailer_id) === String(id) ||
+          c.retailer_name === id ||
+          String(c.id) === String(id)
+        );
+        if (!matches) return false;
       }
 
-      if (selectedStaffId !== "all") {
+      // Multi-Staff Filter
+      if (selectedStaffIds.length > 0 && !selectedStaffIds.includes("all")) {
+        if (selectedStaffIds.includes("__none__")) return false;
         const sName = getStaffName(c);
-        const matchesStaffId = String(c.from_staff_id || c.staff_id) === String(selectedStaffId);
-        const matchesStaffName = sName === selectedStaffId || sName.toLowerCase() === selectedStaffId.toLowerCase();
-        if (!matchesStaffId && !matchesStaffName) return false;
+        const matches = selectedStaffIds.some(id =>
+          String(c.from_staff_id || c.staff_id) === String(id) ||
+          sName === id ||
+          sName.toLowerCase() === id.toLowerCase()
+        );
+        if (!matches) return false;
       }
 
       if (searchQuery.trim()) {
@@ -343,7 +495,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
       return true;
     }).sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
-  }, [collections, dateFrom, dateTo, selectedRetailerId, selectedStaffId, searchQuery, userDirectory]);
+  }, [collections, dateFrom, dateTo, selectedRetailerIds, selectedStaffIds, searchQuery, userDirectory]);
 
   // Filtered Portal Ledger Data
   const filteredPortalLedger = useMemo(() => {
@@ -352,17 +504,26 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       if (dateFrom && dDate < dateFrom) return false;
       if (dateTo && dDate > dateTo) return false;
 
-      if (selectedPortalId !== "all") {
-        const matchesId = String(d.portal_id) === String(selectedPortalId);
-        const matchesName = d.portal_name === selectedPortalId;
-        if (!matchesId && !matchesName) return false;
+      // Multi-Portal Filter
+      if (selectedPortalIds.length > 0 && !selectedPortalIds.includes("all")) {
+        if (selectedPortalIds.includes("__none__")) return false;
+        const matches = selectedPortalIds.some(id =>
+          String(d.portal_id) === String(id) ||
+          d.portal_name === id
+        );
+        if (!matches) return false;
       }
 
-      if (selectedStaffId !== "all") {
+      // Multi-Staff Filter
+      if (selectedStaffIds.length > 0 && !selectedStaffIds.includes("all")) {
+        if (selectedStaffIds.includes("__none__")) return false;
         const sName = getStaffName(d);
-        const matchesStaffId = String(d.staff_id) === String(selectedStaffId);
-        const matchesStaffName = sName === selectedStaffId || sName.toLowerCase() === selectedStaffId.toLowerCase();
-        if (!matchesStaffId && !matchesStaffName) return false;
+        const matches = selectedStaffIds.some(id =>
+          String(d.staff_id) === String(id) ||
+          sName === id ||
+          sName.toLowerCase() === id.toLowerCase()
+        );
+        if (!matches) return false;
       }
 
       if (searchQuery.trim()) {
@@ -379,7 +540,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
       return true;
     }).sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
-  }, [deposits, dateFrom, dateTo, selectedPortalId, selectedStaffId, searchQuery, userDirectory]);
+  }, [deposits, dateFrom, dateTo, selectedPortalIds, selectedStaffIds, searchQuery, userDirectory]);
 
   // Filtered Staff Collection Efficiency Data
   const staffEfficiencyData = useMemo(() => {
@@ -442,12 +603,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
     let list = Array.from(map.values());
 
-    if (selectedStaffId !== "all") {
-      list = list.filter(item => 
-        item.staffId === String(selectedStaffId) || 
-        item.staffName === selectedStaffId ||
-        item.staffName.toLowerCase() === selectedStaffId.toLowerCase()
-      );
+    if (selectedStaffIds.length > 0 && !selectedStaffIds.includes("all")) {
+      if (selectedStaffIds.includes("__none__")) {
+        list = [];
+      } else {
+        list = list.filter(item =>
+          selectedStaffIds.some(id =>
+            item.staffId === String(id) ||
+            item.staffName === id ||
+            item.staffName.toLowerCase() === id.toLowerCase()
+          )
+        );
+      }
     }
 
     if (searchQuery.trim()) {
@@ -456,7 +623,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     }
 
     return list.sort((a, b) => b.collectionsTotal - a.collectionsTotal);
-  }, [collections, deposits, dateFrom, dateTo, selectedStaffId, searchQuery, userDirectory]);
+  }, [collections, deposits, dateFrom, dateTo, selectedStaffIds, searchQuery, userDirectory]);
 
   // Filtered Tally Friendly Import Data (Matching Tally Excel Import Format)
   const filteredTallyImport = useMemo(() => {
@@ -860,49 +1027,37 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
               {/* FILTER BY RETAILER/PARTY */}
               <div>
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Retailer/Party</label>
-                <select
-                  value={selectedRetailerId}
-                  onChange={(e) => setSelectedRetailerId(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-                >
-                  <option value="all">All Parties / Retailers</option>
-                  {retailerOptions.map((r: any) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
+                <MultiSelectDropdown
+                  label="Filter by Retailer/Party (Single/Multi)"
+                  placeholder="All Parties / Retailers"
+                  options={normalizedRetailerOptions}
+                  selectedIds={selectedRetailerIds}
+                  onChange={setSelectedRetailerIds}
+                />
               </div>
 
               {/* FILTER BY PORTAL/BANK */}
               <div>
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Filter by Portal/Bank</label>
-                <select
-                  value={selectedPortalId}
-                  onChange={(e) => setSelectedPortalId(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-                >
-                  <option value="all">All Portals</option>
-                  {portalOptions.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
+                <MultiSelectDropdown
+                  label="Filter by Portal/Bank (Single/Multi)"
+                  placeholder="All Portals / Banks"
+                  options={normalizedPortalOptions}
+                  selectedIds={selectedPortalIds}
+                  onChange={setSelectedPortalIds}
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
               {/* STAFF */}
               <div>
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Staff</label>
-                <select
-                  value={selectedStaffId}
-                  onChange={(e) => setSelectedStaffId(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-                >
-                  <option value="all">All Staff</option>
-                  {staffList.map((s: any) => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                <MultiSelectDropdown
+                  label="Filter by Staff (Single/Multi)"
+                  placeholder="All Staff Members"
+                  options={normalizedStaffOptions}
+                  selectedIds={selectedStaffIds}
+                  onChange={setSelectedStaffIds}
+                />
               </div>
 
               {/* DATE FROM */}
@@ -927,6 +1082,48 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 />
               </div>
             </div>
+
+            {/* Active Filter Badges & Reset Button */}
+            {(selectedRetailerIds.length > 0 || selectedPortalIds.length > 0 || selectedStaffIds.length > 0 || searchQuery.trim()) && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-[10px] font-bold">
+                <span className="text-slate-400 uppercase text-[9px] font-black">Active Filters:</span>
+                {selectedRetailerIds.length > 0 && !selectedRetailerIds.includes("all") && (
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full flex items-center gap-1">
+                    Parties: {selectedRetailerIds.includes("__none__") ? "None" : `${selectedRetailerIds.length} Selected`}
+                    <button onClick={() => setSelectedRetailerIds([])} className="hover:text-red-500 cursor-pointer">×</button>
+                  </span>
+                )}
+                {selectedPortalIds.length > 0 && !selectedPortalIds.includes("all") && (
+                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 rounded-full flex items-center gap-1">
+                    Portals: {selectedPortalIds.includes("__none__") ? "None" : `${selectedPortalIds.length} Selected`}
+                    <button onClick={() => setSelectedPortalIds([])} className="hover:text-red-500 cursor-pointer">×</button>
+                  </span>
+                )}
+                {selectedStaffIds.length > 0 && !selectedStaffIds.includes("all") && (
+                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300 rounded-full flex items-center gap-1">
+                    Staff: {selectedStaffIds.includes("__none__") ? "None" : `${selectedStaffIds.length} Selected`}
+                    <button onClick={() => setSelectedStaffIds([])} className="hover:text-red-500 cursor-pointer">×</button>
+                  </span>
+                )}
+                {searchQuery.trim() && (
+                  <span className="px-2 py-0.5 bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 rounded-full flex items-center gap-1">
+                    Query: "{searchQuery}"
+                    <button onClick={() => setSearchQuery("")} className="hover:text-red-500 cursor-pointer">×</button>
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    setSelectedRetailerIds([]);
+                    setSelectedPortalIds([]);
+                    setSelectedStaffIds([]);
+                    setSearchQuery("");
+                  }}
+                  className="text-red-500 hover:underline cursor-pointer ml-auto text-[9px] font-black uppercase"
+                >
+                  Reset All Filters
+                </button>
+              </div>
+            )}
           </div>
         )}
 
