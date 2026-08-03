@@ -793,7 +793,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return (
       <div className="space-y-4 pb-20">
         {/* Navigation & Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-sm">
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-sm">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSelectedReport(null)}
@@ -810,12 +810,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             </div>
           </div>
 
-          {/* Export Action Buttons */}
-          <div className="flex items-center gap-2">
+          {/* Export Action Buttons - 3 Buttons inline in one row */}
+          <div className="flex items-center gap-1.5 shrink-0 flex-nowrap overflow-x-auto max-w-full">
             {selectedReport === "tally_import" && (
               <button
                 onClick={handleExportXml}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0"
               >
                 <Book className="w-3.5 h-3.5" />
                 <span>Download Tally XML</span>
@@ -823,7 +823,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             )}
             <button
               onClick={() => handleExportCsv(selectedReport)}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors whitespace-nowrap shrink-0"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download Excel (CSV)</span>
@@ -831,7 +831,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             <button
               onClick={handleDownloadPdfReport}
               disabled={isDownloadingPdf}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-[11px] font-bold disabled:opacity-50 cursor-pointer transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-sm text-[11px] font-bold disabled:opacity-50 cursor-pointer transition-colors whitespace-nowrap shrink-0"
             >
               <FileDown className="w-3.5 h-3.5" />
               <span>{isDownloadingPdf ? "Downloading..." : "Download PDF"}</span>
@@ -1438,7 +1438,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </div>
 
                 {/* Tally Format Table matching Excel SS1 */}
-                <div className="border border-amber-300 rounded-lg overflow-x-auto bg-white shadow-xs">
+                <div className="border border-amber-300 rounded-lg overflow-x-auto table-scrollbar bg-white shadow-xs">
                   {filteredTallyImport.length === 0 ? (
                     <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
                       No voucher entries found for Tally import.
