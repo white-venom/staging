@@ -735,38 +735,42 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         if (dateFrom && dDate < dateFrom) return false;
         if (dateTo && dDate > dateTo) return false;
 
-        const isPortalTransfer = d.deposit_type === "portal_transfer" || d.depositType === "portal_transfer";
-        const isVirtual = d.deposit_type === "virtual" || d.depositType === "virtual";
-        const isRefund = d.is_refund === true || d.isRefund === true || d.payment_mode === "refund" || d.paymentMode === "refund";
+        // API returns camelCase: depositType, isRefund, paymentMode
+        const isPortalTransfer = d.depositType === "portal_transfer" || d.deposit_type === "portal_transfer";
+        const isVirtual = d.depositType === "virtual" || d.deposit_type === "virtual";
+        const isRefund = d.isRefund === true || d.is_refund === true || d.paymentMode === "refund" || d.payment_mode === "refund";
 
-        // portal_to_portal: portal_transfer type
+        // sub-type specific filtering
         if (virtualLedgerSubType === "portal_to_portal") return isPortalTransfer;
-        // portal_to_dist: virtual type AND refund == false (portal gives to distributor/retailer)
         if (virtualLedgerSubType === "portal_to_dist") return isVirtual && !isRefund;
-        // dist_to_portal: virtual type AND refund == true (distributor returns to portal)
         if (virtualLedgerSubType === "dist_to_portal") return isVirtual && isRefund;
-        // all: any of the above
+        // "all": portal_transfer OR virtual (any direction)
         return isPortalTransfer || isVirtual;
       })
       .map((d: any) => {
-        const isPortalTransfer = d.deposit_type === "portal_transfer" || d.depositType === "portal_transfer";
-        const isRefund = d.is_refund === true || d.isRefund === true || d.payment_mode === "refund" || d.paymentMode === "refund";
-        const isVirtual = d.deposit_type === "virtual" || d.depositType === "virtual";
+        const isPortalTransfer = d.depositType === "portal_transfer" || d.deposit_type === "portal_transfer";
+        const isRefund = d.isRefund === true || d.is_refund === true || d.paymentMode === "refund" || d.payment_mode === "refund";
+        const isVirtual = d.depositType === "virtual" || d.deposit_type === "virtual";
 
-        let txSubType = "Portal Transfer";
+        let txSubType = "Portal → Portal";
+        // fromLabel / toLabel — use camelCase fields that match VirtualLedgerTab
         let fromLabel = d.fromPortalName || d.fromBankAccountName || d.from_portal_name || "Portal";
         let toLabel = d.portalName || d.bankAccountName || d.portal_name || "Portal";
 
         if (isVirtual && !isRefund) {
           txSubType = "Portal → Distributor";
           fromLabel = d.portalName || d.bankAccountName || d.portal_name || "Portal";
-          toLabel = d.targetName || d.target_name || "Distributor";
+          toLabel = (d.targetName || d.target_name || "Distributor")
+            .replace(/^(Retailer:?\s*-\s*|Retailer:?\s*|Staff:?\s*-\s*|Staff:?\s*)/i, "");
         } else if (isVirtual && isRefund) {
           txSubType = "Distributor → Portal";
-          fromLabel = d.targetName || d.target_name || "Distributor";
+          fromLabel = (d.targetName || d.target_name || "Distributor")
+            .replace(/^(Retailer:?\s*-\s*|Retailer:?\s*|Staff:?\s*-\s*|Staff:?\s*)/i, "");
           toLabel = d.portalName || d.bankAccountName || d.portal_name || "Portal";
         } else if (isPortalTransfer) {
           txSubType = "Portal → Portal";
+          fromLabel = d.fromPortalName || d.fromBankAccountName || d.from_portal_name || "Portal";
+          toLabel = d.portalName || d.bankAccountName || d.portal_name || "Portal";
         }
 
         return {
@@ -941,7 +945,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       });
     }
 
-    if (rows.length === 0) {
+    if (rows.length === 0 && reportType !== "virtual_ledger") {
       alert("No data available for export.");
       return;
     }
@@ -1294,6 +1298,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         {/* Virtual Ledger Date Filter (shown for virtual_ledger) */}
         {selectedReport === "virtual_ledger" && (
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider">Date Range Filter</p>
+              {(dateFrom || dateTo) && (
+                <button
+                  type="button"
+                  onClick={() => { setDateFrom(""); setDateTo(""); }}
+                  className="text-[9px] font-black text-indigo-600 hover:underline uppercase tracking-wider cursor-pointer"
+                >
+                  Clear — Show All Time
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date From</label>
@@ -1314,6 +1330,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 />
               </div>
             </div>
+            <p className="text-[9px] font-bold text-slate-400 mt-2">
+              {virtualLedgerData.length} entries found{!dateFrom && !dateTo ? " (All Time)" : " in selected range"}
+            </p>
           </div>
         )}
 
@@ -2052,6 +2071,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                   onClick={() => {
                     if (report.type) {
                       if (report.subType) setVirtualLedgerSubType(report.subType);
+                      if (report.type === "virtual_ledger") {
+                        // Clear date filters so all-time records show
+                        setDateFrom("");
+                        setDateTo("");
+                      }
                       setSelectedReport(report.type);
                     } else {
                       alert("Report generator for " + report.name + " is being prepared.");
@@ -2073,6 +2097,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                        e.stopPropagation();
                        if (report.type) {
                          if (report.subType) setVirtualLedgerSubType(report.subType);
+                         if (report.type === "virtual_ledger") {
+                           setDateFrom("");
+                           setDateTo("");
+                         }
                          setSelectedReport(report.type);
                        } else {
                          alert("Report generator for " + report.name + " is being prepared.");
