@@ -458,13 +458,138 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return list.sort((a, b) => b.collectionsTotal - a.collectionsTotal);
   }, [collections, deposits, dateFrom, dateTo, selectedStaffId, searchQuery, userDirectory]);
 
+  // Filtered Tally Friendly Import Data (Matching Tally Excel Import Format)
+  const filteredTallyImport = useMemo(() => {
+    const combined: any[] = [];
+
+    // Collections (Receipt Vouchers)
+    collections.forEach((c: any, idx: number) => {
+      const cDate = c.collection_date || getISTDateString(getUtcDate(c.created_at));
+      if (dateFrom && cDate < dateFrom) return;
+      if (dateTo && cDate > dateTo) return;
+
+      const dt = getUtcDate(c.created_at || cDate);
+      const dateFormatted = isNaN(dt.getTime())
+        ? cDate
+        : dt.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Asia/Kolkata" });
+
+      combined.push({
+        id: c.id || `col_${idx}`,
+        created_at: c.created_at,
+        voucherDate: dateFormatted,
+        voucherTypeName: "Receipt",
+        voucherNumber: c.reference_no || `REC-${idx + 1}`,
+        buyerSupplierAddress: c.address || c.store_name || "",
+        buyerSupplierPincode: c.pincode || "",
+        ledgerName: c.retailer_name || "Cash Collection",
+        ledgerAmount: Number(c.total_amount || c.totalAmount || 0),
+        ledgerAmountDrCr: "Cr",
+        itemName: "",
+        billedQuantity: "",
+        itemRate: "",
+        colL: "",
+        itemRatePer: "",
+        itemAmount: "",
+        changeMode: "As Voucher"
+      });
+    });
+
+    // Deposits (Payment Vouchers)
+    deposits.forEach((d: any, idx: number) => {
+      const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
+      if (dateFrom && dDate < dateFrom) return;
+      if (dateTo && dDate > dateTo) return;
+
+      let vchType = "Payment";
+      if (d.deposit_type === "transfer") vchType = "Journal";
+
+      const dt = getUtcDate(d.created_at || dDate);
+      const dateFormatted = isNaN(dt.getTime())
+        ? dDate
+        : dt.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Asia/Kolkata" });
+
+      combined.push({
+        id: d.id || `dep_${idx}`,
+        created_at: d.created_at,
+        voucherDate: dateFormatted,
+        voucherTypeName: vchType,
+        voucherNumber: d.reference_no || `PAY-${idx + 1}`,
+        buyerSupplierAddress: d.address || "",
+        buyerSupplierPincode: d.pincode || "",
+        ledgerName: d.portal_name || d.target_name || "Bank Deposit",
+        ledgerAmount: Number(d.amount || 0),
+        ledgerAmountDrCr: "Dr",
+        itemName: "",
+        billedQuantity: "",
+        itemRate: "",
+        colL: "",
+        itemRatePer: "",
+        itemAmount: "",
+        changeMode: "As Voucher"
+      });
+    });
+
+    return combined.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+  }, [collections, deposits, dateFrom, dateTo]);
+
   // Export handlers
   const handleExportCsv = (reportType: string) => {
     let headers: string[] = [];
     let rows: any[] = [];
     let filename = `Report_${reportType}_${dateFrom}_to_${dateTo}.csv`;
 
-    if (reportType === "daybook") {
+    if (reportType === "tally_import") {
+      filename = `Tally_Friendly_Import_${dateFrom}_to_${dateTo}.csv`;
+      headers = [
+        "Voucher Date",
+        "Voucher Type Name",
+        "Voucher Number",
+        "Buyer/Supplier - Address",
+        "Buyer/Supplier - Pincode",
+        "Ledger Name",
+        "Ledger Amount",
+        "Ledger Amount Dr/Cr",
+        "Item Name",
+        "Billed Quantity",
+        "Item Rate",
+        "",
+        "Item Rate per",
+        "Item Amount",
+        "Change Mode"
+      ];
+      rows = filteredTallyImport.map((row) => [
+        `"${row.voucherDate}"`,
+        `"${row.voucherTypeName}"`,
+        `"${row.voucherNumber}"`,
+        `"${(row.buyerSupplierAddress || '').replace(/"/g, '""')}"`,
+        `"${(row.buyerSupplierPincode || '').replace(/"/g, '""')}"`,
+        `"${(row.ledgerName || '').replace(/"/g, '""')}"`,
+        row.ledgerAmount,
+        `"${row.ledgerAmountDrCr}"`,
+        `"${(row.itemName || '').replace(/"/g, '""')}"`,
+        `"${(row.billedQuantity || '').replace(/"/g, '""')}"`,
+        `"${(row.itemRate || '').replace(/"/g, '""')}"`,
+        `""`,
+        `"${(row.itemRatePer || '').replace(/"/g, '""')}"`,
+        `"${(row.itemAmount || '').replace(/"/g, '""')}"`,
+        `"${(row.changeMode || '').replace(/"/g, '""')}"`
+      ]);
+    } else if (reportType === "collections") {
+      filename = `GSTR1_Sales_CashIn_${dateFrom}_to_${dateTo}.csv`;
+      headers = ["Collection Date", "Retailer Name", "Store Name", "Reference No", "Staff Name", "Amount (IN)", "Remarks"];
+      rows = collections.map((c, i) => {
+        const dt = formatDateDisplay(c.created_at);
+        return [
+          dt.date,
+          `"${(c.retailer_name || '').replace(/"/g, '""')}"`,
+          `"${(c.store_name || '').replace(/"/g, '""')}"`,
+          `"${(c.reference_no || '').replace(/"/g, '""')}"`,
+          `"${getStaffName(c).replace(/"/g, '""')}"`,
+          Number(c.total_amount || c.totalAmount || 0),
+          `"${(c.remarks || '').replace(/"/g, '""')}"`
+        ];
+      });
+    } else if (reportType === "daybook") {
       headers = ["Date", "Time", "Particulars (Main)", "Particulars (Sub)", "Vch Type", "Vch No.", "Debit Amount (IN)", "Credit Amount (OUT)", "Remarks"];
       rows = filteredDaybook.map((tx) => {
         const dt = formatDateDisplay(tx.created_at);
@@ -556,6 +681,63 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     document.body.removeChild(link);
   };
 
+  const handleExportXml = () => {
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>\n`;
+    xml += `<ENVELOPE>\n`;
+    xml += `  <HEADER>\n`;
+    xml += `    <TALLYREQUEST>Import Data</TALLYREQUEST>\n`;
+    xml += `  </HEADER>\n`;
+    xml += `  <BODY>\n`;
+    xml += `    <IMPORTDATA>\n`;
+    xml += `      <REQUESTDESC>\n`;
+    xml += `        <REPORTNAME>Vouchers</REPORTNAME>\n`;
+    xml += `      </REQUESTDESC>\n`;
+    xml += `      <REQUESTDATA>\n`;
+
+    filteredTallyImport.forEach(item => {
+      let dateStr = item.voucherDate;
+      let yyyymmdd = "";
+      if (dateStr.includes("/")) {
+        const parts = dateStr.split("/");
+        if (parts.length === 3) {
+          yyyymmdd = `${parts[2]}${parts[1]}${parts[0]}`;
+        }
+      }
+      if (!yyyymmdd) yyyymmdd = getISTDateString().replace(/-/g, "");
+
+      const cleanLedger = (item.ledgerName || "").replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+      xml += `        <TALLYMESSAGE xmlns:UDF="TallyUDF">\n`;
+      xml += `          <VOUCHER VCHTYPE="${item.voucherTypeName}" ACTION="Create">\n`;
+      xml += `            <DATE>${yyyymmdd}</DATE>\n`;
+      xml += `            <VOUCHERTYPENAME>${item.voucherTypeName}</VOUCHERTYPENAME>\n`;
+      xml += `            <VOUCHERNUMBER>${item.voucherNumber}</VOUCHERNUMBER>\n`;
+      xml += `            <PARTYLEDGERNAME>${cleanLedger}</PARTYLEDGERNAME>\n`;
+      xml += `            <ALLLEDGERENTRIES.LIST>\n`;
+      xml += `              <LEDGERNAME>${cleanLedger}</LEDGERNAME>\n`;
+      xml += `              <ISDEEMEDPOSITIVE>${item.ledgerAmountDrCr === 'Dr' ? 'YES' : 'NO'}</ISDEEMEDPOSITIVE>\n`;
+      xml += `              <AMOUNT>${item.ledgerAmountDrCr === 'Dr' ? -item.ledgerAmount : item.ledgerAmount}</AMOUNT>\n`;
+      xml += `            </ALLLEDGERENTRIES.LIST>\n`;
+      xml += `          </VOUCHER>\n`;
+      xml += `        </TALLYMESSAGE>\n`;
+    });
+
+    xml += `      </REQUESTDATA>\n`;
+    xml += `    </IMPORTDATA>\n`;
+    xml += `  </BODY>\n`;
+    xml += `</ENVELOPE>`;
+
+    const blob = new Blob([xml], { type: "application/xml" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Tally_Import_Vouchers_${dateFrom}_to_${dateTo}.xml`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownloadPdfReport = () => {
     setIsDownloadingPdf(true);
     const filename = `${selectedReport}_${dateFrom}_to_${dateTo}.pdf`;
@@ -578,7 +760,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       reports: [
         { name: "GSTR-1 (Sales/Cash In)", icon: Receipt, formats: "XLSX • CSV", color: "blue", type: "collections" },
         { name: "GSTR-3B Summary", icon: FileSpreadsheet, formats: "PDF • XLSX", color: "blue" },
-        { name: "Tally Friendly Import (XML)", icon: Book, formats: "XML • CSV", color: "blue" },
+        { name: "Tally Friendly Import (XML)", icon: Book, formats: "XML • CSV", color: "blue", type: "tally_import" },
       ]
     },
     {
@@ -606,6 +788,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     if (selectedReport === "retailer_ledger") reportTitle = "Retailer Ledger Report (A-Z)";
     if (selectedReport === "portal_ledger") reportTitle = "Portal Ledger Report";
     if (selectedReport === "staff_efficiency") reportTitle = "Staff Collection Efficiency Report";
+    if (selectedReport === "tally_import") reportTitle = "Tally Friendly Import Report";
 
     return (
       <div className="space-y-4 pb-20">
@@ -622,13 +805,22 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             <div>
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{reportTitle}</h2>
               <p className="text-[10px] text-slate-400 font-bold">
-                {selectedReport === "daybook" || selectedReport === "cashbook" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator"}
+                {selectedReport === "daybook" || selectedReport === "cashbook" || selectedReport === "tally_import" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator"}
               </p>
             </div>
           </div>
 
           {/* Export Action Buttons */}
           <div className="flex items-center gap-2">
+            {selectedReport === "tally_import" && (
+              <button
+                onClick={handleExportXml}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors"
+              >
+                <Book className="w-3.5 h-3.5" />
+                <span>Download Tally XML</span>
+              </button>
+            )}
             <button
               onClick={() => handleExportCsv(selectedReport)}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors"
@@ -647,8 +839,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         </div>
 
-        {/* Filter Panel (Hidden for Daybook Summary & Cashbook as requested) */}
-        {selectedReport !== "daybook" && selectedReport !== "cashbook" && (
+        {/* Filter Panel (Hidden for Daybook Summary, Cashbook & Tally Import as requested) */}
+        {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && (
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* SEARCH */}
@@ -1032,13 +1224,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </div>
 
                 {/* Table */}
-                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
                   {filteredRetailerLedger.length === 0 ? (
                     <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
                       No retailer collection records found matching the filters.
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed">
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[600px]">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
                           <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
@@ -1100,13 +1292,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </div>
 
                 {/* Table */}
-                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
                   {filteredPortalLedger.length === 0 ? (
                     <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
                       No portal deposit records found matching the filters.
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed">
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[650px]">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
                           <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
@@ -1175,13 +1367,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </div>
 
                 {/* Table */}
-                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
                   {staffEfficiencyData.length === 0 ? (
                     <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
                       No staff activity records found matching the filters.
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed">
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[600px]">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
                           <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[6%] text-[9px] uppercase">No</th>
@@ -1208,6 +1400,102 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                             </tr>
                           );
                         })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* TALLY FRIENDLY IMPORT VIEW */}
+          {selectedReport === "tally_import" && (() => {
+            const totalReceipts = filteredTallyImport.filter(t => t.voucherTypeName === "Receipt").reduce((sum, t) => sum + t.ledgerAmount, 0);
+            const totalPayments = filteredTallyImport.filter(t => t.voucherTypeName !== "Receipt").reduce((sum, t) => sum + t.ledgerAmount, 0);
+
+            return (
+              <div className="space-y-3">
+                {/* Summary Bar */}
+                <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Vouchers</span>
+                    <span className="text-xs font-black text-slate-900 mt-0.5">{filteredTallyImport.length}</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Receipt Vouchers (Cr)</span>
+                    <span className="text-xs font-black text-emerald-600 mt-0.5 font-mono">₹{totalReceipts.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Payment Vouchers (Dr)</span>
+                    <span className="text-xs font-black text-red-500 mt-0.5 font-mono">₹{totalPayments.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Turnover</span>
+                    <span className="text-xs font-black text-blue-900 mt-0.5 font-mono">
+                      ₹{(totalReceipts + totalPayments).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Tally Format Table matching Excel SS1 */}
+                <div className="border border-amber-300 rounded-lg overflow-x-auto bg-white shadow-xs">
+                  {filteredTallyImport.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
+                      No voucher entries found for Tally import.
+                    </div>
+                  ) : (
+                    <table className="w-full text-xs text-left border-collapse table-auto whitespace-nowrap min-w-[1400px]">
+                      <thead>
+                        <tr className="bg-amber-400 text-slate-950 font-black border-b border-amber-500 text-[10px] uppercase">
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Voucher Date</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Voucher Type Name</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Voucher Number</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-left">Buyer/Supplier - Address</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Buyer/Supplier - Pincode</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-left">Ledger Name</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-right">Ledger Amount</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Ledger Amount Dr/Cr</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Item Name</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Billed Quantity</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Item Rate</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center w-8"></th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Item Rate per</th>
+                          <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Item Amount</th>
+                          <th className="py-2.5 px-2 text-center">Change Mode</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {filteredTallyImport.map((row, idx) => (
+                          <tr key={row.id || idx} className="hover:bg-amber-50/40 divide-x divide-slate-200 font-mono text-[9.5px]">
+                            <td className="py-2 px-2 text-center text-slate-800 font-semibold">{row.voucherDate}</td>
+                            <td className="py-2 px-2 text-center font-bold">
+                              <span className={`px-1.5 py-0.5 rounded-xs font-black uppercase text-[8.5px] ${
+                                row.voucherTypeName === "Receipt" ? "bg-emerald-100 text-emerald-800" :
+                                row.voucherTypeName === "Payment" ? "bg-red-100 text-red-800" :
+                                "bg-blue-100 text-blue-800"
+                              }`}>
+                                {row.voucherTypeName}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-center text-slate-700 font-semibold">{row.voucherNumber}</td>
+                            <td className="py-2 px-2 text-left font-sans text-slate-700">{row.buyerSupplierAddress || "-"}</td>
+                            <td className="py-2 px-2 text-center text-slate-500">{row.buyerSupplierPincode || "-"}</td>
+                            <td className="py-2 px-2 text-left font-sans font-bold text-slate-900">{row.ledgerName}</td>
+                            <td className="py-2 px-2 text-right font-extrabold text-slate-900">₹{Number(row.ledgerAmount).toLocaleString("en-IN")}</td>
+                            <td className="py-2 px-2 text-center font-bold">
+                              <span className={`px-1 py-0.5 rounded-xs text-[8.5px] font-black ${row.ledgerAmountDrCr === "Dr" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
+                                {row.ledgerAmountDrCr}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-center text-slate-400 italic">{row.itemName || "-"}</td>
+                            <td className="py-2 px-2 text-center text-slate-400">{row.billedQuantity || "-"}</td>
+                            <td className="py-2 px-2 text-center text-slate-400">{row.itemRate || "-"}</td>
+                            <td className="py-2 px-2 text-center text-slate-300 w-8"></td>
+                            <td className="py-2 px-2 text-center text-slate-400">{row.itemRatePer || "-"}</td>
+                            <td className="py-2 px-2 text-center text-slate-400">{row.itemAmount || "-"}</td>
+                            <td className="py-2 px-2 text-center font-sans text-slate-600 font-semibold">{row.changeMode}</td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   )}

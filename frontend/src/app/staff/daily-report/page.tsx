@@ -415,8 +415,8 @@ export default function DailyReportPage() {
               </div>
 
               {/* Transaction Data Table */}
-              <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
-                <table className="w-full text-xs text-left border-collapse table-fixed">
+              <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
+                <table className="w-full text-xs text-left border-collapse table-fixed min-w-[600px]">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
                       <th className="py-2 px-1 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>

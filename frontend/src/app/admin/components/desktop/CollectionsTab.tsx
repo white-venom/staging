@@ -462,7 +462,7 @@ export default function CollectionsTab({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[600px]">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase tracking-wide text-slate-400 dark:text-slate-500">
                  <th className="p-2 border-r border-slate-100 dark:border-slate-800">Date</th>

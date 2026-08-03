@@ -838,7 +838,7 @@ export default function LedgerTab({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-xs border-collapse min-w-[550px]">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
                 <th className="p-2 border-r border-slate-100 dark:border-slate-800 w-32">Date & Time</th>
