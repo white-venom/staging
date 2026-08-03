@@ -74,12 +74,14 @@ def main():
             process_session(args.db_url, db, args.apply)
         return
 
-    from app.database.db import MasterSessionLocal, get_tenant_session
+    from app.database.db import MasterSessionLocal, get_tenant_engine
     from app.database.master_models import Tenant
 
     if args.tenant:
         try:
-            with get_tenant_session(args.tenant) as db:
+            engine = get_tenant_engine(args.tenant)
+            TenantSession = sessionmaker(bind=engine)
+            with TenantSession() as db:
                 process_session(args.tenant, db, args.apply)
         except Exception as e:
             print(f"Error processing tenant '{args.tenant}': {e}")
@@ -105,7 +107,9 @@ def main():
     total_fixed = 0
     for tenant in tenants:
         try:
-            with get_tenant_session(tenant.db_name) as db:
+            engine = get_tenant_engine(tenant.db_name)
+            TenantSession = sessionmaker(bind=engine)
+            with TenantSession() as db:
                 count = process_session(tenant.name, db, args.apply)
                 total_fixed += count
         except Exception as e:
