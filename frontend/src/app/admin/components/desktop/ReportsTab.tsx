@@ -16,12 +16,7 @@ import {
   IndianRupee,
   Activity,
   ArrowLeft,
-  FileDown,
-  UserCheck,
-  Building2,
-  Users,
-  RefreshCw,
-  X
+  FileDown
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { getISTDateString, getUtcDate } from "../../../utils/dateHelpers";
@@ -84,16 +79,71 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     }
   };
 
-  // Staff members list
-  const staffList = useMemo(() => {
-    if (!userDirectory || userDirectory.length === 0) {
-      // Fallback extract from collections / deposits
-      const names = new Set<string>();
-      collections.forEach(c => { if (c.staff_name) names.add(c.staff_name); });
-      deposits.forEach(d => { if (d.staff_name) names.add(d.staff_name); });
-      return Array.from(names).map(n => ({ id: n, name: n }));
+  // Helper UUID checker
+  const isUuid = (str: any) => {
+    if (typeof str !== "string") return false;
+    return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(str) || (str.length > 20 && str.includes("-"));
+  };
+
+  // Helper to map any transaction/user object to a clean human-readable Staff Name
+  const getStaffName = (item: any): string => {
+    if (!item) return "Staff Member";
+    
+    // Check direct name fields
+    const directName = item.staff_name || item.staffName || item.from_staff_name || item.recipient_staff_name || item.name || item.full_name;
+
+    if (directName && typeof directName === "string" && !isUuid(directName) && directName !== "Unknown Staff" && directName !== "System") {
+      return directName;
     }
-    return userDirectory.filter((u: any) => u.role === "staff" || u.role === "admin");
+
+    // Lookup in userDirectory by staff ID
+    const targetId = String(item.from_staff_id || item.staff_id || item.staffId || item.recipient_staff_id || item.id || item.user_id || "");
+    if (targetId && userDirectory && userDirectory.length > 0) {
+      const found = userDirectory.find((u: any) => String(u.id) === targetId || String(u.staff_id) === targetId || String(u.user_id) === targetId);
+      if (found && (found.name || found.full_name || found.username)) {
+        const uName = found.name || found.full_name || found.username;
+        if (!isUuid(uName)) return uName;
+      }
+    }
+
+    // Fallback if directName exists and is not UUID
+    if (directName && typeof directName === "string" && !isUuid(directName)) {
+      return directName;
+    }
+
+    return "Staff Member";
+  };
+
+  // Staff members dropdown list
+  const staffList = useMemo(() => {
+    const map = new Map<string, string>();
+    
+    if (userDirectory && userDirectory.length > 0) {
+      userDirectory.forEach((u: any) => {
+        const name = u.name || u.full_name || u.username;
+        if (name && typeof name === "string" && !isUuid(name)) {
+          map.set(String(u.id || name), name);
+        }
+      });
+    }
+
+    collections.forEach(c => {
+      const name = getStaffName(c);
+      const id = String(c.from_staff_id || c.staff_id || name);
+      if (name && name !== "Staff Member" && name !== "Unknown Staff") {
+        map.set(id, name);
+      }
+    });
+
+    deposits.forEach(d => {
+      const name = getStaffName(d);
+      const id = String(d.staff_id || name);
+      if (name && name !== "Staff Member" && name !== "Unknown Staff") {
+        map.set(id, name);
+      }
+    });
+
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [userDirectory, collections, deposits]);
 
   // Retailer Directory options
@@ -102,7 +152,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       return retailerDirectory;
     }
     const names = new Set<string>();
-    collections.forEach(c => { if (c.retailer_name) names.add(c.retailer_name); });
+    collections.forEach(c => { if (c.retailer_name && !isUuid(c.retailer_name)) names.add(c.retailer_name); });
     return Array.from(names).map(n => ({ id: n, name: n }));
   }, [retailerDirectory, collections]);
 
@@ -112,8 +162,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       return portalDirectory;
     }
     const names = new Set<string>();
-    deposits.forEach(d => { if (d.portal_name) names.add(d.portal_name); });
-    collections.forEach(c => { if (c.portal_name) names.add(c.portal_name); });
+    deposits.forEach(d => { if (d.portal_name && !isUuid(d.portal_name)) names.add(d.portal_name); });
+    collections.forEach(c => { if (c.portal_name && !isUuid(c.portal_name)) names.add(c.portal_name); });
     return Array.from(names).map(n => ({ id: n, name: n }));
   }, [portalDirectory, deposits, collections]);
 
@@ -131,8 +181,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       }
 
       if (selectedStaffId !== "all") {
-        const matchesStaffId = String(c.from_staff_id) === String(selectedStaffId);
-        const matchesStaffName = c.staff_name === selectedStaffId;
+        const sName = getStaffName(c);
+        const matchesStaffId = String(c.from_staff_id || c.staff_id) === String(selectedStaffId);
+        const matchesStaffName = sName === selectedStaffId || sName.toLowerCase() === selectedStaffId.toLowerCase();
         if (!matchesStaffId && !matchesStaffName) return false;
       }
 
@@ -140,7 +191,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         const q = searchQuery.toLowerCase();
         const retName = (c.retailer_name || "").toLowerCase();
         const storeName = (c.store_name || "").toLowerCase();
-        const staffName = (c.staff_name || "").toLowerCase();
+        const staffName = getStaffName(c).toLowerCase();
         const amount = String(c.total_amount || c.totalAmount || "");
         const remarks = (c.remarks || "").toLowerCase();
         if (!retName.includes(q) && !storeName.includes(q) && !staffName.includes(q) && !amount.includes(q) && !remarks.includes(q)) {
@@ -150,7 +201,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
       return true;
     }).sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
-  }, [collections, dateFrom, dateTo, selectedRetailerId, selectedStaffId, searchQuery]);
+  }, [collections, dateFrom, dateTo, selectedRetailerId, selectedStaffId, searchQuery, userDirectory]);
 
   // Filtered Portal Ledger Data
   const filteredPortalLedger = useMemo(() => {
@@ -166,8 +217,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       }
 
       if (selectedStaffId !== "all") {
+        const sName = getStaffName(d);
         const matchesStaffId = String(d.staff_id) === String(selectedStaffId);
-        const matchesStaffName = d.staff_name === selectedStaffId;
+        const matchesStaffName = sName === selectedStaffId || sName.toLowerCase() === selectedStaffId.toLowerCase();
         if (!matchesStaffId && !matchesStaffName) return false;
       }
 
@@ -175,7 +227,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         const q = searchQuery.toLowerCase();
         const portalName = (d.portal_name || "").toLowerCase();
         const targetName = (d.target_name || "").toLowerCase();
-        const staffName = (d.staff_name || "").toLowerCase();
+        const staffName = getStaffName(d).toLowerCase();
         const amount = String(d.amount || "");
         const remarks = (d.remarks || "").toLowerCase();
         if (!portalName.includes(q) && !targetName.includes(q) && !staffName.includes(q) && !amount.includes(q) && !remarks.includes(q)) {
@@ -185,7 +237,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
       return true;
     }).sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
-  }, [deposits, dateFrom, dateTo, selectedPortalId, selectedStaffId, searchQuery]);
+  }, [deposits, dateFrom, dateTo, selectedPortalId, selectedStaffId, searchQuery, userDirectory]);
 
   // Filtered Staff Collection Efficiency Data
   const staffEfficiencyData = useMemo(() => {
@@ -204,18 +256,21 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       if (dateFrom && cDate < dateFrom) return;
       if (dateTo && cDate > dateTo) return;
 
-      const key = c.staff_name || c.from_staff_id || "Unknown";
-      if (!map.has(key)) {
-        map.set(key, {
-          staffId: String(c.from_staff_id || key),
-          staffName: key,
+      const resolvedName = getStaffName(c);
+      const staffId = String(c.from_staff_id || c.staff_id || resolvedName);
+      const mapKey = resolvedName !== "Staff Member" ? resolvedName : staffId;
+
+      if (!map.has(mapKey)) {
+        map.set(mapKey, {
+          staffId: staffId,
+          staffName: resolvedName,
           collectionsCount: 0,
           collectionsTotal: 0,
           depositsCount: 0,
           depositsTotal: 0
         });
       }
-      const entry = map.get(key)!;
+      const entry = map.get(mapKey)!;
       entry.collectionsCount += 1;
       entry.collectionsTotal += Number(c.total_amount || c.totalAmount || 0);
     });
@@ -226,18 +281,21 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       if (dateFrom && dDate < dateFrom) return;
       if (dateTo && dDate > dateTo) return;
 
-      const key = d.staff_name || d.staff_id || "Unknown";
-      if (!map.has(key)) {
-        map.set(key, {
-          staffId: String(d.staff_id || key),
-          staffName: key,
+      const resolvedName = getStaffName(d);
+      const staffId = String(d.staff_id || resolvedName);
+      const mapKey = resolvedName !== "Staff Member" ? resolvedName : staffId;
+
+      if (!map.has(mapKey)) {
+        map.set(mapKey, {
+          staffId: staffId,
+          staffName: resolvedName,
           collectionsCount: 0,
           collectionsTotal: 0,
           depositsCount: 0,
           depositsTotal: 0
         });
       }
-      const entry = map.get(key)!;
+      const entry = map.get(mapKey)!;
       entry.depositsCount += 1;
       entry.depositsTotal += Number(d.amount || 0);
     });
@@ -245,7 +303,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     let list = Array.from(map.values());
 
     if (selectedStaffId !== "all") {
-      list = list.filter(item => item.staffId === String(selectedStaffId) || item.staffName === selectedStaffId);
+      list = list.filter(item => 
+        item.staffId === String(selectedStaffId) || 
+        item.staffName === selectedStaffId ||
+        item.staffName.toLowerCase() === selectedStaffId.toLowerCase()
+      );
     }
 
     if (searchQuery.trim()) {
@@ -254,7 +316,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     }
 
     return list.sort((a, b) => b.collectionsTotal - a.collectionsTotal);
-  }, [collections, deposits, dateFrom, dateTo, selectedStaffId, searchQuery]);
+  }, [collections, deposits, dateFrom, dateTo, selectedStaffId, searchQuery, userDirectory]);
 
   // Export handlers
   const handleExportCsv = (reportType: string) => {
@@ -272,7 +334,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           dt.time,
           `"${(c.retailer_name || '').replace(/"/g, '""')}"`,
           `"${(c.store_name || 'Cash').replace(/"/g, '""')}"`,
-          `"${(c.staff_name || '').replace(/"/g, '""')}"`,
+          `"${getStaffName(c).replace(/"/g, '""')}"`,
           Number(c.total_amount || 0),
           `"${(c.remarks || '').replace(/"/g, '""')}"`
         ];
@@ -288,7 +350,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           `"${(d.portal_name || 'Portal').replace(/"/g, '""')}"`,
           `"${(d.deposit_type || '').replace(/"/g, '""')}"`,
           `"${(d.target_name || 'Recipient').replace(/"/g, '""')}"`,
-          `"${(d.staff_name || '').replace(/"/g, '""')}"`,
+          `"${getStaffName(d).replace(/"/g, '""')}"`,
           Number(d.amount || 0),
           `"${(d.remarks || '').replace(/"/g, '""')}"`
         ];
@@ -408,7 +470,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         </div>
 
-        {/* Filter Panel (Matching User's Screenshot Design) */}
+        {/* Filter Panel */}
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {/* SEARCH */}
@@ -574,7 +636,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               </td>
                               <td className="py-2 px-1 text-center font-bold text-slate-900 text-[9.5px]">{c.retailer_name || "Retailer"}</td>
                               <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[9px]">{c.store_name || "Cash"}</td>
-                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[9px] uppercase">{c.staff_name || "-"}</td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[9px] uppercase">{getStaffName(c)}</td>
                               <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-[9.5px] font-mono">₹{Number(c.total_amount || 0).toLocaleString("en-IN")}</td>
                               <td className="py-2 px-1 text-center text-slate-500 italic text-[8.5px]">{c.remarks || "-"}</td>
                             </tr>
@@ -643,7 +705,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               <td className="py-2 px-1 text-center font-bold text-slate-900 text-[9.5px]">{d.portal_name || "Portal"}</td>
                               <td className="py-2 px-1 text-center font-semibold text-slate-600 text-[9px] uppercase">{d.deposit_type || "portal"}</td>
                               <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[9px]">{d.target_name || "-"}</td>
-                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[9px] uppercase">{d.staff_name || "-"}</td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[9px] uppercase">{getStaffName(d)}</td>
                               <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-[9.5px] font-mono">-₹{Number(d.amount || 0).toLocaleString("en-IN")}</td>
                             </tr>
                           );
