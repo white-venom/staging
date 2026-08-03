@@ -167,6 +167,103 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return Array.from(names).map(n => ({ id: n, name: n }));
   }, [portalDirectory, deposits, collections]);
 
+  // Filtered Daybook Summary Data (Tally Day Book Format)
+  const filteredDaybook = useMemo(() => {
+    const combined: any[] = [];
+
+    // Collections = Receipts (Debit Cash / IN)
+    collections.forEach((c: any, idx: number) => {
+      const cDate = c.collection_date || getISTDateString(getUtcDate(c.created_at));
+      if (dateFrom && cDate < dateFrom) return;
+      if (dateTo && cDate > dateTo) return;
+
+      if (selectedRetailerId !== "all") {
+        const matchesId = String(c.retailer_id) === String(selectedRetailerId);
+        const matchesName = c.retailer_name === selectedRetailerId;
+        if (!matchesId && !matchesName) return;
+      }
+
+      if (selectedStaffId !== "all") {
+        const sName = getStaffName(c);
+        const matchesStaffId = String(c.from_staff_id || c.staff_id) === String(selectedStaffId);
+        const matchesStaffName = sName === selectedStaffId || sName.toLowerCase() === selectedStaffId.toLowerCase();
+        if (!matchesStaffId && !matchesStaffName) return;
+      }
+
+      const mainTitle = c.retailer_name || "Cash Collection";
+      const subTitle = [c.store_name ? `Store: ${c.store_name}` : null, `Staff: ${getStaffName(c)}`].filter(Boolean).join(" | ");
+
+      combined.push({
+        id: c.id || `col_${idx}`,
+        created_at: c.created_at,
+        cDate: cDate,
+        vchType: "Receipt",
+        vchNo: c.reference_no || `REC-${idx + 1}`,
+        particularsMain: mainTitle,
+        particularsSub: subTitle,
+        isReceipt: true,
+        amount: Number(c.total_amount || c.totalAmount || 0),
+        remarks: c.remarks || ""
+      });
+    });
+
+    // Deposits = Payments (Credit Cash / OUT)
+    deposits.forEach((d: any, idx: number) => {
+      const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
+      if (dateFrom && dDate < dateFrom) return;
+      if (dateTo && dDate > dateTo) return;
+
+      if (selectedPortalId !== "all") {
+        const matchesId = String(d.portal_id) === String(selectedPortalId);
+        const matchesName = d.portal_name === selectedPortalId;
+        if (!matchesId && !matchesName) return;
+      }
+
+      if (selectedStaffId !== "all") {
+        const sName = getStaffName(d);
+        const matchesStaffId = String(d.staff_id) === String(selectedStaffId);
+        const matchesStaffName = sName === selectedStaffId || sName.toLowerCase() === selectedStaffId.toLowerCase();
+        if (!matchesStaffId && !matchesStaffName) return;
+      }
+
+      let vchType = "Payment";
+      if (d.deposit_type === "transfer") vchType = "Journal";
+      if (d.deposit_type === "retailer") vchType = "Payment";
+
+      const mainTitle = d.portal_name || d.target_name || "Cash Deposit";
+      const subTitle = [d.deposit_type ? `Type: ${d.deposit_type.toUpperCase()}` : null, `Staff: ${getStaffName(d)}`].filter(Boolean).join(" | ");
+
+      combined.push({
+        id: d.id || `dep_${idx}`,
+        created_at: d.created_at,
+        cDate: dDate,
+        vchType: vchType,
+        vchNo: d.reference_no || `PAY-${idx + 1}`,
+        particularsMain: mainTitle,
+        particularsSub: subTitle,
+        isReceipt: false,
+        amount: Number(d.amount || 0),
+        remarks: d.remarks || ""
+      });
+    });
+
+    let result = combined;
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(item => 
+        item.particularsMain.toLowerCase().includes(q) ||
+        item.particularsSub.toLowerCase().includes(q) ||
+        item.vchType.toLowerCase().includes(q) ||
+        item.vchNo.toLowerCase().includes(q) ||
+        String(item.amount).includes(q) ||
+        item.remarks.toLowerCase().includes(q)
+      );
+    }
+
+    return result.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+  }, [collections, deposits, dateFrom, dateTo, selectedRetailerId, selectedPortalId, selectedStaffId, searchQuery, userDirectory]);
+
   // Filtered Retailer Ledger Data
   const filteredRetailerLedger = useMemo(() => {
     return collections.filter((c: any) => {
@@ -250,7 +347,6 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       depositsTotal: number;
     }>();
 
-    // Process collections
     collections.forEach((c: any) => {
       const cDate = c.collection_date || getISTDateString(getUtcDate(c.created_at));
       if (dateFrom && cDate < dateFrom) return;
@@ -275,7 +371,6 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       entry.collectionsTotal += Number(c.total_amount || c.totalAmount || 0);
     });
 
-    // Process deposits
     deposits.forEach((d: any) => {
       const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       if (dateFrom && dDate < dateFrom) return;
@@ -324,7 +419,23 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     let rows: any[] = [];
     let filename = `Report_${reportType}_${dateFrom}_to_${dateTo}.csv`;
 
-    if (reportType === "retailer_ledger") {
+    if (reportType === "daybook") {
+      headers = ["Date", "Time", "Particulars (Main)", "Particulars (Sub)", "Vch Type", "Vch No.", "Debit Amount (IN)", "Credit Amount (OUT)", "Remarks"];
+      rows = filteredDaybook.map((tx) => {
+        const dt = formatDateDisplay(tx.created_at);
+        return [
+          dt.date,
+          dt.time,
+          `"${tx.particularsMain.replace(/"/g, '""')}"`,
+          `"${tx.particularsSub.replace(/"/g, '""')}"`,
+          `"${tx.vchType}"`,
+          `"${tx.vchNo}"`,
+          tx.isReceipt ? tx.amount : 0,
+          !tx.isReceipt ? tx.amount : 0,
+          `"${(tx.remarks || '').replace(/"/g, '""')}"`
+        ];
+      });
+    } else if (reportType === "retailer_ledger") {
       headers = ["No", "Date", "Time", "Retailer Name", "Store Name", "Staff Name", "Amount (IN)", "Remarks"];
       rows = filteredRetailerLedger.map((c, i) => {
         const dt = formatDateDisplay(c.created_at);
@@ -411,7 +522,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     {
       title: "Daily Statements",
       reports: [
-        { name: "Daybook Summary", icon: Calendar, formats: "PDF", color: "emerald", type: "daybook" },
+        { name: "Daybook Summary", icon: Calendar, formats: "PDF • XLSX", color: "emerald", type: "daybook" },
         { name: "Cashbook (Physical Flow)", icon: IndianRupee, formats: "PDF • XLSX", color: "emerald", type: "cashbook" },
         { name: "Staff Collection Efficiency", icon: Activity, formats: "PDF • XLSX", color: "emerald", type: "staff_efficiency" },
       ]
@@ -428,6 +539,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   // If a report is selected, render the dedicated Filter & Report Viewer!
   if (selectedReport) {
     let reportTitle = "Report View";
+    if (selectedReport === "daybook") reportTitle = "Day Book Summary";
     if (selectedReport === "retailer_ledger") reportTitle = "Retailer Ledger Report (A-Z)";
     if (selectedReport === "portal_ledger") reportTitle = "Portal Ledger Report";
     if (selectedReport === "staff_efficiency") reportTitle = "Staff Collection Efficiency Report";
@@ -480,7 +592,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
                 <input autoComplete="one-time-code"
                   type="text"
-                  placeholder="Search party or staff..."
+                  placeholder="Search party, voucher or staff..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
@@ -581,6 +693,96 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               </span>
             </div>
           </div>
+
+          {/* DAYBOOK SUMMARY VIEW (Tally Day Book Format in CrediiFlow Theme) */}
+          {selectedReport === "daybook" && (() => {
+            const totalReceipts = filteredDaybook.reduce((sum, tx) => sum + (tx.isReceipt ? tx.amount : 0), 0);
+            const totalPayments = filteredDaybook.reduce((sum, tx) => sum + (!tx.isReceipt ? tx.amount : 0), 0);
+            const netFlow = totalReceipts - totalPayments;
+
+            return (
+              <div className="space-y-3">
+                {/* Summary Bar */}
+                <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Vouchers</span>
+                    <span className="text-xs font-black text-slate-900 mt-0.5">{filteredDaybook.length}</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Receipts (Debit)</span>
+                    <span className="text-xs font-black text-emerald-600 mt-0.5 font-mono">₹{totalReceipts.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Payments (Credit)</span>
+                    <span className="text-xs font-black text-red-500 mt-0.5 font-mono">₹{totalPayments.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Net Cash Flow</span>
+                    <span className={`text-xs font-black mt-0.5 font-mono ${netFlow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                      ₹{netFlow.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Day Book Table (Matching Screenshot Columns: Date, Particulars, Vch Type, Vch No, Debit Amount, Credit Amount) */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                  {filteredDaybook.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
+                      No daybook transactions found matching the selected filters.
+                    </div>
+                  ) : (
+                    <table className="w-full text-xs text-left border-collapse table-fixed">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] text-[9px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[34%] text-[9px] uppercase">Particulars</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[14%] text-[9px] uppercase">Vch Type</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[10%] text-[9px] uppercase">Vch No.</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[15%] text-[9px] uppercase">Debit Amount (IN)</th>
+                          <th className="py-2 px-0.5 text-center w-[15%] text-[9px] uppercase">Credit Amount (OUT)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {filteredDaybook.map((tx, idx) => {
+                          const dt = formatDateDisplay(tx.created_at);
+                          return (
+                            <tr key={tx.id || idx} className="hover:bg-slate-50/50 divide-x divide-slate-200">
+                              <td className="py-2 px-0.5 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                                <div>{dt.date}</div>
+                                <div className="text-slate-400 font-mono mt-0.5">{dt.time}</div>
+                              </td>
+                              <td className="py-2 px-1 text-center font-semibold text-slate-800 leading-snug">
+                                <div className="font-black text-slate-900 text-[9.5px]">{tx.particularsMain}</div>
+                                <div className="text-[8.5px] font-bold text-slate-500 mt-0.5">{tx.particularsSub}</div>
+                              </td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[9px] uppercase">
+                                <span className={`px-1.5 py-0.5 rounded-xs text-[8.5px] font-black ${
+                                  tx.vchType === "Receipt" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
+                                  tx.vchType === "Payment" ? "bg-red-50 text-red-700 border border-red-200" :
+                                  "bg-blue-50 text-blue-700 border border-blue-200"
+                                }`}>
+                                  {tx.vchType}
+                                </span>
+                              </td>
+                              <td className="py-2 px-0.5 text-center font-mono text-slate-600 text-[9px]">
+                                {tx.vchNo}
+                              </td>
+                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-[9.5px] font-mono">
+                                {tx.isReceipt ? `₹${Number(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                              </td>
+                              <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-[9.5px] font-mono">
+                                {!tx.isReceipt ? `₹${Number(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* RETAILER LEDGER VIEW */}
           {selectedReport === "retailer_ledger" && (() => {
