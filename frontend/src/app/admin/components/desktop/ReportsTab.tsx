@@ -238,6 +238,77 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return result.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
   }, [collections, deposits, dateFrom, dateTo, searchQuery, userDirectory]);
 
+  // Filtered Cashbook Data (Two-Sided T-Account Receipts Dr / Payments Cr Format)
+  const filteredCashbook = useMemo(() => {
+    const receipts: any[] = [];
+    const payments: any[] = [];
+
+    // Receipts (Dr. Side) - Collections
+    collections.forEach((c: any, idx: number) => {
+      const cDate = c.collection_date || getISTDateString(getUtcDate(c.created_at));
+      if (dateFrom && cDate < dateFrom) return;
+      if (dateTo && cDate > dateTo) return;
+
+      const isBank = (c.payment_mode || c.paymentMode || "").toLowerCase() === "online" || (c.payment_mode || c.paymentMode || "").toLowerCase() === "bank";
+      const amt = Number(c.total_amount || c.totalAmount || 0);
+
+      receipts.push({
+        id: c.id || `rec_${idx}`,
+        created_at: c.created_at,
+        particulars: c.retailer_name || "Cash Collection",
+        subText: c.store_name ? `Store: ${c.store_name}` : `Staff: ${getStaffName(c)}`,
+        cashAmt: isBank ? 0 : amt,
+        bankAmt: isBank ? amt : 0,
+        remarks: c.remarks || "-"
+      });
+    });
+
+    // Payments (Cr. Side) - Deposits / Handovers
+    deposits.forEach((d: any, idx: number) => {
+      const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
+      if (dateFrom && dDate < dateFrom) return;
+      if (dateTo && dDate > dateTo) return;
+
+      const isBank = d.deposit_type === "portal" || d.deposit_type === "virtual" || (d.payment_mode || d.paymentMode || "").toLowerCase() === "online";
+      const amt = Number(d.amount || 0);
+
+      payments.push({
+        id: d.id || `pay_${idx}`,
+        created_at: d.created_at,
+        particulars: d.portal_name || d.target_name || "Cash Deposit",
+        subText: d.deposit_type ? `Type: ${d.deposit_type.toUpperCase()}` : `Staff: ${getStaffName(d)}`,
+        cashAmt: isBank ? 0 : amt,
+        bankAmt: isBank ? amt : 0,
+        remarks: d.remarks || "-"
+      });
+    });
+
+    receipts.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+    payments.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+
+    const totalCashReceipts = receipts.reduce((sum, r) => sum + r.cashAmt, 0);
+    const totalBankReceipts = receipts.reduce((sum, r) => sum + r.bankAmt, 0);
+    const totalCashPayments = payments.reduce((sum, p) => sum + p.cashAmt, 0);
+    const totalBankPayments = payments.reduce((sum, p) => sum + p.bankAmt, 0);
+
+    const netCashBalance = totalCashReceipts - totalCashPayments;
+    const netBankBalance = totalBankReceipts - totalBankPayments;
+
+    const maxRows = Math.max(receipts.length, payments.length);
+
+    return {
+      receipts,
+      payments,
+      maxRows,
+      totalCashReceipts,
+      totalBankReceipts,
+      totalCashPayments,
+      totalBankPayments,
+      netCashBalance,
+      netBankBalance
+    };
+  }, [collections, deposits, dateFrom, dateTo, userDirectory]);
+
   // Filtered Retailer Ledger Data
   const filteredRetailerLedger = useMemo(() => {
     return collections.filter((c: any) => {
@@ -409,6 +480,23 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           `"${(tx.remarks || '').replace(/"/g, '""')}"`
         ];
       });
+    } else if (reportType === "cashbook") {
+      headers = ["Receipt Particulars", "Receipt Cash", "Receipt Bank", "Receipt Remarks", "Payment Particulars", "Payment Cash", "Payment Bank", "Payment Remarks"];
+      const { receipts, payments, maxRows } = filteredCashbook;
+      rows = Array.from({ length: maxRows }).map((_, i) => {
+        const r = receipts[i];
+        const p = payments[i];
+        return [
+          r ? `"${r.particulars.replace(/"/g, '""')}"` : '""',
+          r ? r.cashAmt : 0,
+          r ? r.bankAmt : 0,
+          r ? `"${(r.remarks || '').replace(/"/g, '""')}"` : '""',
+          p ? `"${p.particulars.replace(/"/g, '""')}"` : '""',
+          p ? p.cashAmt : 0,
+          p ? p.bankAmt : 0,
+          p ? `"${(p.remarks || '').replace(/"/g, '""')}"` : '""'
+        ];
+      });
     } else if (reportType === "retailer_ledger") {
       headers = ["No", "Date", "Time", "Retailer Name", "Store Name", "Staff Name", "Amount (IN)", "Remarks"];
       rows = filteredRetailerLedger.map((c, i) => {
@@ -514,6 +602,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   if (selectedReport) {
     let reportTitle = "Report View";
     if (selectedReport === "daybook") reportTitle = "Day Book Summary";
+    if (selectedReport === "cashbook") reportTitle = "Cash Book (Physical & Bank Flow)";
     if (selectedReport === "retailer_ledger") reportTitle = "Retailer Ledger Report (A-Z)";
     if (selectedReport === "portal_ledger") reportTitle = "Portal Ledger Report";
     if (selectedReport === "staff_efficiency") reportTitle = "Staff Collection Efficiency Report";
@@ -533,7 +622,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             <div>
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">{reportTitle}</h2>
               <p className="text-[10px] text-slate-400 font-bold">
-                {selectedReport === "daybook" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator"}
+                {selectedReport === "daybook" || selectedReport === "cashbook" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator"}
               </p>
             </div>
           </div>
@@ -558,8 +647,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         </div>
 
-        {/* Filter Panel (Hidden for Daybook Summary as per request) */}
-        {selectedReport !== "daybook" && (
+        {/* Filter Panel (Hidden for Daybook Summary & Cashbook as requested) */}
+        {selectedReport !== "daybook" && selectedReport !== "cashbook" && (
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* SEARCH */}
@@ -755,6 +844,163 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                           );
                         })}
                       </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* CASHBOOK VIEW (Two-Sided Receipts Dr / Payments Cr Format in CrediiFlow Theme) */}
+          {selectedReport === "cashbook" && (() => {
+            const { 
+              receipts, 
+              payments, 
+              maxRows, 
+              totalCashReceipts, 
+              totalBankReceipts, 
+              totalCashPayments, 
+              totalBankPayments, 
+              netCashBalance, 
+              netBankBalance 
+            } = filteredCashbook;
+
+            return (
+              <div className="space-y-3">
+                {/* Summary Bar */}
+                <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Cash In (Dr)</span>
+                    <span className="text-xs font-black text-emerald-600 mt-0.5 font-mono">₹{totalCashReceipts.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Cash Out (Cr)</span>
+                    <span className="text-xs font-black text-red-500 mt-0.5 font-mono">₹{totalCashPayments.toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Closing Cash Balance</span>
+                    <span className={`text-xs font-black mt-0.5 font-mono ${netCashBalance >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                      ₹{netCashBalance.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Closing Bank Balance</span>
+                    <span className={`text-xs font-black mt-0.5 font-mono ${netBankBalance >= 0 ? 'text-indigo-700' : 'text-red-700'}`}>
+                      ₹{netBankBalance.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Two-Sided T-Account Table */}
+                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                  {maxRows === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
+                      No cashbook transactions recorded for the selected date.
+                    </div>
+                  ) : (
+                    <table className="w-full text-xs text-left border-collapse table-fixed">
+                      <thead>
+                        {/* Group Header */}
+                        <tr className="bg-sky-900 text-white font-black text-[9px] uppercase border-b border-sky-950">
+                          <th colSpan={4} className="py-1.5 px-2 text-center border-r border-sky-800 tracking-wider">
+                            Receipts (Dr.) - Cash & Bank Inflows
+                          </th>
+                          <th colSpan={4} className="py-1.5 px-2 text-center tracking-wider">
+                            Payments (Cr.) - Cash & Bank Outflows
+                          </th>
+                        </tr>
+                        {/* Sub Column Header */}
+                        <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold text-[8.5px] uppercase">
+                          {/* Dr Side */}
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%]">Receipt Particulars</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%]">Cash</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%]">Bank</th>
+                          <th className="py-2 px-0.5 border-r-2 border-slate-300 text-center w-[10%]">Remarks</th>
+                          
+                          {/* Cr Side */}
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%]">Payment Particulars</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%]">Cash</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%]">Bank</th>
+                          <th className="py-2 px-0.5 text-center w-[10%]">Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {Array.from({ length: maxRows }).map((_, idx) => {
+                          const r = receipts[idx];
+                          const p = payments[idx];
+
+                          return (
+                            <tr key={idx} className="hover:bg-slate-50/50">
+                              {/* Dr Side */}
+                              <td className="py-2 px-1 border-r border-slate-200 text-center leading-tight">
+                                {r ? (
+                                  <>
+                                    <div className="font-bold text-slate-900 text-[9px]">{r.particulars}</div>
+                                    <div className="text-[8px] text-slate-400 font-medium mt-0.5">{r.subText}</div>
+                                  </>
+                                ) : <span className="text-slate-300">-</span>}
+                              </td>
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-emerald-600 text-[9px] font-mono">
+                                {r && r.cashAmt > 0 ? `₹${r.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                              </td>
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-indigo-600 text-[9px] font-mono">
+                                {r && r.bankAmt > 0 ? `₹${r.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                              </td>
+                              <td className="py-2 px-0.5 border-r-2 border-slate-300 text-center text-slate-500 italic text-[8px]">
+                                {r ? r.remarks : "-"}
+                              </td>
+
+                              {/* Cr Side */}
+                              <td className="py-2 px-1 border-r border-slate-200 text-center leading-tight">
+                                {p ? (
+                                  <>
+                                    <div className="font-bold text-slate-900 text-[9px]">{p.particulars}</div>
+                                    <div className="text-[8px] text-slate-400 font-medium mt-0.5">{p.subText}</div>
+                                  </>
+                                ) : <span className="text-slate-300">-</span>}
+                              </td>
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[9px] font-mono">
+                                {p && p.cashAmt > 0 ? `₹${p.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                              </td>
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[9px] font-mono">
+                                {p && p.bankAmt > 0 ? `₹${p.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                              </td>
+                              <td className="py-2 px-0.5 text-center text-slate-500 italic text-[8px]">
+                                {p ? p.remarks : "-"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        {/* Totals Row */}
+                        <tr className="bg-slate-100 font-black text-[9px] border-t-2 border-slate-300 text-slate-900">
+                          <td className="py-2 px-1 text-center border-r border-slate-200 uppercase">Total Receipts (Dr)</td>
+                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-emerald-700">₹{totalCashReceipts.toLocaleString("en-IN")}</td>
+                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-indigo-700">₹{totalBankReceipts.toLocaleString("en-IN")}</td>
+                          <td className="py-2 px-0.5 border-r-2 border-slate-300 text-center">-</td>
+
+                          <td className="py-2 px-1 text-center border-r border-slate-200 uppercase">Total Payments (Cr)</td>
+                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-red-600">₹{totalCashPayments.toLocaleString("en-IN")}</td>
+                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-red-600">₹{totalBankPayments.toLocaleString("en-IN")}</td>
+                          <td className="py-2 px-0.5 text-center">-</td>
+                        </tr>
+
+                        {/* Balance c/d Row */}
+                        <tr className="bg-slate-200/70 font-black text-[9px] border-t border-slate-300 text-slate-950">
+                          <td colSpan={4} className="py-2 px-1 text-center border-r-2 border-slate-300 uppercase">
+                            Closing Cash & Bank Position
+                          </td>
+                          <td className="py-2 px-1 text-center border-r border-slate-200 uppercase font-black">Balance c/d</td>
+                          <td className={`py-2 px-0.5 text-center border-r border-slate-200 font-mono ${netCashBalance >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                            ₹{netCashBalance.toLocaleString("en-IN")}
+                          </td>
+                          <td className={`py-2 px-0.5 text-center border-r border-slate-200 font-mono ${netBankBalance >= 0 ? 'text-indigo-700' : 'text-red-700'}`}>
+                            ₹{netBankBalance.toLocaleString("en-IN")}
+                          </td>
+                          <td className="py-2 px-0.5 text-center">-</td>
+                        </tr>
+                      </tfoot>
                     </table>
                   )}
                 </div>
