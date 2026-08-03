@@ -496,164 +496,170 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <ArrowUpDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
             </div>
           </div>
-        </div>
-
-        {/* Printable/Export Content container */}
+             {/* Printable/Export Content container */}
         <div id="pdf-ledger-report" className="space-y-4 bg-transparent text-slate-800 p-0.5">
-          {/* Printable Header - hidden on screen, shown in PDF */}
-          <div className="hidden pdf-only flex-col gap-2 border-b border-slate-200 pb-4 text-slate-900 mb-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-lg font-black text-slate-900">{title}</h1>
-                {subtitle && <p className="text-xs text-slate-500 font-bold mt-0.5">{subtitle}</p>}
-                {startDate && endDate && (
-                  <p className="text-[10px] text-slate-500 font-bold mt-0.5">
-                    Statement Period: {startDate === endDate ? startDate : `${startDate} to ${endDate}`}
-                  </p>
-                )}
-                <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
+          
+          {/* Premium Heading block matching daily cash report */}
+          <div className="relative border border-slate-200 rounded-lg overflow-hidden bg-white">
+            {/* Visual blue top-right gradient banner */}
+            <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-cyan-400 via-sky-400 to-blue-500 opacity-90 transform skew-x-12 origin-top-right -mr-3" />
+            
+            <div className="relative p-2.5 pr-28 z-10">
+              <h2 className="text-sm font-black tracking-tight leading-none text-sky-900">{title}</h2>
+              {subtitle && <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">{subtitle}</p>}
+              
+              {/* Color dots row */}
+              <div className="flex items-center gap-1 mt-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-300"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-300"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-300"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-300"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-300"></span>
               </div>
-              <div className="text-right">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Net Balance</span>
-                <span className="text-base font-black text-slate-900 font-mono tabular-nums">
-                  ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
-                </span>
-              </div>
+            </div>
+
+            {/* Centered Period Title bar at bottom */}
+            <div className="border-t border-slate-200 bg-slate-50/50 py-1.5 text-center relative z-10">
+              <span className="text-[9px] font-black text-slate-950 uppercase tracking-widest">
+                Statement Period - {startDate === endDate ? startDate : `${startDate} to ${endDate}`}
+              </span>
             </div>
           </div>
 
-          {/* 4. Net Balance Card */}
-          <div className="bg-white border border-slate-200 rounded-sm p-4 flex flex-col gap-3">
+          {/* Balance Summary Row */}
+          <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-4' : 'grid-cols-3'} border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs`}>
             {outstandingBalance !== undefined && (
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <span className="text-xs font-black text-slate-900 uppercase">Current Outstanding</span>
-                <span className={`text-base font-black font-mono tabular-nums ${outstandingBalance < 0 ? "text-emerald-600" : outstandingBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
-                  {outstandingBalance < 0 ? "-" : ""}₹ {Math.abs(outstandingBalance).toLocaleString("en-IN")}
+              <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Current Outstanding</span>
+                <span className={`text-xs font-black mt-1 tabular-nums whitespace-nowrap ${outstandingBalance < 0 ? "text-emerald-600" : outstandingBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
+                  {outstandingBalance < 0 ? "-" : ""}₹{Math.abs(outstandingBalance).toLocaleString("en-IN")}
                 </span>
               </div>
             )}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500">Net Balance (Period)</span>
-              <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
-                ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
+            <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">{isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Gave" : "Total Out")}</span>
+              <span className="text-xs font-black text-red-500 mt-1 tabular-nums whitespace-nowrap">
+                ₹{stats.youGave.toLocaleString("en-IN")}
               </span>
             </div>
-
-            <div className="border-t border-slate-100 pt-3 grid grid-cols-3 gap-2 text-center">
-              <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
-                <span className="text-xs font-bold text-slate-700 mt-0.5 block">{stats.entriesCount} Entries</span>
-              </div>
-              <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-red-500">{subjectType === "retailer" ? "You Gave" : "Total Out"}</span>
-                <span className="text-xs font-bold text-red-500 mt-0.5 block font-mono tabular-nums">₹ {stats.youGave.toLocaleString("en-IN")}</span>
-              </div>
-              <div>
-                <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block text-emerald-600">{subjectType === "retailer" ? "You Got" : "Total In"}</span>
-                <span className="text-xs font-bold text-emerald-600 mt-0.5 block font-mono tabular-nums">₹ {stats.youGot.toLocaleString("en-IN")}</span>
-              </div>
+            <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">{isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Got" : "Total In")}</span>
+              <span className="text-xs font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
+                ₹{stats.youGot.toLocaleString("en-IN")}
+              </span>
+            </div>
+            <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Net Balance (Period)</span>
+              <span className={`text-xs font-black mt-1 tabular-nums whitespace-nowrap ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
+                ₹{Math.abs(stats.netBalance).toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
 
-          {/* 5. Transactions Table */}
-          <div className="bg-white border border-slate-200 rounded-sm overflow-hidden">
+          {/* Transactions Table */}
+          <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
             {filteredTransactions.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 font-bold">
+              <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
                 No ledger transactions found in the selected date range.
               </div>
             ) : (
-              <div className="divide-y divide-slate-100">
-                {filteredTransactions.map((tx) => {
-                  const formattedIST = formatIST(tx.date);
-                  const isDebit = tx.transaction_type === "debit";
-                  // Cash-in and virtual refund are both money arriving (You Got, green).
-                  // Cash-out and virtual transfer are both money leaving (You Gave, red).
-                  let isGaveForDisplay = isDebit;
-                  // The public link is the RETAILER's own statement, not the
-                  // admin's -- whatever the business "Got" is what the
-                  // retailer "Gave" and vice versa, so the bucket flips.
-                  if (isPublic) isGaveForDisplay = !isGaveForDisplay;
-                  const amountColor = isGaveForDisplay ? "text-red-500" : "text-emerald-600";
+              <table className="w-full text-xs text-left border-collapse table-fixed">
+                <thead>
+                  <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
+                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
+                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[15%] text-[9px] uppercase">Date</th>
+                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[33%] text-[9px] uppercase">Description</th>
+                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[17%] text-[9px] uppercase">
+                      {isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Gave" : "Total Out")}
+                    </th>
+                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[17%] text-[9px] uppercase">
+                      {isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Got" : "Total In")}
+                    </th>
+                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[13%] text-[9px] uppercase">Balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredTransactions.map((tx, idx) => {
+                    const formattedIST = formatIST(tx.date);
+                    const isDebit = tx.transaction_type === "debit";
+                    let isGaveForDisplay = isDebit;
+                    if (isPublic) isGaveForDisplay = !isGaveForDisplay;
+                    const amountColor = isGaveForDisplay ? "text-red-500" : "text-emerald-600";
 
-                  return (
-                    <div 
-                      key={tx.id} 
-                      onClick={() => {
-                        setSelectedEntryForDetails(tx);
-                      }}
-                      className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 transition-colors cursor-pointer"
-                    >
-                      {/* Left: Date & Running Balance */}
-                      <div className="flex flex-col gap-1 min-w-0 max-w-[125px]">
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-sm font-extrabold text-slate-800 shrink-0">{formattedIST.date}</span>
-                          <span className="text-[10px] font-bold text-slate-400 mt-0.5">{formattedIST.time}</span>
-                        </div>
-                        <span className="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-200/60 px-2 py-0.5 rounded-sm uppercase tracking-wider self-start mt-1 font-mono tabular-nums">
-                          Bal. ₹{Math.round(tx.running_balance).toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                      
-                      {/* Middle: Description */}
-                      <div className="flex-1 px-4 text-base font-semibold text-slate-700 break-words whitespace-pre-wrap">
-                        <div className="text-slate-900 font-extrabold">{cleanDescription(tx.description, tx)}</div>
-                        {tx.store_name && (
-                          <div className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                            Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
-                          </div>
-                        )}
-                        {/* Was gated on isDebit (real transaction_type) --
-                            a virtual transfer LOAD is a credit, so its own
-                            portal never showed. Shown now whenever there's a
-                            portal/bank account to name, for every type. */}
-                        {(tx.bank_account_name || tx.portal_name) && (
-                          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
-                            {tx.deposit_type === "retailer"
-                              ? `Retailer - ${tx.bank_account_name}`
-                              : tx.deposit_type === "staff"
-                              ? `Staff - ${tx.bank_account_name}`
-                              : hideBankNames
-                              ? (tx.portal_name || "Portal")
-                              : (tx.portal_name ? `${tx.portal_name}${tx.bank_account_name ? ` (${tx.bank_account_name})` : ""}` : tx.bank_account_name)}
-                          </div>
-                        )}
-                        {!isPublic && tx.staff_name && (
-                          <div className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-0.5">
-                            Staff: <span className="uppercase">{tx.staff_name}</span>
-                          </div>
-                        )}
-                        {tx.remarks && (
-                          <div className="text-xs text-slate-500 font-medium mt-0.5">
-                            Remark: <span className="italic">{tx.remarks}</span>
-                          </div>
-                        )}
-                        {tx.reference_no && (
-                          <div className="text-xs text-slate-500 font-medium mt-0.5">
-                            Ref: {tx.reference_no}
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Right: Gave vs Got numeric columns. Placement follows
-                          isGaveForDisplay (business-perspective bucketing);
-                          color follows the real retailer-side money direction
-                          (isDebit) regardless of which column it lands in, so
-                          a virtual load still reads green even while sitting
-                          in the Gave column. */}
-                      <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono tabular-nums text-base">
-                        {/* Gave Column */}
-                        <div className={`w-22 font-black ${amountColor}`}>
-                          {isGaveForDisplay ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
-                        </div>
-                        {/* Got Column */}
-                        <div className={`w-22 font-black ${amountColor}`}>
-                          {!isGaveForDisplay ? `₹ ${Math.round(tx.amount).toLocaleString("en-IN")}` : "—"}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    return (
+                      <tr 
+                        key={tx.id} 
+                        onClick={() => {
+                          setSelectedEntryForDetails(tx);
+                        }}
+                        className="hover:bg-slate-50/50 cursor-pointer divide-x divide-slate-200"
+                      >
+                        {/* No */}
+                        <td className="py-2 px-1 text-center font-bold text-slate-800 text-[9.5px]">
+                          {idx + 1}
+                        </td>
+
+                        {/* Date & Time */}
+                        <td className="py-2 px-1 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                          <div>{formattedIST.date}</div>
+                          <div className="text-slate-400 mt-0.5 font-mono">{formattedIST.time}</div>
+                        </td>
+
+                        {/* Description */}
+                        <td className="py-2 px-1 text-center font-semibold text-slate-800 break-words text-[9.5px] leading-snug whitespace-pre-line">
+                          <div className="text-slate-900 font-bold">{cleanDescription(tx.description, tx)}</div>
+                          {tx.store_name && (
+                            <div className="text-[8.5px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                              Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
+                            </div>
+                          )}
+                          {(tx.bank_account_name || tx.portal_name) && (
+                            <div className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                              {tx.deposit_type === "retailer"
+                                ? `Retailer - ${tx.bank_account_name}`
+                                : tx.deposit_type === "staff"
+                                ? `Staff - ${tx.bank_account_name}`
+                                : hideBankNames
+                                ? (tx.portal_name || "Portal")
+                                : (tx.portal_name ? `${tx.portal_name}${tx.bank_account_name ? ` (${tx.bank_account_name})` : ""}` : tx.bank_account_name)}
+                            </div>
+                          )}
+                          {!isPublic && tx.staff_name && (
+                            <div className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                              Staff: <span className="uppercase">{tx.staff_name}</span>
+                            </div>
+                          )}
+                          {tx.remarks && (
+                            <div className="text-[8.5px] text-slate-500 font-medium mt-0.5 italic">
+                              Remark: {tx.remarks}
+                            </div>
+                          )}
+                          {tx.reference_no && (
+                            <div className="text-[8.5px] text-slate-500 font-medium mt-0.5 font-mono">
+                              Ref: {tx.reference_no}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Gave / Out */}
+                        <td className={`py-2 px-1 text-center font-extrabold text-[10px] font-mono tabular-nums ${amountColor}`}>
+                          {isGaveForDisplay ? `₹${Math.round(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                        </td>
+
+                        {/* Got / In */}
+                        <td className={`py-2 px-1 text-center font-extrabold text-[10px] font-mono tabular-nums ${amountColor}`}>
+                          {!isGaveForDisplay ? `₹${Math.round(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                        </td>
+
+                        {/* Balance */}
+                        <td className="py-2 px-1 text-center font-bold text-slate-900 text-[10px] font-mono tabular-nums">
+                          ₹{Math.round(tx.running_balance).toLocaleString("en-IN")}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             )}
           </div>
         </div>
