@@ -568,16 +568,16 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <table className="w-full text-xs text-left border-collapse table-fixed">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
-                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[15%] text-[9px] uppercase">Date</th>
-                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[33%] text-[9px] uppercase">Description</th>
-                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[17%] text-[9px] uppercase">
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[4%] text-[9px] uppercase">No</th>
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] text-[9px] uppercase">Date</th>
+                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[31%] text-[9px] uppercase">Description</th>
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[17%] text-[9px] uppercase">
                       {isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Gave" : "Total Out")}
                     </th>
-                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[17%] text-[9px] uppercase">
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[17%] text-[9px] uppercase">
                       {isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Got" : "Total In")}
                     </th>
-                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[13%] text-[9px] uppercase">Balance</th>
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[19%] text-[9px] uppercase">Balance</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -597,12 +597,12 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                         className="hover:bg-slate-50/50 cursor-pointer divide-x divide-slate-200"
                       >
                         {/* No */}
-                        <td className="py-2 px-1 text-center font-bold text-slate-800 text-[9.5px]">
+                        <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[9.5px]">
                           {idx + 1}
                         </td>
 
                         {/* Date & Time */}
-                        <td className="py-2 px-1 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                        <td className="py-2 px-0.5 text-center text-[9px] leading-tight font-semibold text-slate-700">
                           <div>{formattedIST.date}</div>
                           <div className="text-slate-400 mt-0.5 font-mono">{formattedIST.time}</div>
                         </td>
@@ -644,17 +644,17 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                         </td>
 
                         {/* Gave / Out */}
-                        <td className={`py-2 px-1 text-center font-extrabold text-[10px] font-mono tabular-nums ${amountColor}`}>
+                        <td className={`py-2 px-0.5 text-center font-extrabold text-[9.5px] font-mono tabular-nums ${amountColor}`}>
                           {isGaveForDisplay ? `₹${Math.round(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                         </td>
 
                         {/* Got / In */}
-                        <td className={`py-2 px-1 text-center font-extrabold text-[10px] font-mono tabular-nums ${amountColor}`}>
+                        <td className={`py-2 px-0.5 text-center font-extrabold text-[9.5px] font-mono tabular-nums ${amountColor}`}>
                           {!isGaveForDisplay ? `₹${Math.round(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                         </td>
 
                         {/* Balance */}
-                        <td className="py-2 px-1 text-center font-bold text-slate-900 text-[10px] font-mono tabular-nums">
+                        <td className="py-2 px-0.5 text-center font-bold text-slate-900 text-[9.5px] font-mono tabular-nums">
                           ₹{Math.round(tx.running_balance).toLocaleString("en-IN")}
                         </td>
                       </tr>
