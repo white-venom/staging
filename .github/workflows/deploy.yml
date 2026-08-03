@@ -25,21 +25,22 @@ jobs:
           # Go to the deployment directory on VPS
           cd /opt/crediiflow
 
-          # Pull the latest changes from Git
-          git pull origin main
+          # Fetch latest and hard-reset to avoid dirty tree / merge conflicts on VPS
+          git fetch origin main
+          git reset --hard origin/main
 
           # Stop and remove all containers including orphans from previous deploys
-          docker compose down --remove-orphans
+          docker compose down --remove-orphans || docker-compose down --remove-orphans || true
 
           # Force-remove any stale named containers that may conflict
           docker rm -f crediiflow_db crediiflow_backend crediiflow_frontend crediiflow_superadmin_frontend crediiflow_landing_page crediiflow_nginx 2>/dev/null || true
           
           # Safely prune stopped containers and unused networks to clear stale references
-          docker container prune -f
-          docker network prune -f
+          docker container prune -f || true
+          docker network prune -f || true
           
-          # Rebuild and start all services
-          docker compose up -d --build
+          # Rebuild and start all services (with fallback for v1 docker-compose if needed)
+          docker compose up -d --build || docker-compose up -d --build
           
           # Clean up unused/dangling docker images to save space
-          docker image prune -f
+          docker image prune -f || true
