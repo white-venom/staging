@@ -339,7 +339,7 @@ function NewCollectionContent() {
       await db.collections.add({
         retailer_id: selectedRetailer!.id,
         store_id: selectedStoreId || undefined,
-        bank_account_id: denominations.online_bank_account_id || undefined,
+        bank_account_id: (denominations.online_amount > 0 || sourceType !== "retailer") ? (denominations.online_bank_account_id || undefined) : undefined,
         retailerName: selectedRetailer?.name || "Unknown",
         bankAccountName: computedBankAccountName,
         portalName: computedPortalName || undefined,
@@ -366,7 +366,7 @@ function NewCollectionContent() {
         from_staff_id: sourceType === "staff" ? selectedStaffId : null,
         from_office: sourceType === "office",
         store_id: selectedStoreId || null,
-        bank_account_id: denominations.online_bank_account_id || null,
+        bank_account_id: (denominations.online_amount > 0 || sourceType !== "retailer") ? (denominations.online_bank_account_id || null) : null,
         total_amount: totalCollectionAmount,
         collection_date: collectionDate,
         denominations: denominations,
@@ -413,7 +413,7 @@ function NewCollectionContent() {
         await db.collections.add({
           retailer_id: selectedRetailer.id,
           store_id: selectedStoreId || undefined,
-          bank_account_id: denominations.online_bank_account_id || undefined,
+          bank_account_id: (denominations.online_amount > 0 || sourceType !== "retailer") ? (denominations.online_bank_account_id || undefined) : undefined,
           retailerName: selectedRetailer.name || "Unknown",
           bankAccountName: onlineBankAccountName,
           totalAmount: totalCollectionAmount,

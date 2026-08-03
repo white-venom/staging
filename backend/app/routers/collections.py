@@ -93,7 +93,7 @@ def submit_collection(
             from_staff_id=payload.from_staff_id,
             from_office=payload.from_office,
             store_id=payload.store_id,
-            bank_account_id=payload.bank_account_id,
+            bank_account_id=payload.bank_account_id if (d.online_amount > 0 or not payload.retailer_id) else None,
             total_amount=payload.total_amount,
             remarks=payload.remarks,
             collection_date=payload.collection_date or ist_today(),
@@ -659,7 +659,8 @@ def update_collection(
         db.scalar(select(Retailer).where(Retailer.id == new_retailer_id).with_for_update())
 
     old_bank_account_id = collection.bank_account_id
-    new_bank_account_id = payload.bank_account_id
+    new_online_amount = payload.denominations.online_amount if payload.denominations else Decimal("0.00")
+    new_bank_account_id = payload.bank_account_id if (new_online_amount > 0 or not payload.retailer_id) else None
     old_from_staff_id = collection.from_staff_id
     new_from_staff_id = payload.from_staff_id
     if new_from_staff_id and new_from_staff_id != old_from_staff_id and not is_feature_enabled(request, "staff_handover"):
