@@ -19,7 +19,11 @@ import {
   FileDown,
   ChevronDown,
   Check,
-  X
+  X,
+  Users,
+  Building2,
+  CreditCard,
+  Share2
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { getISTDateString, getUtcDate } from "../../../utils/dateHelpers";
@@ -190,6 +194,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState(getISTDateString());
   const [dateTo, setDateTo] = useState(getISTDateString());
+
+  // Virtual Ledger sub-type: 'all' | 'portal_to_portal' | 'portal_to_dist' | 'dist_to_portal'
+  const [virtualLedgerSubType, setVirtualLedgerSubType] = useState<string>("all");
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
@@ -720,6 +727,65 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return combined.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
   }, [collections, deposits, dateFrom, dateTo]);
 
+  // ── Virtual Ledger Data (Portal-to-Portal, Portal-to-Distributor, Dist-to-Portal)
+  const virtualLedgerData = useMemo(() => {
+    return deposits
+      .filter((d: any) => {
+        const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
+        if (dateFrom && dDate < dateFrom) return false;
+        if (dateTo && dDate > dateTo) return false;
+
+        const isPortalTransfer = d.deposit_type === "portal_transfer" || d.depositType === "portal_transfer";
+        const isVirtual = d.deposit_type === "virtual" || d.depositType === "virtual";
+        const isRefund = d.is_refund === true || d.isRefund === true || d.payment_mode === "refund" || d.paymentMode === "refund";
+
+        // portal_to_portal: portal_transfer type
+        if (virtualLedgerSubType === "portal_to_portal") return isPortalTransfer;
+        // portal_to_dist: virtual type AND refund == false (portal gives to distributor/retailer)
+        if (virtualLedgerSubType === "portal_to_dist") return isVirtual && !isRefund;
+        // dist_to_portal: virtual type AND refund == true (distributor returns to portal)
+        if (virtualLedgerSubType === "dist_to_portal") return isVirtual && isRefund;
+        // all: any of the above
+        return isPortalTransfer || isVirtual;
+      })
+      .map((d: any) => {
+        const isPortalTransfer = d.deposit_type === "portal_transfer" || d.depositType === "portal_transfer";
+        const isRefund = d.is_refund === true || d.isRefund === true || d.payment_mode === "refund" || d.paymentMode === "refund";
+        const isVirtual = d.deposit_type === "virtual" || d.depositType === "virtual";
+
+        let txSubType = "Portal Transfer";
+        let fromLabel = d.fromPortalName || d.fromBankAccountName || d.from_portal_name || "Portal";
+        let toLabel = d.portalName || d.bankAccountName || d.portal_name || "Portal";
+
+        if (isVirtual && !isRefund) {
+          txSubType = "Portal → Distributor";
+          fromLabel = d.portalName || d.bankAccountName || d.portal_name || "Portal";
+          toLabel = d.targetName || d.target_name || "Distributor";
+        } else if (isVirtual && isRefund) {
+          txSubType = "Distributor → Portal";
+          fromLabel = d.targetName || d.target_name || "Distributor";
+          toLabel = d.portalName || d.bankAccountName || d.portal_name || "Portal";
+        } else if (isPortalTransfer) {
+          txSubType = "Portal → Portal";
+        }
+
+        return {
+          id: d.id,
+          created_at: d.created_at,
+          date: d.deposit_date || d.date || d.created_at,
+          amount: Number(d.amount || 0),
+          txSubType,
+          fromLabel,
+          toLabel,
+          staffName: d.staffName || d.staff_name || "Admin",
+          remarks: d.remarks || "",
+          reference_no: d.reference_no || d.referenceNo || "",
+          rawRecord: d
+        };
+      })
+      .sort((a: any, b: any) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+  }, [deposits, dateFrom, dateTo, virtualLedgerSubType]);
+
   // Export handlers
   const handleExportCsv = (reportType: string) => {
     let headers: string[] = [];
@@ -852,6 +918,27 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         s.depositsTotal,
         s.collectionsTotal - s.depositsTotal
       ]);
+    } else if (reportType === "virtual_ledger") {
+      const subLabel = virtualLedgerSubType === "portal_to_portal" ? "Portal_to_Portal"
+        : virtualLedgerSubType === "portal_to_dist" ? "Portal_to_Distributor"
+        : virtualLedgerSubType === "dist_to_portal" ? "Distributor_to_Portal"
+        : "All_Combined";
+      filename = `Virtual_Ledger_${subLabel}_${dateFrom}_to_${dateTo}.csv`;
+      headers = ["No", "Date", "Transaction Type", "From", "To", "Amount (₹)", "Staff", "Reference No", "Remarks"];
+      rows = virtualLedgerData.map((tx: any, i: number) => {
+        const dt = formatDateDisplay(tx.created_at);
+        return [
+          i + 1,
+          dt.date,
+          `"${tx.txSubType}"`,
+          `"${(tx.fromLabel || '').replace(/"/g, '""')}"`,
+          `"${(tx.toLabel || '').replace(/"/g, '""')}"`,
+          Number(tx.amount || 0),
+          `"${(tx.staffName || '').replace(/"/g, '""')}"`,
+          `"${(tx.reference_no || '').replace(/"/g, '""')}"`,
+          `"${(tx.remarks || '').replace(/"/g, '""')}"`
+        ];
+      });
     }
 
     if (rows.length === 0) {
@@ -937,10 +1024,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       .finally(() => setIsDownloadingPdf(false));
   };
 
-  // Overview stats
-  const totalCollected = collections.reduce((sum, c) => sum + Number(c.total_amount || c.totalAmount || 0), 0);
-  const activeRetailers = new Set(collections.map(c => c.retailer_name || c.retailerName)).size;
-  const avgValue = collections.length > 0 ? (totalCollected / collections.length) : 0;
+  // Overview stats — counts
+  const totalStaffCount = staffList.length;
+  const totalRetailerCount = useMemo(() => {
+    if (retailerDirectory && retailerDirectory.length > 0) return retailerDirectory.length;
+    return new Set(collections.map((c: any) => c.retailer_name || c.retailerName).filter(Boolean)).size;
+  }, [retailerDirectory, collections]);
+  const totalPortalCount = useMemo(() => {
+    if (portalDirectory && portalDirectory.length > 0) return portalDirectory.length;
+    const names = new Set<string>();
+    deposits.forEach((d: any) => { if (d.portal_name && !isUuid(d.portal_name)) names.add(d.portal_name); });
+    return names.size;
+  }, [portalDirectory, deposits]);
 
   const reportSections = [
     {
@@ -965,6 +1060,15 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         { name: "Retailer Ledger (A-Z)", icon: FileText, formats: "PDF • XLSX", color: "purple", type: "retailer_ledger" },
         { name: "Portal Ledger", icon: PieChart, formats: "PDF • XLSX", color: "purple", type: "portal_ledger" },
       ]
+    },
+    {
+      title: "Virtual Ledger",
+      reports: [
+        { name: "Portal → Portal Transfers", icon: Share2, formats: "PDF • CSV", color: "indigo", type: "virtual_ledger", subType: "portal_to_portal" },
+        { name: "Portal → Distributor (Gave)", icon: CreditCard, formats: "PDF • CSV", color: "indigo", type: "virtual_ledger", subType: "portal_to_dist" },
+        { name: "Distributor → Portal (Got Back)", icon: Building2, formats: "PDF • CSV", color: "indigo", type: "virtual_ledger", subType: "dist_to_portal" },
+        { name: "Virtual Ledger — All Combined", icon: BarChart, formats: "PDF • CSV", color: "indigo", type: "virtual_ledger", subType: "all" },
+      ]
     }
   ];
 
@@ -977,6 +1081,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     if (selectedReport === "portal_ledger") reportTitle = "Portal Ledger Report";
     if (selectedReport === "staff_efficiency") reportTitle = "Staff Collection Efficiency Report";
     if (selectedReport === "tally_import") reportTitle = "Tally Friendly Import Report";
+    if (selectedReport === "virtual_ledger") {
+      reportTitle = virtualLedgerSubType === "portal_to_portal" ? "Virtual Ledger — Portal to Portal"
+        : virtualLedgerSubType === "portal_to_dist" ? "Virtual Ledger — Portal to Distributor"
+        : virtualLedgerSubType === "dist_to_portal" ? "Virtual Ledger — Distributor to Portal"
+        : "Virtual Ledger — All Combined";
+    }
 
     return (
       <div className="space-y-4 pb-20">
@@ -1027,8 +1137,41 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         </div>
 
+        {/* Virtual Ledger Sub-Type Selector */}
+        {selectedReport === "virtual_ledger" && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">Transaction Type Filter</p>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { id: "all", label: "All Combined", color: "indigo" },
+                { id: "portal_to_portal", label: "Portal → Portal", color: "blue" },
+                { id: "portal_to_dist", label: "Portal → Distributor", color: "purple" },
+                { id: "dist_to_portal", label: "Distributor → Portal", color: "emerald" },
+              ] as const).map((opt) => {
+                const isActive = virtualLedgerSubType === opt.id;
+                const colorMap: Record<string, string> = {
+                  indigo: isActive ? "bg-indigo-600 text-white border-indigo-600" : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-indigo-50",
+                  blue: isActive ? "bg-blue-600 text-white border-blue-600" : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-blue-50",
+                  purple: isActive ? "bg-purple-600 text-white border-purple-600" : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-purple-50",
+                  emerald: isActive ? "bg-emerald-600 text-white border-emerald-600" : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-50",
+                };
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setVirtualLedgerSubType(opt.id)}
+                    className={`px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider border cursor-pointer transition-colors ${colorMap[opt.color]}`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Filter Panel (Hidden for Daybook Summary, Cashbook & Tally Import as requested) */}
-        {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && (
+        {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && selectedReport !== "virtual_ledger" && (
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {/* SEARCH */}
@@ -1145,6 +1288,32 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </button>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Virtual Ledger Date Filter (shown for virtual_ledger) */}
+        {selectedReport === "virtual_ledger" && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date From</label>
+                <input autoComplete="one-time-code"
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                />
+              </div>
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date To</label>
+                <input autoComplete="one-time-code"
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                />
+              </div>
+            </div>
           </div>
         )}
 
@@ -1721,6 +1890,96 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               </div>
             );
           })()}
+          {/* VIRTUAL LEDGER VIEW */}
+          {selectedReport === "virtual_ledger" && (() => {
+            const totalAmt = virtualLedgerData.reduce((sum: number, tx: any) => sum + tx.amount, 0);
+            const portalToPortal = virtualLedgerData.filter((tx: any) => tx.txSubType === "Portal → Portal");
+            const portalToDist = virtualLedgerData.filter((tx: any) => tx.txSubType === "Portal → Distributor");
+            const distToPortal = virtualLedgerData.filter((tx: any) => tx.txSubType === "Distributor → Portal");
+
+            const typeColorMap: Record<string, string> = {
+              "Portal → Portal": "bg-indigo-100 text-indigo-700",
+              "Portal → Distributor": "bg-purple-100 text-purple-700",
+              "Distributor → Portal": "bg-emerald-100 text-emerald-700",
+            };
+
+            return (
+              <div className="space-y-3">
+                {/* Summary Bar */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Entries</span>
+                    <span className="text-xs font-black text-slate-900 mt-0.5">{virtualLedgerData.length}</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-indigo-500 uppercase tracking-wider">Portal→Portal</span>
+                    <span className="text-xs font-black text-indigo-600 mt-0.5">{portalToPortal.length} txns</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-purple-500 uppercase tracking-wider">Portal→Dist</span>
+                    <span className="text-xs font-black text-purple-600 mt-0.5">{portalToDist.length} txns</span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1">
+                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-wider">Dist→Portal</span>
+                    <span className="text-xs font-black text-emerald-600 mt-0.5">{distToPortal.length} txns</span>
+                  </div>
+                </div>
+                {/* Total Amount */}
+                <div className="text-right text-xs font-black text-slate-700 px-1">
+                  Total Amount: <span className="font-mono text-indigo-700">₹{totalAmt.toLocaleString("en-IN")}</span>
+                </div>
+
+                {/* Table */}
+                <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
+                  {virtualLedgerData.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
+                      No virtual ledger transactions found for the selected type and date range.
+                    </div>
+                  ) : (
+                    <table className="w-full min-w-[700px] text-xs text-left border-collapse table-fixed">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%] text-[9px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[16%] text-[9px] uppercase">Txn Type</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[19%] text-[9px] uppercase">From</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[19%] text-[9px] uppercase">To</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[9px] uppercase">Amount</th>
+                          <th className="py-2 px-1 text-center w-[17%] text-[9px] uppercase">Staff</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {virtualLedgerData.map((tx: any, idx: number) => {
+                          const dt = formatDateDisplay(tx.created_at);
+                          const badgeClass = typeColorMap[tx.txSubType] || "bg-slate-100 text-slate-700";
+                          return (
+                            <tr key={tx.id || idx} className="hover:bg-slate-50/50 divide-x divide-slate-200">
+                              <td className="py-2 px-0.5 text-center font-bold text-slate-700 text-[9px]">{idx + 1}</td>
+                              <td className="py-2 px-0.5 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                                <div>{dt.date}</div>
+                                <div className="text-slate-400 font-mono mt-0.5">{dt.time}</div>
+                              </td>
+                              <td className="py-2 px-1 text-center">
+                                <span className={`px-1.5 py-0.5 rounded-xs text-[8px] font-black ${badgeClass}`}>
+                                  {tx.txSubType}
+                                </span>
+                              </td>
+                              <td className="py-2 px-1 text-center font-semibold text-slate-800 text-[9px]">{tx.fromLabel}</td>
+                              <td className="py-2 px-1 text-center font-semibold text-slate-800 text-[9px]">{tx.toLabel}</td>
+                              <td className="py-2 px-0.5 text-center font-extrabold text-indigo-600 text-[9.5px] font-mono">
+                                ₹{Number(tx.amount).toLocaleString("en-IN")}
+                              </td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-600 text-[9px] uppercase">{tx.staffName}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
 
         </div>
       </div>
@@ -1730,44 +1989,44 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   // DEFAULT VIEW: Professional Report Cards List
   return (
     <div className="space-y-3 pb-20">
-      {/* Stats Overview */}
+      {/* Stats Overview — Counts */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-sm">
-              <TrendingUp className="w-4 h-4" />
+              <Users className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-sm uppercase tracking-tighter">Live Cash In</span>
+            <span className="text-[10px] font-black text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-sm uppercase tracking-tighter">Staff</span>
           </div>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Total Cash In</p>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Total No. of Staff</p>
           <h3 className="text-xl font-black text-slate-800 dark:text-white mt-1 font-mono tabular-nums">
-            ₹{totalCollected.toLocaleString()}
+            {totalStaffCount}
           </h3>
         </div>
 
         <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm">
           <div className="flex items-center justify-between mb-2">
             <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-sm">
-              <FileText className="w-4 h-4" />
+              <Building2 className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-sm uppercase tracking-tighter">Coverage</span>
+            <span className="text-[10px] font-black text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-sm uppercase tracking-tighter">Retailers</span>
           </div>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Serviced Stores</p>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Total No. of Retailers</p>
           <h3 className="text-xl font-black text-slate-800 dark:text-white mt-1 font-mono tabular-nums">
-            {activeRetailers}
+            {totalRetailerCount}
           </h3>
         </div>
 
         <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm">
           <div className="flex items-center justify-between mb-2">
-            <div className="p-1.5 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-sm">
-              <BarChart className="w-4 h-4" />
+            <div className="p-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-sm">
+              <CreditCard className="w-4 h-4" />
             </div>
-            <span className="text-[10px] font-black text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded-sm uppercase tracking-tighter">ATV</span>
+            <span className="text-[10px] font-black text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-sm uppercase tracking-tighter">Portals</span>
           </div>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Avg Cash In/Shop</p>
+          <p className="text-xs text-slate-400 font-bold uppercase tracking-wide">Total No. of Portals</p>
           <h3 className="text-xl font-black text-slate-800 dark:text-white mt-1 font-mono tabular-nums">
-            ₹{avgValue.toFixed(0)}
+            {totalPortalCount}
           </h3>
         </div>
       </div>
@@ -1777,16 +2036,22 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         {reportSections.map((section, idx) => (
           <div key={idx} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3 space-y-2">
             <h4 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wide flex items-center gap-2">
-              <div className={`w-1 h-3 rounded-sm ${section.title.includes('GST') ? 'bg-blue-500' : section.title.includes('Daily') ? 'bg-emerald-500' : 'bg-purple-500'}`} />
+              <div className={`w-1 h-3 rounded-sm ${
+                section.title.includes('GST') ? 'bg-blue-500'
+                : section.title.includes('Daily') ? 'bg-emerald-500'
+                : section.title.includes('Virtual') ? 'bg-indigo-500'
+                : 'bg-purple-500'
+              }`} />
               {section.title}
             </h4>
 
             <div className="space-y-1.5">
-              {section.reports.map((report, rIdx) => (
+              {section.reports.map((report: any, rIdx: number) => (
                 <div 
                   key={rIdx} 
                   onClick={() => {
                     if (report.type) {
+                      if (report.subType) setVirtualLedgerSubType(report.subType);
                       setSelectedReport(report.type);
                     } else {
                       alert("Report generator for " + report.name + " is being prepared.");
@@ -1807,12 +2072,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     onClick={(e) => {
                        e.stopPropagation();
                        if (report.type) {
+                         if (report.subType) setVirtualLedgerSubType(report.subType);
                          setSelectedReport(report.type);
                        } else {
                          alert("Report generator for " + report.name + " is being prepared.");
                        }
                     }}
-                    className={`p-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity ${report.color === 'blue' ? 'bg-blue-600 text-white' : report.color === 'emerald' ? 'bg-emerald-600 text-white' : 'bg-purple-600 text-white'}`}
+                    className={`p-1.5 rounded-sm opacity-0 group-hover:opacity-100 transition-opacity ${
+                      report.color === 'blue' ? 'bg-blue-600 text-white'
+                      : report.color === 'emerald' ? 'bg-emerald-600 text-white'
+                      : report.color === 'indigo' ? 'bg-indigo-600 text-white'
+                      : 'bg-purple-600 text-white'
+                    }`}
                   >
                     <Download className="w-4 h-4" />
                   </button>
