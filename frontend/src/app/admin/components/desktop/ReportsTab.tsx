@@ -311,6 +311,27 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return Array.from(names).map(n => ({ id: n, name: n }));
   }, [portalDirectory, deposits, collections]);
 
+  const normalizedRetailerOptions = useMemo(() => {
+    return retailerOptions.map((r: any) => ({
+      id: String(r.id || r.name || r.retailer_name),
+      name: String(r.name || r.retailer_name || r.id)
+    }));
+  }, [retailerOptions]);
+
+  const normalizedPortalOptions = useMemo(() => {
+    return portalOptions.map((p: any) => ({
+      id: String(p.id || p.name || p.portal_name),
+      name: String(p.name || p.portal_name || p.id)
+    }));
+  }, [portalOptions]);
+
+  const normalizedStaffOptions = useMemo(() => {
+    return staffList.map((s: any) => ({
+      id: String(s.id || s.name),
+      name: String(s.name || s.id)
+    }));
+  }, [staffList]);
+
   // Filtered Daybook Summary Data (Complete Unfiltered Daily Statement for that Day)
   const filteredDaybook = useMemo(() => {
     const combined: any[] = [];
