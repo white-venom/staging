@@ -792,13 +792,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </div>
 
                 {/* Day Book Table */}
-                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
                   {filteredDaybook.length === 0 ? (
                     <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
                       No daybook transactions found for {dateFrom}.
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed">
+                    <table className="w-full min-w-[600px] text-xs text-left border-collapse table-fixed">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
                           <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] text-[9px] uppercase">Date</th>
@@ -868,7 +868,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             return (
               <div className="space-y-3">
                 {/* Summary Bar */}
-                <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs gap-y-2 sm:gap-y-0">
                   <div className="flex flex-col justify-center px-1">
                     <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Cash In (Dr)</span>
                     <span className="text-xs font-black text-emerald-600 mt-0.5 font-mono">₹{totalCashReceipts.toLocaleString("en-IN")}</span>
@@ -892,13 +892,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </div>
 
                 {/* Two-Sided T-Account Table */}
-                <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
+                <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
                   {maxRows === 0 ? (
                     <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
                       No cashbook transactions recorded for the selected date.
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed">
+                    <table className="w-full min-w-[700px] text-xs text-left border-collapse table-fixed">
                       <thead>
                         {/* Group Header */}
                         <tr className="bg-sky-900 text-white font-black text-[9px] uppercase border-b border-sky-950">

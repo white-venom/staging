@@ -528,8 +528,8 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             </div>
           </div>
 
-          {/* Balance Summary Row */}
-          <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-4' : 'grid-cols-3'} border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs`}>
+          {/* Summary Box */}
+          <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'} border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs gap-y-2 sm:gap-y-0`}>
             {outstandingBalance !== undefined && (
               <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
                 <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Current Outstanding</span>
@@ -539,13 +539,17 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               </div>
             )}
             <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">{isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Gave" : "Total Out")}</span>
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                {isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Gave" : "Total Out")}
+              </span>
               <span className="text-xs font-black text-red-500 mt-1 tabular-nums whitespace-nowrap">
                 ₹{stats.youGave.toLocaleString("en-IN")}
               </span>
             </div>
             <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">{isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Got" : "Total In")}</span>
+              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                {isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Got" : "Total In")}
+              </span>
               <span className="text-xs font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
                 ₹{stats.youGot.toLocaleString("en-IN")}
               </span>
@@ -559,13 +563,13 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           </div>
 
           {/* Transactions Table */}
-          <div className="border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
+          <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
             {filteredTransactions.length === 0 ? (
               <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
                 No ledger transactions found in the selected date range.
               </div>
             ) : (
-              <table className="w-full text-xs text-left border-collapse table-fixed">
+              <table className="w-full min-w-[550px] text-xs text-left border-collapse table-fixed">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
                     <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[4%] text-[9px] uppercase">No</th>
