@@ -115,7 +115,7 @@ export async function downloadElementAsPdf(
           } else {
             // Move to next page
             currentPage = createNewPage();
-            const newContainer = recreateHierarchy(currentContainer, rootElement);
+            const newContainer = recreateHierarchy(el.parentElement || rootElement, rootElement);
             const newTableShell = el.cloneNode(false) as HTMLTableElement;
             if (thead) newTableShell.appendChild(thead.cloneNode(true));
             const newTbody = document.createElement("tbody");
@@ -149,7 +149,7 @@ export async function downloadElementAsPdf(
             listShell.appendChild(clonedItem);
           } else {
             currentPage = createNewPage();
-            const newContainer = recreateHierarchy(currentContainer, rootElement);
+            const newContainer = recreateHierarchy(el.parentElement || rootElement, rootElement);
             const newListShell = el.cloneNode(false) as HTMLElement;
             newListShell.appendChild(clonedItem);
             newContainer.appendChild(newListShell);
@@ -189,7 +189,7 @@ export async function downloadElementAsPdf(
       if (currentPage.children.length > 1 || currentContainer.children.length > 1) {
         currentContainer.removeChild(clonedEl);
         currentPage = createNewPage();
-        const newContainer = recreateHierarchy(currentContainer, rootElement);
+        const newContainer = recreateHierarchy(el.parentElement || rootElement, rootElement);
         newContainer.appendChild(clonedEl);
       }
     }
