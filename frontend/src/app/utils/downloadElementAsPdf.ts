@@ -41,7 +41,7 @@ export async function downloadElementAsPdf(
   function createNewPage(): HTMLDivElement {
     const page = document.createElement("div");
     page.style.width = `${pageWidthPx}px`;
-    page.style.height = `${pageHeightPx}px`;
+    page.style.height = "auto";
     page.style.boxSizing = "border-box";
     page.style.padding = `${marginPx}px`;
     page.style.backgroundColor = "#ffffff";
@@ -106,7 +106,7 @@ export async function downloadElementAsPdf(
         tbody.appendChild(clonedRow);
 
         // Check if page bounds are broken
-        if (currentPage.scrollHeight > contentHeightPx + marginPx) {
+        if (currentPage.scrollHeight > pageHeightPx) {
           tbody.removeChild(clonedRow);
           
           if (tbody.children.length === 0 && currentPage.children.length <= 1) {
@@ -142,7 +142,7 @@ export async function downloadElementAsPdf(
         const clonedItem = item.cloneNode(true) as HTMLElement;
         listShell.appendChild(clonedItem);
 
-        if (currentPage.scrollHeight > contentHeightPx + marginPx) {
+        if (currentPage.scrollHeight > pageHeightPx) {
           listShell.removeChild(clonedItem);
           
           if (listShell.children.length === 0 && currentPage.children.length <= 1) {
@@ -185,7 +185,7 @@ export async function downloadElementAsPdf(
     const clonedEl = el.cloneNode(true) as HTMLElement;
     currentContainer.appendChild(clonedEl);
 
-    if (currentPage.scrollHeight > contentHeightPx + marginPx) {
+    if (currentPage.scrollHeight > pageHeightPx) {
       if (currentPage.children.length > 1 || currentContainer.children.length > 1) {
         currentContainer.removeChild(clonedEl);
         currentPage = createNewPage();
@@ -201,7 +201,12 @@ export async function downloadElementAsPdf(
     appendNodeToContainer(child, currentPage, element);
   }
 
-  // 3. Render each page using html2canvas and write to the PDF document
+  // 3. Set fixed height on all pages before rendering
+  for (const page of pages) {
+    page.style.height = `${pageHeightPx}px`;
+  }
+
+  // 4. Render each page using html2canvas and write to the PDF document
   try {
     const pdf = new jsPDF({ unit: "in", format: "a4", orientation: "portrait" });
     const pdfWidth = pdf.internal.pageSize.getWidth();
