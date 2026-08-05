@@ -431,7 +431,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         subText: c.store_name ? `Store: ${c.store_name}` : `Staff: ${getStaffName(c)}`,
         cashAmt: isBank ? 0 : amt,
         bankAmt: isBank ? amt : 0,
-        remarks: c.remarks || "-"
+        remarks: c.remarks || "-",
+        isBank
       });
     });
 
@@ -451,7 +452,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         subText: d.deposit_type ? `Type: ${d.deposit_type.toUpperCase()}` : `Staff: ${getStaffName(d)}`,
         cashAmt: isBank ? 0 : amt,
         bankAmt: isBank ? amt : 0,
-        remarks: d.remarks || "-"
+        remarks: d.remarks || "-",
+        isBank
       });
     });
 
@@ -1539,10 +1541,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                 ) : <span className="text-slate-300">-</span>}
                               </td>
                               <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-emerald-600 text-[9px] font-mono">
-                                {r && r.cashAmt > 0 ? `₹${r.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                                {r && !r.isBank ? `₹${r.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                               <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-indigo-600 text-[9px] font-mono">
-                                {r && r.bankAmt > 0 ? `₹${r.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                                {r && r.isBank ? `₹${r.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                               <td className="py-2 px-0.5 border-r-2 border-slate-300 text-center text-slate-500 italic text-[8px]">
                                 {r ? r.remarks : "-"}
@@ -1555,13 +1557,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                     <div className="font-bold text-slate-900 text-[9px]">{p.particulars}</div>
                                     <div className="text-[8px] text-slate-400 font-medium mt-0.5">{p.subText}</div>
                                   </>
-                                ) : <span className="text-slate-300">-</span>}
+                                ) : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                               <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[9px] font-mono">
-                                {p && p.cashAmt > 0 ? `₹${p.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                                {p && !p.isBank ? `₹${p.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                               <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[9px] font-mono">
-                                {p && p.bankAmt > 0 ? `₹${p.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                                {p && p.isBank ? `₹${p.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                               <td className="py-2 px-0.5 text-center text-slate-500 italic text-[8px]">
                                 {p ? p.remarks : "-"}
