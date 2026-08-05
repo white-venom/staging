@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getISTDateString } from "../utils/dateHelpers";
 import { downloadElementAsPdf } from "../utils/downloadElementAsPdf";
+import { downloadCsv } from "../utils/downloadCsv";
 
 const cleanDescription = (desc: string, tx?: any): string => {
   if (!desc) return "";

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { getISTDateString, getUtcDate } from "../../utils/dateHelpers";
 import { downloadElementAsPdf } from "../../utils/downloadElementAsPdf";
+import { downloadCsv } from "../../utils/downloadCsv";
 
 export default function DailyReportPage() {
   const router = useRouter();
@@ -301,6 +302,64 @@ export default function DailyReportPage() {
       .finally(() => setIsDownloading(false));
   };
 
+  const downloadCSV = () => {
+    const staffNameClean = (currentUser?.name || "Staff").trim().replace(/\s+/g, "_");
+    const dateStrClean = selectedDate.trim().replace(/\s+/g, "_");
+    const filename = `${staffNameClean}_${dateStrClean}.csv`;
+
+    const headers = ["S.No", "Date", "Description/Narration", "In (Credit)", "Out (Debit)", "Remarks", "Denominations"];
+    const rows = reportItems.map((item, idx) => {
+      const isCol = item.itemType === "collection";
+      const dt = formatDateTime(item.created_at || item.date || "", item.collection_date || item.deposit_date);
+      const staffName = item.staff_name || currentUser?.name || "Staff";
+      
+      let source = "";
+      let destination = "";
+      if (isCol) {
+        const isCms = item.retailer_name?.toLowerCase().startsWith("cms");
+        const storeStr = item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "";
+        const retDispName = isCms 
+          ? `${item.retailer_name} - ${item.store_name || "Cash"}` 
+          : (item.from_staff_name ? `Staff: ${item.from_staff_name}` : `${item.retailer_name || "Retailer"}${storeStr}`);
+        source = item.from_office ? "Super Distributor" : retDispName;
+        destination = item.portal_name
+          ? `${item.portal_name}${item.bank_name ? ` (${item.bank_name})` : (item.bank_account_name ? ` (${item.bank_account_name})` : "")}`
+          : staffName;
+      } else {
+        source = staffName;
+        const bankSuffix = (item.deposit_type === "portal" && item.bank_name)
+          ? ` (${item.bank_name})`
+          : (item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "");
+        const destName = (item.deposit_type === "portal" && item.portal_name) ? item.portal_name : (item.target_name || "Recipient");
+        destination = item.to_office ? "Super Distributor" : `${destName}${bankSuffix}`;
+      }
+      const narration = `From ${source} to ${destination}`;
+
+      // Denominations text formatting
+      const denoms = item.denominations || {};
+      const denomParts: string[] = [];
+      const notesKeys = ["note_500", "note_200", "note_100", "note_50", "note_20", "note_10"];
+      notesKeys.forEach(k => {
+        if (denoms[k]) denomParts.push(`${k.replace("note_", "")}x${denoms[k]}`);
+      });
+      if (denoms.coins) denomParts.push(`Coins: ${denoms.coins}`);
+      if (denoms.online_amount) denomParts.push(`Online: ${denoms.online_amount}`);
+      const denomStr = denomParts.join(", ");
+
+      return [
+        idx + 1,
+        `${dt.date} ${dt.time}` || item.date,
+        narration,
+        isCol ? item.inAmount : "-",
+        !isCol ? item.outAmount : "-",
+        item.remarks || "-",
+        denomStr || "-"
+      ];
+    });
+
+    downloadCsv(headers, rows, filename);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200">
       <div className="w-full max-w-2xl mx-auto px-2 py-3 flex flex-col gap-2.5 pb-24">
@@ -320,14 +379,23 @@ export default function DailyReportPage() {
             </div>
           </div>
 
-          <button
-            onClick={downloadPDF}
-            disabled={isDownloading}
-            className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-          >
-            <Download className="w-3 h-3" />
-            {isDownloading ? "Downloading..." : "Download PDF"}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={downloadCSV}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-sm text-[10px] font-bold cursor-pointer transition-colors"
+            >
+              <Download className="w-3 h-3" />
+              Download CSV
+            </button>
+            <button
+              onClick={downloadPDF}
+              disabled={isDownloading}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-sm text-[10px] font-bold disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
+            >
+              <Download className="w-3 h-3" />
+              {isDownloading ? "Downloading..." : "Download PDF"}
+            </button>
+          </div>
         </div>
 
         {/* Date Filter & Refresh */}
