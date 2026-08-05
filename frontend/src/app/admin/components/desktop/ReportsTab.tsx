@@ -893,7 +893,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           `"${(c.retailer_name || '').replace(/"/g, '""')}"`,
           `"${(c.store_name || 'Cash').replace(/"/g, '""')}"`,
           `"${getStaffName(c).replace(/"/g, '""')}"`,
-          Number(c.total_amount || 0),
+          Number(c.total_amount || c.totalAmount || 0),
           `"${(c.remarks || '').replace(/"/g, '""')}"`
         ];
       });
@@ -1663,7 +1663,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               <td className="py-2 px-1 text-center font-bold text-slate-900 text-[9.5px]">{c.retailer_name || "Retailer"}</td>
                               <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[9px]">{c.store_name || "Cash"}</td>
                               <td className="py-2 px-1 text-center font-bold text-slate-700 text-[9px] uppercase">{getStaffName(c)}</td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-[9.5px] font-mono">₹{Number(c.total_amount || 0).toLocaleString("en-IN")}</td>
+                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-[9.5px] font-mono">₹{Number(c.total_amount || c.totalAmount || 0).toLocaleString("en-IN")}</td>
                               <td className="py-2 px-1 text-center text-slate-500 italic text-[8.5px]">{c.remarks || "-"}</td>
                             </tr>
                           );
