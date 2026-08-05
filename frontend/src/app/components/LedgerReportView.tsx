@@ -508,8 +508,8 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-cyan-400 via-sky-400 to-blue-500 opacity-90 transform skew-x-12 origin-top-right -mr-3" />
             
             <div className="relative p-2.5 pr-28 z-10">
-              <h2 className="text-sm font-black tracking-tight leading-none text-sky-900">{title}</h2>
-              {subtitle && <p className="text-[10px] text-slate-500 font-bold mt-1 uppercase tracking-wider">{subtitle}</p>}
+              <h2 className="text-base font-black tracking-tight leading-none text-sky-900">{title}</h2>
+              {subtitle && <p className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">{subtitle}</p>}
               
               {/* Color dots row */}
               <div className="flex items-center gap-1 mt-1.5">
@@ -523,7 +523,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
             {/* Centered Period Title bar at bottom */}
             <div className="border-t border-slate-200 bg-slate-50/50 py-1.5 text-center relative z-10">
-              <span className="text-[9px] font-black text-slate-950 uppercase tracking-widest">
+              <span className="text-[11px] font-black text-slate-950 uppercase tracking-widest">
                 Statement Period - {startDate === endDate ? startDate : `${startDate} to ${endDate}`}
               </span>
             </div>
@@ -533,31 +533,31 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'} border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs gap-y-2 sm:gap-y-0`}>
             {outstandingBalance !== undefined && (
               <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Current Outstanding</span>
-                <span className={`text-xs font-black mt-1 tabular-nums whitespace-nowrap ${outstandingBalance < 0 ? "text-emerald-600" : outstandingBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
+                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Current Outstanding</span>
+                <span className={`text-sm font-black mt-1 tabular-nums whitespace-nowrap ${outstandingBalance < 0 ? "text-emerald-600" : outstandingBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
                   {outstandingBalance < 0 ? "-" : ""}₹{Math.abs(outstandingBalance).toLocaleString("en-IN")}
                 </span>
               </div>
             )}
             <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
                 {isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Gave" : "Total Out")}
               </span>
-              <span className="text-xs font-black text-red-500 mt-1 tabular-nums whitespace-nowrap">
+              <span className="text-sm font-black text-red-500 mt-1 tabular-nums whitespace-nowrap">
                 ₹{stats.youGave.toLocaleString("en-IN")}
               </span>
             </div>
             <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
                 {isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Got" : "Total In")}
               </span>
-              <span className="text-xs font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
+              <span className="text-sm font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
                 ₹{stats.youGot.toLocaleString("en-IN")}
               </span>
             </div>
             <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-              <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Net Balance (Period)</span>
-              <span className={`text-xs font-black mt-1 tabular-nums whitespace-nowrap ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
+              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Net Balance (Period)</span>
+              <span className={`text-sm font-black mt-1 tabular-nums whitespace-nowrap ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
                 ₹{Math.abs(stats.netBalance).toLocaleString("en-IN")}
               </span>
             </div>
@@ -573,16 +573,16 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               <table className="w-full min-w-[550px] text-xs text-left border-collapse table-fixed">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[4%] text-[9px] uppercase">No</th>
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] text-[9px] uppercase">Date</th>
-                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[31%] text-[9px] uppercase">Description</th>
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[17%] text-[9px] uppercase">
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[4%] text-[11px] uppercase">No</th>
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] text-[11px] uppercase">Date</th>
+                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[31%] text-[11px] uppercase">Description</th>
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[17%] text-[11px] uppercase">
                       {isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Gave" : "Total Out")}
                     </th>
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[17%] text-[9px] uppercase">
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[17%] text-[11px] uppercase">
                       {isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Got" : "Total In")}
                     </th>
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[19%] text-[9px] uppercase">Balance</th>
+                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[19%] text-[11px] uppercase">Balance</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -602,26 +602,26 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                         className="hover:bg-slate-50/50 cursor-pointer divide-x divide-slate-200"
                       >
                         {/* No */}
-                        <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[9.5px]">
+                        <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[11px]">
                           {idx + 1}
                         </td>
 
                         {/* Date & Time */}
-                        <td className="py-2 px-0.5 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                        <td className="py-2 px-0.5 text-center text-[11px] leading-tight font-semibold text-slate-700">
                           <div>{formattedIST.date}</div>
-                          <div className="text-slate-400 mt-0.5 font-mono">{formattedIST.time}</div>
+                          <div className="text-slate-400 mt-0.5 font-mono text-[10px]">{formattedIST.time}</div>
                         </td>
 
                         {/* Description */}
-                        <td className="py-2 px-1 text-center font-semibold text-slate-800 break-words text-[9.5px] leading-snug whitespace-pre-line">
+                        <td className="py-2 px-1 text-center font-semibold text-slate-800 break-words text-[11.5px] leading-snug whitespace-pre-line">
                           <div className="text-slate-900 font-bold">{cleanDescription(tx.description, tx)}</div>
                           {tx.store_name && (
-                            <div className="text-[8.5px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
+                            <div className="text-[10.5px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
                               Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
                             </div>
                           )}
                           {(tx.bank_account_name || tx.portal_name) && (
-                            <div className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                            <div className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
                               {tx.deposit_type === "retailer"
                                 ? `Retailer - ${tx.bank_account_name}`
                                 : tx.deposit_type === "staff"
@@ -632,34 +632,34 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                             </div>
                           )}
                           {!isPublic && tx.staff_name && (
-                            <div className="text-[8.5px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                            <div className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
                               Staff: <span className="uppercase">{tx.staff_name}</span>
                             </div>
                           )}
                           {tx.remarks && (
-                            <div className="text-[8.5px] text-slate-500 font-medium mt-0.5 italic">
+                            <div className="text-[10px] text-slate-500 font-medium mt-0.5 italic">
                               Remark: {tx.remarks}
                             </div>
                           )}
                           {tx.reference_no && (
-                            <div className="text-[8.5px] text-slate-500 font-medium mt-0.5 font-mono">
+                            <div className="text-[10px] text-slate-500 font-medium mt-0.5 font-mono">
                               Ref: {tx.reference_no}
                             </div>
                           )}
                         </td>
 
                         {/* Gave / Out */}
-                        <td className={`py-2 px-0.5 text-center font-extrabold text-[9.5px] font-mono tabular-nums ${amountColor}`}>
+                        <td className={`py-2 px-0.5 text-center font-extrabold text-xs font-mono tabular-nums ${amountColor}`}>
                           {isGaveForDisplay ? `₹${Math.round(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                         </td>
 
                         {/* Got / In */}
-                        <td className={`py-2 px-0.5 text-center font-extrabold text-[9.5px] font-mono tabular-nums ${amountColor}`}>
+                        <td className={`py-2 px-0.5 text-center font-extrabold text-xs font-mono tabular-nums ${amountColor}`}>
                           {!isGaveForDisplay ? `₹${Math.round(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                         </td>
 
                         {/* Balance */}
-                        <td className="py-2 px-0.5 text-center font-bold text-slate-900 text-[9.5px] font-mono tabular-nums">
+                        <td className="py-2 px-0.5 text-center font-bold text-slate-900 text-xs font-mono tabular-nums">
                           ₹{Math.round(tx.running_balance).toLocaleString("en-IN")}
                         </td>
                       </tr>

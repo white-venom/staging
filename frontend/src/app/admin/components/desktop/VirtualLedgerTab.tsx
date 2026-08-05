@@ -820,15 +820,15 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
           <div id="pdf-virtual-ledger-report" className="bg-white text-slate-900 p-8 space-y-4">
             <div className="flex justify-between items-start border-b border-slate-200 pb-4 mb-4">
               <div>
-                <h1 className="text-lg font-black text-slate-900">Universal Ledger</h1>
-                <p className="text-[10px] text-slate-500 font-bold mt-0.5">
+                <h1 className="text-xl font-black text-slate-900">Universal Ledger</h1>
+                <p className="text-xs text-slate-500 font-bold mt-0.5">
                   Period: {dateFrom || "Start"} to {dateTo || "End"}
                 </p>
-                <p className="text-[10px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
+                <p className="text-[11px] text-slate-400 font-bold mt-1">Generated: {new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata" })}</p>
               </div>
               <div className="text-right">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block">Net Balance</span>
-                <span className="text-base font-black text-slate-900 font-mono tabular-nums">
+                <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest block">Net Balance</span>
+                <span className="text-lg font-black text-slate-900 font-mono tabular-nums">
                   ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
                 </span>
               </div>
@@ -836,24 +836,24 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
 
             <div className="bg-slate-50 border border-slate-200 rounded-sm p-4 flex flex-col gap-3 mb-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500">Net Balance</span>
-                <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600" : "text-slate-500"}`}>
+                <span className="text-sm font-bold text-slate-500">Net Balance</span>
+                <span className={`text-lg font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600" : "text-slate-500"}`}>
                   ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
                 </span>
               </div>
               
               <div className="border-t border-slate-200 pt-3 grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
-                  <span className="text-xs font-bold text-slate-700 mt-0.5 block">{stats.entriesCount} Entries</span>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block">Total</span>
+                  <span className="text-sm font-bold text-slate-700 mt-0.5 block">{stats.entriesCount} Entries</span>
                 </div>
                 <div>
-                  <span className="text-[8px] font-black text-rose-500 uppercase tracking-wider block">Total Gave</span>
-                  <span className="text-xs font-bold text-rose-500 mt-0.5 block font-mono tabular-nums">₹ {stats.totalGave.toLocaleString("en-IN")}</span>
+                  <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider block">Total Gave</span>
+                  <span className="text-sm font-bold text-rose-500 mt-0.5 block font-mono tabular-nums">₹ {stats.totalGave.toLocaleString("en-IN")}</span>
                 </div>
                 <div>
-                  <span className="text-[8px] font-black text-emerald-600 uppercase tracking-wider block">Total Got</span>
-                  <span className="text-xs font-bold text-emerald-600 mt-0.5 block font-mono tabular-nums">₹ {stats.totalGot.toLocaleString("en-IN")}</span>
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider block">Total Got</span>
+                  <span className="text-sm font-bold text-emerald-600 mt-0.5 block font-mono tabular-nums">₹ {stats.totalGot.toLocaleString("en-IN")}</span>
                 </div>
               </div>
             </div>
@@ -866,23 +866,23 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
 
                 return (
                   <div key={tx.id} className="p-3 flex items-center justify-between">
-                    <div className="flex flex-col gap-1 w-32 shrink-0">
-                      <span className="text-xs font-bold text-slate-800">{formatted.date}</span>
-                      <span className="text-[9px] text-slate-400">{formatted.time}</span>
-                      <span className="text-[9px] text-slate-500 font-bold font-mono tabular-nums">Bal: ₹{Math.round(tx.balance_snapshot || 0).toLocaleString()}</span>
+                    <div className="flex flex-col gap-1 w-36 shrink-0">
+                      <span className="text-sm font-bold text-slate-800">{formatted.date}</span>
+                      <span className="text-[11px] text-slate-400">{formatted.time}</span>
+                      <span className="text-[11px] text-slate-500 font-bold font-mono tabular-nums">Bal: ₹{Math.round(tx.balance_snapshot || 0).toLocaleString()}</span>
                       {tx.balanceAccountLabel && (
-                        <span className="text-[8px] text-slate-400">{tx.balanceAccountLabel}</span>
+                        <span className="text-[10px] text-slate-400">{tx.balanceAccountLabel}</span>
                       )}
                     </div>
-                    <div className="flex-1 px-4 text-xs font-medium text-slate-700">
-                      <div className="font-bold uppercase text-[9px] text-slate-500">{tx.type.replace("-", " ")}</div>
-                      <div className="font-black text-slate-800">{tx.narrationFrom} → {tx.narrationTo}</div>
-                      {tx.remarks && <div className="italic text-[10px] text-slate-400">Remark: {tx.remarks}</div>}
-                      {tx.reference_no && <div className="text-[10px] text-slate-400">Ref: {tx.reference_no}</div>}
+                    <div className="flex-1 px-4 text-sm font-medium text-slate-700">
+                      <div className="font-bold uppercase text-[11px] text-slate-500">{tx.type.replace("-", " ")}</div>
+                      <div className="font-black text-slate-900 text-sm">{tx.narrationFrom} → {tx.narrationTo}</div>
+                      {tx.remarks && <div className="italic text-xs text-slate-400">Remark: {tx.remarks}</div>}
+                      {tx.reference_no && <div className="text-xs text-slate-400">Ref: {tx.reference_no}</div>}
                     </div>
-                    <div className="flex items-center gap-3 w-40 shrink-0 text-right font-mono tabular-nums text-xs">
+                    <div className="flex items-center gap-3 w-44 shrink-0 text-right font-mono tabular-nums text-sm">
                       {isPortalTransferRow ? (
-                        <div className="w-40 text-indigo-600 font-bold">₹{Math.round(tx.amount || 0).toLocaleString()}</div>
+                        <div className="w-44 text-indigo-600 font-bold">₹{Math.round(tx.amount || 0).toLocaleString()}</div>
                       ) : (
                         <>
                           <div className="w-20 text-rose-500 font-bold">{!isGot ? `₹${Math.round(tx.amount || 0).toLocaleString()}` : "—"}</div>

@@ -1345,7 +1345,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           <div className="relative border border-slate-200 rounded-lg overflow-hidden bg-white">
             <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-cyan-400 via-sky-400 to-blue-500 opacity-90 transform skew-x-12 origin-top-right -mr-3" />
             <div className="relative p-2.5 pr-28 z-10">
-              <h2 className="text-sm font-black tracking-tight leading-none text-sky-900">{reportTitle}</h2>
+              <h2 className="text-base font-black tracking-tight leading-none text-sky-900">{reportTitle}</h2>
               <div className="flex items-center gap-1 mt-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-pink-300"></span>
                 <span className="w-1.5 h-1.5 rounded-full bg-cyan-300"></span>
@@ -1355,7 +1355,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               </div>
             </div>
             <div className="border-t border-slate-200 bg-slate-50/50 py-1.5 text-center relative z-10">
-              <span className="text-[9px] font-black text-slate-950 uppercase tracking-widest">
+              <span className="text-[11px] font-black text-slate-950 uppercase tracking-widest">
                 Statement Period - {dateFrom === dateTo ? dateFrom : `${dateFrom} to ${dateTo}`}
               </span>
             </div>
@@ -1372,20 +1372,20 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 {/* Summary Bar */}
                 <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Vouchers</span>
-                    <span className="text-xs font-black text-slate-900 mt-0.5">{filteredDaybook.length}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Vouchers</span>
+                    <span className="text-sm font-black text-slate-900 mt-0.5">{filteredDaybook.length}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Receipts (Debit)</span>
-                    <span className="text-xs font-black text-emerald-600 mt-0.5 font-mono">₹{totalReceipts.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Receipts (Debit)</span>
+                    <span className="text-sm font-black text-emerald-600 mt-0.5 font-mono">₹{totalReceipts.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Payments (Credit)</span>
-                    <span className="text-xs font-black text-red-500 mt-0.5 font-mono">₹{totalPayments.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Payments (Credit)</span>
+                    <span className="text-sm font-black text-red-500 mt-0.5 font-mono">₹{totalPayments.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Net Cash Flow</span>
-                    <span className={`text-xs font-black mt-0.5 font-mono ${netFlow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Net Cash Flow</span>
+                    <span className={`text-sm font-black mt-0.5 font-mono ${netFlow >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                       ₹{netFlow.toLocaleString("en-IN")}
                     </span>
                   </div>
@@ -1401,12 +1401,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     <table className="w-full min-w-[600px] text-xs text-left border-collapse table-fixed">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] text-[9px] uppercase">Date</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[34%] text-[9px] uppercase">Particulars</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[14%] text-[9px] uppercase">Vch Type</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[10%] text-[9px] uppercase">Vch No.</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[15%] text-[9px] uppercase">Debit Amount (IN)</th>
-                          <th className="py-2 px-0.5 text-center w-[15%] text-[9px] uppercase">Credit Amount (OUT)</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] text-[11px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[34%] text-[11px] uppercase">Particulars</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[14%] text-[11px] uppercase">Vch Type</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[10%] text-[11px] uppercase">Vch No.</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[15%] text-[11px] uppercase">Debit Amount (IN)</th>
+                          <th className="py-2 px-0.5 text-center w-[15%] text-[11px] uppercase">Credit Amount (OUT)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -1414,16 +1414,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                           const dt = formatDateDisplay(tx.created_at);
                           return (
                             <tr key={tx.id || idx} className="hover:bg-slate-50/50 divide-x divide-slate-200">
-                              <td className="py-2 px-0.5 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                              <td className="py-2 px-0.5 text-center text-[11px] leading-tight font-semibold text-slate-700">
                                 <div>{dt.date}</div>
-                                <div className="text-slate-400 font-mono mt-0.5">{dt.time}</div>
+                                <div className="text-slate-400 font-mono text-[10px] mt-0.5">{dt.time}</div>
                               </td>
                               <td className="py-2 px-1 text-center font-semibold text-slate-800 leading-snug">
-                                <div className="font-black text-slate-900 text-[9.5px]">{tx.particularsMain}</div>
-                                <div className="text-[8.5px] font-bold text-slate-500 mt-0.5">{tx.particularsSub}</div>
+                                <div className="font-black text-slate-900 text-[11.5px]">{tx.particularsMain}</div>
+                                <div className="text-[10px] font-bold text-slate-500 mt-0.5">{tx.particularsSub}</div>
                               </td>
-                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[9px] uppercase">
-                                <span className={`px-1.5 py-0.5 rounded-xs text-[8.5px] font-black ${
+                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[11px] uppercase">
+                                <span className={`px-1.5 py-0.5 rounded-xs text-[10px] font-black ${
                                   tx.vchType === "Receipt" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" :
                                   tx.vchType === "Payment" ? "bg-red-50 text-red-700 border border-red-200" :
                                   "bg-blue-50 text-blue-700 border border-blue-200"
@@ -1431,13 +1431,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                   {tx.vchType}
                                 </span>
                               </td>
-                              <td className="py-2 px-0.5 text-center font-mono text-slate-600 text-[9px]">
+                              <td className="py-2 px-0.5 text-center font-mono text-slate-600 text-[11px]">
                                 {tx.vchNo}
                               </td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-[9.5px] font-mono">
+                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-xs font-mono">
                                 {tx.isReceipt ? `₹${Number(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-[9.5px] font-mono">
+                              <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-xs font-mono">
                                 {!tx.isReceipt ? `₹${Number(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                             </tr>
@@ -1470,22 +1470,22 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 {/* Summary Bar */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs gap-y-2 sm:gap-y-0">
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Cash In (Dr)</span>
-                    <span className="text-xs font-black text-emerald-600 mt-0.5 font-mono">₹{totalCashReceipts.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Cash In (Dr)</span>
+                    <span className="text-sm font-black text-emerald-600 mt-0.5 font-mono">₹{totalCashReceipts.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Cash Out (Cr)</span>
-                    <span className="text-xs font-black text-red-500 mt-0.5 font-mono">₹{totalCashPayments.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Cash Out (Cr)</span>
+                    <span className="text-sm font-black text-red-500 mt-0.5 font-mono">₹{totalCashPayments.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Closing Cash Balance</span>
-                    <span className={`text-xs font-black mt-0.5 font-mono ${netCashBalance >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Closing Cash Balance</span>
+                    <span className={`text-sm font-black mt-0.5 font-mono ${netCashBalance >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                       ₹{netCashBalance.toLocaleString("en-IN")}
                     </span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Closing Bank Balance</span>
-                    <span className={`text-xs font-black mt-0.5 font-mono ${netBankBalance >= 0 ? 'text-indigo-700' : 'text-red-700'}`}>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Closing Bank Balance</span>
+                    <span className={`text-sm font-black mt-0.5 font-mono ${netBankBalance >= 0 ? 'text-indigo-700' : 'text-red-700'}`}>
                       ₹{netBankBalance.toLocaleString("en-IN")}
                     </span>
                   </div>
@@ -1501,7 +1501,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     <table className="w-full min-w-[700px] text-xs text-left border-collapse table-fixed">
                       <thead>
                         {/* Group Header */}
-                        <tr className="bg-sky-900 text-white font-black text-[9px] uppercase border-b border-sky-950">
+                        <tr className="bg-sky-900 text-white font-black text-[11px] uppercase border-b border-sky-950">
                           <th colSpan={4} className="py-1.5 px-2 text-center border-r border-sky-800 tracking-wider">
                             Receipts (Dr.) - Cash & Bank Inflows
                           </th>
@@ -1510,7 +1510,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                           </th>
                         </tr>
                         {/* Sub Column Header */}
-                        <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold text-[8.5px] uppercase">
+                        <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold text-[10px] uppercase">
                           {/* Dr Side */}
                           <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%]">Receipt Particulars</th>
                           <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%]">Cash</th>
@@ -1535,18 +1535,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               <td className="py-2 px-1 border-r border-slate-200 text-center leading-tight">
                                 {r ? (
                                   <>
-                                    <div className="font-bold text-slate-900 text-[9px]">{r.particulars}</div>
-                                    <div className="text-[8px] text-slate-400 font-medium mt-0.5">{r.subText}</div>
+                                    <div className="font-bold text-slate-900 text-[11px]">{r.particulars}</div>
+                                    <div className="text-[10px] text-slate-400 font-medium mt-0.5">{r.subText}</div>
                                   </>
                                 ) : <span className="text-slate-300">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-emerald-600 text-[9px] font-mono">
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-emerald-600 text-[11px] font-mono">
                                 {r && !r.isBank ? `₹${r.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-indigo-600 text-[9px] font-mono">
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-indigo-600 text-[11px] font-mono">
                                 {r && r.isBank ? `₹${r.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 border-r-2 border-slate-300 text-center text-slate-500 italic text-[8px]">
+                              <td className="py-2 px-0.5 border-r-2 border-slate-300 text-center text-slate-500 italic text-[10px]">
                                 {r ? r.remarks : "-"}
                               </td>
 
@@ -1554,18 +1554,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               <td className="py-2 px-1 border-r border-slate-200 text-center leading-tight">
                                 {p ? (
                                   <>
-                                    <div className="font-bold text-slate-900 text-[9px]">{p.particulars}</div>
-                                    <div className="text-[8px] text-slate-400 font-medium mt-0.5">{p.subText}</div>
+                                    <div className="font-bold text-slate-900 text-[11px]">{p.particulars}</div>
+                                    <div className="text-[10px] text-slate-400 font-medium mt-0.5">{p.subText}</div>
                                   </>
                                 ) : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[9px] font-mono">
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[11px] font-mono">
                                 {p && !p.isBank ? `₹${p.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[9px] font-mono">
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[11px] font-mono">
                                 {p && p.isBank ? `₹${p.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 text-center text-slate-500 italic text-[8px]">
+                              <td className="py-2 px-0.5 text-center text-slate-500 italic text-[10px]">
                                 {p ? p.remarks : "-"}
                               </td>
                             </tr>
@@ -1574,7 +1574,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       </tbody>
                       <tfoot>
                         {/* Totals Row */}
-                        <tr className="bg-slate-100 font-black text-[9px] border-t-2 border-slate-300 text-slate-900">
+                        <tr className="bg-slate-100 font-black text-[11px] border-t-2 border-slate-300 text-slate-900">
                           <td className="py-2 px-1 text-center border-r border-slate-200 uppercase">Total Receipts (Dr)</td>
                           <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-emerald-700">₹{totalCashReceipts.toLocaleString("en-IN")}</td>
                           <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-indigo-700">₹{totalBankReceipts.toLocaleString("en-IN")}</td>
@@ -1587,7 +1587,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         </tr>
 
                         {/* Balance c/d Row */}
-                        <tr className="bg-slate-200/70 font-black text-[9px] border-t border-slate-300 text-slate-950">
+                        <tr className="bg-slate-200/70 font-black text-[11px] border-t border-slate-300 text-slate-950">
                           <td colSpan={4} className="py-2 px-1 text-center border-r-2 border-slate-300 uppercase">
                             Closing Cash & Bank Position
                           </td>
@@ -1618,16 +1618,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 {/* Summary Bar */}
                 <div className="grid grid-cols-3 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Retailers</span>
-                    <span className="text-xs font-black text-slate-900 mt-0.5">{uniqueRetCount} Active</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Retailers</span>
+                    <span className="text-sm font-black text-slate-900 mt-0.5">{uniqueRetCount} Active</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Entries</span>
-                    <span className="text-xs font-black text-slate-900 mt-0.5">{filteredRetailerLedger.length}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Entries</span>
+                    <span className="text-sm font-black text-slate-900 mt-0.5">{filteredRetailerLedger.length}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Collected (IN)</span>
-                    <span className="text-xs font-black text-emerald-600 mt-0.5 font-mono">₹{totalIn.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Collected (IN)</span>
+                    <span className="text-sm font-black text-emerald-600 mt-0.5 font-mono">₹{totalIn.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 
@@ -1641,13 +1641,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     <table className="w-full text-xs text-left border-collapse table-fixed min-w-[600px]">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[9px] uppercase">Date</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[25%] text-[9px] uppercase">Retailer</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[9px] uppercase">Store</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[15%] text-[9px] uppercase">Staff</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[14%] text-[9px] uppercase">Amount (IN)</th>
-                          <th className="py-2 px-1 text-center w-[10%] text-[9px] uppercase">Remarks</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[11px] uppercase">No</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[11px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[25%] text-[11px] uppercase">Retailer</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Store</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[15%] text-[11px] uppercase">Staff</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[14%] text-[11px] uppercase">Amount (IN)</th>
+                          <th className="py-2 px-1 text-center w-[10%] text-[11px] uppercase">Remarks</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -1655,16 +1655,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                           const dt = formatDateDisplay(c.created_at);
                           return (
                             <tr key={c.id || idx} className="hover:bg-slate-50/50 divide-x divide-slate-200">
-                              <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[9.5px]">{idx + 1}</td>
-                              <td className="py-2 px-0.5 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                              <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[11px]">{idx + 1}</td>
+                              <td className="py-2 px-0.5 text-center text-[11px] leading-tight font-semibold text-slate-700">
                                 <div>{dt.date}</div>
-                                <div className="text-slate-400 font-mono mt-0.5">{dt.time}</div>
+                                <div className="text-slate-400 font-mono text-[10px] mt-0.5">{dt.time}</div>
                               </td>
-                              <td className="py-2 px-1 text-center font-bold text-slate-900 text-[9.5px]">{c.retailer_name || "Retailer"}</td>
-                              <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[9px]">{c.store_name || "Cash"}</td>
-                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[9px] uppercase">{getStaffName(c)}</td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-[9.5px] font-mono">₹{Number(c.total_amount || c.totalAmount || 0).toLocaleString("en-IN")}</td>
-                              <td className="py-2 px-1 text-center text-slate-500 italic text-[8.5px]">{c.remarks || "-"}</td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-900 text-[11.5px]">{c.retailer_name || "Retailer"}</td>
+                              <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[11px]">{c.store_name || "Cash"}</td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[11px] uppercase">{getStaffName(c)}</td>
+                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-xs font-mono">₹{Number(c.total_amount || c.totalAmount || 0).toLocaleString("en-IN")}</td>
+                              <td className="py-2 px-1 text-center text-slate-500 italic text-[10px]">{c.remarks || "-"}</td>
                             </tr>
                           );
                         })}
@@ -1686,16 +1686,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 {/* Summary Bar */}
                 <div className="grid grid-cols-3 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Portals</span>
-                    <span className="text-xs font-black text-slate-900 mt-0.5">{uniquePortalsCount} Active</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Portals</span>
+                    <span className="text-sm font-black text-slate-900 mt-0.5">{uniquePortalsCount} Active</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Entries</span>
-                    <span className="text-xs font-black text-slate-900 mt-0.5">{filteredPortalLedger.length}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Entries</span>
+                    <span className="text-sm font-black text-slate-900 mt-0.5">{filteredPortalLedger.length}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Deposited (OUT)</span>
-                    <span className="text-xs font-black text-red-500 mt-0.5 font-mono">₹{totalOut.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Deposited (OUT)</span>
+                    <span className="text-sm font-black text-red-500 mt-0.5 font-mono">₹{totalOut.toLocaleString("en-IN")}</span>
                   </div>
                 </div>
 
@@ -1709,13 +1709,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     <table className="w-full text-xs text-left border-collapse table-fixed min-w-[650px]">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[9px] uppercase">Date</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[22%] text-[9px] uppercase">Portal / Bank</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[15%] text-[9px] uppercase">Deposit Type</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[9px] uppercase">Target Name</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[13%] text-[9px] uppercase">Staff</th>
-                          <th className="py-2 px-0.5 text-center w-[14%] text-[9px] uppercase">Amount (OUT)</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[11px] uppercase">No</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[11px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[22%] text-[11px] uppercase">Portal / Bank</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[15%] text-[11px] uppercase">Deposit Type</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Target Name</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[13%] text-[11px] uppercase">Staff</th>
+                          <th className="py-2 px-0.5 text-center w-[14%] text-[11px] uppercase">Amount (OUT)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -1723,16 +1723,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                           const dt = formatDateDisplay(d.created_at);
                           return (
                             <tr key={d.id || idx} className="hover:bg-slate-50/50 divide-x divide-slate-200">
-                              <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[9.5px]">{idx + 1}</td>
-                              <td className="py-2 px-0.5 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                              <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[11px]">{idx + 1}</td>
+                              <td className="py-2 px-0.5 text-center text-[11px] leading-tight font-semibold text-slate-700">
                                 <div>{dt.date}</div>
-                                <div className="text-slate-400 font-mono mt-0.5">{dt.time}</div>
+                                <div className="text-slate-400 font-mono text-[10px] mt-0.5">{dt.time}</div>
                               </td>
-                              <td className="py-2 px-1 text-center font-bold text-slate-900 text-[9.5px]">{d.portal_name || "Portal"}</td>
-                              <td className="py-2 px-1 text-center font-semibold text-slate-600 text-[9px] uppercase">{d.deposit_type || "portal"}</td>
-                              <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[9px]">{d.target_name || "-"}</td>
-                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[9px] uppercase">{getStaffName(d)}</td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-[9.5px] font-mono">-₹{Number(d.amount || 0).toLocaleString("en-IN")}</td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-900 text-[11.5px]">{d.portal_name || "Portal"}</td>
+                              <td className="py-2 px-1 text-center font-semibold text-slate-600 text-[11px] uppercase">{d.deposit_type || "portal"}</td>
+                              <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[11px]">{d.target_name || "-"}</td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-700 text-[11px] uppercase">{getStaffName(d)}</td>
+                              <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-xs font-mono">-₹{Number(d.amount || 0).toLocaleString("en-IN")}</td>
                             </tr>
                           );
                         })}
@@ -1755,20 +1755,20 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 {/* Summary Bar */}
                 <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Active Staff</span>
-                    <span className="text-xs font-black text-slate-900 mt-0.5">{staffEfficiencyData.length}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Active Staff</span>
+                    <span className="text-sm font-black text-slate-900 mt-0.5">{staffEfficiencyData.length}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Collected (IN)</span>
-                    <span className="text-xs font-black text-emerald-600 mt-0.5 font-mono">₹{grandCollected.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Collected (IN)</span>
+                    <span className="text-sm font-black text-emerald-600 mt-0.5 font-mono">₹{grandCollected.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Handed Over (OUT)</span>
-                    <span className="text-xs font-black text-red-500 mt-0.5 font-mono">₹{grandDeposited.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Handed Over (OUT)</span>
+                    <span className="text-sm font-black text-red-500 mt-0.5 font-mono">₹{grandDeposited.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Net Pending Cash</span>
-                    <span className={`text-xs font-black mt-0.5 font-mono ${grandNetPending > 0 ? 'text-amber-600' : 'text-blue-900'}`}>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Net Pending Cash</span>
+                    <span className={`text-sm font-black mt-0.5 font-mono ${grandNetPending > 0 ? 'text-amber-600' : 'text-blue-900'}`}>
                       ₹{grandNetPending.toLocaleString("en-IN")}
                     </span>
                   </div>
@@ -1784,12 +1784,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     <table className="w-full text-xs text-left border-collapse table-fixed min-w-[600px]">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[6%] text-[9px] uppercase">No</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[24%] text-[9px] uppercase">Staff Name</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[9px] uppercase">Collections Count</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[9px] uppercase">Total Collected (IN)</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[16%] text-[9px] uppercase">Total Deposited</th>
-                          <th className="py-2 px-1 text-center w-[18%] text-[9px] uppercase">Net Pending Cash</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[6%] text-[11px] uppercase">No</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[24%] text-[11px] uppercase">Staff Name</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Collections Count</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Total Collected (IN)</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[16%] text-[11px] uppercase">Total Deposited</th>
+                          <th className="py-2 px-1 text-center w-[18%] text-[11px] uppercase">Net Pending Cash</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -1797,12 +1797,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                           const net = s.collectionsTotal - s.depositsTotal;
                           return (
                             <tr key={s.staffId || idx} className="hover:bg-slate-50/50 divide-x divide-slate-200">
-                              <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[9.5px]">{idx + 1}</td>
-                              <td className="py-2 px-1 text-center font-black text-slate-900 text-[10px] uppercase">{s.staffName}</td>
-                              <td className="py-2 px-1 text-center font-semibold text-slate-700 text-[9.5px]">{s.collectionsCount} trips</td>
-                              <td className="py-2 px-1 text-center font-extrabold text-emerald-600 text-[10px] font-mono">₹{s.collectionsTotal.toLocaleString("en-IN")}</td>
-                              <td className="py-2 px-1 text-center font-extrabold text-red-500 text-[10px] font-mono">₹{s.depositsTotal.toLocaleString("en-IN")}</td>
-                              <td className={`py-2 px-1 text-center font-black text-[10px] font-mono ${net > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
+                              <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[11px]">{idx + 1}</td>
+                              <td className="py-2 px-1 text-center font-black text-slate-900 text-xs uppercase">{s.staffName}</td>
+                              <td className="py-2 px-1 text-center font-semibold text-slate-700 text-[11px]">{s.collectionsCount} trips</td>
+                              <td className="py-2 px-1 text-center font-extrabold text-emerald-600 text-xs font-mono">₹{s.collectionsTotal.toLocaleString("en-IN")}</td>
+                              <td className="py-2 px-1 text-center font-extrabold text-red-500 text-xs font-mono">₹{s.depositsTotal.toLocaleString("en-IN")}</td>
+                              <td className={`py-2 px-1 text-center font-black text-xs font-mono ${net > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
                                 ₹{net.toLocaleString("en-IN")}
                               </td>
                             </tr>
@@ -1826,20 +1826,20 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 {/* Summary Bar */}
                 <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Vouchers</span>
-                    <span className="text-xs font-black text-slate-900 mt-0.5">{filteredTallyImport.length}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Vouchers</span>
+                    <span className="text-sm font-black text-slate-900 mt-0.5">{filteredTallyImport.length}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Receipt Vouchers (Cr)</span>
-                    <span className="text-xs font-black text-emerald-600 mt-0.5 font-mono">₹{totalReceipts.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Receipt Vouchers (Cr)</span>
+                    <span className="text-sm font-black text-emerald-600 mt-0.5 font-mono">₹{totalReceipts.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Payment Vouchers (Dr)</span>
-                    <span className="text-xs font-black text-red-500 mt-0.5 font-mono">₹{totalPayments.toLocaleString("en-IN")}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Payment Vouchers (Dr)</span>
+                    <span className="text-sm font-black text-red-500 mt-0.5 font-mono">₹{totalPayments.toLocaleString("en-IN")}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Turnover</span>
-                    <span className="text-xs font-black text-blue-900 mt-0.5 font-mono">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Turnover</span>
+                    <span className="text-sm font-black text-blue-900 mt-0.5 font-mono">
                       ₹{(totalReceipts + totalPayments).toLocaleString("en-IN")}
                     </span>
                   </div>
@@ -1854,7 +1854,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                   ) : (
                     <table className="w-full text-xs text-left border-collapse table-auto whitespace-nowrap min-w-[1400px]">
                       <thead>
-                        <tr className="bg-amber-400 text-slate-950 font-black border-b border-amber-500 text-[10px] uppercase">
+                        <tr className="bg-amber-400 text-slate-950 font-black border-b border-amber-500 text-[11px] uppercase">
                           <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Voucher Date</th>
                           <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Voucher Type Name</th>
                           <th className="py-2.5 px-2 border-r border-amber-500/50 text-center">Voucher Number</th>
@@ -1874,10 +1874,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       </thead>
                       <tbody className="divide-y divide-slate-200">
                         {filteredTallyImport.map((row, idx) => (
-                          <tr key={row.id || idx} className="hover:bg-amber-50/40 divide-x divide-slate-200 font-mono text-[9.5px]">
+                          <tr key={row.id || idx} className="hover:bg-amber-50/40 divide-x divide-slate-200 font-mono text-[11px]">
                             <td className="py-2 px-2 text-center text-slate-800 font-semibold">{row.voucherDate}</td>
                             <td className="py-2 px-2 text-center font-bold">
-                              <span className={`px-1.5 py-0.5 rounded-xs font-black uppercase text-[8.5px] ${
+                              <span className={`px-1.5 py-0.5 rounded-xs font-black uppercase text-[10px] ${
                                 row.voucherTypeName === "Receipt" ? "bg-emerald-100 text-emerald-800" :
                                 row.voucherTypeName === "Payment" ? "bg-red-100 text-red-800" :
                                 "bg-blue-100 text-blue-800"
@@ -1891,7 +1891,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                             <td className="py-2 px-2 text-left font-sans font-bold text-slate-900">{row.ledgerName}</td>
                             <td className="py-2 px-2 text-right font-extrabold text-slate-900">₹{Number(row.ledgerAmount).toLocaleString("en-IN")}</td>
                             <td className="py-2 px-2 text-center font-bold">
-                              <span className={`px-1 py-0.5 rounded-xs text-[8.5px] font-black ${row.ledgerAmountDrCr === "Dr" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
+                              <span className={`px-1 py-0.5 rounded-xs text-[10px] font-black ${row.ledgerAmountDrCr === "Dr" ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
                                 {row.ledgerAmountDrCr}
                               </span>
                             </td>
@@ -1929,24 +1929,24 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 {/* Summary Bar */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2 text-center divide-x divide-slate-200 shadow-xs">
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider">Total Entries</span>
-                    <span className="text-xs font-black text-slate-900 mt-0.5">{virtualLedgerData.length}</span>
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">Total Entries</span>
+                    <span className="text-sm font-black text-slate-900 mt-0.5">{virtualLedgerData.length}</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-indigo-500 uppercase tracking-wider">Portal→Portal</span>
-                    <span className="text-xs font-black text-indigo-600 mt-0.5">{portalToPortal.length} txns</span>
+                    <span className="text-[10px] font-black text-indigo-500 uppercase tracking-wider">Portal→Portal</span>
+                    <span className="text-sm font-black text-indigo-600 mt-0.5">{portalToPortal.length} txns</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-purple-500 uppercase tracking-wider">Portal→Dist</span>
-                    <span className="text-xs font-black text-purple-600 mt-0.5">{portalToDist.length} txns</span>
+                    <span className="text-[10px] font-black text-purple-500 uppercase tracking-wider">Portal→Dist</span>
+                    <span className="text-sm font-black text-purple-600 mt-0.5">{portalToDist.length} txns</span>
                   </div>
                   <div className="flex flex-col justify-center px-1">
-                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-wider">Dist→Portal</span>
-                    <span className="text-xs font-black text-emerald-600 mt-0.5">{distToPortal.length} txns</span>
+                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider">Dist→Portal</span>
+                    <span className="text-sm font-black text-emerald-600 mt-0.5">{distToPortal.length} txns</span>
                   </div>
                 </div>
                 {/* Total Amount */}
-                <div className="text-right text-xs font-black text-slate-700 px-1">
+                <div className="text-right text-sm font-black text-slate-700 px-1">
                   Total Amount: <span className="font-mono text-indigo-700">₹{totalAmt.toLocaleString("en-IN")}</span>
                 </div>
 
@@ -1960,13 +1960,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     <table className="w-full min-w-[700px] text-xs text-left border-collapse table-fixed">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%] text-[9px] uppercase">Date</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[16%] text-[9px] uppercase">Txn Type</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[19%] text-[9px] uppercase">From</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[19%] text-[9px] uppercase">To</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[9px] uppercase">Amount</th>
-                          <th className="py-2 px-1 text-center w-[17%] text-[9px] uppercase">Staff</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[11px] uppercase">No</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%] text-[11px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[16%] text-[11px] uppercase">Txn Type</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[19%] text-[11px] uppercase">From</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[19%] text-[11px] uppercase">To</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[11px] uppercase">Amount</th>
+                          <th className="py-2 px-1 text-center w-[17%] text-[11px] uppercase">Staff</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -1975,22 +1975,22 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                           const badgeClass = typeColorMap[tx.txSubType] || "bg-slate-100 text-slate-700";
                           return (
                             <tr key={tx.id || idx} className="hover:bg-slate-50/50 divide-x divide-slate-200">
-                              <td className="py-2 px-0.5 text-center font-bold text-slate-700 text-[9px]">{idx + 1}</td>
-                              <td className="py-2 px-0.5 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                              <td className="py-2 px-0.5 text-center font-bold text-slate-700 text-[11px]">{idx + 1}</td>
+                              <td className="py-2 px-0.5 text-center text-[11px] leading-tight font-semibold text-slate-700">
                                 <div>{dt.date}</div>
-                                <div className="text-slate-400 font-mono mt-0.5">{dt.time}</div>
+                                <div className="text-slate-400 font-mono text-[10px] mt-0.5">{dt.time}</div>
                               </td>
                               <td className="py-2 px-1 text-center">
-                                <span className={`px-1.5 py-0.5 rounded-xs text-[8px] font-black ${badgeClass}`}>
+                                <span className={`px-1.5 py-0.5 rounded-xs text-[10px] font-black ${badgeClass}`}>
                                   {tx.txSubType}
                                 </span>
                               </td>
-                              <td className="py-2 px-1 text-center font-semibold text-slate-800 text-[9px]">{tx.fromLabel}</td>
-                              <td className="py-2 px-1 text-center font-semibold text-slate-800 text-[9px]">{tx.toLabel}</td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-indigo-600 text-[9.5px] font-mono">
+                              <td className="py-2 px-1 text-center font-semibold text-slate-800 text-[11px]">{tx.fromLabel}</td>
+                              <td className="py-2 px-1 text-center font-semibold text-slate-800 text-[11px]">{tx.toLabel}</td>
+                              <td className="py-2 px-0.5 text-center font-extrabold text-indigo-600 text-xs font-mono">
                                 ₹{Number(tx.amount).toLocaleString("en-IN")}
                               </td>
-                              <td className="py-2 px-1 text-center font-bold text-slate-600 text-[9px] uppercase">{tx.staffName}</td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-600 text-[11px] uppercase">{tx.staffName}</td>
                             </tr>
                           );
                         })}

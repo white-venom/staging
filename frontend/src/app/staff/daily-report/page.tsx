@@ -206,7 +206,7 @@ export default function DailyReportPage() {
       { label: "10", count: notes.note10 },
     ];
     return (
-      <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[8px] font-bold justify-end">
+      <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] font-bold justify-end">
         {items.map(n => (
           <span key={n.label} className={n.count < 0 ? "text-red-600" : "text-slate-600"}>
             {n.label}x{n.count}
@@ -281,7 +281,7 @@ export default function DailyReportPage() {
     lines.push(`Total_${totalNoteStr}_Note`);
 
     return (
-      <div className="text-[10px] leading-tight font-semibold text-slate-700 dark:text-slate-300 text-right whitespace-pre-line font-mono">
+      <div className="text-[11.5px] leading-tight font-semibold text-slate-700 dark:text-slate-300 text-right whitespace-pre-line font-mono">
         {lines.join("\n")}
       </div>
     );
@@ -433,7 +433,7 @@ export default function DailyReportPage() {
                 <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-cyan-400 via-sky-400 to-blue-500 opacity-90 transform skew-x-12 origin-top-right -mr-3" />
                 
                 <div className="relative p-2.5 pr-28 z-10">
-                  <h2 className="text-sm font-black tracking-tight leading-none text-sky-900">{currentUser?.name || "Staff Member"}</h2>
+                  <h2 className="text-base font-black tracking-tight leading-none text-sky-900">{currentUser?.name || "Staff Member"}</h2>
                   
                   {/* Color dots row */}
                   <div className="flex items-center gap-1 mt-1.5">
@@ -448,7 +448,7 @@ export default function DailyReportPage() {
 
                 {/* Centered Report Title bar at bottom */}
                 <div className="border-t border-slate-200 bg-slate-50/50 py-1.5 text-center relative z-10">
-                  <span className="text-[9px] font-black text-slate-950 uppercase tracking-widest">
+                  <span className="text-[11px] font-black text-slate-950 uppercase tracking-widest">
                     Detailed Cash Report - {new Date(selectedDate).toLocaleDateString("en-IN", { day: '2-digit', month: 'short', year: 'numeric', timeZone: "Asia/Kolkata" })}
                   </span>
                 </div>
@@ -457,26 +457,26 @@ export default function DailyReportPage() {
               {/* Balance Summary Row */}
               <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs">
                 <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Opening Balance</span>
-                  <span className="text-xs font-black text-blue-900 mt-1 tabular-nums whitespace-nowrap">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Opening Balance</span>
+                  <span className="text-sm font-black text-blue-900 mt-1 tabular-nums whitespace-nowrap">
                     ₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Today's In</span>
-                  <span className="text-xs font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Today's In</span>
+                  <span className="text-sm font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
                     ₹{totalInToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Today's Out</span>
-                  <span className="text-xs font-black text-red-600 mt-1 tabular-nums whitespace-nowrap">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Today's Out</span>
+                  <span className="text-sm font-black text-red-600 mt-1 tabular-nums whitespace-nowrap">
                     ₹{totalOutToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[8px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Last Balance</span>
-                  <span className="text-xs font-black text-blue-900 mt-1 tabular-nums whitespace-nowrap">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Last Balance</span>
+                  <span className="text-sm font-black text-blue-900 mt-1 tabular-nums whitespace-nowrap">
                     ₹{lastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -487,23 +487,23 @@ export default function DailyReportPage() {
                 <table className="w-full text-xs text-left border-collapse table-fixed min-w-[600px]">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[5%] text-[9px] uppercase">No</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[12%] text-[9px] uppercase">Date</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[33%] text-[9px] uppercase">Description</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[9px] uppercase">In</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[9px] uppercase">Out</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[14%] text-[9px] uppercase">Notes</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[5%] text-[11px] uppercase">No</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[12%] text-[11px] uppercase">Date</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[33%] text-[11px] uppercase">Description</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">In</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Out</th>
+                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[14%] text-[11px] uppercase">Notes</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {/* Opening Balance Row */}
                     <tr className="bg-slate-50 font-bold text-slate-900">
                       <td className="py-2 px-1 border-r border-slate-200 text-center text-slate-400">-</td>
-                      <td className="py-2 px-1 border-r border-slate-200 text-center text-[9px] text-slate-400">-</td>
-                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-slate-900 uppercase text-[9.5px] tracking-wider">
+                      <td className="py-2 px-1 border-r border-slate-200 text-center text-[11px] text-slate-400">-</td>
+                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-slate-900 uppercase text-[11.5px] tracking-wider">
                         OPENING BALANCE
                       </td>
-                      <td className="py-2 px-1 border-r border-slate-200 text-center font-black text-blue-900 text-[10px] font-mono tabular-nums">
+                      <td className="py-2 px-1 border-r border-slate-200 text-center font-black text-blue-900 text-xs font-mono tabular-nums">
                         ₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-2 px-1 border-r border-slate-200 text-center text-slate-400">-</td>
@@ -553,33 +553,33 @@ export default function DailyReportPage() {
                         return (
                           <tr key={item.id} className="hover:bg-slate-50/50">
                             {/* No */}
-                            <td className="py-2 px-1 border-r border-slate-200 text-center font-bold text-slate-800 text-[9.5px]">
+                            <td className="py-2 px-1 border-r border-slate-200 text-center font-bold text-slate-800 text-[11px]">
                               {idx + 1}
                             </td>
                             
                             {/* Date & Time */}
-                            <td className="py-2 px-1 border-r border-slate-200 text-center text-[9px] leading-tight font-semibold text-slate-700">
+                            <td className="py-2 px-1 border-r border-slate-200 text-center text-[11px] leading-tight font-semibold text-slate-700">
                               <div>{dt.date}</div>
-                              <div className="text-slate-400 mt-0.5 font-mono">{dt.time}</div>
+                              <div className="text-slate-400 mt-0.5 font-mono text-[10px]">{dt.time}</div>
                             </td>
                             
                             {/* Description */}
-                            <td className="py-2 px-2 border-r border-slate-200 text-center font-semibold text-slate-800 break-words text-[9.5px] leading-snug whitespace-pre-line">
+                            <td className="py-2 px-2 border-r border-slate-200 text-center font-semibold text-slate-800 break-words text-[11.5px] leading-snug whitespace-pre-line">
                               <div className="text-slate-900 font-bold">{narration}</div>
                               {item.remarks && (
-                                <div className="text-[8.5px] text-slate-500 font-medium mt-0.5 italic">
+                                <div className="text-[10px] text-slate-500 font-medium mt-0.5 italic">
                                   Remark: {item.remarks}
                                 </div>
                               )}
                             </td>
                             
                             {/* In */}
-                            <td className="py-2 px-1 border-r border-slate-200 text-center font-extrabold text-emerald-600 text-[10px] font-mono tabular-nums">
+                            <td className="py-2 px-1 border-r border-slate-200 text-center font-extrabold text-emerald-600 text-xs font-mono tabular-nums">
                               {isCol ? `₹${Number(item.inAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
                             
                             {/* Out */}
-                            <td className="py-2 px-1 border-r border-slate-200 text-center font-extrabold text-red-600 text-[10px] font-mono tabular-nums">
+                            <td className="py-2 px-1 border-r border-slate-200 text-center font-extrabold text-red-600 text-xs font-mono tabular-nums">
                               {!isCol ? `-₹${Number(item.outAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
                             
@@ -595,11 +595,11 @@ export default function DailyReportPage() {
                     {/* Last Balance Row */}
                     <tr className="bg-slate-50 font-bold text-slate-900 border-t border-slate-200">
                       <td className="py-2 px-1 border-r border-slate-200 text-center text-slate-400">-</td>
-                      <td className="py-2 px-1 border-r border-slate-200 text-center text-[9px] text-slate-400">-</td>
-                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-slate-900 uppercase text-[9.5px] tracking-wider">
+                      <td className="py-2 px-1 border-r border-slate-200 text-center text-[11px] text-slate-400">-</td>
+                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-slate-900 uppercase text-[11.5px] tracking-wider">
                         LAST BALANCE
                       </td>
-                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-blue-900 text-[10px] font-mono tabular-nums">
+                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-blue-900 text-xs font-mono tabular-nums">
                         ₹{lastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-2 px-2 border-r border-slate-200 text-center text-slate-400">-</td>
