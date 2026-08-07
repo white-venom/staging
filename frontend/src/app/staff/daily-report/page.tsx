@@ -204,31 +204,36 @@ export default function DailyReportPage() {
       { label: "50", count: notes.note50 },
       { label: "20", count: notes.note20 },
       { label: "10", count: notes.note10 },
-    ];
+    ].filter(n => n.count !== 0);
+
+    if (items.length === 0 && notes.coins === 0) {
+      return <span className="text-slate-400 font-mono text-[10px]">-</span>;
+    }
+
     return (
-      <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] font-bold justify-end">
+      <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] font-bold justify-end font-mono tabular-nums">
         {items.map(n => (
-          <span key={n.label} className={n.count < 0 ? "text-red-600" : "text-slate-600"}>
-            {n.label}x{n.count}
+          <span key={n.label} className={n.count < 0 ? "text-red-600 font-bold" : "text-slate-700 font-bold"}>
+            ₹{n.label}×{n.count}
           </span>
         ))}
         {notes.coins !== 0 && (
-          <span className={notes.coins < 0 ? "text-red-600" : "text-slate-600"}>
-            Coins={notes.coins.toFixed(2)}
+          <span className={notes.coins < 0 ? "text-red-600 font-bold" : "text-slate-700 font-bold"}>
+            Coins=₹{notes.coins.toFixed(2)}
           </span>
         )}
       </div>
     );
   };
 
-  // Generate breakdown content cell in the format matching SS
+  // Generate breakdown content cell in clean, human-readable format
   const renderNotesBreakdown = (item: any) => {
     const denoms = item.denominations || {};
     const isOut = item.itemType === "deposit";
-    const prefix = isOut ? "-" : "";
 
-    const lines: string[] = [];
+    const noteItems: { label: string; count: number; total: number }[] = [];
     let noteCountSum = 0;
+    let cashTotal = 0;
 
     const notesConfig = [
       { key: "note_500", label: "500" },
@@ -240,49 +245,45 @@ export default function DailyReportPage() {
     ];
 
     notesConfig.forEach(n => {
-      const val = Number(denoms[n.key] || 0);
-      if (val !== 0) {
-        noteCountSum += val;
-        let countStr = "";
-        let totalStr = "";
-        if (val < 0) {
-          countStr = `${val}`;
-          totalStr = `${val * Number(n.label)}`;
-        } else {
-          countStr = `${prefix}${val}`;
-          totalStr = `${prefix}${val * Number(n.label)}`;
-        }
-        lines.push(`${n.label}x${countStr}=${totalStr}`);
+      const rawVal = Number(denoms[n.key] || 0);
+      const absCount = Math.abs(rawVal);
+      if (absCount !== 0) {
+        const lineTotal = absCount * Number(n.label);
+        noteCountSum += absCount;
+        cashTotal += lineTotal;
+        noteItems.push({ label: n.label, count: absCount, total: lineTotal });
       }
     });
 
-    const coinsVal = Number(denoms.coins || 0);
-    if (coinsVal !== 0) {
-      noteCountSum += coinsVal; // coins count towards notes in screenshot total count
-      let countStr = "";
-      let totalStr = "";
-      if (coinsVal < 0) {
-        countStr = `${Math.ceil(coinsVal)}`;
-        totalStr = `${coinsVal.toFixed(0)}`;
-      } else {
-        countStr = `${prefix}${Math.floor(coinsVal)}`;
-        totalStr = `${prefix}${coinsVal.toFixed(0)}`;
-      }
-      lines.push(`01x${countStr}=${totalStr}`);
-    }
+    const coinsVal = Math.abs(Number(denoms.coins || 0));
+    const onlineVal = Math.abs(Number(denoms.online_amount || 0));
 
-    const onlineVal = Number(denoms.online_amount || 0);
-    if (onlineVal !== 0) {
-      lines.push(`[+${onlineVal < 0 ? onlineVal : prefix + onlineVal}]`);
+    if (noteItems.length === 0 && coinsVal === 0 && onlineVal === 0) {
+      return <span className="text-slate-400 font-mono text-[10px]">-</span>;
     }
-
-    // Append total note line
-    const totalNoteStr = noteCountSum < 0 ? `${noteCountSum}` : `${prefix}${noteCountSum}`;
-    lines.push(`Total_${totalNoteStr}_Note`);
 
     return (
-      <div className="text-[11.5px] leading-tight font-semibold text-slate-700 dark:text-slate-300 text-right whitespace-pre-line font-mono">
-        {lines.join("\n")}
+      <div className="text-[10px] leading-tight font-medium text-slate-800 space-y-0.5 text-right font-mono tabular-nums bg-slate-50/70 p-1 rounded-sm border border-slate-200/60">
+        {noteItems.map(n => (
+          <div key={n.label} className="text-slate-700 font-semibold">
+            {n.label}×{n.count} = <span className="font-bold text-slate-900">₹{n.total.toLocaleString("en-IN")}</span>
+          </div>
+        ))}
+        {coinsVal > 0 && (
+          <div className="text-slate-700 font-semibold">
+            Coins = <span className="font-bold text-slate-900">₹{coinsVal.toFixed(2)}</span>
+          </div>
+        )}
+        {onlineVal > 0 && (
+          <div className="text-sky-700 font-bold">
+            Online = ₹{onlineVal.toLocaleString("en-IN")}
+          </div>
+        )}
+        {noteCountSum > 0 && (
+          <div className="text-[9.5px] font-black text-slate-500 border-t border-slate-200/80 pt-0.5 mt-0.5 uppercase tracking-wider">
+            Total: {noteCountSum} Notes
+          </div>
+        )}
       </div>
     );
   };
@@ -483,38 +484,38 @@ export default function DailyReportPage() {
               </div>
 
               {/* Transaction Data Table */}
-              <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
-                <table className="w-full text-xs text-left border-collapse table-fixed min-w-[600px]">
+              <div className="border-2 border-slate-300 rounded-lg overflow-x-auto bg-white shadow-xs">
+                <table className="w-full text-xs text-left border-collapse table-fixed min-w-[620px]">
                   <thead>
-                    <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[5%] text-[11px] uppercase">No</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[12%] text-[11px] uppercase">Date</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[33%] text-[11px] uppercase">Description</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">In</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Out</th>
-                      <th className="py-2 px-1 border-r border-slate-200 text-center w-[14%] text-[11px] uppercase">Notes</th>
+                    <tr className="bg-sky-900 text-white font-bold border-b-2 border-sky-950">
+                      <th className="py-2.5 px-1 border-r border-sky-800 text-center w-[5%] text-[11px] font-black uppercase tracking-wider">No</th>
+                      <th className="py-2.5 px-1.5 border-r border-sky-800 text-center w-[13%] text-[11px] font-black uppercase tracking-wider">Date</th>
+                      <th className="py-2.5 px-2 border-r border-sky-800 text-left w-[32%] text-[11px] font-black uppercase tracking-wider">Description</th>
+                      <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[16%] text-[11px] font-black uppercase tracking-wider">In</th>
+                      <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[16%] text-[11px] font-black uppercase tracking-wider">Out</th>
+                      <th className="py-2.5 px-1.5 text-right w-[18%] text-[11px] font-black uppercase tracking-wider">Notes</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
+                  <tbody>
                     {/* Opening Balance Row */}
-                    <tr className="bg-slate-50 font-bold text-slate-900">
-                      <td className="py-2 px-1 border-r border-slate-200 text-center text-slate-400">-</td>
-                      <td className="py-2 px-1 border-r border-slate-200 text-center text-[11px] text-slate-400">-</td>
-                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-slate-900 uppercase text-[11.5px] tracking-wider">
+                    <tr className="bg-sky-50/80 font-bold text-slate-900 border-b border-slate-300">
+                      <td className="py-2.5 px-1 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+                      <td className="py-2.5 px-1 border-r border-slate-300 text-center text-[11px] text-slate-400 font-bold">-</td>
+                      <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-black text-sky-950 uppercase text-[11.5px] tracking-wider">
                         OPENING BALANCE
                       </td>
-                      <td className="py-2 px-1 border-r border-slate-200 text-center font-black text-blue-900 text-xs font-mono tabular-nums">
+                      <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums">
                         ₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2 px-1 border-r border-slate-200 text-center text-slate-400">-</td>
-                      <td className="py-2 px-1 align-middle bg-slate-50/50 text-right">
+                      <td className="py-2.5 px-2 border-r border-slate-300 text-right text-slate-400 font-bold">-</td>
+                      <td className="py-2.5 px-1.5 align-middle bg-sky-50/40 text-right border-slate-300">
                         {renderNetDenomBreakdown(openingDenom)}
                       </td>
                     </tr>
 
                     {reportItems.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-6 text-center text-xs text-slate-400 font-bold bg-white italic">
+                      <tr className="border-b border-slate-300">
+                        <td colSpan={6} className="py-6 text-center text-xs text-slate-500 font-bold bg-white italic">
                           No transaction records found for {new Date(selectedDate).toLocaleDateString("en-IN", { dateStyle: 'medium', timeZone: "Asia/Kolkata" })}.
                         </td>
                       </tr>
@@ -549,42 +550,43 @@ export default function DailyReportPage() {
                             : `${destName}${bankSuffix}`;
                         }
                         const narration = `From ${source} to ${destination}`;
+                        const isEven = idx % 2 === 0;
 
                         return (
-                          <tr key={item.id} className="hover:bg-slate-50/50">
+                          <tr key={item.id} className={`${isEven ? 'bg-white' : 'bg-slate-50/70'} border-b border-slate-300 hover:bg-sky-50/40 transition-colors`}>
                             {/* No */}
-                            <td className="py-2 px-1 border-r border-slate-200 text-center font-bold text-slate-800 text-[11px]">
+                            <td className="py-2.5 px-1 border-r border-slate-300 text-center font-bold text-slate-900 text-[11px]">
                               {idx + 1}
                             </td>
                             
                             {/* Date & Time */}
-                            <td className="py-2 px-1 border-r border-slate-200 text-center text-[11px] leading-tight font-semibold text-slate-700">
+                            <td className="py-2.5 px-1.5 border-r border-slate-300 text-center text-[11px] leading-tight font-bold text-slate-900">
                               <div>{dt.date}</div>
-                              <div className="text-slate-400 mt-0.5 font-mono text-[10px]">{dt.time}</div>
+                              <div className="text-slate-500 mt-0.5 font-mono text-[10px] font-medium">{dt.time}</div>
                             </td>
                             
                             {/* Description */}
-                            <td className="py-2 px-2 border-r border-slate-200 text-center font-semibold text-slate-800 break-words text-[11.5px] leading-snug whitespace-pre-line">
+                            <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-bold text-slate-900 break-words text-[11.5px] leading-snug">
                               <div className="text-slate-900 font-bold">{narration}</div>
                               {item.remarks && (
-                                <div className="text-[10px] text-slate-500 font-medium mt-0.5 italic">
+                                <div className="text-[10px] text-slate-600 font-medium mt-0.5 italic">
                                   Remark: {item.remarks}
                                 </div>
                               )}
                             </td>
                             
                             {/* In */}
-                            <td className="py-2 px-1 border-r border-slate-200 text-center font-extrabold text-emerald-600 text-xs font-mono tabular-nums">
+                            <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-emerald-700 text-xs font-mono tabular-nums">
                               {isCol ? `₹${Number(item.inAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
                             
                             {/* Out */}
-                            <td className="py-2 px-1 border-r border-slate-200 text-center font-extrabold text-red-600 text-xs font-mono tabular-nums">
+                            <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-red-600 text-xs font-mono tabular-nums">
                               {!isCol ? `-₹${Number(item.outAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
                             
                             {/* Notes */}
-                            <td className="py-2 px-1 align-middle bg-slate-50/30">
+                            <td className="py-2.5 px-1.5 align-middle bg-slate-50/40">
                               {renderNotesBreakdown(item)}
                             </td>
                           </tr>
@@ -593,17 +595,17 @@ export default function DailyReportPage() {
                     )}
 
                     {/* Last Balance Row */}
-                    <tr className="bg-slate-50 font-bold text-slate-900 border-t border-slate-200">
-                      <td className="py-2 px-1 border-r border-slate-200 text-center text-slate-400">-</td>
-                      <td className="py-2 px-1 border-r border-slate-200 text-center text-[11px] text-slate-400">-</td>
-                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-slate-900 uppercase text-[11.5px] tracking-wider">
+                    <tr className="bg-sky-50/80 font-bold text-slate-900 border-t-2 border-slate-300">
+                      <td className="py-2.5 px-1 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+                      <td className="py-2.5 px-1 border-r border-slate-300 text-center text-[11px] text-slate-400 font-bold">-</td>
+                      <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-black text-sky-950 uppercase text-[11.5px] tracking-wider">
                         LAST BALANCE
                       </td>
-                      <td className="py-2 px-2 border-r border-slate-200 text-center font-black text-blue-900 text-xs font-mono tabular-nums">
+                      <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums">
                         ₹{lastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
-                      <td className="py-2 px-2 border-r border-slate-200 text-center text-slate-400">-</td>
-                      <td className="py-2 px-1 align-middle bg-slate-50/50 text-right">
+                      <td className="py-2.5 px-2 border-r border-slate-300 text-right text-slate-400 font-bold">-</td>
+                      <td className="py-2.5 px-1.5 align-middle bg-sky-50/40 text-right border-slate-300">
                         {renderNetDenomBreakdown(lastDenom)}
                       </td>
                     </tr>
