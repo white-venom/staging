@@ -50,8 +50,45 @@ export async function downloadElementAsPdf(
     page.style.flexDirection = "column";
     page.style.overflow = "hidden";
     // Propagate default styles of the source container
-    page.style.fontFamily = window.getComputedStyle(element as HTMLElement).fontFamily;
+    page.style.fontFamily = window.getComputedStyle(element as HTMLElement).fontFamily || "sans-serif";
     page.style.color = "#0f172a"; // slate-900
+
+    // Inject CrediiFlow Logo & Name Watermark on every page
+    const watermark = document.createElement("div");
+    watermark.className = "pdf-watermark-overlay";
+    watermark.style.position = "absolute";
+    watermark.style.top = "0";
+    watermark.style.left = "0";
+    watermark.style.right = "0";
+    watermark.style.bottom = "0";
+    watermark.style.display = "flex";
+    watermark.style.flexDirection = "column";
+    watermark.style.alignItems = "center";
+    watermark.style.justifyContent = "center";
+    watermark.style.pointerEvents = "none";
+    watermark.style.zIndex = "0";
+    watermark.style.opacity = "0.06";
+    watermark.style.userSelect = "none";
+    watermark.style.transform = "rotate(-25deg)";
+
+    watermark.innerHTML = `
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <span style="font-size: 56px; font-weight: 900; font-family: system-ui, -apple-system, sans-serif; color: #0284c7; letter-spacing: 3px; text-transform: uppercase;">
+            CrediiFlow
+          </span>
+        </div>
+        <span style="font-size: 15px; font-weight: 800; font-family: system-ui, -apple-system, sans-serif; color: #334155; letter-spacing: 4px; text-transform: uppercase;">
+          Digital Cash & Credit Management
+        </span>
+      </div>
+    `;
+
+    page.appendChild(watermark);
+
     tempContainer.appendChild(page);
     pages.push(page);
     return page;
@@ -76,6 +113,8 @@ export async function downloadElementAsPdf(
       clone.style.minHeight = "0";
       clone.style.maxHeight = "none";
       clone.style.overflow = "visible";
+      clone.style.position = "relative";
+      clone.style.zIndex = "1";
       active.appendChild(clone);
       active = clone;
     }
@@ -94,6 +133,8 @@ export async function downloadElementAsPdf(
     // A. Handle Table Splitting
     if (el.tagName.toLowerCase() === "table") {
       const tableShell = el.cloneNode(false) as HTMLTableElement;
+      tableShell.style.position = "relative";
+      tableShell.style.zIndex = "1";
       const thead = el.querySelector("thead")?.cloneNode(true) as HTMLTableSectionElement;
       if (thead) tableShell.appendChild(thead);
       let tbody = document.createElement("tbody");
@@ -109,7 +150,7 @@ export async function downloadElementAsPdf(
         if (currentPage.scrollHeight > pageHeightPx) {
           tbody.removeChild(clonedRow);
           
-          if (tbody.children.length === 0 && currentPage.children.length <= 1) {
+          if (tbody.children.length === 0 && currentPage.children.length <= 2) {
             // Keep on this page anyway if it's the only element on the page
             tbody.appendChild(clonedRow);
           } else {
@@ -117,6 +158,8 @@ export async function downloadElementAsPdf(
             currentPage = createNewPage();
             const newContainer = recreateHierarchy(el.parentElement || rootElement, rootElement);
             const newTableShell = el.cloneNode(false) as HTMLTableElement;
+            newTableShell.style.position = "relative";
+            newTableShell.style.zIndex = "1";
             if (thead) newTableShell.appendChild(thead.cloneNode(true));
             const newTbody = document.createElement("tbody");
             newTbody.appendChild(clonedRow);
@@ -135,6 +178,8 @@ export async function downloadElementAsPdf(
     const isList = el.classList.contains("divide-y") || el.tagName.toLowerCase() === "ul" || el.tagName.toLowerCase() === "ol";
     if (isList) {
       let listShell = el.cloneNode(false) as HTMLElement;
+      listShell.style.position = "relative";
+      listShell.style.zIndex = "1";
       currentContainer.appendChild(listShell);
 
       const items = Array.from(el.children);
@@ -145,12 +190,14 @@ export async function downloadElementAsPdf(
         if (currentPage.scrollHeight > pageHeightPx) {
           listShell.removeChild(clonedItem);
           
-          if (listShell.children.length === 0 && currentPage.children.length <= 1) {
+          if (listShell.children.length === 0 && currentPage.children.length <= 2) {
             listShell.appendChild(clonedItem);
           } else {
             currentPage = createNewPage();
             const newContainer = recreateHierarchy(el.parentElement || rootElement, rootElement);
             const newListShell = el.cloneNode(false) as HTMLElement;
+            newListShell.style.position = "relative";
+            newListShell.style.zIndex = "1";
             newListShell.appendChild(clonedItem);
             newContainer.appendChild(newListShell);
             
@@ -172,6 +219,8 @@ export async function downloadElementAsPdf(
       wrapperShell.style.minHeight = "0";
       wrapperShell.style.maxHeight = "none";
       wrapperShell.style.overflow = "visible";
+      wrapperShell.style.position = "relative";
+      wrapperShell.style.zIndex = "1";
       currentContainer.appendChild(wrapperShell);
 
       const children = Array.from(el.childNodes);
@@ -183,10 +232,12 @@ export async function downloadElementAsPdf(
 
     // D. Standard block element
     const clonedEl = el.cloneNode(true) as HTMLElement;
+    clonedEl.style.position = "relative";
+    clonedEl.style.zIndex = "1";
     currentContainer.appendChild(clonedEl);
 
     if (currentPage.scrollHeight > pageHeightPx) {
-      if (currentPage.children.length > 1 || currentContainer.children.length > 1) {
+      if (currentPage.children.length > 2 || currentContainer.children.length > 1) {
         currentContainer.removeChild(clonedEl);
         currentPage = createNewPage();
         const newContainer = recreateHierarchy(el.parentElement || rootElement, rootElement);
@@ -222,11 +273,19 @@ export async function downloadElementAsPdf(
       });
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
       pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+
+      // Footer branding & Page Numbering on every page
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(8);
+      pdf.setTextColor(148, 163, 184); // slate-400
+      pdf.text("CrediiFlow · Digital Cash & Credit Management", marginIn, pdfHeight - 0.2);
+      pdf.text(`Page ${i + 1} of ${pages.length}`, pdfWidth - marginIn, pdfHeight - 0.2, { align: "right" });
     }
     
     pdf.save(filename);
   } finally {
-    // 4. Clean up temporary container
+    // Clean up temporary container
     document.body.removeChild(tempContainer);
   }
 }
+

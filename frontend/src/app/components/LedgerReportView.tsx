@@ -564,34 +564,35 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           </div>
 
           {/* Transactions Table */}
-          <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
+          <div className="border-2 border-slate-300 rounded-lg overflow-x-auto bg-white shadow-xs">
             {filteredTransactions.length === 0 ? (
-              <div className="p-8 text-center text-xs text-slate-400 font-bold bg-white italic">
+              <div className="p-8 text-center text-xs text-slate-500 font-bold bg-white italic">
                 No ledger transactions found in the selected date range.
               </div>
             ) : (
               <table className="w-full min-w-[550px] text-xs text-left border-collapse table-fixed">
                 <thead>
-                  <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[4%] text-[11px] uppercase">No</th>
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] text-[11px] uppercase">Date</th>
-                    <th className="py-2 px-1 border-r border-slate-200 text-center w-[31%] text-[11px] uppercase">Description</th>
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[17%] text-[11px] uppercase">
+                  <tr className="bg-sky-900 border-b-2 border-sky-950 text-white font-bold">
+                    <th className="py-2.5 px-1 border-r border-sky-800 text-center w-[5%] text-[11px] font-black uppercase tracking-wider">No</th>
+                    <th className="py-2.5 px-1.5 border-r border-sky-800 text-center w-[13%] text-[11px] font-black uppercase tracking-wider">Date</th>
+                    <th className="py-2.5 px-2 border-r border-sky-800 text-left w-[36%] text-[11px] font-black uppercase tracking-wider">Description</th>
+                    <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[15%] text-[11px] font-black uppercase tracking-wider">
                       {isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Gave" : "Total Out")}
                     </th>
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[17%] text-[11px] uppercase">
+                    <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[15%] text-[11px] font-black uppercase tracking-wider">
                       {isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Got" : "Total In")}
                     </th>
-                    <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[19%] text-[11px] uppercase">Balance</th>
+                    <th className="py-2.5 px-1.5 text-right w-[16%] text-[11px] font-black uppercase tracking-wider">Balance</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody>
                   {filteredTransactions.map((tx, idx) => {
                     const formattedIST = formatIST(tx.date);
                     const isDebit = tx.transaction_type === "debit";
                     let isGaveForDisplay = isDebit;
                     if (isPublic) isGaveForDisplay = !isGaveForDisplay;
-                    const amountColor = isGaveForDisplay ? "text-red-500" : "text-emerald-600";
+                    const amountColor = isGaveForDisplay ? "text-red-600" : "text-emerald-700";
+                    const isEven = idx % 2 === 0;
 
                     return (
                       <tr 
@@ -599,29 +600,29 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                         onClick={() => {
                           setSelectedEntryForDetails(tx);
                         }}
-                        className="hover:bg-slate-50/50 cursor-pointer divide-x divide-slate-200"
+                        className={`${isEven ? 'bg-white' : 'bg-slate-50/70'} border-b border-slate-300 hover:bg-sky-50/40 cursor-pointer transition-colors`}
                       >
                         {/* No */}
-                        <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[11px]">
+                        <td className="py-2.5 px-1 border-r border-slate-300 text-center font-bold text-slate-900 text-[11px]">
                           {idx + 1}
                         </td>
 
                         {/* Date & Time */}
-                        <td className="py-2 px-0.5 text-center text-[11px] leading-tight font-semibold text-slate-700">
+                        <td className="py-2.5 px-1.5 border-r border-slate-300 text-center text-[11px] leading-tight font-bold text-slate-900">
                           <div>{formattedIST.date}</div>
-                          <div className="text-slate-400 mt-0.5 font-mono text-[10px]">{formattedIST.time}</div>
+                          <div className="text-slate-500 mt-0.5 font-mono text-[10px] font-medium">{formattedIST.time}</div>
                         </td>
 
                         {/* Description */}
-                        <td className="py-2 px-1 text-center font-semibold text-slate-800 break-words text-[11.5px] leading-snug whitespace-pre-line">
+                        <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-bold text-slate-900 break-words text-[11.5px] leading-snug">
                           <div className="text-slate-900 font-bold">{cleanDescription(tx.description, tx)}</div>
                           {tx.store_name && (
-                            <div className="text-[10.5px] font-bold text-indigo-600 dark:text-indigo-400 mt-0.5">
-                              Store: <span className="font-extrabold uppercase tracking-tight">{tx.store_name}</span>
+                            <div className="text-[10.5px] font-extrabold text-indigo-700 dark:text-indigo-400 mt-0.5">
+                              Store: <span className="uppercase tracking-tight">{tx.store_name}</span>
                             </div>
                           )}
                           {(tx.bank_account_name || tx.portal_name) && (
-                            <div className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                            <div className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mt-0.5">
                               {tx.deposit_type === "retailer"
                                 ? `Retailer - ${tx.bank_account_name}`
                                 : tx.deposit_type === "staff"
@@ -632,34 +633,34 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                             </div>
                           )}
                           {!isPublic && tx.staff_name && (
-                            <div className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400 mt-0.5">
+                            <div className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mt-0.5">
                               Staff: <span className="uppercase">{tx.staff_name}</span>
                             </div>
                           )}
                           {tx.remarks && (
-                            <div className="text-[10px] text-slate-500 font-medium mt-0.5 italic">
+                            <div className="text-[10px] text-slate-600 font-medium mt-0.5 italic">
                               Remark: {tx.remarks}
                             </div>
                           )}
                           {tx.reference_no && (
-                            <div className="text-[10px] text-slate-500 font-medium mt-0.5 font-mono">
+                            <div className="text-[10px] text-slate-600 font-medium mt-0.5 font-mono">
                               Ref: {tx.reference_no}
                             </div>
                           )}
                         </td>
 
                         {/* Gave / Out */}
-                        <td className={`py-2 px-0.5 text-center font-extrabold text-xs font-mono tabular-nums ${amountColor}`}>
+                        <td className={`py-2.5 px-2 border-r border-slate-300 text-right font-black text-xs font-mono tabular-nums ${amountColor}`}>
                           {isGaveForDisplay ? `₹${Math.round(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                         </td>
 
                         {/* Got / In */}
-                        <td className={`py-2 px-0.5 text-center font-extrabold text-xs font-mono tabular-nums ${amountColor}`}>
+                        <td className={`py-2.5 px-2 border-r border-slate-300 text-right font-black text-xs font-mono tabular-nums ${amountColor}`}>
                           {!isGaveForDisplay ? `₹${Math.round(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                         </td>
 
                         {/* Balance */}
-                        <td className="py-2 px-0.5 text-center font-bold text-slate-900 text-xs font-mono tabular-nums">
+                        <td className="py-2.5 px-2 text-right font-black text-slate-900 text-xs font-mono tabular-nums">
                           ₹{Math.round(tx.running_balance).toLocaleString("en-IN")}
                         </td>
                       </tr>
