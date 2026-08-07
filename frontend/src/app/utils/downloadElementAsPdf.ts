@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas-pro";
+import { LOGO_BASE64 } from "./logoBase64";
 
 /**
  * Programmatically paginates the cloned HTML content and renders page-by-page onto jsPDF canvas
@@ -53,7 +54,7 @@ export async function downloadElementAsPdf(
     page.style.fontFamily = window.getComputedStyle(element as HTMLElement).fontFamily || "sans-serif";
     page.style.color = "#0f172a"; // slate-900
 
-    // Inject CrediiFlow Logo & Name Watermark on every page
+    // Inject Official CrediiFlow Logo & Name Watermark on every page
     const watermark = document.createElement("div");
     watermark.className = "pdf-watermark-overlay";
     watermark.style.position = "absolute";
@@ -67,21 +68,14 @@ export async function downloadElementAsPdf(
     watermark.style.justifyContent = "center";
     watermark.style.pointerEvents = "none";
     watermark.style.zIndex = "0";
-    watermark.style.opacity = "0.06";
+    watermark.style.opacity = "0.08";
     watermark.style.userSelect = "none";
     watermark.style.transform = "rotate(-25deg)";
 
     watermark.innerHTML = `
-      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-          </svg>
-          <span style="font-size: 56px; font-weight: 900; font-family: system-ui, -apple-system, sans-serif; color: #0284c7; letter-spacing: 3px; text-transform: uppercase;">
-            CrediiFlow
-          </span>
-        </div>
-        <span style="font-size: 15px; font-weight: 800; font-family: system-ui, -apple-system, sans-serif; color: #334155; letter-spacing: 4px; text-transform: uppercase;">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;">
+        <img src="${LOGO_BASE64}" alt="CrediiFlow Logo" style="height: 110px; width: auto; object-fit: contain;" />
+        <span style="font-size: 14px; font-weight: 800; font-family: system-ui, -apple-system, sans-serif; color: #334155; letter-spacing: 4px; text-transform: uppercase;">
           Digital Cash & Credit Management
         </span>
       </div>
