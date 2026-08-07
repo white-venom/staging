@@ -337,6 +337,272 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     }));
   }, [staffList]);
 
+  // Target Staff for Daily Cash Report
+  const targetStaff = useMemo(() => {
+    if (selectedStaffIds.length !== 1) return null;
+    const idOrName = selectedStaffIds[0];
+    if (idOrName === "all" || idOrName === "__none__") return null;
+    const found = staffList.find(s => String(s.id) === String(idOrName));
+    return found || { id: idOrName, name: idOrName };
+  }, [selectedStaffIds, staffList]);
+
+  // All collections for the selected staff member
+  const staffCols = useMemo(() => {
+    if (!targetStaff) return [];
+    return collections.filter((c: any) => {
+      const staffName = getStaffName(c);
+      return String(c.from_staff_id || c.staff_id || c.staffId) === String(targetStaff.id) ||
+             staffName === targetStaff.name ||
+             staffName.toLowerCase() === targetStaff.name.toLowerCase();
+    });
+  }, [collections, targetStaff]);
+
+  // All deposits for the selected staff member (with deduplication filter for staff handovers)
+  const staffDeps = useMemo(() => {
+    if (!targetStaff) return [];
+    const relatedDeps = deposits.filter((d: any) => {
+      const isSender = String(d.staff_id || d.staffId) === String(targetStaff.id) ||
+                       getStaffName(d) === targetStaff.name ||
+                       getStaffName(d).toLowerCase() === targetStaff.name.toLowerCase();
+      const isRecipient = String(d.recipient_staff_id || d.recipientStaffId) === String(targetStaff.id) && d.deposit_type === "staff";
+      return isSender || isRecipient;
+    });
+
+    return relatedDeps.filter((d: any) => {
+      const isRecipient = String(d.recipient_staff_id || d.recipientStaffId) === String(targetStaff.id) && d.deposit_type === "staff";
+      if (isRecipient) {
+        const hasMatchingCollection = collections.some((c: any) => 
+          (String(c.staff_id || c.staffId) === String(targetStaff.id)) &&
+          (String(c.from_staff_id) === String(d.staff_id)) && 
+          Number(c.total_amount || c.totalAmount || 0) === Number(d.amount || 0)
+        );
+        return !hasMatchingCollection;
+      }
+      return true;
+    });
+  }, [deposits, collections, targetStaff]);
+
+  const staffFilteredCollections = useMemo(() => {
+    return staffCols.filter(c => {
+      const localDateStr = c.collection_date || getISTDateString(getUtcDate(c.created_at));
+      return localDateStr === dateFrom;
+    });
+  }, [staffCols, dateFrom]);
+
+  const staffFilteredDeposits = useMemo(() => {
+    return staffDeps.filter(d => {
+      const localDateStr = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
+      return localDateStr === dateFrom;
+    });
+  }, [staffDeps, dateFrom]);
+
+  const staffReportItems = useMemo(() => {
+    if (!targetStaff) return [];
+    const items = [
+      ...staffFilteredCollections.map(c => ({
+        ...c,
+        itemType: "collection",
+        inAmount: c.total_amount || c.totalAmount || 0,
+        outAmount: null,
+        detailsText: c.retailer_name || "Unknown Retailer"
+      })),
+      ...staffFilteredDeposits.map(d => {
+        const isRecipient = String(d.recipient_staff_id || d.recipientStaffId) === String(targetStaff.id) && d.deposit_type === "staff";
+        const targetDisp = (d.deposit_type === "portal" && d.portal_name) ? d.portal_name : (d.target_name || "Super Distributor");
+        return {
+          ...d,
+          itemType: isRecipient ? "collection" : "deposit",
+          inAmount: isRecipient ? d.amount : null,
+          outAmount: isRecipient ? null : d.amount,
+          detailsText: isRecipient ? `Received from ${getStaffName(d)}` : targetDisp
+        };
+      })
+    ];
+    return items.sort((a, b) => getUtcDate(a.created_at).getTime() - getUtcDate(b.created_at).getTime());
+  }, [staffFilteredCollections, staffFilteredDeposits, targetStaff]);
+
+  const staffOpeningBalance = useMemo(() => {
+    if (!targetStaff) return 0;
+    const totalInBefore = staffCols
+      .filter(c => {
+        const localDateStr = c.collection_date || getISTDateString(getUtcDate(c.created_at));
+        return localDateStr < dateFrom;
+      })
+      .reduce((sum, c) => sum + Number(c.total_amount || c.totalAmount || 0), 0) +
+      staffDeps
+      .filter(d => {
+        const isRecipient = String(d.recipient_staff_id || d.recipientStaffId) === String(targetStaff.id) && d.deposit_type === "staff";
+        if (!isRecipient) return false;
+        const localDateStr = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
+        return localDateStr < dateFrom;
+      })
+      .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+    const totalOutBefore = staffDeps
+      .filter(d => {
+        const isRecipient = String(d.recipient_staff_id || d.recipientStaffId) === String(targetStaff.id) && d.deposit_type === "staff";
+        if (isRecipient) return false;
+        const localDateStr = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
+        return localDateStr < dateFrom;
+      })
+      .reduce((sum, d) => sum + Number(d.amount || 0), 0);
+
+    return totalInBefore - totalOutBefore;
+  }, [staffCols, staffDeps, dateFrom, targetStaff]);
+
+  const staffTotalInToday = useMemo(() => {
+    return staffReportItems.reduce((sum, item) => sum + Number(item.inAmount || 0), 0);
+  }, [staffReportItems]);
+
+  const staffTotalOutToday = useMemo(() => {
+    return staffReportItems.reduce((sum, item) => sum + Number(item.outAmount || 0), 0);
+  }, [staffReportItems]);
+
+  const staffLastBalance = useMemo(() => {
+    return staffOpeningBalance + staffTotalInToday - staffTotalOutToday;
+  }, [staffOpeningBalance, staffTotalInToday, staffTotalOutToday]);
+
+  const computeStaffDenomBreakdown = (throughDateInclusive: string) => {
+    const notes = { note500: 0, note200: 0, note100: 0, note50: 0, note20: 0, note10: 0, coins: 0 };
+    if (!targetStaff) return notes;
+    
+    staffCols.forEach((c) => {
+      if (!c.denominations) return;
+      const cDate = c.collection_date || getISTDateString(getUtcDate(c.created_at));
+      if (cDate > throughDateInclusive) return;
+      notes.note500 += Number(c.denominations.note_500) || 0;
+      notes.note200 += Number(c.denominations.note_200) || 0;
+      notes.note100 += Number(c.denominations.note_100) || 0;
+      notes.note50  += Number(c.denominations.note_50)  || 0;
+      notes.note20  += Number(c.denominations.note_20)  || 0;
+      notes.note10  += Number(c.denominations.note_10)  || 0;
+      notes.coins   += Number(c.denominations.coins)    || 0;
+    });
+    
+    staffDeps.forEach((d) => {
+      if (!d.denominations) return;
+      const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
+      if (dDate > throughDateInclusive) return;
+      const isReceivedHandover = String(d.recipient_staff_id || d.recipientStaffId) === String(targetStaff.id) && d.deposit_type === "staff";
+      if (!isReceivedHandover && d.deposit_type === "virtual") return;
+      const sign = isReceivedHandover ? 1 : -1;
+      notes.note500 += sign * (Number(d.denominations.note_500) || 0);
+      notes.note200 += sign * (Number(d.denominations.note_200) || 0);
+      notes.note100 += sign * (Number(d.denominations.note_100) || 0);
+      notes.note50  += sign * (Number(d.denominations.note_50)  || 0);
+      notes.note20  += sign * (Number(d.denominations.note_20)  || 0);
+      notes.note10  += sign * (Number(d.denominations.note_10)  || 0);
+      notes.coins   += sign * (Number(d.denominations.coins)    || 0);
+    });
+    
+    notes.coins = Math.round(notes.coins * 100) / 100;
+    return notes;
+  };
+
+  const staffOpeningDenom = useMemo(() => {
+    if (!targetStaff) return { note500: 0, note200: 0, note100: 0, note50: 0, note20: 0, note10: 0, coins: 0 };
+    const dayBefore = (() => {
+      const d = new Date(dateFrom + "T00:00:00");
+      d.setDate(d.getDate() - 1);
+      return getISTDateString(d);
+    })();
+    return computeStaffDenomBreakdown(dayBefore);
+  }, [staffCols, staffDeps, dateFrom, targetStaff]);
+
+  const staffLastDenom = useMemo(() => {
+    return computeStaffDenomBreakdown(dateFrom);
+  }, [staffCols, staffDeps, dateFrom, targetStaff]);
+
+  const renderNetDenomBreakdown = (notes: { note500: number; note200: number; note100: number; note50: number; note20: number; note10: number; coins: number }) => {
+    const items = [
+      { label: "500", count: notes.note500 },
+      { label: "200", count: notes.note200 },
+      { label: "100", count: notes.note100 },
+      { label: "50", count: notes.note50 },
+      { label: "20", count: notes.note20 },
+      { label: "10", count: notes.note10 },
+    ].filter(n => n.count !== 0);
+
+    if (items.length === 0 && notes.coins === 0) {
+      return <span className="text-slate-400 font-mono text-[10px]">-</span>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] font-bold justify-end font-mono tabular-nums">
+        {items.map(n => (
+          <span key={n.label} className={n.count < 0 ? "text-red-600 font-bold" : "text-slate-700 font-bold"}>
+            ₹{n.label}×{n.count}
+          </span>
+        ))}
+        {notes.coins !== 0 && (
+          <span className={notes.coins < 0 ? "text-red-600 font-bold" : "text-slate-700 font-bold"}>
+            Coins=₹{notes.coins.toFixed(2)}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  const renderNotesBreakdown = (item: any) => {
+    const denoms = item.denominations || {};
+
+    const noteItems: { label: string; count: number; total: number }[] = [];
+    let noteCountSum = 0;
+    let cashTotal = 0;
+
+    const notesConfig = [
+      { key: "note_500", label: "500" },
+      { key: "note_200", label: "200" },
+      { key: "note_100", label: "100" },
+      { key: "note_50", label: "50" },
+      { key: "note_20", label: "20" },
+      { key: "note_10", label: "10" }
+    ];
+
+    notesConfig.forEach(n => {
+      const rawVal = Number(denoms[n.key] || 0);
+      const absCount = Math.abs(rawVal);
+      if (absCount !== 0) {
+        const lineTotal = absCount * Number(n.label);
+        noteCountSum += absCount;
+        cashTotal += lineTotal;
+        noteItems.push({ label: n.label, count: absCount, total: lineTotal });
+      }
+    });
+
+    const coinsVal = Math.abs(Number(denoms.coins || 0));
+    const onlineVal = Math.abs(Number(denoms.online_amount || 0));
+
+    if (noteItems.length === 0 && coinsVal === 0 && onlineVal === 0) {
+      return <span className="text-slate-400 font-mono text-[10px]">-</span>;
+    }
+
+    return (
+      <div className="text-[10px] leading-tight font-medium text-slate-800 space-y-0.5 text-right font-mono tabular-nums bg-slate-50/70 p-1 rounded-sm border border-slate-200/60">
+        {noteItems.map(n => (
+          <div key={n.label} className="text-slate-700 font-semibold">
+            {n.label}×{n.count} = <span className="font-bold text-slate-900">₹{n.total.toLocaleString("en-IN")}</span>
+          </div>
+        ))}
+        {coinsVal > 0 && (
+          <div className="text-slate-700 font-semibold">
+            Coins = <span className="font-bold text-slate-900">₹{coinsVal.toFixed(2)}</span>
+          </div>
+        )}
+        {onlineVal > 0 && (
+          <div className="text-sky-700 font-bold">
+            Online = ₹{onlineVal.toLocaleString("en-IN")}
+          </div>
+        )}
+        {noteCountSum > 0 && (
+          <div className="text-[9.5px] font-black text-slate-500 border-t border-slate-200/80 pt-0.5 mt-0.5 uppercase tracking-wider">
+            Total: {noteCountSum} Notes
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Filtered Daybook Summary Data (Complete Unfiltered Daily Statement for that Day)
   const filteredDaybook = useMemo(() => {
     const combined: any[] = [];
@@ -922,6 +1188,62 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         s.depositsTotal,
         s.collectionsTotal - s.depositsTotal
       ]);
+    } else if (reportType === "staff_daily_cash") {
+      if (!targetStaff) {
+        alert("Please select a single staff member first.");
+        return;
+      }
+      const staffNameClean = targetStaff.name.trim().replace(/\s+/g, "_");
+      filename = `${staffNameClean}_${dateFrom}.csv`;
+      headers = ["S.No", "Date", "Description/Narration", "In (Credit)", "Out (Debit)", "Remarks", "Denominations"];
+      rows = staffReportItems.map((item, idx) => {
+        const isCol = item.itemType === "collection";
+        const dt = formatDateDisplay(item.created_at || item.date || "");
+        
+        const staffName = getStaffName(item) || targetStaff.name;
+        let source = "";
+        let destination = "";
+        if (isCol) {
+          const isCms = item.retailer_name?.toLowerCase().startsWith("cms");
+          const storeStr = item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "";
+          const retDispName = isCms 
+            ? `${item.retailer_name} - ${item.store_name || "Cash"}` 
+            : (item.from_staff_name ? `Staff: ${item.from_staff_name}` : `${item.retailer_name || "Retailer"}${storeStr}`);
+          source = item.from_office ? "Super Distributor" : retDispName;
+          destination = item.portal_name
+            ? `${item.portal_name}${item.bank_name ? ` (${item.bank_name})` : (item.bank_account_name ? ` (${item.bank_account_name})` : "")}`
+            : staffName;
+        } else {
+          source = staffName;
+          const bankSuffix = (item.deposit_type === "portal" && item.bank_name)
+            ? ` (${item.bank_name})`
+            : (item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "");
+          const destName = (item.deposit_type === "portal" && item.portal_name) ? item.portal_name : (item.target_name || "Recipient");
+          destination = item.to_office ? "Super Distributor" : `${destName}${bankSuffix}`;
+        }
+        const narration = `From ${source} to ${destination}`;
+
+        // Denominations text formatting
+        const denoms = item.denominations || {};
+        const denomParts: string[] = [];
+        const notesKeys = ["note_500", "note_200", "note_100", "note_50", "note_20", "note_10"];
+        notesKeys.forEach(k => {
+          if (denoms[k]) denomParts.push(`${k.replace("note_", "")}x${denoms[k]}`);
+        });
+        if (denoms.coins) denomParts.push(`Coins: ${denoms.coins}`);
+        if (denoms.online_amount) denomParts.push(`Online: ${denoms.online_amount}`);
+        const denomStr = denomParts.join(", ");
+
+        return [
+          idx + 1,
+          `"${dt.date} ${dt.time}"`,
+          `"${narration.replace(/"/g, '""')}"`,
+          isCol ? item.inAmount : "-",
+          !isCol ? item.outAmount : "-",
+          `"${(item.remarks || "").replace(/"/g, '""')}"`,
+          `"${denomStr.replace(/"/g, '""')}"`
+        ];
+      });
     } else if (reportType === "virtual_ledger") {
       const subLabel = virtualLedgerSubType === "portal_to_portal" ? "Portal_to_Portal"
         : virtualLedgerSubType === "portal_to_dist" ? "Portal_to_Distributor"
@@ -945,7 +1267,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       });
     }
 
-    if (rows.length === 0 && reportType !== "virtual_ledger") {
+    if (rows.length === 0 && reportType !== "virtual_ledger" && reportType !== "staff_daily_cash") {
       alert("No data available for export.");
       return;
     }
@@ -1054,6 +1376,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         { name: "Daybook Summary", icon: Calendar, formats: "PDF • XLSX", color: "emerald", type: "daybook" },
         { name: "Cashbook (Physical Flow)", icon: IndianRupee, formats: "PDF • XLSX", color: "emerald", type: "cashbook" },
         { name: "Staff Collection Efficiency", icon: Activity, formats: "PDF • XLSX", color: "emerald", type: "staff_efficiency" },
+        { name: "Staff Daily Cash Report", icon: FileText, formats: "PDF • CSV", color: "emerald", type: "staff_daily_cash" },
       ]
     },
     {
@@ -1082,6 +1405,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     if (selectedReport === "retailer_ledger") reportTitle = "Retailer Ledger Report (A-Z)";
     if (selectedReport === "portal_ledger") reportTitle = "Portal Ledger Report";
     if (selectedReport === "staff_efficiency") reportTitle = "Staff Collection Efficiency Report";
+    if (selectedReport === "staff_daily_cash") {
+      reportTitle = targetStaff ? `${targetStaff.name}'s Daily Cash Report` : "Staff Daily Cash Report";
+    }
     if (selectedReport === "tally_import") reportTitle = "Tally Friendly Import Report";
     if (selectedReport === "virtual_ledger") {
       reportTitle = virtualLedgerSubType === "portal_to_portal" ? "Virtual Ledger — Portal to Portal"
@@ -1993,6 +2319,168 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       </tbody>
                     </table>
                   )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* STAFF DAILY CASH REPORT VIEW */}
+          {selectedReport === "staff_daily_cash" && (() => {
+            if (!targetStaff) {
+              return (
+                <div className="p-8 text-center text-xs text-slate-500 font-bold bg-white italic border border-slate-200 rounded-lg">
+                  Please filter by a single staff member using the "Filter by Staff" dropdown above to display their Daily Cash Report.
+                </div>
+              );
+            }
+
+            return (
+              <div className="space-y-3">
+                {/* Balance Summary Row */}
+                <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs">
+                  <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Opening Balance</span>
+                    <span className="text-sm font-black text-blue-900 mt-1 tabular-nums whitespace-nowrap">
+                      ₹{staffOpeningBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Today's In</span>
+                    <span className="text-sm font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
+                      ₹{staffTotalInToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Today's Out</span>
+                    <span className="text-sm font-black text-red-600 mt-1 tabular-nums whitespace-nowrap">
+                      ₹{staffTotalOutToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Last Balance</span>
+                    <span className="text-sm font-black text-blue-900 mt-1 tabular-nums whitespace-nowrap">
+                      ₹{staffLastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Transaction Data Table */}
+                <div className="border-2 border-slate-300 rounded-lg overflow-x-auto bg-white shadow-xs">
+                  <table className="w-full text-xs text-left border-collapse table-fixed min-w-[620px]">
+                    <thead>
+                      <tr className="bg-sky-900 text-white font-bold border-b-2 border-sky-950">
+                        <th className="py-2.5 px-1 border-r border-sky-800 text-center w-[5%] text-[11px] font-black uppercase tracking-wider">No</th>
+                        <th className="py-2.5 px-1.5 border-r border-sky-800 text-center w-[13%] text-[11px] font-black uppercase tracking-wider">Date</th>
+                        <th className="py-2.5 px-2 border-r border-sky-800 text-left w-[32%] text-[11px] font-black uppercase tracking-wider">Description</th>
+                        <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[16%] text-[11px] font-black uppercase tracking-wider">In</th>
+                        <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[16%] text-[11px] font-black uppercase tracking-wider">Out</th>
+                        <th className="py-2.5 px-1.5 text-right w-[18%] text-[11px] font-black uppercase tracking-wider">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Opening Balance Row */}
+                      <tr className="bg-sky-50/80 font-bold text-slate-900 border-b border-slate-300">
+                        <td className="py-2.5 px-1 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+                        <td className="py-2.5 px-1 border-r border-slate-300 text-center text-[11px] text-slate-400 font-bold">-</td>
+                        <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-black text-sky-950 uppercase text-[11.5px] tracking-wider">
+                          OPENING BALANCE
+                        </td>
+                        <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums">
+                          ₹{staffOpeningBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-2.5 px-2 border-r border-slate-300 text-right text-slate-400 font-bold">-</td>
+                        <td className="py-2.5 px-1.5 align-middle bg-sky-50/40 text-right border-slate-300">
+                          {renderNetDenomBreakdown(staffOpeningDenom)}
+                        </td>
+                      </tr>
+
+                      {staffReportItems.length === 0 ? (
+                        <tr className="border-b border-slate-300">
+                          <td colSpan={6} className="py-6 text-center text-xs text-slate-500 font-bold bg-white italic">
+                            No transaction records found for {new Date(dateFrom).toLocaleDateString("en-IN", { dateStyle: 'medium', timeZone: "Asia/Kolkata" })}.
+                          </td>
+                        </tr>
+                      ) : (
+                        staffReportItems.map((item, idx) => {
+                          const dt = formatDateDisplay(item.created_at || item.date || "");
+                          const isCol = item.itemType === "collection";
+                          
+                          const staffName = getStaffName(item) || targetStaff.name;
+                          let source = "";
+                          let destination = "";
+                          if (isCol) {
+                            const isCms = item.retailer_name?.toLowerCase().startsWith("cms");
+                            const storeStr = item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "";
+                            const retDispName = isCms 
+                              ? `${item.retailer_name} - ${item.store_name || "Cash"}` 
+                              : (item.from_staff_name ? `Staff: ${item.from_staff_name}` : `${item.retailer_name || "Retailer"}${storeStr}`);
+                            source = item.from_office
+                              ? "Super Distributor"
+                              : retDispName;
+                            destination = item.portal_name
+                               ? `${item.portal_name}${item.bank_name ? ` (${item.bank_name})` : (item.bank_account_name ? ` (${item.bank_account_name})` : "")}`
+                               : staffName;
+                          } else {
+                            source = staffName;
+                            const bankSuffix = (item.deposit_type === "portal" && item.bank_name)
+                              ? ` (${item.bank_name})`
+                              : (item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "");
+                            const destName = (item.deposit_type === "portal" && item.portal_name) ? item.portal_name : (item.target_name || "Recipient");
+                            destination = item.to_office
+                              ? "Super Distributor"
+                              : `${destName}${bankSuffix}`;
+                          }
+                          const narration = `From ${source} to ${destination}`;
+                          const isEven = idx % 2 === 0;
+
+                          return (
+                            <tr key={item.id || idx} className={`${isEven ? 'bg-white' : 'bg-slate-50/70'} border-b border-slate-300 hover:bg-sky-50/40 transition-colors`}>
+                              <td className="py-2.5 px-1 border-r border-slate-300 text-center font-bold text-slate-900 text-[11px]">
+                                {idx + 1}
+                              </td>
+                              <td className="py-2.5 px-1.5 border-r border-slate-300 text-center text-[11px] leading-tight font-bold text-slate-900">
+                                <div>{dt.date}</div>
+                                <div className="text-slate-500 mt-0.5 font-mono text-[10px] font-medium">{dt.time}</div>
+                              </td>
+                              <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-bold text-slate-900 break-words text-[11.5px] leading-snug">
+                                <div className="text-slate-900 font-bold">{narration}</div>
+                                {item.remarks && (
+                                  <div className="text-[10px] text-slate-600 font-medium mt-0.5 italic">
+                                    Remark: {item.remarks}
+                                  </div>
+                                )}
+                              </td>
+                              <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-emerald-700 text-xs font-mono tabular-nums">
+                                {isCol ? `₹${Number(item.inAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                              </td>
+                              <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-red-600 text-xs font-mono tabular-nums">
+                                {!isCol ? `-₹${Number(item.outAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                              </td>
+                              <td className="py-2.5 px-1.5 align-middle bg-slate-50/40">
+                                {renderNotesBreakdown(item)}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+
+                      {/* Last Balance Row */}
+                      <tr className="bg-sky-50/80 font-bold text-slate-900 border-t-2 border-slate-300">
+                        <td className="py-2.5 px-1 border-r border-slate-300 text-center text-slate-400 font-bold">-</td>
+                        <td className="py-2.5 px-1 border-r border-slate-300 text-center text-[11px] text-slate-400 font-bold">-</td>
+                        <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-black text-sky-950 uppercase text-[11.5px] tracking-wider">
+                          LAST BALANCE
+                        </td>
+                        <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums">
+                          ₹{staffLastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="py-2.5 px-2 border-r border-slate-300 text-right text-slate-400 font-bold">-</td>
+                        <td className="py-2.5 px-1.5 align-middle bg-sky-50/40 text-right border-slate-300">
+                          {renderNetDenomBreakdown(staffLastDenom)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             );
