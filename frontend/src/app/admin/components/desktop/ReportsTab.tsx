@@ -197,6 +197,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const [virtualLedgerSubType, setVirtualLedgerSubType] = useState<string>("all");
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+  const [staffSubReport, setStaffSubReport] = useState<"efficiency" | "daily_cash">("efficiency");
 
   // Helper date formatter
   const formatDateDisplay = (dateStr: string) => {
@@ -1341,7 +1342,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
   const handleDownloadPdfReport = () => {
     setIsDownloadingPdf(true);
-    const filename = `${selectedReport}_${dateFrom}_to_${dateTo}.pdf`;
+    const reportName = selectedReport === "staff_reports" 
+      ? (staffSubReport === "efficiency" ? "Staff_Collection_Efficiency" : `${targetStaff ? targetStaff.name.trim().replace(/\s+/g, "_") : "Staff"}_Daily_Cash_Report`)
+      : selectedReport;
+    const filename = `${reportName}_${dateFrom}_to_${dateTo}.pdf`;
     downloadElementAsPdf("report-export-content", filename, 0.3)
       .catch((err) => {
         console.error("PDF Download error, opening print dialog:", err);
@@ -1375,8 +1379,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       reports: [
         { name: "Daybook Summary", icon: Calendar, formats: "PDF • XLSX", color: "emerald", type: "daybook" },
         { name: "Cashbook (Physical Flow)", icon: IndianRupee, formats: "PDF • XLSX", color: "emerald", type: "cashbook" },
-        { name: "Staff Collection Efficiency", icon: Activity, formats: "PDF • XLSX", color: "emerald", type: "staff_efficiency" },
-        { name: "Staff Daily Cash Report", icon: FileText, formats: "PDF • CSV", color: "emerald", type: "staff_daily_cash" },
+        { name: "Staff Reports (Efficiency & Cash Flow)", icon: Activity, formats: "PDF • CSV • XLSX", color: "emerald", type: "staff_reports" },
       ]
     },
     {
@@ -1404,9 +1407,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     if (selectedReport === "cashbook") reportTitle = "Cash Book (Physical & Bank Flow)";
     if (selectedReport === "retailer_ledger") reportTitle = "Retailer Ledger Report (A-Z)";
     if (selectedReport === "portal_ledger") reportTitle = "Portal Ledger Report";
-    if (selectedReport === "staff_efficiency") reportTitle = "Staff Collection Efficiency Report";
-    if (selectedReport === "staff_daily_cash") {
-      reportTitle = targetStaff ? `${targetStaff.name}'s Daily Cash Report` : "Staff Daily Cash Report";
+    if (selectedReport === "staff_reports") {
+      reportTitle = staffSubReport === "efficiency"
+        ? "Staff Collection Efficiency Report"
+        : (targetStaff ? `${targetStaff.name}'s Daily Cash Report` : "Staff Daily Cash Report");
     }
     if (selectedReport === "tally_import") reportTitle = "Tally Friendly Import Report";
     if (selectedReport === "virtual_ledger") {
@@ -1448,7 +1452,14 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               </button>
             )}
             <button
-              onClick={() => handleExportCsv(selectedReport)}
+              onClick={() => {
+                if (selectedReport === "staff_reports") {
+                  if (staffSubReport === "efficiency") handleExportCsv("staff_efficiency");
+                  else handleExportCsv("staff_daily_cash");
+                } else {
+                  handleExportCsv(selectedReport);
+                }
+              }}
               className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm text-[11px] font-bold cursor-pointer transition-colors whitespace-nowrap"
             >
               <Download className="w-3.5 h-3.5" />
@@ -1498,49 +1509,79 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         )}
 
+        {/* Staff Reports Option Selector */}
+        {selectedReport === "staff_reports" && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-2">Report Type Filter</p>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { id: "efficiency", label: "Staff Collection Efficiency", color: "emerald" },
+                { id: "daily_cash", label: "Staff Daily Cash Report", color: "emerald" },
+              ] as const).map((opt) => {
+                const isActive = staffSubReport === opt.id;
+                const colorClass = isActive 
+                  ? "bg-emerald-600 text-white border-emerald-600" 
+                  : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-50";
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setStaffSubReport(opt.id)}
+                    className={`px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider border cursor-pointer transition-colors ${colorClass}`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Filter Panel (Hidden for Daybook Summary, Cashbook & Tally Import as requested) */}
         {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && selectedReport !== "virtual_ledger" && (
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* SEARCH */}
-              <div>
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Search</label>
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
-                  <input autoComplete="one-time-code"
-                    type="text"
-                    placeholder="Search party or staff..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+            {selectedReport !== "staff_reports" && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* SEARCH */}
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Search</label>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                    <input autoComplete="one-time-code"
+                      type="text"
+                      placeholder="Search party or staff..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* FILTER BY RETAILER/PARTY */}
+                <div>
+                  <MultiSelectDropdown
+                    label="Filter by Retailer/Party (Single/Multi)"
+                    placeholder="All Parties / Retailers"
+                    options={normalizedRetailerOptions}
+                    selectedIds={selectedRetailerIds}
+                    onChange={setSelectedRetailerIds}
+                  />
+                </div>
+
+                {/* FILTER BY PORTAL/BANK */}
+                <div>
+                  <MultiSelectDropdown
+                    label="Filter by Portal/Bank (Single/Multi)"
+                    placeholder="All Portals / Banks"
+                    options={normalizedPortalOptions}
+                    selectedIds={selectedPortalIds}
+                    onChange={setSelectedPortalIds}
                   />
                 </div>
               </div>
+            )}
 
-              {/* FILTER BY RETAILER/PARTY */}
-              <div>
-                <MultiSelectDropdown
-                  label="Filter by Retailer/Party (Single/Multi)"
-                  placeholder="All Parties / Retailers"
-                  options={normalizedRetailerOptions}
-                  selectedIds={selectedRetailerIds}
-                  onChange={setSelectedRetailerIds}
-                />
-              </div>
-
-              {/* FILTER BY PORTAL/BANK */}
-              <div>
-                <MultiSelectDropdown
-                  label="Filter by Portal/Bank (Single/Multi)"
-                  placeholder="All Portals / Banks"
-                  options={normalizedPortalOptions}
-                  selectedIds={selectedPortalIds}
-                  onChange={setSelectedPortalIds}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+            <div className={`grid grid-cols-1 md:grid-cols-${selectedReport === "staff_reports" && staffSubReport === "daily_cash" ? "2" : "3"} gap-3 pt-1`}>
               {/* STAFF */}
               <div>
                 <MultiSelectDropdown
@@ -1552,9 +1593,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 />
               </div>
 
-              {/* DATE FROM */}
+              {/* DATE FROM / SELECTED DATE */}
               <div>
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date From</label>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+                  {selectedReport === "staff_reports" && staffSubReport === "daily_cash" ? "Selected Date" : "Date From"}
+                </label>
                 <input autoComplete="one-time-code"
                   type="date"
                   value={dateFrom}
@@ -1564,15 +1607,17 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               </div>
 
               {/* DATE TO */}
-              <div>
-                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date To</label>
-                <input autoComplete="one-time-code"
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
-                />
-              </div>
+              {!(selectedReport === "staff_reports" && staffSubReport === "daily_cash") && (
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">Date To</label>
+                  <input autoComplete="one-time-code"
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Active Filter Badges & Reset Button */}
@@ -2067,7 +2112,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           })()}
 
           {/* STAFF COLLECTION EFFICIENCY VIEW */}
-          {selectedReport === "staff_efficiency" && (() => {
+          {selectedReport === "staff_reports" && staffSubReport === "efficiency" && (() => {
             const grandCollected = staffEfficiencyData.reduce((sum, s) => sum + s.collectionsTotal, 0);
             const grandDeposited = staffEfficiencyData.reduce((sum, s) => sum + s.depositsTotal, 0);
             const grandNetPending = grandCollected - grandDeposited;
@@ -2325,7 +2370,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           })()}
 
           {/* STAFF DAILY CASH REPORT VIEW */}
-          {selectedReport === "staff_daily_cash" && (() => {
+          {selectedReport === "staff_reports" && staffSubReport === "daily_cash" && (() => {
             if (!targetStaff) {
               return (
                 <div className="p-8 text-center text-xs text-slate-500 font-bold bg-white italic border border-slate-200 rounded-lg">
