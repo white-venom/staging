@@ -11,8 +11,6 @@ import {
   PieChart,
   TrendingUp,
   Book,
-  Receipt,
-  FileSpreadsheet,
   IndianRupee,
   Activity,
   ArrowLeft,
@@ -1047,8 +1045,6 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     {
       title: "Accounting & GST",
       reports: [
-        { name: "GSTR-1 (Sales/Cash In)", icon: Receipt, formats: "XLSX • CSV", color: "blue", type: "collections" },
-        { name: "GSTR-3B Summary", icon: FileSpreadsheet, formats: "PDF • XLSX", color: "blue" },
         { name: "Tally Friendly Import (XML)", icon: Book, formats: "XML • CSV", color: "blue", type: "tally_import" },
       ]
     },
