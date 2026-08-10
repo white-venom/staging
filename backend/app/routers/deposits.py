@@ -452,7 +452,7 @@ def list_deposits(
             # Determine direction and use linked ledger for accurate balance
             is_ref = (dep.payment_mode == "refund")
             if dep.ledgers:
-                is_ref = is_ref or any(le.transaction_type == "debit" or "refund" in (le.description or "").lower() for le in dep.ledgers if le is not None)
+                is_ref = is_ref or any(le.transaction_type == "credit" or "refund" in (le.description or "").lower() or "distributor" in (le.description or "").lower() for le in dep.ledgers if le is not None)
             
             dep.is_refund = is_ref
             linked_ledger = next((le for le in dep.ledgers if le is not None), None)
