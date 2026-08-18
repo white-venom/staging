@@ -425,9 +425,11 @@ def list_deposits(
                 dep.portal_id = dep.bank_account.portal.id
         elif dep.deposit_type == "retailer":
             dep.target_name = dep.retailer.retailer_name if dep.retailer else "Retailer Store"
+            dep.retailer_name = dep.retailer.retailer_name if dep.retailer else None
             if dep.retailer:
                 dep.retailer_ledger_token = dep.retailer.ledger_token
         elif dep.deposit_type == "staff":
+            dep.recipient_staff_name = dep.recipient_staff.name if dep.recipient_staff else None
             if dep.to_office:
                 dep.target_name = "Main Office Cashier"
             else:

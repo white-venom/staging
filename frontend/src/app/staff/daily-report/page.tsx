@@ -541,13 +541,27 @@ export default function DailyReportPage() {
                              : staffName;
                         } else {
                           source = staffName;
+                          let destName = "";
                           const bankSuffix = (item.deposit_type === "portal" && item.bank_name)
                             ? ` (${item.bank_name})`
                             : (item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "");
-                          const destName = (item.deposit_type === "portal" && item.portal_name) ? item.portal_name : (item.target_name || "Recipient");
-                          destination = item.to_office
-                            ? "Super Distributor"
-                            : `${destName}${bankSuffix}`;
+
+                          if (item.deposit_type === "portal") {
+                            const portalPart = item.portal_name || item.portalName || "";
+                            const bankPart = item.bank_name || item.bankName || item.bank_account_name || item.bankAccountName || "";
+                            if (portalPart && bankPart) {
+                              destName = `Portal ${portalPart} (${bankPart})`;
+                            } else {
+                              destName = portalPart || bankPart || item.target_name || item.targetName || "Portal";
+                            }
+                          } else if (item.deposit_type === "retailer") {
+                            destName = `Retailer: ${item.retailer_name || item.retailerName || item.target_name || item.targetName || "Retailer"}${bankSuffix}`;
+                          } else if (item.deposit_type === "staff") {
+                            destName = `Staff: ${item.recipient_staff_name || item.recipientStaffName || item.target_name || item.targetName || "Staff"}`;
+                          } else {
+                            destName = item.target_name || item.targetName || item.portal_name || item.retailer_name || "Super Distributor";
+                          }
+                          destination = item.to_office ? "Super Distributor" : destName;
                         }
                         const narration = `From ${source} to ${destination}`;
                         const isEven = idx % 2 === 0;
