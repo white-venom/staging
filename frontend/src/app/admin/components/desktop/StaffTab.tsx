@@ -411,7 +411,7 @@ export default function StaffTab({
             </div>
           ) : (
             <LedgerReportView
-              title={`${ledgerStaff.name}'s Statement`}
+              title={`${ledgerStaff.name.trim()}'s Statement`}
               subtitle={`Role: ${ledgerStaff.role.toUpperCase()} • Phone: ${ledgerStaff.phone}`}
               data={ledgerData}
               outstandingBalance={ledgerOutstanding}

@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useAppStore } from "../../utils/store";
 import { api } from "../../utils/api";
 
+import { buildDisplayDate } from "../../utils/dateHelpers";
+
 interface AdminContextType {
   isLoading: boolean;
   error: string | null;
@@ -72,20 +74,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       ]);
       
       const mappedCols = cols.map((c: any) => {
-        // Build display date: use collection_date for date part + created_at for time part
-        let dtStr = "N/A";
-        if (c.created_at) {
-          const cleanCreatedAt = c.created_at.replace(" ", "T");
-          const d = new Date(cleanCreatedAt + (cleanCreatedAt.includes("Z") ? "" : "Z"));
-          const timePart = new Intl.DateTimeFormat('en-GB', {
-            hour: '2-digit', minute: '2-digit', hour12: false,
-            timeZone: 'Asia/Kolkata'
-          }).format(d);
-          const datePart = c.collection_date || new Intl.DateTimeFormat('en-CA', {
-            timeZone: 'Asia/Kolkata'
-          }).format(d);
-          dtStr = `${datePart} ${timePart}`;
-        }
+        const dtStr = buildDisplayDate(c.created_at, c.collection_date);
         return {
           id: c.id,
           retailer_id: c.retailer_id,
@@ -109,19 +98,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       });
 
       const mappedDeps = deps.map((d: any) => {
-        let dtStr = d.deposit_date || "N/A";
-        if (d.created_at) {
-          const cleanCreatedAt = d.created_at.replace(" ", "T");
-          const dateObj = new Date(cleanCreatedAt + (cleanCreatedAt.includes("Z") ? "" : "Z"));
-          dtStr = new Intl.DateTimeFormat('en-GB', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', hour12: false,
-            timeZone: 'Asia/Kolkata'
-          }).format(dateObj).replace(',', '').replace(/\//g, '-');
-          const [date, time] = dtStr.split(' ');
-          const [day, month, year] = date.split('-');
-          dtStr = `${year}-${month}-${day} ${time}`;
-        }
+        const dtStr = buildDisplayDate(d.created_at, d.deposit_date);
         return {
           id: d.id,
           bank_account_id: d.bank_account_id,
@@ -143,6 +120,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           staffName: d.staff_name || "System",
           isRefund: d.is_refund === true,
           date: dtStr,
+          deposit_date: d.deposit_date,
           created_at: d.created_at
         };
       });

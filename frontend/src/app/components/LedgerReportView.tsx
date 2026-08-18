@@ -323,8 +323,10 @@ export default function LedgerReportView({
       .finally(() => setIsDownloading(false));
   };
 
+  const cleanTitle = (title || "").replace(/\s+'s/i, "'s").trim();
+
   const handleShare = async () => {
-    const shareText = `Report of ${title}
+    const shareText = `Report of ${cleanTitle}
 ${outstandingBalance !== undefined ? `Outstanding Balance: ₹ ${Math.abs(outstandingBalance).toLocaleString("en-IN")}\n` : ""}Total Entries: ${stats.entriesCount}
 ${subjectType === "retailer" ? "You Gave" : "Total Out"}: ₹ ${stats.youGave.toLocaleString("en-IN")}
 ${subjectType === "retailer" ? "You Got" : "Total In"}: ₹ ${stats.youGot.toLocaleString("en-IN")}
@@ -333,7 +335,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `Ledger Report - ${title}`,
+          title: `Ledger Report - ${cleanTitle}`,
           text: shareText
         });
       } catch { /* ignored */ }
@@ -361,7 +363,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             </button>
           )}
           <div>
-            <h1 className="text-sm font-bold text-white uppercase tracking-wider">Report of {title}</h1>
+            <h1 className="text-sm font-bold text-white uppercase tracking-wider">Report of {cleanTitle}</h1>
             {subtitle && <p className="text-[10px] text-indigo-100 font-semibold">{subtitle}</p>}
           </div>
         </div>
@@ -508,7 +510,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
             <div className="absolute top-0 right-0 w-24 h-full bg-gradient-to-l from-cyan-400 via-sky-400 to-blue-500 opacity-90 transform skew-x-12 origin-top-right -mr-3" />
             
             <div className="relative p-2.5 pr-28 z-10">
-              <h2 className="text-base font-black tracking-tight leading-none text-sky-900">{title}</h2>
+              <h2 className="text-base font-black tracking-tight leading-none text-sky-900">{cleanTitle}</h2>
               {subtitle && <p className="text-xs text-slate-500 font-bold mt-1 uppercase tracking-wider">{subtitle}</p>}
               
               {/* Color dots row */}
@@ -530,38 +532,54 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           </div>
 
           {/* Summary Box */}
-          <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'} border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs gap-y-2 sm:gap-y-0`}>
-            {outstandingBalance !== undefined && (
-              <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Current Outstanding</span>
-                <span className={`text-sm font-black mt-1 tabular-nums whitespace-nowrap ${outstandingBalance < 0 ? "text-emerald-600" : outstandingBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
-                  {outstandingBalance < 0 ? "-" : ""}₹{Math.abs(outstandingBalance).toLocaleString("en-IN")}
-                </span>
+          {(() => {
+            const periodNet = subjectType === "staff" ? (stats.youGot - stats.youGave) : stats.netBalance;
+            const staffOutstanding = outstandingBalance ?? 0;
+
+            const outstandingLabel = subjectType === "staff" ? "Cash In Hand" : "Current Outstanding";
+            const outstandingColor = subjectType === "staff"
+              ? (staffOutstanding >= 0 ? "text-emerald-600" : "text-red-500")
+              : (staffOutstanding < 0 ? "text-red-500" : staffOutstanding > 0 ? "text-emerald-600" : "text-slate-500");
+
+            const periodNetColor = subjectType === "staff"
+              ? (periodNet >= 0 ? "text-emerald-600" : "text-red-500")
+              : (stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500");
+
+            return (
+              <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'} border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs gap-y-2 sm:gap-y-0`}>
+                {outstandingBalance !== undefined && (
+                  <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">{outstandingLabel}</span>
+                    <span className={`text-sm font-black mt-1 tabular-nums whitespace-nowrap ${outstandingColor}`}>
+                      {outstandingBalance < 0 ? "-" : ""}₹{Math.abs(outstandingBalance).toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                )}
+                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                    {isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Gave" : "Total Out")}
+                  </span>
+                  <span className="text-sm font-black text-red-500 mt-1 tabular-nums whitespace-nowrap">
+                    ₹{stats.youGave.toLocaleString("en-IN")}
+                  </span>
+                </div>
+                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                    {isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Got" : "Total In")}
+                  </span>
+                  <span className="text-sm font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
+                    ₹{stats.youGot.toLocaleString("en-IN")}
+                  </span>
+                </div>
+                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Net Balance (Period)</span>
+                  <span className={`text-sm font-black mt-1 tabular-nums whitespace-nowrap ${periodNetColor}`}>
+                    {periodNet < 0 ? "-" : ""}₹{Math.abs(periodNet).toLocaleString("en-IN")}
+                  </span>
+                </div>
               </div>
-            )}
-            <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                {isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Gave" : "Total Out")}
-              </span>
-              <span className="text-sm font-black text-red-500 mt-1 tabular-nums whitespace-nowrap">
-                ₹{stats.youGave.toLocaleString("en-IN")}
-              </span>
-            </div>
-            <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
-                {isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Got" : "Total In")}
-              </span>
-              <span className="text-sm font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
-                ₹{stats.youGot.toLocaleString("en-IN")}
-              </span>
-            </div>
-            <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Net Balance (Period)</span>
-              <span className={`text-sm font-black mt-1 tabular-nums whitespace-nowrap ${stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500"}`}>
-                ₹{Math.abs(stats.netBalance).toLocaleString("en-IN")}
-              </span>
-            </div>
-          </div>
+            );
+          })()}
 
           {/* Transactions Table */}
           <div className="border-2 border-slate-300 rounded-lg overflow-x-auto bg-white shadow-xs">
