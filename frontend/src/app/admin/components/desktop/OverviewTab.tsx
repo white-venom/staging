@@ -396,14 +396,14 @@ export default function OverviewTab({
         d.recipient_staff_id === user.id && 
         d.depositType === 'staff' && 
         d.date?.startsWith(todayStr) &&
-        !safeCollections.some(c => c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
+        !safeCollections.some(c => (c.staff_id === user.id || c.staffName === name) && c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
       );
       
       const receivedDepsPrev = safeDeposits.filter(d => 
         d.recipient_staff_id === user.id && 
         d.depositType === 'staff' && 
         !d.date?.startsWith(todayStr) &&
-        !safeCollections.some(c => c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
+        !safeCollections.some(c => (c.staff_id === user.id || c.staffName === name) && c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
       );
 
       const collectedToday = staffColsToday.reduce((s, c) => s + (c.totalAmount || 0), 0) + receivedDepsToday.reduce((s, d) => s + (d.amount || 0), 0);
