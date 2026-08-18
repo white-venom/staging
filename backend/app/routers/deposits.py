@@ -892,6 +892,7 @@ def update_deposit(
         if mirrored_collection:
             mirrored_collection.total_amount = deposit.amount
             mirrored_collection.collection_date = deposit.deposit_date
+            mirrored_collection.staff_id = deposit.recipient_staff_id
             if mirrored_collection.mirror_deposit_id is None:
                 mirrored_collection.mirror_deposit_id = deposit.id
             if payload.denominations:
