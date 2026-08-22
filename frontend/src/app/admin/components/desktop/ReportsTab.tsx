@@ -464,7 +464,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   }, [staffOpeningBalance, staffTotalInToday, staffTotalOutToday]);
 
   const computeStaffDenomBreakdown = (throughDateInclusive: string) => {
-    const notes = { note500: 0, note200: 0, note100: 0, note50: 0, note20: 0, note10: 0, coins: 0 };
+    const notes = { note500: 0, note200: 0, note100: 0, note50: 0, note20: 0, note10: 0, coins: 0, online: 0 };
     if (!targetStaff) return notes;
     
     staffCols.forEach((c) => {
@@ -478,6 +478,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       notes.note20  += Number(c.denominations.note_20)  || 0;
       notes.note10  += Number(c.denominations.note_10)  || 0;
       notes.coins   += Number(c.denominations.coins)    || 0;
+      notes.online  += Number(c.denominations.online_amount) || 0;
     });
     
     staffDeps.forEach((d) => {
@@ -494,14 +495,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       notes.note20  += sign * (Number(d.denominations.note_20)  || 0);
       notes.note10  += sign * (Number(d.denominations.note_10)  || 0);
       notes.coins   += sign * (Number(d.denominations.coins)    || 0);
+      notes.online  += sign * (Number(d.denominations.online_amount) || 0);
     });
     
     notes.coins = Math.round(notes.coins * 100) / 100;
+    notes.online = Math.round(notes.online * 100) / 100;
     return notes;
   };
 
   const staffOpeningDenom = useMemo(() => {
-    if (!targetStaff) return { note500: 0, note200: 0, note100: 0, note50: 0, note20: 0, note10: 0, coins: 0 };
+    if (!targetStaff) return { note500: 0, note200: 0, note100: 0, note50: 0, note20: 0, note10: 0, coins: 0, online: 0 };
     const dayBefore = (() => {
       const d = new Date(dateFrom + "T00:00:00");
       d.setDate(d.getDate() - 1);
@@ -514,7 +517,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return computeStaffDenomBreakdown(dateFrom);
   }, [staffCols, staffDeps, dateFrom, targetStaff]);
 
-  const renderNetDenomBreakdown = (notes: { note500: number; note200: number; note100: number; note50: number; note20: number; note10: number; coins: number }) => {
+  const renderNetDenomBreakdown = (notes: { note500: number; note200: number; note100: number; note50: number; note20: number; note10: number; coins: number; online?: number }) => {
     const items = [
       { label: "500", count: notes.note500 },
       { label: "200", count: notes.note200 },
@@ -524,7 +527,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       { label: "10", count: notes.note10 },
     ].filter(n => n.count !== 0);
 
-    if (items.length === 0 && notes.coins === 0) {
+    const onlineVal = notes.online || 0;
+
+    if (items.length === 0 && notes.coins === 0 && onlineVal === 0) {
       return <span className="text-slate-400 font-mono text-[10px]">-</span>;
     }
 
@@ -538,6 +543,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         {notes.coins !== 0 && (
           <span className={notes.coins < 0 ? "text-red-600 font-bold" : "text-slate-700 font-bold"}>
             Coins=₹{notes.coins.toFixed(2)}
+          </span>
+        )}
+        {onlineVal !== 0 && (
+          <span className={onlineVal < 0 ? "text-red-600 font-bold" : "text-sky-700 font-bold"}>
+            Online=₹{onlineVal.toLocaleString("en-IN")}
           </span>
         )}
       </div>

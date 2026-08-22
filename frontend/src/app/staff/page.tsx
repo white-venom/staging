@@ -465,15 +465,6 @@ export default function StaffDashboard() {
     .reduce((s, d) => s + (d.amount || 0), 0);
   const netPortfolio = totalCollected - totalDeposited;
 
-  const onlineIn = collections.reduce((s, c) => s + Number(c.denominations?.online_amount || 0), 0) +
-    deposits.filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
-            .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
-  const onlineOut = deposits
-    .filter(d => d.depositType !== "virtual" && !(d.recipient_staff_id === currentUser.id && d.depositType === "staff"))
-    .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
-  const totalOnline = Math.max(0, onlineIn - onlineOut);
-  const totalCashNotes = Math.max(0, netPortfolio - totalOnline);
-
   // ─── Pocket Denominations Calculation ───────────────────────────────────
   // Honest running sum: every collection / received handover adds its
   // recorded notes, every deposit / sent handover subtracts its own recorded
@@ -524,14 +515,16 @@ export default function StaffDashboard() {
     coins   += sign * (Number(d.denominations.coins)    || 0);
   });
 
-  // A denomination can legitimately go negative here (e.g. a deposit took more
-  // ₹500 notes out than were ever collected, because the staff physically broke
-  // smaller notes to make up a ₹500 note). Show it as-is rather than clamping —
-  // a negative count is real, useful information ("you're short one ₹500 note,
-  // check the last cash-out"), and silently zeroing it while leaving its
-  // offsetting surplus in smaller denominations untouched used to inflate the
-  // displayed total.
   coins = Math.round(coins * 100) / 100;
+
+  const onlineIn = collections.reduce((s, c) => s + Number(c.denominations?.online_amount || 0), 0) +
+    deposits.filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
+            .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
+  const onlineOut = deposits
+    .filter(d => d.depositType !== "virtual" && !(d.recipient_staff_id === currentUser.id && d.depositType === "staff"))
+    .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
+  const totalOnline = onlineIn - onlineOut;
+  const totalCashNotes = note500 * 500 + note200 * 200 + note100 * 100 + note50 * 50 + note20 * 20 + note10 * 10 + coins;
 
   // Net denomination breakdown (all in - all out across all time)
   const combinedLedger = [
