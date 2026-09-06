@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
@@ -398,6 +398,9 @@ def get_staff_daily_summary(
     else:
         target_staff_id = uuid.UUID(staff_id) if staff_id else current_user.id
 
+    from app.routers.attendance import check_and_trigger_auto_checkout
+    check_and_trigger_auto_checkout(db)
+
     # Bucketed by collection_date/deposit_date (the day the entry claims to
     # represent) rather than created_at (the real submission instant). Both
     # columns are already plain IST calendar dates (see submit_collection /
@@ -415,6 +418,20 @@ def get_staff_daily_summary(
             Collection.collection_date < selected_date
         ))
     ) or Decimal("0.00")
+
+    # Safeguard: include any legacy incoming staff handovers without a mirror collection
+    legacy_incoming_before = db.scalar(
+        select(func.sum(BankDeposit.amount))
+        .where(and_(
+            BankDeposit.recipient_staff_id == target_staff_id,
+            BankDeposit.deposit_type == "staff",
+            BankDeposit.deposit_date < selected_date,
+            ~BankDeposit.id.in_(
+                select(Collection.mirror_deposit_id).where(Collection.mirror_deposit_id.isnot(None))
+            )
+        ))
+    ) or Decimal("0.00")
+    collections_before += legacy_incoming_before
 
     # 2. Total Deposits (Out) before the selected date
     deposits_before = db.scalar(
@@ -435,6 +452,20 @@ def get_staff_daily_summary(
             Collection.collection_date == selected_date
         ))
     ) or Decimal("0.00")
+
+    # Safeguard: include today's legacy incoming staff handovers without a mirror collection
+    legacy_incoming_today = db.scalar(
+        select(func.sum(BankDeposit.amount))
+        .where(and_(
+            BankDeposit.recipient_staff_id == target_staff_id,
+            BankDeposit.deposit_type == "staff",
+            BankDeposit.deposit_date == selected_date,
+            ~BankDeposit.id.in_(
+                select(Collection.mirror_deposit_id).where(Collection.mirror_deposit_id.isnot(None))
+            )
+        ))
+    ) or Decimal("0.00")
+    collections_today += legacy_incoming_today
 
     # 4. Total Deposits (Out) today
     deposits_today = db.scalar(
@@ -735,7 +766,7 @@ def set_denomination_baseline(
         note_20=payload.note_20,
         note_10=payload.note_10,
         coins=payload.coins,
-        as_of=payload.as_of or datetime.utcnow(),
+        as_of=payload.as_of or datetime.now(timezone.utc),
         set_by=current_user.id,
     )
     db.add(baseline)

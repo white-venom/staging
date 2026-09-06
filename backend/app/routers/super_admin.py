@@ -2,7 +2,7 @@ import uuid
 import os
 import secrets
 import httpx
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from pydantic import BaseModel, Field, EmailStr, field_validator
@@ -66,7 +66,7 @@ def trigger_ssl_provisioning() -> None:
     trigger_dir = "/app/triggers"
     os.makedirs(trigger_dir, exist_ok=True)
     with open(os.path.join(trigger_dir, "ssl_renew.trigger"), "w") as f:
-        f.write(datetime.utcnow().isoformat())
+        f.write(datetime.now(timezone.utc).isoformat())
 
 def cloudflare_delete_dns(subdomain: str) -> None:
     """Delete all A records for <subdomain>.<CF_DOMAIN> from Cloudflare.
@@ -99,8 +99,8 @@ security = HTTPBearer(auto_error=False)
 
 # Schemas
 class SuperAdminLoginRequest(BaseModel):
-    username: str
-    password: str
+    username: str = Field(..., max_length=100)
+    password: str = Field(..., min_length=1, max_length=128)
 
 class SuperAdminTokenResponse(BaseModel):
     access_token: str
@@ -114,7 +114,7 @@ class TenantCreateRequest(BaseModel):
     subdomain: str = Field(..., max_length=50, pattern=r"^[a-z0-9-]+$")
     admin_name: str = Field(..., max_length=100)
     admin_phone: str = Field(..., max_length=20)
-    admin_password: str = Field(..., min_length=6)
+    admin_password: str = Field(..., min_length=6, max_length=128)
     # Not persisted anywhere (the tenant's own `users` table has no email
     # column) -- used transiently, once, to send the onboarding welcome email.
     admin_email: Optional[str] = Field(None, max_length=255)
@@ -127,7 +127,7 @@ class TenantUpdateRequest(BaseModel):
     status: str = Field(..., max_length=20)
     subdomain: Optional[str] = Field(None, max_length=50, pattern=r"^[a-z0-9-]+$")
     admin_phone: Optional[str] = Field(None, max_length=20)
-    admin_password: Optional[str] = Field(None, min_length=6)
+    admin_password: Optional[str] = Field(None, min_length=6, max_length=128)
 
 class TenantResponse(BaseModel):
     id: uuid.UUID
@@ -800,6 +800,9 @@ def update_tenant(
         
     tenant.name = payload.name
     tenant.status = payload.status
+    if payload.status != "active":
+        evict_tenant_cache(tenant.db_name)
+        evict_tenant_cache(tenant.subdomain)
     
     # Update subdomain if provided and changed
     if payload.subdomain:
@@ -810,6 +813,7 @@ def update_tenant(
                 raise HTTPException(status_code=400, detail="Subdomain already registered")
             old_subdomain = tenant.subdomain
             tenant.subdomain = new_subdomain
+            evict_tenant_cache(old_subdomain)
             # Swap Cloudflare DNS: remove old record, create new one
             cloudflare_delete_dns(old_subdomain)
             cloudflare_add_dns(new_subdomain)
@@ -960,7 +964,14 @@ def impersonate_tenant_admin(
         if not admin_user:
             raise HTTPException(status_code=404, detail="This tenant has no active admin account to impersonate.")
 
-        access_token = create_access_token(data={"sub": str(admin_user.id)})
+        from app.core.security import create_impersonation_ticket
+        ticket = create_impersonation_ticket(
+            user_id=str(admin_user.id),
+            subdomain=tenant.subdomain,
+            name=admin_user.name,
+            phone=admin_user.phone,
+            role=admin_user.role
+        )
 
         from app.logic.audit import log_audit_event
         log_audit_event(
@@ -972,7 +983,7 @@ def impersonate_tenant_admin(
         )
 
         return {
-            "access_token": access_token,
+            "ticket": ticket,
             "admin_id": str(admin_user.id),
             "admin_name": admin_user.name,
             "admin_phone": admin_user.phone,

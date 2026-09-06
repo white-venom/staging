@@ -95,6 +95,7 @@ function NewCollectionContent() {
   });
 
   const [mounted, setMounted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [staffCanChangeCashInDate, setStaffCanChangeCashInDate] = useState(false);
   const [portals, setPortals] = useState<any[]>([]);
 
@@ -299,6 +300,8 @@ function NewCollectionContent() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
     if (sourceType === "retailer" && !selectedRetailer) {
       alert("Please select a valid retailer.");
       return;
@@ -307,7 +310,11 @@ function NewCollectionContent() {
       alert("Please select the source staff member.");
       return;
     }
-    // Allow zero (pure note exchange) and negative (note exchange with net outflow)
+    // Block zero or negative total amount submissions (Cash In requires positive sum)
+    if (totalCollectionAmount <= 0) {
+      alert("Cash In entries must have a positive total amount (₹ > 0). If you are recording a payout or cash withdrawal, please record it in the Cash Out tab.");
+      return;
+    }
     // Only block if all fields are truly empty (no interaction at all)
     const allZero = Object.values(denominations).every(v => v === 0 || v === "");
     if (allZero) {
@@ -336,28 +343,31 @@ function NewCollectionContent() {
 
     // INTERCEPT OFFLINE SUBMISSIONS:
     if (!isOnline) {
-      await db.collections.add({
-        retailer_id: selectedRetailer!.id,
-        store_id: selectedStoreId || undefined,
-        bank_account_id: (denominations.online_amount > 0 || sourceType !== "retailer") ? (denominations.online_bank_account_id || undefined) : undefined,
-        retailerName: selectedRetailer?.name || "Unknown",
-        bankAccountName: computedBankAccountName,
-        portalName: computedPortalName || undefined,
-        totalAmount: totalCollectionAmount,
-        denominations,
-        remarks: remarks || "Offline transaction logs",
-        // buildDisplayDate converts to IST -- a bare toISOString() is UTC and
-        // was showing the Waiting List entry ~5.5 hours behind the time it
-        // actually appears at once synced (which does go through this helper).
-        date: buildDisplayDate(new Date().toISOString()),
-        synced: 0
-      });
-      alert("[Offline Mode]  Collection saved to local device browser database. It will automatically sync as soon as you connect to internet!");
-      router.push("/staff");
-      return;
+      setIsSubmitting(true);
+      try {
+        await db.collections.add({
+          retailer_id: selectedRetailer!.id,
+          store_id: selectedStoreId || undefined,
+          bank_account_id: (denominations.online_amount > 0 || sourceType !== "retailer") ? (denominations.online_bank_account_id || undefined) : undefined,
+          retailerName: selectedRetailer?.name || "Unknown",
+          bankAccountName: computedBankAccountName,
+          portalName: computedPortalName || undefined,
+          totalAmount: totalCollectionAmount,
+          denominations,
+          remarks: remarks || "Offline transaction logs",
+          date: buildDisplayDate(new Date().toISOString()),
+          synced: 0
+        });
+        alert("[Offline Mode] Collection saved to local device browser database. It will automatically sync as soon as you connect to internet!");
+        router.push("/staff");
+        return;
+      } finally {
+        setIsSubmitting(false);
+      }
     }
 
     // ONLINE SUBMISSION: Attempt to hit the backend API
+    setIsSubmitting(true);
     try {
       const { api } = await import("../utils/api");
       
@@ -434,6 +444,8 @@ function NewCollectionContent() {
       } else {
         alert("Could not save entry: " + (err.message || "Unknown error") + ". Please check your connection and try again.");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -741,9 +753,20 @@ function NewCollectionContent() {
                     />
                   </div>
                   <div className="space-y-0.5">
-                    <label className="text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500">
-                      Already Paid
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500">
+                        Already Paid
+                      </label>
+                      {calcPaid !== "" && (
+                        <button
+                          type="button"
+                          onClick={() => setCalcPaid("")}
+                          className="text-[8px] font-bold text-cyan-600 dark:text-cyan-400 hover:underline cursor-pointer"
+                        >
+                          Sync Total
+                        </button>
+                      )}
+                    </div>
                     <input autoComplete="one-time-code"
                       type="number"
                       inputMode="decimal"
@@ -777,7 +800,7 @@ function NewCollectionContent() {
           </div>
 
           {/* Clean minimal total sum display */}
-          <div className="p-2 rounded-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+          <div aria-live="polite" aria-atomic="true" className="p-2 rounded-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div>
               <span className="text-[8px] uppercase font-black tracking-wider text-slate-400 dark:text-slate-500">
                 Total Amount
@@ -844,9 +867,17 @@ function NewCollectionContent() {
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 rounded-sm text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={isSubmitting || totalCollectionAmount <= 0}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 rounded-sm text-xs font-bold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {editId ? "Update Cash In Entry" : "Submit Cash In Entry"}
+            {isSubmitting ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white/30 dark:border-slate-900/30 border-t-white dark:border-t-slate-900 rounded-full animate-spin" />
+                <span>{editId ? "Updating..." : "Submitting..."}</span>
+              </>
+            ) : (
+              editId ? "Update Cash In Entry" : "Submit Cash In Entry"
+            )}
           </button>
         </form>
       </div>

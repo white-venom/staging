@@ -508,10 +508,10 @@ export default function DashboardPage() {
 
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <div className="flex items-center justify-end gap-1.5">
-              <p className="text-[10px] font-black uppercase text-slate-100 tracking-wider">{adminName}</p>
+            <div className="flex items-center justify-end gap-1.5 flex-nowrap shrink-0">
+              <p className="text-[10px] font-black uppercase text-slate-100 tracking-wider truncate">{adminName}</p>
               {adminRole === "support" && (
-                <span className="px-1.5 py-0.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[8px] font-black uppercase tracking-widest rounded-sm">
+                <span className="px-1.5 py-0.5 bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[8px] font-black uppercase tracking-widest rounded-sm whitespace-nowrap inline-flex shrink-0">
                   View-Only
                 </span>
               )}

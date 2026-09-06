@@ -403,6 +403,13 @@ def verify_collection(
 
     if collection.status == "verified":
         raise HTTPException(status_code=400, detail="This collection has already been verified and logged!")
+
+    # Idempotency guard: ensure no duplicate ledger entry exists for this collection
+    existing_ledger = db.scalar(
+        select(Ledger).where(Ledger.collection_id == collection.id)
+    )
+    if existing_ledger:
+        raise HTTPException(status_code=400, detail="A ledger record for this collection already exists.")
         
     if not collection.retailer_id:
         raise HTTPException(status_code=400, detail="Can only verify retailer collections via this endpoint.")
@@ -590,12 +597,13 @@ def delete_collection(
         )
 
     db.delete(collection)
-    db.commit()
+    db.flush()
 
-    # Recalculate balances for this retailer
+    # Recalculate balances for this retailer within the same transaction
     if retailer_id:
         recalculate_balances(retailer_id, db)
-        db.commit()
+
+    db.commit()
 
     from app.logic.audit import log_audit_event
     log_audit_event(

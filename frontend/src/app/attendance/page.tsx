@@ -93,12 +93,20 @@ export default function AttendancePage() {
 
   const fetchLiveGPS = (): Promise<{ latitude: number; longitude: number; accuracy: number }> => {
     return new Promise((resolve, reject) => {
+      // If we already have accurate GPS cached from page load, use it as fallback
+      if (gpsCoords && gpsCoords.latitude && gpsCoords.longitude) {
+        setIsLocating(false);
+        resolve(gpsCoords);
+        return;
+      }
+
       if (typeof window === "undefined" || !navigator.geolocation) {
         const err = new Error("Geolocation is not supported by your browser.");
         setLocationError(err.message);
         reject(err);
         return;
       }
+
       setIsLocating(true);
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -113,18 +121,34 @@ export default function AttendancePage() {
           resolve(coords);
         },
         (err) => {
-          let errMsg = "Location access denied. Location is strictly required to proceed.";
-          if (err.code === err.POSITION_UNAVAILABLE) {
-            errMsg = "GPS signal lost or unavailable.";
-          } else if (err.code === err.TIMEOUT) {
-            errMsg = "Location fetch timed out. Please retry.";
-          }
-          setLocationError(errMsg);
-          setGpsCoords(null);
-          setIsLocating(false);
-          reject(new Error(errMsg));
+          // Secondary fallback: attempt low accuracy (cell tower / wifi triangulation)
+          navigator.geolocation.getCurrentPosition(
+            (fallbackPos) => {
+              const fallbackCoords = {
+                latitude: fallbackPos.coords.latitude,
+                longitude: fallbackPos.coords.longitude,
+                accuracy: fallbackPos.coords.accuracy,
+              };
+              setGpsCoords(fallbackCoords);
+              setLocationError("");
+              setIsLocating(false);
+              resolve(fallbackCoords);
+            },
+            () => {
+              let errMsg = "Location access denied. Please enable device GPS permissions to proceed.";
+              if (err.code === err.POSITION_UNAVAILABLE) {
+                errMsg = "GPS signal weak or unavailable indoors. Please step near a window or retry.";
+              } else if (err.code === err.TIMEOUT) {
+                errMsg = "Location fetch timed out. Please tap retry or check GPS.";
+              }
+              setLocationError(errMsg);
+              setIsLocating(false);
+              reject(new Error(errMsg));
+            },
+            { enableHighAccuracy: false, timeout: 8000 }
+          );
         },
-        { enableHighAccuracy: true, timeout: 15000 }
+        { enableHighAccuracy: true, timeout: 10000 }
       );
     });
   };

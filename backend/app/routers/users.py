@@ -119,15 +119,19 @@ def update_user(
 def delete_user(
     user_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_admin),
+    _edit_gate=Depends(require_entity_edit_allowed)
 ):
     """Admin-only endpoint to delete a user."""
     user = db.scalar(select(User).where(User.id == user_id))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    if user.id != current_user.id and user.role == "admin":
-        raise HTTPException(status_code=400, detail="Cannot delete other admins.")
+    if user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account.")
+
+    if user.role == "admin":
+        raise HTTPException(status_code=400, detail="Admin accounts cannot be deleted by tenant admins. Contact SuperAdmin support.")
 
     # Prevent deleting staff with non-zero balances
     if user.role == "staff":

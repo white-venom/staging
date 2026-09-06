@@ -1,11 +1,14 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import String, DateTime, Boolean, Numeric, Integer, UniqueConstraint, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 from app.database.db import Base
 from decimal import Decimal
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 class Tenant(Base):
     __tablename__ = "tenants"
@@ -16,7 +19,7 @@ class Tenant(Base):
     db_name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False) # 'active', 'suspended'
     maintenance_mode: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Staff entry edit/delete windows (minutes, -1 = unlimited). Superadmin-only,
     # per-tenant -- moved here from each tenant's own business_settings table so
@@ -46,7 +49,7 @@ class SuperAdmin(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     # 'full' = every superadmin capability. 'support' = read-only: can view
     # tenants/audit log/health but cannot create/edit/delete/suspend tenants,
     # cannot change feature flags or controls, cannot impersonate. See item #3d.
@@ -78,7 +81,7 @@ class SuperAdminPasswordReset(Base):
     # ~1M possibilities, guessable well within that window without this. Burns
     # the OTP (used=True) after 5 wrong guesses, same as expiring it.
     failed_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False, index=True)
 
 
 class TenantFeatureFlags(Base):
@@ -103,7 +106,7 @@ class TenantFeatureFlags(Base):
     feature_key: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     updated_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("super_admins.id", ondelete="SET NULL"), nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now, nullable=False)
 
 
 class AuditLog(Base):
@@ -144,24 +147,34 @@ class AuditLog(Base):
     description: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     ip_address: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False, index=True)
 
 
 class TenantErrorLog(Base):
-    """Per-tenant backend error visibility (item #3b) -- one row per genuinely
-    unhandled exception (never for routine 4xx/validation errors, those are
-    expected traffic, not a health signal). Written best-effort from the
-    global exception handler in main.py. Lives in the master DB for the same
-    reason AuditLog does: superadmin needs to see every tenant's errors
-    without connecting to each tenant's own database.
-    """
+    """Stores uncaught application exceptions occurring within tenant context."""
     __tablename__ = "tenant_error_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[Optional[uuid.UUID]] = mapped_column(nullable=True, index=True)
-    tenant_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    method: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
-    path: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    error_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    error_message: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    tenant_subdomain: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    user_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    endpoint: Mapped[str] = mapped_column(String(255), nullable=False)
+    method: Mapped[str] = mapped_column(String(10), nullable=False)
+    error_message: Mapped[str] = mapped_column(String(500), nullable=False)
+    stack_trace: Mapped[str] = mapped_column(String(4000), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False, index=True)
+
+
+class ImpersonationTicket(Base):
+    """Database-backed single-use impersonation tickets for multi-worker support."""
+    __tablename__ = "impersonation_tickets"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    ticket_token: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
+    subdomain: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    user_role: Mapped[str] = mapped_column(String(20), default="admin", nullable=False)
+    name: Mapped[str] = mapped_column(String(100), default="Admin", nullable=False)
+    phone: Mapped[str] = mapped_column(String(20), default="", nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)

@@ -1,4 +1,5 @@
 from datetime import datetime, date, time
+from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, and_
 from sqlalchemy.orm import Session
@@ -54,32 +55,55 @@ import uuid
 import os
 from app.logic.r2 import is_r2_configured, upload_image_to_r2
 
-def save_base64_image(base64_str: str, folder: str) -> str:
-    """Decodes base64 image string and saves to Cloudflare R2 if configured, or falls back to local static directory, returning URL."""
+MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB limit
+
+
+def save_base64_image(base64_str: str, folder: str) -> Optional[str]:
+    """Decodes base64 image string with size/format validation and saves to Cloudflare R2 or local storage."""
     try:
         if not base64_str:
             return None
-        # Strip data URL prefix if present
+
+        # Strip data URL prefix if present (e.g. data:image/jpeg;base64,...)
         if "," in base64_str:
+            prefix = base64_str.split(",")[0]
             base64_str = base64_str.split(",")[1]
-        
+
+        # Guard against memory exhaustion DOS
+        if len(base64_str) > 15 * 1024 * 1024:  # ~15MB base64 string
+            raise ValueError("Image payload exceeds maximum allowed size (10MB)")
+
         image_data = base64.b64decode(base64_str)
-        filename = f"{uuid.uuid4().hex}.jpg"
-        
+        if len(image_data) > MAX_IMAGE_BYTES:
+            raise ValueError("Decoded image exceeds maximum size limit of 10MB")
+
+        # Validate magic byte signature (JPEG, PNG, WebP)
+        ext = None
+        if image_data.startswith(b"\xff\xd8"):
+            ext = "jpg"
+        elif image_data.startswith(b"\x89PNG\r\n\x1a\n"):
+            ext = "png"
+        elif image_data.startswith(b"RIFF") and b"WEBP" in image_data[:16]:
+            ext = "webp"
+        else:
+            raise ValueError("Invalid image format. Only valid JPEG, PNG, and WebP images are supported.")
+
+        filename = f"{uuid.uuid4().hex}.{ext}"
+
         # If R2 credentials are set up, attempt upload to Cloudflare R2
         if is_r2_configured():
             r2_url = upload_image_to_r2(image_data, filename)
             if r2_url:
                 return r2_url
             print("[WARNING] R2 upload failed. Falling back to local storage.")
-        
+
         # Local storage fallback
         os.makedirs(folder, exist_ok=True)
         filepath = os.path.join(folder, filename)
-        
+
         with open(filepath, "wb") as f:
             f.write(image_data)
-            
+
         return f"/static/attendance/{filename}"
     except Exception as e:
         print(f"Error saving base64 image: {str(e)}")
@@ -153,6 +177,11 @@ def check_in(
             "attendance"
         )
         image_url = save_base64_image(payload.image, static_folder)
+        if not image_url:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid image uploaded. Please provide a valid JPEG, PNG, or WebP image under 10MB."
+            )
 
     db_attendance = Attendance(
         user_id=current_user.id,
@@ -211,6 +240,11 @@ def check_out(
             "attendance"
         )
         image_url = save_base64_image(payload.image, static_folder)
+        if not image_url:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid image uploaded. Please provide a valid JPEG, PNG, or WebP image under 10MB."
+            )
 
     # Complete shift
     active_shift.end_km = payload.end_km

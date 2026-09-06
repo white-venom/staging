@@ -14,7 +14,7 @@ from app.schemas.portal import (
     PortalUpdate
 )
 from app.schemas.bank_account import BankAccountResponse
-from app.dependencies import require_admin, require_any_user
+from app.dependencies import require_admin, require_any_user, require_entity_edit_allowed
 
 router = APIRouter(prefix="/portals", tags=["Portals & Stores"])
 
@@ -169,12 +169,21 @@ def update_portal(
 def delete_portal(
     portal_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_admin),
+    _edit_gate=Depends(require_entity_edit_allowed)
 ):
     """Admin-only endpoint to remove a portal and all its accounts."""
     db_group = db.scalar(select(Portal).where(Portal.id == portal_id))
     if not db_group:
         raise HTTPException(status_code=404, detail="Portal not found")
+
+    # Prevent deleting portal if associated bank accounts have non-zero balance
+    total_balance = sum(account.balance for account in (db_group.bank_accounts or []))
+    if total_balance != 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot delete portal with non-zero total balance (₹{total_balance}). Transfer or clear funds first."
+        )
 
     try:
         db.delete(db_group)

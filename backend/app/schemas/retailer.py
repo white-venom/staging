@@ -4,14 +4,11 @@ from pydantic import BaseModel, Field, EmailStr
 
 
 class RetailerBase(BaseModel):
-    retailer_name: str = Field(..., max_length=150, examples=["Aggarwal Kirana Store"])
-    address: str = Field(..., max_length=255, examples=["Sector 15, Dwarka"])
+    retailer_name: str = Field(..., min_length=2, max_length=150, examples=["Aggarwal Kirana Store"])
+    address: str = Field(..., min_length=3, max_length=255, examples=["Sector 15, Dwarka"])
     assigned_staff_id: Optional[uuid.UUID] = Field(None, examples=["e3d166c3-1ff6-4279-88b1-1647413f99aa"])
     email: Optional[EmailStr] = Field(None, examples=["aggarwal.store@gmail.com"])
-    # Required to match the DB's NOT NULL constraint on retailers.phone -- letting
-    # this stay Optional here let requests through validation only to crash with a
-    # raw psycopg2 NotNullViolation at insert time instead of a clean 422.
-    phone: str = Field(..., max_length=20, examples=["9876543210"])
+    phone: str = Field(..., min_length=10, max_length=20, examples=["9876543210"])
     category: Optional[str] = Field(None, max_length=100, examples=["Supermarket"])
 
 
@@ -21,11 +18,11 @@ class RetailerCreate(RetailerBase):
 
 
 class RetailerUpdate(BaseModel):
-    retailer_name: Optional[str] = Field(None, max_length=150)
-    address: Optional[str] = Field(None, max_length=255)
+    retailer_name: Optional[str] = Field(None, min_length=2, max_length=150)
+    address: Optional[str] = Field(None, min_length=3, max_length=255)
     assigned_staff_id: Optional[uuid.UUID] = None
     email: Optional[EmailStr] = None
-    phone: Optional[str] = Field(None, max_length=20)
+    phone: Optional[str] = Field(None, min_length=10, max_length=20)
     opening_to_give: Optional[float] = None
     opening_to_take: Optional[float] = None
     category: Optional[str] = Field(None, max_length=100)
@@ -45,9 +42,9 @@ class RetailerResponse(RetailerBase):
 
 
 class StoreCreate(BaseModel):
-    store_name: str = Field(..., max_length=150)
-    address: Optional[str] = Field(None, max_length=255)
-    phone: Optional[str] = Field(None, max_length=20)
+    store_name: str = Field(..., min_length=2, max_length=150)
+    address: Optional[str] = Field(None, min_length=3, max_length=255)
+    phone: Optional[str] = Field(None, min_length=10, max_length=20)
     new_retailer_id: Optional[uuid.UUID] = None
 
 

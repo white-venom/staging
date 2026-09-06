@@ -14,8 +14,11 @@ from app.database.master_models import Tenant, SuperAdmin
 from app.database.models import User as TenantUser
 from app.core.security import get_password_hash
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 def bootstrap():
-    print("🚀 Starting CrediFlow Multi-Tenant Bootstrapping...")
+    print("Starting CrediFlow Multi-Tenant Bootstrapping...")
 
     # 1. Connect to postgres database to create master database if it doesn't exist
     pg_url = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
@@ -123,7 +126,7 @@ def bootstrap():
     finally:
         tenant_db.close()
 
-    print("🎉 Bootstrapping completed successfully!")
+    print("=== Bootstrapping completed successfully! ===")
 
 if __name__ == "__main__":
     bootstrap()

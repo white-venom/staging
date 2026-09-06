@@ -19,12 +19,13 @@ NUMERIC_10_2_MIN = -NUMERIC_10_2_MAX
 
 class DenominationSchema(BaseModel):
     # Notes can be negative to represent note exchange (e.g. staff gave out ₹500s)
-    note_500: int = Field(0)
-    note_200: int = Field(0)
-    note_100: int = Field(0)
-    note_50: int = Field(0)
-    note_20: int = Field(0)
-    note_10: int = Field(0)
+    # Bounded to prevent 32-bit integer overflow in database
+    note_500: int = Field(0, ge=-1000000, le=1000000)
+    note_200: int = Field(0, ge=-1000000, le=1000000)
+    note_100: int = Field(0, ge=-1000000, le=1000000)
+    note_50: int = Field(0, ge=-1000000, le=1000000)
+    note_20: int = Field(0, ge=-1000000, le=1000000)
+    note_10: int = Field(0, ge=-1000000, le=1000000)
     coins: Decimal = Field(Decimal("0.00"), ge=NUMERIC_10_2_MIN, le=NUMERIC_10_2_MAX)
     online_amount: Decimal = Field(Decimal("0.00"), ge=0, le=NUMERIC_12_2_MAX)
     online_bank_account_id: Optional[str] = None
@@ -39,9 +40,8 @@ class CollectionCreate(BaseModel):
     from_office: bool = False
     store_id: Optional[uuid.UUID] = None
     bank_account_id: Optional[uuid.UUID] = None
-    # Can be zero (pure note exchange), negative (net outflow), or positive; bounded
-    # to what the DB's NUMERIC(12,2) column can actually store.
-    total_amount: Decimal = Field(..., ge=NUMERIC_12_2_MIN, le=NUMERIC_12_2_MAX)
+    # Must be positive; bounded to what the DB's NUMERIC(12,2) column can actually store.
+    total_amount: Decimal = Field(..., gt=0, le=NUMERIC_12_2_MAX)
     remarks: Optional[str] = Field(None, max_length=255)
     collection_date: Optional[date] = None
     denominations: DenominationSchema

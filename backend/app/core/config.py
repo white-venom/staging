@@ -37,6 +37,25 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+    from pydantic import model_validator
+
+    @model_validator(mode="after")
+    def validate_production_security(self) -> "Settings":
+        insecure_defaults = {
+            "dev-secret-key-change-in-production",
+            "secret",
+            "password",
+            "changeme",
+            "123456"
+        }
+        if self.ENVIRONMENT == "production":
+            if not self.JWT_SECRET_KEY or self.JWT_SECRET_KEY in insecure_defaults or len(self.JWT_SECRET_KEY) < 16:
+                raise ValueError(
+                    "CRITICAL SECURITY ERROR: JWT_SECRET_KEY is unset or using an insecure default value in production. "
+                    "You must provide a secure 32+ character JWT_SECRET_KEY via environment variables before running in production."
+                )
+        return self
+
 
 settings = Settings()
 

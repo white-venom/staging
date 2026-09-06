@@ -44,13 +44,20 @@ export default function NotFound() {
               <span>Return to Dashboard</span>
             </Link>
 
-            <Link
-              href="/"
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== "undefined" && window.history.length > 1) {
+                  window.history.back();
+                } else {
+                  window.location.href = "/";
+                }
+              }}
               className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-sm text-xs font-black flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Go Back</span>
-            </Link>
+            </button>
           </div>
 
           {/* Support Contacts */}

@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
 # Build Trigger: v1.0.5
@@ -24,18 +25,9 @@ from app.routers.super_admin_entities import router as super_admin_entities_rout
 from app.routers.audit_log import router as audit_log_router
 from app.routers.super_admin_features import router as super_admin_features_router
 
-# Bootstraps the FastAPI Application
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version="1.0.0",
-    docs_url="/docs",      # Swagger interactive docs URL
-    redoc_url="/redoc"     # Alternate ReDoc API representation
-)
-
 HELLO_SEEDING_ERROR = None
 
 # Automatic Table Creation (Crucial for ephemeral cloud storage like Render's /tmp)
-@app.on_event("startup")
 def startup_event():
     global HELLO_SEEDING_ERROR
     # Initialize master models
@@ -60,8 +52,6 @@ def startup_event():
             conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS time_window_lock_enabled BOOLEAN NOT NULL DEFAULT true"))
             conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_edit_window_minutes INTEGER NOT NULL DEFAULT 30"))
             conn.execute(_text("ALTER TABLE tenants ADD COLUMN IF NOT EXISTS admin_delete_window_minutes INTEGER NOT NULL DEFAULT 30"))
-            conn.execute(_text("UPDATE tenants SET edit_window_minutes = 10 WHERE edit_window_minutes = 5"))
-            conn.execute(_text("UPDATE tenants SET delete_window_minutes = 10 WHERE delete_window_minutes = 5"))
         with master_engine.begin() as conn:
             conn.execute(_text("ALTER TABLE super_admins ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'full'"))
             # Superadmin profile-edit + forgot-password-via-OTP feature.
@@ -174,6 +164,8 @@ def startup_event():
                             ("collections.online_routing_deposit_id",
                              "ALTER TABLE collections ADD COLUMN IF NOT EXISTS online_routing_deposit_id UUID "
                              "REFERENCES bank_deposits(id) ON DELETE SET NULL"),
+                            ("users.token_version",
+                             "ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0"),
                         ]
                         for label, stmt in schema_statements:
                             try:
@@ -239,8 +231,20 @@ def startup_event():
         print(f"[ERROR] Failed to run hello tenant database seeding: {str(e)}")
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    startup_event()
+    yield
 
 
+# Bootstraps the FastAPI Application with Lifespan
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version="1.0.0",
+    docs_url="/docs",      # Swagger interactive docs URL
+    redoc_url="/redoc",    # Alternate ReDoc API representation
+    lifespan=lifespan
+)
 
 # Configure CORS Middleware
 origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
@@ -291,7 +295,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Internal server error: {str(exc)}"}
+        content={"detail": "An internal server error occurred. Please contact support."}
     )
 
 # Register Router Modules
@@ -358,17 +362,24 @@ def tenant_info(request: Request):
         master_db.close()
 
 @app.get("/", tags=["Health Check"])
-def root(db: Session = Depends(get_db)):
+@app.get("/health", tags=["Health Check"])
+def health_check():
+    """Standalone container and platform health check independent of tenant resolution (BUG-025)."""
+    db_status = "unknown"
     try:
-        # Simple query to check DB connectivity
+        from app.database.db import MasterSessionLocal
         from sqlalchemy import text
-        db.execute(text("SELECT 1"))
-        db_status = "connected"
+        master_db = MasterSessionLocal()
+        try:
+            master_db.execute(text("SELECT 1"))
+            db_status = "connected"
+        finally:
+            master_db.close()
     except Exception as e:
         import logging
-        logging.getLogger("uvicorn.error").error(f"Database health check failed: {e}")
+        logging.getLogger("uvicorn.error").error(f"Master database health check failed: {e}")
         db_status = "disconnected"
-        
+
     return {
         "status": "healthy",
         "database": db_status,

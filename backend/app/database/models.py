@@ -1,7 +1,10 @@
 import uuid
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from decimal import Decimal
 from typing import List, Optional
+
+def utc_now():
+    return datetime.now(timezone.utc)
 
 from sqlalchemy import (
     String,
@@ -29,7 +32,8 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(20), default="staff", nullable=False) # 'admin', 'staff'
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     virtual_balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    token_version: Mapped[int] = mapped_column(Integer, default=0, server_default="0", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Custom staff-wise late policy settings (overrides global settings if set)
     late_threshold: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
@@ -71,7 +75,7 @@ class Retailer(Base):
     # NOT when the retailer record itself was created. The "Opening Balance"
     # ledger entry is dated off this instead of created_at.
     opening_balance_set_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     staff: Mapped[Optional[User]] = relationship("User", foreign_keys=[assigned_staff_id])
@@ -89,7 +93,7 @@ class Portal(Base):
     opening_to_give: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     opening_to_take: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
     balance: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     bank_accounts: Mapped[List["BankAccount"]] = relationship("BankAccount", back_populates="portal", cascade="all, delete-orphan")
@@ -105,7 +109,7 @@ class BankAccount(Base):
     bank_account_no: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     ifsc_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     show_in_online_payment: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Financial state for this individual bank account
     opening_to_give: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False)
@@ -130,7 +134,7 @@ class PortalAdjustment(Base):
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     portal: Mapped[Portal] = relationship("Portal")
@@ -145,11 +149,11 @@ class Store(Base):
     store_name: Mapped[str] = mapped_column(String(150), index=True, nullable=False)
     address: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     retailer: Mapped[Retailer] = relationship("Retailer", back_populates="stores")
-    collections: Mapped[List["Collection"]] = relationship("Collection", back_populates="store", cascade="all, delete-orphan")
+    collections: Mapped[List["Collection"]] = relationship("Collection", back_populates="store")
 
 
 class Attendance(Base):
@@ -160,7 +164,7 @@ class Attendance(Base):
     date: Mapped[date] = mapped_column(Date, default=date.today, nullable=False)
     start_km: Mapped[int] = mapped_column(Integer, nullable=False)
     end_km: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    start_time: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    start_time: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     end_time: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)  # 'active', 'completed'
     
@@ -195,7 +199,7 @@ class BusinessSettings(Base):
     opening_cash_in_hand: Mapped[float] = mapped_column(Float, default=0.0, server_default="0.0")
     staff_can_change_collection_date: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
 
 
@@ -207,7 +211,7 @@ class Collection(Base):
     staff_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     from_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     from_office: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    store_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("stores.id", ondelete="CASCADE"), nullable=True)
+    store_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("stores.id", ondelete="SET NULL"), nullable=True)
     bank_account_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bank_accounts.id", ondelete="SET NULL"), nullable=True)
     # For a staff-to-staff handover, points at the auto-created BankDeposit that
     # mirrors this collection on the sender's (from_staff_id's) side. A real FK
@@ -228,7 +232,7 @@ class Collection(Base):
     remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="verified", nullable=False) # 'pending', 'verified'
     balance_snapshot: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False) # Snapshot of retailer balance after transaction
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     retailer: Mapped[Optional[Retailer]] = relationship("Retailer", back_populates="collections")
@@ -291,7 +295,7 @@ class DenominationBaseline(Base):
     # Only collections/deposits at or after this instant count on top of this baseline
     as_of: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     set_by: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     staff: Mapped["User"] = relationship("User", foreign_keys=[staff_id])
     setter: Mapped[Optional["User"]] = relationship("User", foreign_keys=[set_by])
@@ -321,7 +325,7 @@ class BankDeposit(Base):
     remarks: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False)  # 'pending', 'verified'
     balance_snapshot: Mapped[Decimal] = mapped_column(Numeric(12, 2), default=0.00, nullable=False) # Snapshot of account balance after transaction
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
     verified_by: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
@@ -357,7 +361,7 @@ class Ledger(Base):
     deposit_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         ForeignKey("bank_deposits.id", ondelete="SET NULL"), nullable=True
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, nullable=False)
 
     # Relationships
     retailer: Mapped[Retailer] = relationship("Retailer", back_populates="ledgers")

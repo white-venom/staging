@@ -31,8 +31,11 @@ def get_master_db():
 _tenant_engines = {}
 _tenant_sessionmakers = {}
 _tenant_db_names = {}
+_tenant_status_cache: dict[str, tuple[str, float]] = {}  # subdomain -> (db_name, verified_at_timestamp)
+TENANT_STATUS_CACHE_TTL = 30.0  # seconds
 
 import urllib.parse
+import time
 
 def get_tenant_connection_string(db_name: str) -> str:
     escaped_password = urllib.parse.quote_plus(settings.DB_PASSWORD)
@@ -62,32 +65,41 @@ class TenantSuspendedError(Exception):
 
 
 def get_tenant_session(tenant_subdomain: str) -> Session:
-    # 1. Check in-memory cache first to avoid master DB round-trip on every request
-    db_name = _tenant_db_names.get(tenant_subdomain)
-    if not db_name:
+    now = time.time()
+    cached_status = _tenant_status_cache.get(tenant_subdomain)
+
+    # Re-validate with Master DB if cache expired (>30s) or missing
+    if not cached_status or (now - cached_status[1] > TENANT_STATUS_CACHE_TTL):
         master_db = MasterSessionLocal()
         try:
             from app.database.master_models import Tenant
             tenant = master_db.query(Tenant).filter(Tenant.subdomain == tenant_subdomain).first()
             if not tenant:
-                # Fallback/compatibility check: try to fall back between do-it and do-it-services
                 fallback_subdomain = "do-it-services" if tenant_subdomain == "do-it" else ("do-it" if tenant_subdomain == "do-it-services" else None)
                 if fallback_subdomain:
                     tenant = master_db.query(Tenant).filter(Tenant.subdomain == fallback_subdomain).first()
             if not tenant:
+                _tenant_status_cache.pop(tenant_subdomain, None)
+                _tenant_db_names.pop(tenant_subdomain, None)
                 raise ValueError(f"Tenant '{tenant_subdomain}' not found")
             if tenant.status != "active":
+                _tenant_status_cache.pop(tenant_subdomain, None)
+                _tenant_db_names.pop(tenant_subdomain, None)
                 raise TenantSuspendedError(tenant_subdomain, tenant.status)
+
             db_name = tenant.db_name
             _tenant_db_names[tenant_subdomain] = db_name
+            _tenant_status_cache[tenant_subdomain] = (db_name, now)
         finally:
             master_db.close()
+    else:
+        db_name = cached_status[0]
 
     # 2. Get or create sessionmaker for this tenant DB
     if db_name not in _tenant_sessionmakers:
         engine = get_tenant_engine(db_name)
         _tenant_sessionmakers[db_name] = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-        
+
     return _tenant_sessionmakers[db_name]()
 
 
@@ -113,15 +125,31 @@ class SessionLocalHelper:
 SessionLocal = SessionLocalHelper()
 
 
-def evict_tenant_cache(db_name: str):
-    """Remove cached engine and sessionmaker for a deleted/renamed tenant DB.
-    Call this after dropping the database so stale pool connections
-    don't linger and bypass the 404 check in get_db."""
-    engine = _tenant_engines.pop(db_name, None)
-    _tenant_sessionmakers.pop(db_name, None)
+def evict_tenant_cache(identifier: str):
+    """Remove cached engine, sessionmaker, and subdomain mappings for a deleted, renamed,
+    or suspended tenant. Accepts either db_name or subdomain."""
+    if not identifier:
+        return
+    # Direct engine eviction if identifier is db_name
+    engine = _tenant_engines.pop(identifier, None)
+    _tenant_sessionmakers.pop(identifier, None)
+
+    # Subdomain mapping eviction
+    mapped_db = _tenant_db_names.pop(identifier, None)
+    if mapped_db:
+        e = _tenant_engines.pop(mapped_db, None)
+        _tenant_sessionmakers.pop(mapped_db, None)
+        if e and not engine:
+            engine = e
+
     for sub, db in list(_tenant_db_names.items()):
-        if db == db_name:
+        if db == identifier or sub == identifier:
             _tenant_db_names.pop(sub, None)
+            e = _tenant_engines.pop(db, None)
+            _tenant_sessionmakers.pop(db, None)
+            if e and not engine:
+                engine = e
+
     if engine:
         try:
             engine.dispose()

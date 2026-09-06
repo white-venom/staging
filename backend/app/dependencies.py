@@ -15,14 +15,18 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 security = HTTPBearer(auto_error=False)
 
 
+# In-memory maintenance mode cache with 15s TTL to prevent connection pool starvation
+_maintenance_cache: dict[str, tuple[bool, float]] = {}  # tenant_id -> (in_maintenance, timestamp)
+MAINTENANCE_CACHE_TTL = 15.0  # seconds
+
+
 def check_maintenance_mode(request: Request, user_role: str):
     if user_role == "admin":
         return
-    if request.headers.get("X-Maintenance-Bypass") == "true":
-        return
+
     tenant_id = request.headers.get("X-Tenant-ID")
     if not tenant_id:
-        host = request.headers.get("host", "")
+        host = request.headers.get("host", "").split(":")[0]
         parts = host.split(".")
         if len(parts) >= 3:
             tenant_id = parts[0]
@@ -31,13 +35,27 @@ def check_maintenance_mode(request: Request, user_role: str):
     if not tenant_id:
         import os
         tenant_id = os.getenv("TEST_TENANT_ID")
+
     if tenant_id:
+        import time
+        now = time.time()
+        cached = _maintenance_cache.get(tenant_id)
+        if cached and (now - cached[1] < MAINTENANCE_CACHE_TTL):
+            if cached[0]:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Maintenance Mode Active"
+                )
+            return
+
         from app.database.db import MasterSessionLocal
         from app.database.master_models import Tenant
         master_db = MasterSessionLocal()
         try:
             tenant = master_db.query(Tenant).filter(Tenant.subdomain == tenant_id).first()
-            if tenant and tenant.maintenance_mode:
+            is_maint = bool(tenant and tenant.maintenance_mode)
+            _maintenance_cache[tenant_id] = (is_maint, now)
+            if is_maint:
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail="Maintenance Mode Active"
@@ -85,6 +103,11 @@ def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is deactivated"
         )
+
+    # Check token version for logout invalidation (BUG-005)
+    token_version = payload.get("token_version")
+    if token_version is not None and getattr(user, "token_version", 0) != token_version:
+        raise credentials_exception
         
     # Check if maintenance mode blocks this user
     check_maintenance_mode(request, user.role)

@@ -90,9 +90,14 @@ export default function TenantControlsPanel({ tenants, showToast }: Props) {
       const res = await superAdminApi.impersonateTenant(selectedTenant.id);
       const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
       const targetOrigin = isLocal ? "http://localhost:3000" : `https://${res.subdomain}.crediiflow.in`;
-      const url = `${targetOrigin}/?impersonate_token=${encodeURIComponent(res.access_token)}&impersonate_id=${encodeURIComponent(res.admin_id)}&impersonate_name=${encodeURIComponent(res.admin_name)}&impersonate_phone=${encodeURIComponent(res.admin_phone)}`;
-      window.open(url, "_blank", "noopener,noreferrer");
-      showToast(`Opened admin session for ${selectedTenant.name} in a new tab.`);
+      const url = `${targetOrigin}/?impersonate_ticket=${encodeURIComponent(res.ticket || res.access_token)}`;
+      const newWin = window.open(url, "_blank", "noopener,noreferrer");
+      if (!newWin || newWin.closed || typeof newWin.closed === "undefined") {
+        showToast(`Opening admin session for ${selectedTenant.name}...`);
+        window.location.href = url;
+      } else {
+        showToast(`Opened admin session for ${selectedTenant.name} in a new tab.`);
+      }
     } catch (err: any) {
       alert("Failed to impersonate: " + err.message);
     } finally {

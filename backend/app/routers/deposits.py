@@ -9,6 +9,7 @@ from app.database.models import BankDeposit, Denomination, BankAccount, Portal, 
 from app.logic.ledger import recalculate_balances, lock_portal
 from app.logic.feature_flags import is_feature_enabled
 from sqlalchemy import update, delete
+from sqlalchemy.exc import IntegrityError
 from decimal import Decimal
 from app.schemas.deposit import DepositCreate, DepositResponse
 from app.dependencies import require_staff, require_admin, require_any_user
@@ -94,6 +95,16 @@ def submit_deposit(
         from_bank_account = db.scalar(select(BankAccount).where(BankAccount.id == payload.from_bank_account_id).with_for_update())
         if not from_bank_account:
             raise HTTPException(status_code=404, detail="Source bank account not found.")
+
+    if payload.reference_no and payload.reference_no.strip():
+        existing_ref = db.scalar(
+            select(BankDeposit).where(BankDeposit.reference_no == payload.reference_no.strip())
+        )
+        if existing_ref:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reference number already registered."
+            )
 
     try:
         db_deposit = BankDeposit(
@@ -368,6 +379,9 @@ def submit_deposit(
         return db_deposit
     except HTTPException:
         raise
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=400, detail="Reference number already registered.")
     except Exception as e:
         db.rollback()
         print(f"Error recording deposit: {e}")
@@ -626,12 +640,13 @@ def delete_deposit(
                     creator.virtual_balance += Decimal(str(deposit.amount))
     
     db.delete(deposit)
-    db.commit()
+    db.flush()
     
-    # Recalculate balances if it was a retailer deposit
+    # Recalculate balances if it was a retailer deposit within the same transaction
     if retailer_id:
         recalculate_balances(retailer_id, db)
-        db.commit()
+
+    db.commit()
 
     from app.logic.audit import log_audit_event
     log_audit_event(
@@ -694,6 +709,19 @@ def update_deposit(
             raise HTTPException(
                 status_code=403,
                 detail="Changing the deposit date is disabled for staff. Ask an admin to enable it."
+            )
+
+    if payload.reference_no and payload.reference_no.strip():
+        existing_ref = db.scalar(
+            select(BankDeposit).where(
+                BankDeposit.reference_no == payload.reference_no.strip(),
+                BankDeposit.id != deposit_id
+            )
+        )
+        if existing_ref:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reference number already registered."
             )
 
     # For a full update, it's safest to rely on the delete logic to reverse balances, 
@@ -927,9 +955,9 @@ def update_deposit(
         if ledger_entry:
             ledger_entry.created_at = transfer_datetime_utc
         
-    db.commit()
+    db.flush()
     
-    # Recalculate retailer balances if changed
+    # Recalculate retailer balances if changed within the same transaction
     if old_retailer_id:
         recalculate_balances(old_retailer_id, db)
     if deposit.retailer_id and deposit.retailer_id != old_retailer_id:

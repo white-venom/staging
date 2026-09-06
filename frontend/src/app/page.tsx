@@ -20,10 +20,20 @@ function LoginPageContent() {
 
   useEffect(() => {
     setMounted(true);
-    const savedPhone = localStorage.getItem("rememberedPhone");
-    if (savedPhone) {
-      setPhone(savedPhone);
-      setRememberMe(true);
+    const rawSaved = localStorage.getItem("rememberedPhone");
+    if (rawSaved) {
+      let decoded = rawSaved;
+      try {
+        if (/^[A-Za-z0-9+/=]+$/.test(rawSaved)) {
+          decoded = atob(rawSaved);
+        }
+      } catch {
+        decoded = rawSaved;
+      }
+      if (/^\d{10,15}$/.test(decoded)) {
+        setPhone(decoded);
+        setRememberMe(true);
+      }
     }
     // Item #3d: if api.ts just force-logged us out (tenant suspended mid-session),
     // show why instead of a silent redirect back to a blank login form.
@@ -34,22 +44,33 @@ function LoginPageContent() {
     }
   }, []);
 
-  // Superadmin "Impersonate Admin" support tool (item #3a) lands here with a
-  // real, already-issued access token in the URL instead of a phone/password
-  // form submission. Picked up once on mount, then the URL is replaced so the
-  // token doesn't linger in browser history.
+  // Superadmin "Impersonate Admin" support tool lands here with a
+  // short-lived single-use exchange ticket (BUG-QA-003). We immediately redeem it
+  // and clear the URL so sensitive tokens never linger in browser history or referrers.
   useEffect(() => {
     if (!mounted) return;
-    const impersonateToken = searchParams.get("impersonate_token");
-    if (!impersonateToken) return;
-    setCurrentUser({
-      id: searchParams.get("impersonate_id") || "",
-      name: searchParams.get("impersonate_name") || "Admin",
-      phone: searchParams.get("impersonate_phone") || "",
-      role: "admin",
-      token: impersonateToken,
-    });
-    router.replace("/welcome");
+    const ticket = searchParams.get("impersonate_ticket") || searchParams.get("ticket");
+
+    if (ticket) {
+      setIsLoading(true);
+      (async () => {
+        try {
+          const { api } = await import("./utils/api");
+          const res = await api.exchangeTicket(ticket);
+          setCurrentUser({
+            id: res.id,
+            name: res.name,
+            phone: res.phone || "",
+            role: res.role || "admin",
+            token: res.access_token,
+          });
+          router.replace("/welcome");
+        } catch (err: any) {
+          setError(err.message || "Failed to redeem impersonation ticket");
+          setIsLoading(false);
+        }
+      })();
+    }
   }, [mounted, searchParams, router, setCurrentUser]);
 
   useEffect(() => {
@@ -72,7 +93,11 @@ function LoginPageContent() {
       const response = await api.login({ phone, password });
 
       if (rememberMe) {
-        localStorage.setItem("rememberedPhone", phone);
+        try {
+          localStorage.setItem("rememberedPhone", btoa(phone));
+        } catch {
+          localStorage.setItem("rememberedPhone", phone);
+        }
       } else {
         localStorage.removeItem("rememberedPhone");
       }
@@ -193,7 +218,7 @@ function LoginPageContent() {
         {/* System Labels Footer */}
         <div className="text-center space-y-0.5">
           <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">CrediiFlow Portal v3.0</p>
-          <p className="text-[8px] font-bold text-slate-600">Secure AES-256 Encrypted Session</p>
+          <p className="text-[8px] font-bold text-slate-600">Protected by TLS 1.3 & Secure JWT Authentication</p>
         </div>
       </div>
     </div>

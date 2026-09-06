@@ -2,7 +2,7 @@ import uuid
 from typing import List
 # pyrefly: ignore [missing-import]
 from fastapi import APIRouter, Depends, HTTPException, status, Request
-from sqlalchemy import select, func
+from sqlalchemy import select, func, update
 from sqlalchemy.orm import Session, joinedload
 
 from app.database.db import get_db, get_current_tenant_row
@@ -219,7 +219,8 @@ def update_retailer(
 def delete_retailer(
     retailer_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_admin),
+    _edit_gate=Depends(require_entity_edit_allowed)
 ):
     """Admin-only endpoint to remove a retailer."""
     retailer = db.scalar(select(Retailer).where(Retailer.id == retailer_id))
@@ -358,12 +359,21 @@ def delete_store(
     retailer_id: uuid.UUID,
     store_id: uuid.UUID,
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(require_admin),
+    _edit_gate=Depends(require_entity_edit_allowed)
 ):
     """Admin-only endpoint to delete a store under a retailer."""
     store = db.scalar(select(Store).where(Store.id == store_id, Store.retailer_id == retailer_id))
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
+
+    # Safely unlink collections from this store so historical collections and ledgers remain intact
+    from app.database.models import Collection
+    db.execute(
+        update(Collection)
+        .where(Collection.store_id == store_id)
+        .values(store_id=None)
+    )
 
     db.delete(store)
     db.commit()

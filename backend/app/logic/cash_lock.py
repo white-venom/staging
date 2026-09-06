@@ -11,7 +11,7 @@ elsewhere is a threshold check: a collection's contribution has necessarily
 been spent once the pool, at any point afterward, returns to (or below) the
 level it was at right before that collection was added.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from fastapi import HTTPException
 from sqlalchemy import select, and_
@@ -34,7 +34,9 @@ def enforce_deposit_edit_lock(deposit: BankDeposit, current_user, tenant, action
     else:
         window = tenant.admin_edit_window_minutes if is_admin else tenant.edit_window_minutes
 
-    if window != -1 and datetime.utcnow() - deposit.created_at > timedelta(minutes=window):
+    now = datetime.now(timezone.utc)
+    created = deposit.created_at if deposit.created_at.tzinfo else deposit.created_at.replace(tzinfo=timezone.utc)
+    if window != -1 and (now - created) > timedelta(minutes=window):
         who = "Admins" if is_admin else "Staff"
         raise HTTPException(
             status_code=403,
@@ -118,7 +120,9 @@ def enforce_collection_edit_lock(collection: Collection, current_user, tenant, a
     else:
         window = tenant.admin_edit_window_minutes if is_admin else tenant.edit_window_minutes
 
-    if window != -1 and datetime.utcnow() - collection.created_at > timedelta(minutes=window):
+    now = datetime.now(timezone.utc)
+    created = collection.created_at if collection.created_at.tzinfo else collection.created_at.replace(tzinfo=timezone.utc)
+    if window != -1 and (now - created) > timedelta(minutes=window):
         who = "Admins" if is_admin else "Staff"
         raise HTTPException(
             status_code=403,

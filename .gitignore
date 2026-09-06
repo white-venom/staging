@@ -2,9 +2,19 @@
 node_modules/
 __pycache__/
 *.pyc
-venv/
+# Environment & Secrets
 .env
-
+.env.*
+*.env
+*.env.local
+backend/.env*
+frontend/.env*.local
+superadmin-frontend/.env*.local
+landing-page/.env*.local
+!.env.example
+!backend/.env.example
+!frontend/.env.example
+!superadmin-frontend/.env.example
 # Next.js
 .next/
 out/
@@ -34,3 +44,7 @@ scratch/
 *.jpeg
 *.jpg
 *.png
+venv/
+.venv/
+backend/venv/
+

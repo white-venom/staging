@@ -48,6 +48,7 @@ function NewDepositContent() {
 
   // Deposit Date Selector
   const [depositDate, setDepositDate] = useState<string>(() => getISTDateString());
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [staffCanChangeCashInDate, setStaffCanChangeCashInDate] = useState(false);
   // Superadmin-controlled feature flags (Part 1) -- default true (shown) so a
   // transient settings-fetch failure never silently removes a working channel.
@@ -278,7 +279,7 @@ function NewDepositContent() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mounted) return;
+    if (!mounted || isSubmitting) return;
     if (totalAmount <= 0) {
       alert("Please specify a deposit amount greater than zero.");
       return;
@@ -341,6 +342,7 @@ function NewDepositContent() {
     };
 
     const submitOnline = async () => {
+      setIsSubmitting(true);
       try {
         const { api } = await import("../utils/api");
         if (editId) {
@@ -387,6 +389,8 @@ function NewDepositContent() {
 
         alert("Could not reach the server right now. Saved to the local queue — it will sync automatically.");
         router.push("/staff");
+      } finally {
+        setIsSubmitting(false);
       }
     };
 
@@ -803,7 +807,7 @@ function NewDepositContent() {
         </div>
 
         {/* Computed summary box */}
-        <div className="p-2 rounded-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+        <div aria-live="polite" aria-atomic="true" className="p-2 rounded-sm bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
             <div>
               <span className="text-[8px] uppercase font-black tracking-widest text-slate-400 dark:text-slate-500">
                 Total Payout Amount
@@ -821,9 +825,17 @@ function NewDepositContent() {
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 rounded-sm text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+            disabled={isSubmitting || totalAmount <= 0}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:hover:bg-slate-200 text-white dark:text-slate-950 rounded-sm text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {editId ? "Update Cash Out Entry" : "Submit Cash Out Entry"}
+            {isSubmitting ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white/30 dark:border-slate-900/30 border-t-white dark:border-t-slate-900 rounded-full animate-spin" />
+                <span>{editId ? "Updating..." : "Submitting..."}</span>
+              </>
+            ) : (
+              editId ? "Update Cash Out Entry" : "Submit Cash Out Entry"
+            )}
           </button>
         </form>
       </div>

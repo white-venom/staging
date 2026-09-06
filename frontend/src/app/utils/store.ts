@@ -86,6 +86,14 @@ interface AppStore {
   resetStore: () => void;
 }
 
+export const getStorageKey = (): string => {
+  if (typeof window !== "undefined" && window.location && window.location.hostname) {
+    const host = window.location.hostname;
+    return `crediiflow-storage-${host.replace(/[^a-zA-Z0-9-]/g, "_")}`;
+  }
+  return "crediiflow-storage";
+};
+
 export const useAppStore = create<AppStore>()(
   persist(
     (set) => ({
@@ -164,8 +172,18 @@ export const useAppStore = create<AppStore>()(
       })
     }),
     {
-      name: "doit-services-storage",
+      name: getStorageKey(),
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        ...state,
+        // Exclude JWT access token from localStorage for XSS mitigation (BUG-020)
+        currentUser: state.currentUser ? {
+          id: state.currentUser.id,
+          name: state.currentUser.name,
+          phone: state.currentUser.phone,
+          role: state.currentUser.role,
+        } : null,
+      }),
     }
   )
 );
@@ -173,7 +191,7 @@ export const useAppStore = create<AppStore>()(
 // Cross-tab synchronization listener
 if (typeof window !== "undefined") {
   window.addEventListener("storage", (event) => {
-    if (event.key === "doit-services-storage") {
+    if (event.key === getStorageKey()) {
       useAppStore.persist.rehydrate();
     }
   });

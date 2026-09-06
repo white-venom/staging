@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAppStore } from "../utils/store";
+import { useAppStore, getStorageKey } from "../utils/store";
 import { API_BASE_URL } from "../utils/api";
 
 export default function MaintenanceGuard({ children }: { children: React.ReactNode }) {
@@ -61,7 +61,7 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
           if (data.status !== "active") {
             setIsTenantNotFound(true);
             if (typeof window !== "undefined") {
-              localStorage.removeItem("doit-services-storage");
+              localStorage.removeItem(getStorageKey());
             }
             return;
           }
@@ -76,7 +76,7 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
           if (res.status === 404) {
             setIsTenantNotFound(true);
             if (typeof window !== "undefined") {
-              localStorage.removeItem("doit-services-storage");
+              localStorage.removeItem(getStorageKey());
             }
             return;
           }

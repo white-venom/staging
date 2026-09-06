@@ -1364,7 +1364,7 @@ export default function LandingPage() {
 
                 <div className="mt-8 pt-4 border-t border-slate-200 text-[10px] text-slate-400 flex justify-between">
                   <span>© CrediiFlow Ledger Engine</span>
-                  <span className="flex items-center gap-1 font-semibold text-cyan-600"><Lock className="w-3 h-3" /> Secure AES-256 Session</span>
+                  <span className="flex items-center gap-1 font-semibold text-cyan-600"><Lock className="w-3 h-3" /> TLS 1.3 & Secure JWT</span>
                 </div>
 
               </div>
@@ -1817,7 +1817,7 @@ export default function LandingPage() {
                 Sector 62, Noida,<br />
                 Uttar Pradesh - 201309
               </li>
-              <li className="text-[10px] text-slate-600 uppercase font-bold tracking-wider pt-2">Security: AES-256 / SHA-256</li>
+              <li className="text-[10px] text-slate-600 uppercase font-bold tracking-wider pt-2">Security: TLS 1.3 / Argon2id / JWT</li>
             </ul>
           </div>
 
@@ -1908,40 +1908,29 @@ export default function LandingPage() {
                     <Check className="w-8 h-8 font-black" />
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-slate-800 font-display">Demo Instance Built!</h3>
+                    <h3 className="text-2xl font-bold text-slate-800 font-display">Demo Request Received!</h3>
                     <p className="text-sm text-slate-500 max-w-md mx-auto font-sans leading-relaxed">
-                      Your 3-day trial workspace for <span className="font-bold text-slate-800">{demoCompanyName}</span> has been deployed. You can now access your sandbox dashboard.
+                      Your 3-day trial workspace request for <span className="font-bold text-slate-800">{demoCompanyName}</span> has been queued. Our onboarding team is provisioning your dedicated cluster.
                     </p>
                   </div>
 
                   <div className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 font-mono text-center relative overflow-hidden group">
-                    <span className="text-xs text-slate-400 block mb-1 uppercase font-bold tracking-wider font-sans">WORKSPACE LINK</span>
-                    <a
-                      href={`https://${demoSubdomain}.crediiflow.in`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-cyan-600 hover:text-cyan-700 font-bold text-sm sm:text-base break-all flex items-center justify-center gap-1 hover:underline"
-                    >
+                    <span className="text-xs text-slate-400 block mb-1 uppercase font-bold tracking-wider font-sans">RESERVED WORKSPACE SUBDOMAIN</span>
+                    <div className="text-cyan-600 font-bold text-sm sm:text-base break-all flex items-center justify-center gap-1">
                       <span>https://{demoSubdomain}.crediiflow.in</span>
-                      <ArrowUpRight className="w-4 h-4" />
-                    </a>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-2 font-sans">
+                      Admin activation credentials will be dispatched to <span className="font-bold text-slate-700">{demoEmailAddress}</span> shortly.
+                    </p>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full pt-4">
-                    <a
-                      href={`https://${demoSubdomain}.crediiflow.in`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex-1 py-3.5 bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 hover:from-blue-800 hover:to-cyan-700 text-white font-bold rounded-xl text-xs uppercase tracking-widest active:scale-[0.98] transition-all cursor-pointer shadow-md text-center"
-                    >
-                      Enter Dashboard &rarr;
-                    </a>
+                  <div className="flex items-center justify-center w-full pt-4">
                     <button
                       type="button"
                       onClick={resetDemoModal}
-                      className="w-full sm:w-auto px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs uppercase tracking-widest active:scale-[0.98] transition-all cursor-pointer text-center"
+                      className="px-8 py-3.5 bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-600 hover:from-blue-800 hover:to-cyan-700 text-white font-bold rounded-xl text-xs uppercase tracking-widest active:scale-[0.98] transition-all cursor-pointer shadow-md text-center"
                     >
-                      Close Window
+                      Done & Return to Homepage
                     </button>
                   </div>
                 </div>

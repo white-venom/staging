@@ -1,4 +1,4 @@
-import { useAppStore } from "./store";
+import { useAppStore, getStorageKey } from "./store";
 import { extractErrorMessage } from "./errors";
 
 const getApiBaseUrl = () => {
@@ -59,8 +59,30 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 }
 
+function isTokenExpired(token: string | undefined): boolean {
+  if (!token) return true;
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return false;
+    const payload = JSON.parse(atob(parts[1]));
+    if (!payload.exp) return false;
+    // Expired or expiring within 10 seconds
+    return (payload.exp * 1000) <= (Date.now() + 10000);
+  } catch {
+    return false;
+  }
+}
+
 async function request<T>(endpoint: string, options: RequestInit = {}, retry = true): Promise<T> {
-  const token = useAppStore.getState().currentUser?.token;
+  const isAuthEndpoint = endpoint.includes("/auth/login") || endpoint.includes("/auth/refresh") || endpoint.includes("/auth/exchange-ticket");
+
+  // Proactive token refresh if token is expired or if refresh is already in flight
+  let token = useAppStore.getState().currentUser?.token;
+  if (!isAuthEndpoint && token && isTokenExpired(token)) {
+    token = (await refreshAccessToken()) || token;
+  } else if (!isAuthEndpoint && refreshPromise) {
+    token = (await refreshPromise) || token;
+  }
   
   // Extract tenant subdomain from window location hostname
   let tenantId: string | null = null;
@@ -127,8 +149,6 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
   }
 
 
-  const isAuthEndpoint = endpoint.includes("/auth/login") || endpoint.includes("/auth/refresh");
-
   // Auto-refresh on 401 and retry once (but not for login/refresh itself)
   if (response.status === 401 && retry && !isAuthEndpoint) {
     const newToken = await refreshAccessToken();
@@ -142,8 +162,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
         // Only run logout/redirect logic once for the first failing request
         store.resetStore();
         if (typeof window !== "undefined") {
+          const key = getStorageKey();
           try {
-            const raw = localStorage.getItem("doit-services-storage");
+            const raw = localStorage.getItem(key);
             if (raw) {
               const parsed = JSON.parse(raw);
               if (parsed && parsed.state) {
@@ -151,13 +172,13 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
                 parsed.state.collections = [];
                 parsed.state.deposits = [];
                 parsed.state.attendance = { isCheckedIn: false, startKm: 0 };
-                localStorage.setItem("doit-services-storage", JSON.stringify(parsed));
+                localStorage.setItem(key, JSON.stringify(parsed));
               }
             } else {
-              localStorage.removeItem("doit-services-storage");
+              localStorage.removeItem(key);
             }
           } catch (e) {
-            localStorage.removeItem("doit-services-storage");
+            localStorage.removeItem(key);
           }
           window.location.href = "/";
         }
@@ -184,6 +205,8 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
         if (store.currentUser) {
           store.resetStore();
           if (typeof window !== "undefined") {
+            const { getStorageKey } = await import("./store");
+            localStorage.removeItem(getStorageKey());
             localStorage.removeItem("doit-services-storage");
             // Login page reads this once to show a clear reason instead of a
             // silent logout -- see item #3d (clearer suspension messaging).
@@ -370,6 +393,10 @@ export const api = {
   login: (data: any) => request<any>("/auth/login", {
     method: "POST",
     body: JSON.stringify(data),
+  }),
+  exchangeTicket: (ticket: string) => request<any>("/auth/exchange-ticket", {
+    method: "POST",
+    body: JSON.stringify({ ticket }),
   }),
   logout: () => request<any>("/auth/logout", {
     method: "POST",
