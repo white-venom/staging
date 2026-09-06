@@ -70,7 +70,11 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
             }
             return;
           }
-          setIsMaintenance(data.maintenance_mode);
+          if (typeof window !== "undefined" && window.location.hostname.includes("staging")) {
+            setIsMaintenance(false);
+          } else {
+            setIsMaintenance(data.maintenance_mode);
+          }
           // Show the subdomain (e.g. "suji"), not the tenant's stored
           // display name -- that field holds the owner/company name
           // (e.g. "Jafer Khan"), not something meant to identify the site.
