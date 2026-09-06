@@ -584,7 +584,7 @@ export default function RetailersTab({
                       </span>
                     )}
                   </div>
-                  {retailer.name.toLowerCase().trim() !== "cms" && retailer.area && (
+                  {(retailer.name || "").toLowerCase().trim() !== "cms" && retailer.area && (
                     <div className="flex items-center gap-1.5 mt-1">
                       <MapPin className="w-3 h-3 text-slate-500" />
                       <span className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">{retailer.area}</span>

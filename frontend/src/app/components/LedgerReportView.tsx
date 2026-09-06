@@ -533,17 +533,18 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
           {/* Summary Box */}
           {(() => {
-            const periodNet = subjectType === "staff" ? (stats.youGot - stats.youGave) : stats.netBalance;
+            const isWalletOrStaff = subjectType === "staff" || subjectType === "portal";
+            const periodNet = isWalletOrStaff ? (stats.youGot - stats.youGave) : stats.netBalance;
             const staffOutstanding = outstandingBalance ?? 0;
 
             const outstandingLabel = subjectType === "staff" ? "Cash In Hand" : "Current Outstanding";
-            const outstandingColor = subjectType === "staff"
+            const outstandingColor = isWalletOrStaff
               ? (staffOutstanding >= 0 ? "text-emerald-600" : "text-red-500")
               : (staffOutstanding < 0 ? "text-red-500" : staffOutstanding > 0 ? "text-emerald-600" : "text-slate-500");
 
-            const periodNetColor = subjectType === "staff"
+            const periodNetColor = isWalletOrStaff
               ? (periodNet >= 0 ? "text-emerald-600" : "text-red-500")
-              : (stats.netBalance > 0 ? "text-emerald-600" : stats.netBalance < 0 ? "text-red-500" : "text-slate-500");
+              : (periodNet > 0 ? "text-emerald-600" : periodNet < 0 ? "text-red-500" : "text-slate-500");
 
             return (
               <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'} border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs gap-y-2 sm:gap-y-0`}>

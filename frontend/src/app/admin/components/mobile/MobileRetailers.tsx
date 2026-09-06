@@ -519,10 +519,10 @@ export default function MobileRetailers({
   }, [retailerDirectory]);
 
   const filtered = React.useMemo(() => {
-    return [...retailerDirectory]
+    return [...(retailerDirectory || [])]
       .filter(r => 
-        r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        r.phone?.includes(searchTerm)
+        (r.name || "").toLowerCase().includes((searchTerm || "").toLowerCase()) ||
+        (r.phone || "").includes(searchTerm || "")
       )
       .filter(r => {
         if (selectedCategories.length === 0) return true;

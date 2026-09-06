@@ -10,8 +10,11 @@ import {
   ShieldAlert,
   Clock,
   Save,
-  CheckCircle2
+  CheckCircle2,
+  Store as StoreIcon,
+  ExternalLink
 } from "lucide-react";
+import Link from "next/link";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
 
@@ -33,6 +36,7 @@ export default function AdministrationTab({
   const showToastNotification = propsShowToast || adminContext.showToastNotification;
   const { retailerDirectory, portalDirectory, collections, deposits } = adminContext;
   const [users, setUsers] = useState<any[]>([]);
+  const [retSearch, setRetSearch] = useState("");
 
 
   // Staff State
@@ -216,6 +220,29 @@ export default function AdministrationTab({
 
 
 
+  const handleDeleteRetailer = async (id: string, name: string) => {
+    if ((name || "").toLowerCase().trim() === "cms") {
+      alert("CMS retailer cannot be deleted");
+      return;
+    }
+    if (!confirm(`Are you sure you want to delete retailer "${name}"?`)) return;
+    try {
+      await api.deleteRetailer(id);
+      showToastNotification(`Retailer "${name}" deleted.`);
+      fetchData();
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    }
+  };
+
+  const filteredRetailers = React.useMemo(() => {
+    return [...(retailerDirectory || [])].filter((r: any) =>
+      (r.name || "").toLowerCase().includes((retSearch || "").toLowerCase()) ||
+      (r.phone || "").includes(retSearch || "") ||
+      (r.area || "").toLowerCase().includes((retSearch || "").toLowerCase())
+    );
+  }, [retailerDirectory, retSearch]);
+
   const handleDeleteUser = async (id: string) => {
     if (!confirm("Are you sure you want to delete this user?")) return;
     try {
@@ -327,7 +354,72 @@ export default function AdministrationTab({
              </form>
           </div>
 
-
+          {/* RETAILERS DIRECTORY */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/50 flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <StoreIcon className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-[10px] font-black uppercase tracking-wide text-slate-800 dark:text-slate-200">
+                  RETAILERS DIRECTORY ({(retailerDirectory || []).length})
+                </h3>
+              </div>
+              <div className="relative max-w-xs w-full">
+                <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search retailers..."
+                  value={retSearch}
+                  onChange={(e) => setRetSearch(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-semibold focus:outline-none"
+                />
+              </div>
+            </div>
+            <div className="overflow-x-auto max-h-96">
+              <table className="w-full text-left text-[11px] border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-150 dark:border-slate-800 text-[9px] font-black uppercase tracking-wide text-slate-400">
+                    <th className="px-4 py-3">Retailer Name</th>
+                    <th className="px-4 py-3">Phone</th>
+                    <th className="px-4 py-3">Area</th>
+                    <th className="px-4 py-3 text-right">Balance</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredRetailers.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-6 text-center text-slate-400 font-medium">
+                        No retailers registered yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRetailers.map((r: any) => (
+                      <tr key={r.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-950/80 transition-colors">
+                        <td className="px-4 py-3 font-bold text-slate-700 dark:text-slate-300">
+                          <Link href={`/admin/retailers/${r.ledger_token}/ledger`} className="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                            {r.name}
+                            <ExternalLink className="w-3 h-3 text-slate-400" />
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 text-slate-500 font-medium">{r.phone || "—"}</td>
+                        <td className="px-4 py-3 text-slate-500 font-medium">{r.area || "—"}</td>
+                        <td className="px-4 py-3 text-right font-mono font-bold">
+                          <span className={(r.balance || 0) > 0 ? "text-emerald-600 dark:text-emerald-400" : (r.balance || 0) < 0 ? "text-red-600 dark:text-red-400" : "text-slate-400"}>
+                            ₹{Math.abs(r.balance || 0).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button onClick={() => handleDeleteRetailer(r.id, r.name)} className="p-1.5 text-slate-300 hover:text-red-600 transition-colors cursor-pointer" title="Delete retailer">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
 

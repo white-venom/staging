@@ -69,27 +69,7 @@ export default function CashInLedgerPage() {
         const params = new URLSearchParams(window.location.search);
         const editId = params.get("edit");
         if (editId) {
-          const item = data.find((c: any) => String(c.id) === editId);
-          if (item) {
-            const diffMinutes = (new Date().getTime() - getUtcDate(item.created_at).getTime()) / 60000;
-            const canEdit = ew === -1 || diffMinutes <= ew;
-            if (canEdit) {
-              setEditingItem(item);
-              setEditDenoms({
-                note_500: Number(item.denominations?.note_500 || 0),
-                note_200: Number(item.denominations?.note_200 || 0),
-                note_100: Number(item.denominations?.note_100 || 0),
-                note_50: Number(item.denominations?.note_50 || 0),
-                note_20: Number(item.denominations?.note_20 || 0),
-                note_10: Number(item.denominations?.note_10 || 0),
-                coins: Number(item.denominations?.coins || 0),
-                online_amount: Number(item.denominations?.online_amount || 0),
-              });
-              setEditRemarks(item.remarks || "");
-            } else {
-              alert(`Edit window (${ew === -1 ? 'unlimited' : `${ew} min`}) has expired for this entry.`);
-            }
-          }
+          router.replace(`/collection?editId=${editId}`);
         }
       }
     } catch (err) {
