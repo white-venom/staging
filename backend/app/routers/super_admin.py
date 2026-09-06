@@ -708,18 +708,18 @@ def get_tenant_health(
 
     error_count_24h = db.scalar(
         select(func.count()).select_from(TenantErrorLog).where(
-            TenantErrorLog.tenant_id == tenant_id, TenantErrorLog.created_at >= cutoff_24h
+            TenantErrorLog.tenant_subdomain == tenant.subdomain, TenantErrorLog.created_at >= cutoff_24h
         )
     ) or 0
     error_count_7d = db.scalar(
         select(func.count()).select_from(TenantErrorLog).where(
-            TenantErrorLog.tenant_id == tenant_id, TenantErrorLog.created_at >= cutoff_7d
+            TenantErrorLog.tenant_subdomain == tenant.subdomain, TenantErrorLog.created_at >= cutoff_7d
         )
     ) or 0
 
     recent_errors = db.scalars(
         select(TenantErrorLog)
-        .where(TenantErrorLog.tenant_id == tenant_id)
+        .where(TenantErrorLog.tenant_subdomain == tenant.subdomain)
         .order_by(TenantErrorLog.created_at.desc())
         .limit(10)
     ).all()
@@ -1014,8 +1014,8 @@ def get_platform_pulse(
         select(func.count()).select_from(TenantErrorLog).where(TenantErrorLog.created_at >= cutoff_24h)
     ) or 0
     tenants_with_errors_24h = db.scalar(
-        select(func.count(func.distinct(TenantErrorLog.tenant_id))).select_from(TenantErrorLog).where(
-            TenantErrorLog.created_at >= cutoff_24h, TenantErrorLog.tenant_id.is_not(None)
+        select(func.count(func.distinct(TenantErrorLog.tenant_subdomain))).select_from(TenantErrorLog).where(
+            TenantErrorLog.created_at >= cutoff_24h, TenantErrorLog.tenant_subdomain.is_not(None)
         )
     ) or 0
 
