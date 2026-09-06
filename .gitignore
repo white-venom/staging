@@ -48,3 +48,6 @@ venv/
 .venv/
 backend/venv/
 
+# QA Reports & Internal Audits
+QA_*.md
+
