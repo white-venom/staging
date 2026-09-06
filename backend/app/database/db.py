@@ -173,9 +173,21 @@ def resolve_tenant_subdomain(request: Request = None) -> str | None:
                 if tenant_id in ("superadmin", "www", "api", "staging", "staging-api"):
                     tenant_id = None
 
-    if not tenant_id:
-        # Fallback for dev scripts / pytest / localhost
+    if not tenant_id or tenant_id in ("staging", "staging-api"):
+        # Fallback for dev scripts / pytest / localhost / staging
         tenant_id = os.getenv("TEST_TENANT_ID") or settings.TEST_TENANT_ID
+
+    if not tenant_id:
+        master_db = MasterSessionLocal()
+        try:
+            from app.database.master_models import Tenant
+            active_tenant = master_db.query(Tenant).filter(Tenant.status == "active").first()
+            if active_tenant:
+                tenant_id = active_tenant.subdomain
+        except Exception:
+            pass
+        finally:
+            master_db.close()
 
     return tenant_id
 

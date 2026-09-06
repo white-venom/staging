@@ -331,26 +331,32 @@ def tenant_info(request: Request):
         parts = host.split(".")
         if len(parts) >= 3:
             tenant_id = parts[0]
-            if tenant_id in ("superadmin", "www", "api"):
+            if tenant_id in ("superadmin", "www", "api", "staging", "staging-api"):
                 tenant_id = None
                 
-    if not tenant_id:
+    if not tenant_id or tenant_id in ("staging", "staging-api"):
         tenant_id = os.getenv("TEST_TENANT_ID")
-        
-    if not tenant_id:
-        raise HTTPException(
-            status_code=400,
-            detail="X-Tenant-ID header, tenant subdomain, or TEST_TENANT_ID env var is required"
-        )
         
     from app.database.master_models import Tenant
     from app.database.db import MasterSessionLocal
     
     master_db = MasterSessionLocal()
     try:
-        tenant = master_db.query(Tenant).filter(Tenant.subdomain == tenant_id).first()
+        tenant = None
+        if tenant_id:
+            tenant = master_db.query(Tenant).filter(Tenant.subdomain == tenant_id).first()
+            if not tenant:
+                fallback_subdomain = "do-it-services" if tenant_id == "do-it" else ("do-it" if tenant_id == "do-it-services" else None)
+                if fallback_subdomain:
+                    tenant = master_db.query(Tenant).filter(Tenant.subdomain == fallback_subdomain).first()
+
+        # Fallback to the first active tenant in master db (e.g. for staging or generic domain)
         if not tenant:
-            raise HTTPException(status_code=404, detail=f"Tenant '{tenant_id}' not found")
+            tenant = master_db.query(Tenant).filter(Tenant.status == "active").first()
+
+        if not tenant:
+            raise HTTPException(status_code=404, detail="No active tenant found")
+
         return {
             "id": tenant.id,
             "name": tenant.name,
