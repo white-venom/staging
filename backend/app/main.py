@@ -222,13 +222,15 @@ def startup_event():
     except Exception as e:
         print(f"[ERROR] Failed to start background image cleanup thread: {str(e)}")
 
-    # Seed hello tenant database with retailers from the PDF
+    # Seed hello tenant database with retailers from the PDF and sync balances
     try:
         from scripts.seed_hello import run_hello_seeding
         run_hello_seeding()
+        from scripts.sync_khatabook_to_all_tenants import sync_tenants
+        sync_tenants()
     except Exception as e:
         HELLO_SEEDING_ERROR = str(e)
-        print(f"[ERROR] Failed to run hello tenant database seeding: {str(e)}")
+        print(f"[ERROR] Failed to run hello tenant database seeding/sync: {str(e)}")
 
 
 @asynccontextmanager
