@@ -32,7 +32,7 @@ export default function MaintenanceGuard({ children }: { children: React.ReactNo
           const parts = host.split(".");
           if (parts.length >= 3 || (host.endsWith("localhost") && parts.length >= 2)) {
             tenantId = parts[0];
-            if (tenantId === "www" || tenantId === "superadmin" || tenantId === "api" || tenantId === "staging" || tenantId === "staging-api") {
+            if (tenantId === "www" || tenantId === "superadmin" || tenantId === "api" || tenantId === "staging-api") {
               tenantId = null;
             }
           }

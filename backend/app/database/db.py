@@ -170,11 +170,11 @@ def resolve_tenant_subdomain(request: Request = None) -> str | None:
             parts = host.split(".")
             if len(parts) >= 3:
                 tenant_id = parts[0]
-                if tenant_id in ("superadmin", "www", "api", "staging", "staging-api"):
+                if tenant_id in ("superadmin", "www", "api", "staging-api"):
                     tenant_id = None
 
-    if not tenant_id or tenant_id in ("staging", "staging-api"):
-        # Fallback for dev scripts / pytest / localhost / staging
+    if not tenant_id:
+        # Fallback for dev scripts / pytest / localhost
         tenant_id = os.getenv("TEST_TENANT_ID") or settings.TEST_TENANT_ID
 
     if not tenant_id:

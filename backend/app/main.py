@@ -331,10 +331,10 @@ def tenant_info(request: Request):
         parts = host.split(".")
         if len(parts) >= 3:
             tenant_id = parts[0]
-            if tenant_id in ("superadmin", "www", "api", "staging", "staging-api"):
+            if tenant_id in ("superadmin", "www", "api", "staging-api"):
                 tenant_id = None
                 
-    if not tenant_id or tenant_id in ("staging", "staging-api"):
+    if not tenant_id:
         tenant_id = os.getenv("TEST_TENANT_ID")
         
     from app.database.master_models import Tenant
