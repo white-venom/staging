@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Any
 from pydantic import BaseModel, Field, model_validator
 
 from app.schemas.collection import DenominationSchema, NUMERIC_12_2_MAX
@@ -23,6 +23,26 @@ class DepositCreate(BaseModel):
     reference_no: Optional[str] = Field(None, max_length=100)
     remarks: Optional[str] = Field(None, max_length=255)
     denominations: Optional[DenominationSchema] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_camel_case(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            mapping = {
+                "depositType": "deposit_type",
+                "paymentMode": "payment_mode",
+                "bankAccountId": "bank_account_id",
+                "retailerId": "retailer_id",
+                "recipientStaffId": "recipient_staff_id",
+                "depositDate": "deposit_date",
+                "referenceNo": "reference_no",
+                "toOffice": "to_office",
+                "fromBankAccountId": "from_bank_account_id",
+            }
+            for camel, snake in mapping.items():
+                if camel in data and snake not in data:
+                    data[snake] = data[camel]
+        return data
 
     @model_validator(mode="after")
     def validate_deposit_types(self) -> "DepositCreate":
@@ -55,7 +75,7 @@ class DepositCreate(BaseModel):
     @model_validator(mode="after")
     def validate_denomination_sum(self) -> "DepositCreate":
         d = self.denominations
-        if d is not None:
+        if d is not None and self.payment_mode not in ("refund",):
             denom_sum = (
                 Decimal(d.note_500) * 500 + Decimal(d.note_200) * 200 + Decimal(d.note_100) * 100 +
                 Decimal(d.note_50) * 50 + Decimal(d.note_20) * 20 + Decimal(d.note_10) * 10 +

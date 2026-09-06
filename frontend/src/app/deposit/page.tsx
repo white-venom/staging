@@ -109,11 +109,11 @@ function NewDepositContent() {
 
   // Pre-fill if editing
   React.useEffect(() => {
-    if (editId && mounted && portals.length > 0) {
+    if (editId && mounted) {
       const loadEdit = async () => {
         try {
           const { api } = await import("../utils/api");
-          const deps = await api.getDeposits();
+          const [deps, rawPortals] = await Promise.all([api.getDeposits(), api.getPortals()]);
           const target = deps.find((d: any) => d.id === editId);
           if (target) {
             if (target.deposit_type === "staff" && target.recipient_staff_id) {
@@ -122,11 +122,25 @@ function NewDepositContent() {
             } else {
               setDepositType(target.deposit_type);
             }
-            if (target.deposit_type === "portal" || target.deposit_type === "virtual") {
+
+            let parentPortalId = target.portal_id || "";
+            if (!parentPortalId && target.bank_account_id) {
+              const owningPortal = rawPortals.find((g: any) => (g.bank_accounts || []).some((ba: any) => ba.id === target.bank_account_id));
+              if (owningPortal) parentPortalId = owningPortal.id;
+            }
+
+            if (parentPortalId) {
+              setSelectedPortalId(parentPortalId);
+              const accounts = await api.getPortalAccounts(parentPortalId);
+              const mappedAccounts = accounts.map((x: any) => ({ id: x.id, name: x.bank_account_name }));
+              setPortalAccounts(mappedAccounts);
+            }
+
+            if (target.bank_account_id) {
               setSelectedBankAccountId(target.bank_account_id);
             }
             if (target.deposit_type === "retailer" || target.deposit_type === "virtual") {
-              setSelectedRetailerId(target.retailer_id);
+              setSelectedRetailerId(target.retailer_id || "");
             }
             if (target.remarks) {
               setRemarks(target.remarks);
@@ -157,7 +171,7 @@ function NewDepositContent() {
       };
       loadEdit();
     }
-  }, [editId, mounted, portals]);
+  }, [editId, mounted]);
 
 
   React.useEffect(() => {
@@ -230,12 +244,14 @@ function NewDepositContent() {
           }
         }
         
-        if (mappedPortals.length > 0) setSelectedPortalId(mappedPortals[0].id);
+        if (!editId && mappedPortals.length > 0) setSelectedPortalId(mappedPortals[0].id);
         // Do not auto-select the first retailer/staff recipient on mount -- for a
         // money-moving handover this must be an explicit choice, not a default
         // that could send cash to the wrong person if submitted unreviewed.
-        setSelectedRetailerId("");
-        if (!editId) setSelectedStaffId("");
+        if (!editId) {
+          setSelectedRetailerId("");
+          setSelectedStaffId("");
+        }
       } catch (err) {
         console.error("Failed to load deposit options:", err);
       }
@@ -267,8 +283,10 @@ function NewDepositContent() {
           const accounts = await api.getPortalAccounts(selectedPortalId);
           const mappedAccounts = accounts.map((x: any) => ({ id: x.id, name: x.bank_account_name }));
           setPortalAccounts(mappedAccounts);
-          if (mappedAccounts.length > 0) setSelectedBankAccountId(mappedAccounts[0].id);
-          else setSelectedBankAccountId("");
+          setSelectedBankAccountId(prev => {
+            if (prev && mappedAccounts.some(a => a.id === prev)) return prev;
+            return mappedAccounts.length > 0 ? mappedAccounts[0].id : "";
+          });
         } catch (err) {
           console.error("Failed to fetch group accounts:", err);
         }
@@ -347,11 +365,16 @@ function NewDepositContent() {
         const { api } = await import("../utils/api");
         if (editId) {
           await api.updateDeposit(editId, backendPayload);
+          if (typeof window !== "undefined" && window.history.length > 1) {
+            router.back();
+          } else {
+            router.push("/staff");
+          }
         } else {
           await api.createDeposit(backendPayload);
           addDeposit(localDepData);
+          router.push("/staff");
         }
-        router.push("/staff");
       } catch (err: any) {
         console.error("Backend deposit failed:", err);
 
@@ -408,7 +431,13 @@ function NewDepositContent() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
-              onClick={() => router.push("/staff")}
+              onClick={() => {
+                if (typeof window !== "undefined" && window.history.length > 1) {
+                  router.back();
+                } else {
+                  router.push("/staff");
+                }
+              }}
               className="p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 rounded-sm cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -434,6 +463,7 @@ function NewDepositContent() {
                 { type: "retailer", label: "Shops", desc: "Refund" },
                 ...(staffHandoverEnabled ? [{ type: "staff_person", label: "Staff", desc: "Handover" }] : []),
                 { type: "staff", label: "Office", desc: "Distributor" },
+                ...(depositType === "virtual" ? [{ type: "virtual", label: "Virtual", desc: "Transfer" }] : []),
               ].map((opt) => (
                 <button
                   key={opt.type}

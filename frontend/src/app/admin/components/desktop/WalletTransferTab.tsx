@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { CreditCard, History, Edit, Trash2, X, Save, ArrowLeftRight } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
@@ -8,6 +9,7 @@ import InlineSelect from "../../../components/InlineSelect";
 import { getISTDateString } from "../../../utils/dateHelpers";
 
 export default function WalletTransferTab() {
+  const router = useRouter();
   const adminContext = useAdmin();
   const { retailerDirectory, portalDirectory, userDirectory, deposits, fetchData, showToastNotification } = adminContext;
 
@@ -42,6 +44,10 @@ export default function WalletTransferTab() {
   });
 
   const handleStartEditDeposit = (item: any) => {
+    if (item?.id) {
+      router.push(`/deposit?editId=${item.id}`);
+      return;
+    }
     setEditingCollection(item);
     setSelectedNewRetailerId(item.retailer_id || "");
     setSelectedNewPortalId(""); // re-derived from bank_account_id below via effectiveEditPortalId
@@ -630,9 +636,9 @@ export default function WalletTransferTab() {
                     
                     {/* Right: Amount */}
                     <div className={`text-right font-mono tabular-nums text-xs font-black shrink-0 ${
-                      isRefund ? "text-red-500" : "text-emerald-600 dark:text-emerald-400"
+                      isRefund ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"
                     }`}>
-                      {isRefund ? "-" : "+"} ₹{Math.round(tx.amount || 0).toLocaleString("en-IN")}
+                      {isRefund ? "+" : "-"} ₹{Math.round(tx.amount || 0).toLocaleString("en-IN")}
                     </div>
                   </div>
                 );

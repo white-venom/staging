@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { format } from "date-fns";
+import { useRouter } from "next/navigation";
 import MobileFilterDrawer from "./MobileFilterDrawer";
 import { api } from "../../../utils/api";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
@@ -28,6 +29,7 @@ import { getISTDateString } from "../../../utils/dateHelpers";
 import InlineSelect from "@/app/components/InlineSelect";
 
 export default function MobileLedger() {
+  const router = useRouter();
   const { collections, deposits, retailerDirectory, portalDirectory, fetchData, showToastNotification, userDirectory } = useAdmin();
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -108,6 +110,10 @@ export default function MobileLedger() {
 
   const handleStartEditCollection = (item: any) => {
     const isDeposit = item.depositType != null || item.deposit_type != null;
+    if (isDeposit && item?.id) {
+      router.push(`/deposit?editId=${item.id}`);
+      return;
+    }
     setEditingIsDeposit(isDeposit);
     setEditingCollection(item);
     
@@ -597,26 +603,24 @@ export default function MobileLedger() {
                        )}
                      </div>
                    </td>
-                   {/* Universal rule: money in = green, money out = red, no per-type
-                       exceptions. Cash-in (a collection) and virtual-transfer (a load)
-                       both increase this ledger's balance; move-to-dist (a refund) and
-                       cash-out both decrease it. The sign and the color must agree, so
-                       both are driven by this single check. */}
-                   {(() => {
-                     const isMoneyIn = item.type === 'collection' || item.txType === 'virtual-transfer';
-                     return (
-                   <>
-                   <td className="py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-center">
-                      <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded-sm ${isMoneyIn ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                         {item.txType === 'cash-in' || item.txType === 'virtual-transfer' ? 'Cash In' : 'Cash Out'}
-                      </span>
-                   </td>
-                   <td className={`py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${isMoneyIn ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
-                     {isMoneyIn ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
-                   </td>
-                   </>
-                     );
-                   })()}
+                    {/* Universal rule: money in = green, money out = red.
+                        Cash-in (a collection) and move-to-dist (a refund to portal) both increase this ledger (In / Got);
+                        virtual-transfer (load to retailer) and cash-out both decrease it (Out / Gave). */}
+                    {(() => {
+                      const isMoneyIn = item.type === 'collection' || item.txType === 'cash-in' || item.txType === 'move-to-dist';
+                      return (
+                        <>
+                          <td className="py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-center">
+                            <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded-sm ${isMoneyIn ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                              {isMoneyIn ? 'Cash In' : 'Cash Out'}
+                            </span>
+                          </td>
+                          <td className={`py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${isMoneyIn ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
+                            {isMoneyIn ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
+                          </td>
+                        </>
+                      );
+                    })()}
                    <td className="py-1.5 px-2 text-right font-black text-slate-500 uppercase text-xs">
                      {item.staff || 'Admin'}
                    </td>

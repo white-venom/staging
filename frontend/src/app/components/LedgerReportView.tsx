@@ -543,7 +543,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
 
             const periodNetColor = subjectType === "staff"
               ? (periodNet >= 0 ? "text-emerald-600" : "text-red-500")
-              : (stats.netBalance < 0 ? "text-emerald-600" : stats.netBalance > 0 ? "text-red-500" : "text-slate-500");
+              : (stats.netBalance > 0 ? "text-emerald-600" : stats.netBalance < 0 ? "text-red-500" : "text-slate-500");
 
             return (
               <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'} border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs gap-y-2 sm:gap-y-0`}>

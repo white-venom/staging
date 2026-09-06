@@ -204,6 +204,10 @@ export default function MobileRetailers({
 
   const handleStartEditEntry = (item: any) => {
     const isDeposit = item.deposit_id != null;
+    if (isDeposit && item.deposit_id) {
+      router.push(`/deposit?editId=${item.deposit_id}`);
+      return;
+    }
     setEditingIsDeposit(isDeposit);
     setEditingEntry(item);
     
@@ -755,7 +759,7 @@ export default function MobileRetailers({
                 </div>
 
                 <div className="text-right shrink-0">
-                  <span className={`font-black text-xs font-mono tabular-nums ${(retailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
+                  <span className={`font-black text-xs font-mono tabular-nums ${(retailer.balance || 0) > 0 ? 'text-emerald-600 dark:text-emerald-500' : (retailer.balance || 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500'}`}>
                     ₹{Math.round(Math.abs(retailer.balance || 0)).toLocaleString()}
                   </span>
                   <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-tighter mt-0.5">Net Balance</span>
@@ -835,7 +839,7 @@ export default function MobileRetailers({
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-950 p-2 rounded-sm border border-slate-100 dark:border-slate-800 text-[9px] flex justify-between items-center">
                   <span className="text-slate-400 font-bold uppercase tracking-wider">Net Balance</span>
-                  <span className={`font-extrabold font-mono tabular-nums ${(editingRetailer.balance || 0) <= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-400'}`}>
+                  <span className={`font-extrabold font-mono tabular-nums ${(editingRetailer.balance || 0) > 0 ? 'text-emerald-600 dark:text-emerald-500' : (editingRetailer.balance || 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500'}`}>
                     ₹{Math.abs(editingRetailer.balance || 0).toLocaleString()}
                   </span>
                 </div>

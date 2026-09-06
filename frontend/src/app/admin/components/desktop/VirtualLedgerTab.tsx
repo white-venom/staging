@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { History, Calendar, Search, Share2, FileDown, ArrowUpDown, Edit, Trash2, X, Save } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
@@ -10,6 +11,7 @@ import { downloadElementAsPdf } from "../../../utils/downloadElementAsPdf";
 import { downloadCsv } from "../../../utils/downloadCsv";
 
 export default function VirtualLedgerTab() {
+  const router = useRouter();
   const adminContext = useAdmin();
   const { retailerDirectory, portalDirectory, userDirectory, deposits, collections, fetchData, showToastNotification } = adminContext;
 
@@ -218,8 +220,8 @@ export default function VirtualLedgerTab() {
   }, [allTransactions, dateFrom, dateTo, searchQuery, selectedTypes, sortBy]);
 
   const stats = useMemo(() => {
-    let totalGave = 0; // cash-out & move-to-dist (money out)
-    let totalGot = 0;  // cash-in & virtual-transfer (money in)
+    let totalGave = 0; // cash-out & virtual-transfer (money out)
+    let totalGot = 0;  // cash-in & move-to-dist (money in)
 
     filteredTransfers.forEach((tx: any) => {
       // Portal-to-portal transfers move money between the business's own
@@ -227,7 +229,7 @@ export default function VirtualLedgerTab() {
       // either bucket (counting them as a "gave" would make Net Balance
       // look like a real loss that never happened).
       if (tx.type === "portal-transfer") return;
-      if (tx.type === "cash-in" || tx.type === "virtual-transfer") {
+      if (tx.type === "cash-in" || tx.type === "move-to-dist") {
         totalGot += tx.amount || 0;
       } else {
         totalGave += tx.amount || 0;
@@ -238,7 +240,7 @@ export default function VirtualLedgerTab() {
       entriesCount: filteredTransfers.length,
       totalGave,
       totalGot,
-      netBalance: totalGave - totalGot
+      netBalance: totalGot - totalGave
     };
   }, [filteredTransfers]);
 
@@ -280,6 +282,10 @@ export default function VirtualLedgerTab() {
 
   const handleStartEditDeposit = (tx: any) => {
     const raw = tx.rawRecord || tx;
+    if (tx.type === "cash-out" && raw?.id) {
+      router.push(`/deposit?editId=${raw.id}`);
+      return;
+    }
     const isDeposit = tx.type !== "cash-in";
     setEditingIsDeposit(isDeposit);
     setEditingCollection(raw);
@@ -328,7 +334,11 @@ export default function VirtualLedgerTab() {
 
     try {
       if (editingIsDeposit) {
-        const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewBankAccountId : null;
+        const portalAccs = (portalDirectory.find((g: any) => String(g.id) === effectiveEditPortalId)?.bankAccounts || []);
+        const fallbackBankId = portalAccs[0]?.id || null;
+        const bankAccountId = (selectedNewDepositType === "portal" || selectedNewDepositType === "virtual")
+          ? (selectedNewBankAccountId || fallbackBankId)
+          : null;
         const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
         const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
         const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
@@ -603,7 +613,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
           <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm p-4 flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-slate-500">Net Balance</span>
-              <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`}>
+              <span className={`text-base font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-emerald-600 dark:text-emerald-400" : stats.netBalance < 0 ? "text-rose-500" : "text-slate-500"}`}>
                 ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
               </span>
             </div>
@@ -635,9 +645,9 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                 {paginatedTransfers.map((tx: any) => {
                   const formatted = formatIST(tx.rawRecord?.created_at || tx.date);
                   // Universal rule: money in = green, out = red. Cash-in and a
-                  // virtual-transfer load both increase this ledger; move-to-dist
-                  // (a refund) decreases it, same as cash-out.
-                  const isGot = tx.type === "cash-in" || tx.type === "virtual-transfer";
+                  // move-to-dist (refund to portal) both increase this ledger (Got);
+                  // virtual-transfer (load to retailer) and cash-out both decrease it (Gave).
+                  const isGot = tx.type === "cash-in" || tx.type === "move-to-dist";
                   // Portal-to-portal transfers move money between two of the
                   // business's own accounts -- net-zero for the business as a
                   // whole, so neither green nor red applies; shown neutral.
@@ -837,7 +847,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
             <div className="bg-slate-50 border border-slate-200 rounded-sm p-4 flex flex-col gap-3 mb-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-bold text-slate-500">Net Balance</span>
-                <span className={`text-lg font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-rose-500" : stats.netBalance < 0 ? "text-emerald-600" : "text-slate-500"}`}>
+                <span className={`text-lg font-extrabold font-mono tabular-nums ${stats.netBalance > 0 ? "text-emerald-600" : stats.netBalance < 0 ? "text-rose-500" : "text-slate-500"}`}>
                   ₹ {Math.abs(stats.netBalance).toLocaleString("en-IN")}
                 </span>
               </div>
@@ -1270,7 +1280,12 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           </label>
                           <InlineSelect
                             value={effectiveEditPortalId}
-                            onChange={(val) => { setSelectedNewPortalId(val); setSelectedNewBankAccountId(""); }}
+                            onChange={(val) => {
+                              setSelectedNewPortalId(val);
+                              const portal = portalDirectory.find((g: any) => String(g.id) === val);
+                              const firstAcc = portal?.bankAccounts?.[0]?.id || "";
+                              setSelectedNewBankAccountId(firstAcc);
+                            }}
                             options={portalDirectory.map((group: any) => ({ value: String(group.id), label: group.name }))}
                             placeholder="Select Portal"
                           />

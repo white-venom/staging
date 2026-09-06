@@ -273,6 +273,10 @@ export default function OverviewTab({
 
   const handleStartEditCollection = (item: any) => {
     const isDeposit = item.type === "deposit" || item.depositType != null || item.deposit_type != null;
+    if (isDeposit && item?.id) {
+      router.push(`/deposit?editId=${item.id}`);
+      return;
+    }
     setEditingIsDeposit(isDeposit);
     setEditingCollection(item);
     

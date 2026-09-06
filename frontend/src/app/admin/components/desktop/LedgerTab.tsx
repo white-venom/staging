@@ -807,7 +807,7 @@ export default function LedgerTab({
           </div>
           <div className="p-3 bg-slate-50/50 dark:bg-slate-950/50 text-center">
             <span className="text-[9px] font-black text-slate-400 uppercase block mb-1">Net Balance</span>
-            <span className={`text-sm font-black font-mono tabular-nums ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
+            <span className={`text-sm font-black font-mono tabular-nums ${netBalance > 0 ? "text-red-600 dark:text-red-400" : netBalance < 0 ? "text-emerald-600 dark:text-emerald-500" : "text-slate-500"}`}>
               ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
             </span>
           </div>
@@ -830,7 +830,7 @@ export default function LedgerTab({
              </div>
              <div className="text-center">
                 <span className="text-[10px] block uppercase text-slate-400 font-black mb-1">Net Balance</span>
-                <span className={`text-xl font-black font-mono tabular-nums ${netBalance >= 0 ? "text-blue-600" : "text-emerald-600"}`}>
+                <span className={`text-xl font-black font-mono tabular-nums ${netBalance > 0 ? "text-red-600 dark:text-red-400" : netBalance < 0 ? "text-emerald-600 dark:text-emerald-500" : "text-slate-500"}`}>
                   ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
                 </span>
              </div>
@@ -1016,7 +1016,7 @@ export default function LedgerTab({
                   <td className="p-2 text-right text-slate-900 dark:text-white bg-slate-200/50 dark:bg-slate-900/50">
                     <div className="flex flex-col items-end">
                       <span className="text-[9px] text-slate-500 uppercase font-bold tracking-wider">Final Net</span>
-                      <span className={`text-xs font-black font-mono tabular-nums ${netBalance >= 0 ? "text-blue-700 dark:text-blue-400" : "text-emerald-700 dark:text-emerald-400"}`}>
+                      <span className={`text-xs font-black font-mono tabular-nums ${netBalance > 0 ? "text-red-700 dark:text-red-400" : netBalance < 0 ? "text-emerald-700 dark:text-emerald-400" : "text-slate-500"}`}>
                         ₹{Math.abs(netBalance).toLocaleString()}.00 {netBalance >= 0 ? "Dr" : "Cr"}
                       </span>
                     </div>

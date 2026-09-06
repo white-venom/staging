@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { Search, Download, X, CheckCircle2, Edit, Trash2, Save } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
@@ -18,6 +19,7 @@ export default function DepositsTab({
   showToastNotification,
   fetchData
 }: DepositsTabProps) {
+  const router = useRouter();
   const [selectedDepositId, setSelectedDepositId] = React.useState<string | null>(null);
   const [isEditMode, setIsEditMode] = React.useState(false);
   const [editAmount, setEditAmount] = React.useState(0);
@@ -54,6 +56,10 @@ export default function DepositsTab({
   });
 
   const handleStartEditDeposit = (item: any) => {
+    if (item?.id) {
+      router.push(`/deposit?editId=${item.id}`);
+      return;
+    }
     setEditingCollection(item);
     setSelectedNewRetailerId(item.retailer_id || "");
     setSelectedNewPortalId(""); // re-derived from bank_account_id below via effectiveEditPortalId

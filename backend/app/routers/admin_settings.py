@@ -222,13 +222,7 @@ def process_virtual_transfer(
                 desc_text = "move to distributor"
                 transaction_type = "credit"
             else:
-                # Safely get description text
-                if account_portal:
-                    desc_text = account_portal.name or "virtual transfer"
-                elif bank_account:
-                    desc_text = bank_account.bank_account_name or "virtual transfer"
-                else:
-                    desc_text = "virtual transfer"
+                desc_text = "virtual transfer"
                 transaction_type = "debit"
             
             # Create the bank deposit audit record first with a placeholder balance

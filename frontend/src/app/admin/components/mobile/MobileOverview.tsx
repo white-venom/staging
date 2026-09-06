@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { format, subDays, isSameDay } from "date-fns";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useAdmin } from "../../context/AdminContext";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
 import { api } from "../../../utils/api";
@@ -104,6 +105,7 @@ export default function MobileOverview({
   userDirectory,
   staffComplianceLogs
 }: MobileOverviewProps) {
+  const router = useRouter();
   const { retailerDirectory, portalDirectory, showToastNotification } = useAdmin();
   const [sortBy, setSortBy] = useState<"date-desc" | "date-asc" | "amount-desc" | "amount-asc">("date-desc");
   const [isStaffTrackingExpanded, setIsStaffTrackingExpanded] = useState(false);
@@ -342,7 +344,11 @@ export default function MobileOverview({
   }, [selectedNewRetailerId, editingCollection]);
 
   const handleStartEditCollection = (item: any) => {
-    const isDeposit = item.type === "deposit";
+    const isDeposit = item.type === "deposit" || item.depositType != null || item.deposit_type != null;
+    if (isDeposit && item?.id) {
+      router.push(`/deposit?editId=${item.id}`);
+      return;
+    }
     setEditingIsDeposit(isDeposit);
     setEditingCollection(item);
     
