@@ -170,7 +170,7 @@ def resolve_tenant_subdomain(request: Request = None) -> str | None:
             parts = host.split(".")
             if len(parts) >= 3:
                 tenant_id = parts[0]
-                if tenant_id in ("superadmin", "www", "api"):
+                if tenant_id in ("superadmin", "www", "api", "staging", "staging-api"):
                     tenant_id = None
 
     if not tenant_id:

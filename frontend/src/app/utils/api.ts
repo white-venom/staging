@@ -7,6 +7,11 @@ const getApiBaseUrl = () => {
   }
   
   if (typeof window !== "undefined") {
+    // Staging VPS domain
+    if (window.location.hostname.includes("staging")) {
+      return "https://staging-api.crediiflow.in";
+    }
+
     // Production VPS domains
     if (window.location.hostname.endsWith("crediiflow.in")) {
       return "https://api.crediiflow.in";
@@ -91,7 +96,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
     const parts = host.split(".");
     if (parts.length >= 3 || (host.endsWith("localhost") && parts.length >= 2)) {
       tenantId = parts[0];
-      if (tenantId === "www" || tenantId === "superadmin" || tenantId === "api") {
+      if (tenantId === "www" || tenantId === "superadmin" || tenantId === "api" || tenantId === "staging" || tenantId === "staging-api") {
         tenantId = null;
       }
     }
