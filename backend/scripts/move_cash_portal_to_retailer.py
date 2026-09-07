@@ -2,6 +2,7 @@
 Move CASH PORTAL from Portals to Retailers:
 1. Delete CASH PORTAL from `portals` table (cascades its bank account).
 2. Create/update CASH PORTAL in `retailers` table with opening_to_take=671657, opening_to_give=0, date=2026-09-07.
+   Generates a guaranteed unique phone number to prevent unique constraint violation.
 3. Recalculate balances to create the Opening Balance ledger row (balance=-671657, showing in RED as To Take).
 4. Verify all Dashboard totals match Khatabook (Rs 6,358,180 both sides).
 """
@@ -50,9 +51,16 @@ def move_cash_portal():
             ret.balance = Decimal("0")
             print(f"   ✅ Updated existing Retailer 'CASH PORTAL' (Take=₹{CASH_PORTAL_AMOUNT:,.0f})")
         else:
+            # Find unique phone
+            all_retailers = db.query(Retailer).all()
+            used_phones = {r.phone.strip() for r in all_retailers if r.phone}
+            phone = "9999900001"
+            while phone in used_phones:
+                phone = f"9{uuid.uuid4().hex[:9]}"
+
             ret = Retailer(
                 retailer_name="CASH PORTAL",
-                phone="9999900001",
+                phone=phone,
                 address="New Delhi",
                 opening_to_take=CASH_PORTAL_AMOUNT,
                 opening_to_give=Decimal("0"),
@@ -62,7 +70,7 @@ def move_cash_portal():
             )
             db.add(ret)
             db.flush()
-            print(f"   ➕ Created new Retailer 'CASH PORTAL' (Take=₹{CASH_PORTAL_AMOUNT:,.0f})")
+            print(f"   ➕ Created new Retailer 'CASH PORTAL' (Take=₹{CASH_PORTAL_AMOUNT:,.0f}, Phone={phone})")
 
         db.flush()
 
