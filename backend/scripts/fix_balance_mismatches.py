@@ -99,11 +99,13 @@ def fix_balances():
             else:
                 print(f"  Could not map: {seed_key} -> {db_key}")
 
-        # Step 3: Create missing non-portal entries
-        print("\n--- Step 3: Creating missing non-portal retailers ---")
+        # Step 3: Fix missing non-portal entries (match by phone if name didn't match)
+        print("\n--- Step 3: Fixing missing non-portal retailers ---")
+        db_by_phone = {r.phone.strip(): r for r in all_retailers if r.phone}
+
         for seed in RETAILERS_TO_SEED:
             seed_key = seed['name'].strip().lower()
-            # Skip if already in DB, skip portals, skip name-mapped
+            # Skip if already in DB by name, skip portals, skip name-mapped
             if seed_key in db_by_name:
                 continue
             if seed_key in PORTAL_ENTRIES:
@@ -111,11 +113,22 @@ def fix_balances():
                 continue
             if seed_key in NAME_MAPPING:
                 continue
-            # Only create if has non-zero balance
-            if seed['take'] > 0 or seed['give'] > 0:
+
+            # Try matching by phone number
+            phone_match = db_by_phone.get(seed['phone'].strip())
+            if phone_match:
+                # Update existing retailer's opening balances
+                phone_match.opening_to_take = Decimal(str(seed['take']))
+                phone_match.opening_to_give = Decimal(str(seed['give']))
+                print(f"  Phone-matched '{seed['name']}' -> '{phone_match.retailer_name}': T={seed['take']:,.0f} G={seed['give']:,.0f}")
+                fixed += 1
+            elif seed['take'] > 0 or seed['give'] > 0:
+                # Create new retailer with unique phone
+                import uuid
+                unique_phone = f"99999{uuid.uuid4().hex[:5]}"
                 new_r = Retailer(
                     retailer_name=seed['name'].strip(),
-                    phone=seed['phone'],
+                    phone=unique_phone,
                     address="New Delhi",
                     opening_to_take=Decimal(str(seed['take'])),
                     opening_to_give=Decimal(str(seed['give'])),
