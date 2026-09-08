@@ -70,6 +70,7 @@ class CollectionResponse(BaseModel):
     mirror_deposit_id: Optional[uuid.UUID] = None
     online_routing_deposit_id: Optional[uuid.UUID] = None
     store_id: Optional[uuid.UUID]
+    bank_account_id: Optional[uuid.UUID] = None
     total_amount: Decimal
     remarks: Optional[str]
     status: str

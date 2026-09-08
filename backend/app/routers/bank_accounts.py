@@ -222,11 +222,14 @@ def get_bank_account_ledger(
     # of them per date instead of letting one silently overwrite the rest.
     col_by_date_retailer = {}
     col_by_date = {}
+    col_by_routing_deposit_id = {}
     for col in sorted(all_group_cols, key=lambda c: c.created_at):
         col_date = col.collection_date
         if col.retailer_id:
             col_by_date_retailer[(col_date, col.retailer_id)] = col
         col_by_date.setdefault(col_date, []).append(col)
+        if col.online_routing_deposit_id:
+            col_by_routing_deposit_id[col.online_routing_deposit_id] = col
 
     def _best_date_match(col_date, deposit_amount):
         candidates = col_by_date.get(col_date) or []
@@ -246,11 +249,19 @@ def get_bank_account_ledger(
         # Bank deposit into account (cash deposit or online auto-route)
         retailer_name = d.retailer.retailer_name if d.retailer else None
 
-        # For online deposits without retailer, try to find the matching collection
-        # to get store name (legacy data that didn't store retailer_id on the deposit)
         store_name = None
         fallback_remarks = d.remarks
-        if d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
+
+        # 1. First priority: direct FK match to collection via online_routing_deposit_id
+        matching_col = col_by_routing_deposit_id.get(d.id)
+        if matching_col:
+            if matching_col.retailer:
+                retailer_name = matching_col.retailer.retailer_name
+            if matching_col.store:
+                store_name = matching_col.store.store_name
+            if not fallback_remarks:
+                fallback_remarks = matching_col.remarks
+        elif d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
             matching_col = _best_date_match(d.deposit_date, d.amount)
             if matching_col:
                 retailer_name = matching_col.retailer.retailer_name if matching_col.retailer else None
@@ -263,7 +274,7 @@ def get_bank_account_ledger(
             if matching_col and matching_col.store:
                 store_name = matching_col.store.store_name
 
-        tx_store_name = store_name or retailer_name
+        tx_store_name = retailer_name or store_name
 
         if d.deposit_type == "portal":
             tx_type = "credit" # You Got
@@ -329,11 +340,9 @@ def get_bank_account_ledger(
             "reference_no": d.reference_no,
             "deposit_type": d.deposit_type,
             "payment_mode": d.payment_mode,
-            "recipient_staff_id": str(d.recipient_staff_id) if d.recipient_staff_id else None,
-            "to_office": d.to_office,
-            "retailer_id": str(d.retailer_id) if d.retailer_id else None,
-            "store_id": None,
-            "store_name": tx_store_name,
+            "retailer_id": str(d.retailer_id) if d.retailer_id else (str(matching_col.retailer_id) if matching_col and matching_col.retailer_id else None),
+            "store_id": str(matching_col.store_id) if matching_col and matching_col.store_id else None,
+            "store_name": store_name,
             "bank_account_id": str(d.bank_account_id) if d.bank_account_id else None,
             "denominations": denom_dict
         })

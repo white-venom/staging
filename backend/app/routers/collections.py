@@ -790,6 +790,8 @@ def update_collection(
 
             # Update existing deposit in-place
             existing_dep.bank_account_id = new_bank_account_id
+            existing_dep.retailer_id = new_retailer_id
+            existing_dep.remarks = payload.remarks
             existing_dep.amount = new_online_amount
             existing_dep.deposit_date = new_collection_date
             if collection.online_routing_deposit_id is None:
@@ -820,11 +822,13 @@ def update_collection(
                 staff_id=collection.staff_id,
                 deposit_type="portal",
                 bank_account_id=new_bank_account_id,
+                retailer_id=new_retailer_id,
                 recipient_staff_id=None,
                 to_office=False,
                 payment_mode="online",
                 amount=new_online_amount,
                 deposit_date=new_collection_date,
+                remarks=payload.remarks,
                 status="verified",
                 balance_snapshot=Decimal("0.00")
             )
