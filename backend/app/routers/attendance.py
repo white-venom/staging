@@ -53,61 +53,131 @@ def check_and_trigger_auto_checkout(db: Session):
 import base64
 import uuid
 import os
+import urllib.parse
 from app.logic.r2 import is_r2_configured, upload_image_to_r2
 
 MAX_IMAGE_BYTES = 10 * 1024 * 1024  # 10 MB limit
 
 
-def save_base64_image(base64_str: str, folder: str) -> Optional[str]:
-    """Decodes base64 image string with size/format validation and saves to Cloudflare R2 or local storage."""
+def validate_and_decode_base64_image(base64_str: str) -> tuple[bytes, str]:
+    """
+    Validates and decodes a base64 image string.
+    Returns (image_bytes, file_extension).
+    Raises ValueError on client validation failure with a clean message.
+    """
+    if not base64_str or not isinstance(base64_str, str):
+        raise ValueError("Image data is empty or invalid.")
+
+    # URL-unquote if necessary
+    if "%" in base64_str:
+        base64_str = urllib.parse.unquote(base64_str)
+
+    mime_ext = None
+    # Strip data URL prefix if present (e.g. data:image/jpeg;base64,...)
+    if "," in base64_str:
+        header, base64_str = base64_str.split(",", 1)
+        header_lower = header.lower()
+        if "jpeg" in header_lower or "jpg" in header_lower:
+            mime_ext = "jpg"
+        elif "png" in header_lower:
+            mime_ext = "png"
+        elif "webp" in header_lower:
+            mime_ext = "webp"
+        elif "heic" in header_lower:
+            mime_ext = "heic"
+        elif "avif" in header_lower:
+            mime_ext = "avif"
+
+    base64_str = base64_str.strip()
+
+    # Guard against memory exhaustion DOS (~15MB base64 string)
+    if len(base64_str) > 15 * 1024 * 1024:
+        raise ValueError("Image payload exceeds maximum allowed size (10MB).")
+
+    # Fix base64 padding if needed
+    missing_padding = len(base64_str) % 4
+    if missing_padding:
+        base64_str += "=" * (4 - missing_padding)
+
+    # Decode base64 bytes
     try:
-        if not base64_str:
-            return None
-
-        # Strip data URL prefix if present (e.g. data:image/jpeg;base64,...)
-        if "," in base64_str:
-            prefix = base64_str.split(",")[0]
-            base64_str = base64_str.split(",")[1]
-
-        # Guard against memory exhaustion DOS
-        if len(base64_str) > 15 * 1024 * 1024:  # ~15MB base64 string
-            raise ValueError("Image payload exceeds maximum allowed size (10MB)")
-
         image_data = base64.b64decode(base64_str)
-        if len(image_data) > MAX_IMAGE_BYTES:
-            raise ValueError("Decoded image exceeds maximum size limit of 10MB")
+    except Exception as e:
+        raise ValueError(f"Failed to decode image data: {str(e)}")
 
-        # Validate magic byte signature (JPEG, PNG, WebP)
-        ext = None
-        if image_data.startswith(b"\xff\xd8"):
-            ext = "jpg"
-        elif image_data.startswith(b"\x89PNG\r\n\x1a\n"):
-            ext = "png"
-        elif image_data.startswith(b"RIFF") and b"WEBP" in image_data[:16]:
-            ext = "webp"
-        else:
-            raise ValueError("Invalid image format. Only valid JPEG, PNG, and WebP images are supported.")
+    if len(image_data) > MAX_IMAGE_BYTES:
+        raise ValueError("Decoded image exceeds maximum size limit of 10MB.")
 
-        filename = f"{uuid.uuid4().hex}.{ext}"
+    if len(image_data) < 16:
+        raise ValueError("Image file is corrupted or too small.")
 
-        # If R2 credentials are set up, attempt upload to Cloudflare R2
-        if is_r2_configured():
-            r2_url = upload_image_to_r2(image_data, filename)
+    # Validate magic byte signature (JPEG, PNG, WebP, HEIC/AVIF)
+    ext = None
+    if image_data.startswith(b"\xff\xd8"):
+        ext = "jpg"
+    elif image_data.startswith(b"\x89PNG"):
+        ext = "png"
+    elif image_data[:4] == b"RIFF" and b"WEBP" in image_data[:16]:
+        ext = "webp"
+    elif image_data[4:8] == b"ftyp" and any(brand in image_data[8:16] for brand in (b"heic", b"heix", b"mif1", b"msf1", b"avif")):
+        ext = "heic"
+    elif mime_ext:
+        # Fallback to declared MIME type from data-url header
+        ext = mime_ext
+    else:
+        # Permissive fallback: if data is binary and non-empty, default to jpg
+        ext = "jpg"
+
+    return image_data, ext
+
+
+def save_base64_image(base64_str: str, folder: str) -> Optional[str]:
+    """
+    Validates, decodes, and saves base64 image to Cloudflare R2 or local storage.
+    Raises ValueError only if the client uploaded invalid/corrupt image data.
+    If storage fails due to server disk/network issues, logs error and returns None.
+    """
+    if not base64_str:
+        return None
+
+    # Step 1: Validate and decode image (raises ValueError on invalid client data)
+    image_data, ext = validate_and_decode_base64_image(base64_str)
+
+    filename = f"{uuid.uuid4().hex}.{ext}"
+    content_type = f"image/{'jpeg' if ext == 'jpg' else ext}"
+
+    # Step 2: Attempt upload to Cloudflare R2 if configured
+    if is_r2_configured():
+        try:
+            r2_url = upload_image_to_r2(image_data, filename, content_type=content_type)
             if r2_url:
                 return r2_url
-            print("[WARNING] R2 upload failed. Falling back to local storage.")
+            print("[WARNING] R2 upload failed or returned None. Falling back to local storage.")
+        except Exception as r2_err:
+            print(f"[ERROR] R2 upload exception: {r2_err}. Falling back to local storage.")
 
-        # Local storage fallback
+    # Step 3: Local storage fallback
+    try:
         os.makedirs(folder, exist_ok=True)
         filepath = os.path.join(folder, filename)
-
         with open(filepath, "wb") as f:
             f.write(image_data)
-
         return f"/static/attendance/{filename}"
     except Exception as e:
-        print(f"Error saving base64 image: {str(e)}")
-        return None
+        print(f"[ERROR] Primary local storage write failed for attendance image: {str(e)}")
+
+    # Step 4: Emergency alternate directory fallback
+    try:
+        alt_folder = os.path.join(os.path.dirname(folder), "attendance")
+        if alt_folder != folder:
+            os.makedirs(alt_folder, exist_ok=True)
+            with open(os.path.join(alt_folder, filename), "wb") as f:
+                f.write(image_data)
+            return f"/static/attendance/{filename}"
+    except Exception as alt_err:
+        print(f"[ERROR] Alternate local storage write failed: {alt_err}")
+
+    return None
 
 
 
@@ -176,12 +246,16 @@ def check_in(
             "static",
             "attendance"
         )
-        image_url = save_base64_image(payload.image, static_folder)
-        if not image_url:
+        try:
+            image_url = save_base64_image(payload.image, static_folder)
+        except ValueError as val_err:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid image uploaded. Please provide a valid JPEG, PNG, or WebP image under 10MB."
+                detail=str(val_err)
             )
+        except Exception as unexpected_err:
+            print(f"[ERROR] Unexpected error saving check-in image: {unexpected_err}")
+            image_url = None
 
     db_attendance = Attendance(
         user_id=current_user.id,
@@ -239,12 +313,16 @@ def check_out(
             "static",
             "attendance"
         )
-        image_url = save_base64_image(payload.image, static_folder)
-        if not image_url:
+        try:
+            image_url = save_base64_image(payload.image, static_folder)
+        except ValueError as val_err:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid image uploaded. Please provide a valid JPEG, PNG, or WebP image under 10MB."
+                detail=str(val_err)
             )
+        except Exception as unexpected_err:
+            print(f"[ERROR] Unexpected error saving checkout image: {unexpected_err}")
+            image_url = None
 
     # Complete shift
     active_shift.end_km = payload.end_km

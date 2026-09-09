@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "../utils/store";
 import { api } from "../utils/api";
+import { toUserMessage } from "../utils/errors";
 import {
   Clock,
   Camera,
@@ -225,13 +226,23 @@ export default function AttendancePage() {
           ctx.fillText("CREDIITFLOW", width - 30, height - barHeight / 2);
           
           const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-          setUploadedImageBase64(dataUrl);
+          if (dataUrl && dataUrl.length > 100) {
+            setUploadedImageBase64(dataUrl);
+          } else {
+            alert("Could not process image from camera. Please take another photo.");
+          }
+        };
+        img.onerror = () => {
+          alert("Selected image format could not be decoded. Please snap a new photo.");
         };
         img.src = event.target?.result as string;
       };
+      reader.onerror = () => {
+        alert("Failed to read image file from device. Please try again.");
+      };
       reader.readAsDataURL(file);
     } catch (err: any) {
-      alert("Verification Failed: " + err.message);
+      alert("Verification Failed: " + toUserMessage(err));
     }
   };
 
@@ -255,7 +266,7 @@ export default function AttendancePage() {
         checkIn(km);
         router.push("/staff");
       } catch (err: any) {
-        alert("Failed to check-in: " + err.message);
+        alert("Failed to check-in: " + toUserMessage(err));
       }
     }
   };
@@ -280,7 +291,7 @@ export default function AttendancePage() {
       checkOut(end);
       router.push("/staff");
     } catch (err: any) {
-      alert("Failed to check-out: " + err.message);
+      alert("Failed to check-out: " + toUserMessage(err));
     }
   };
 
