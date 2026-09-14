@@ -358,3 +358,143 @@ def process_virtual_transfer(
         )
 
 
+@router.post("/reset-and-sync-khatabook-14sep")
+def api_reset_and_sync_khatabook_14sep(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin)
+):
+    """
+    Deletes all transaction entries (collections, deposits, ledgers, adjustments, attendance)
+    and seeds opening balances for all 288 retailers from the 14 September 2026 Khatabook report.
+    """
+    from scripts.reset_and_sync_14sep import RETAILERS_14SEP, NAME_MAPPING, TARGET_DATE
+    from app.database.models import (
+        Retailer, Portal, BankAccount, User,
+        Collection, BankDeposit, Ledger, Denomination, DenominationBaseline,
+        PortalAdjustment, Attendance, BusinessSettings
+    )
+    from app.logic.ledger import recalculate_balances
+    from decimal import Decimal
+    from sqlalchemy import text
+    import uuid
+
+    try:
+        # 1. Clear all transactions
+        db.execute(text("UPDATE collections SET mirror_deposit_id = NULL, online_routing_deposit_id = NULL"))
+        den_count = db.query(Denomination).delete()
+        base_count = db.query(DenominationBaseline).delete()
+        led_count = db.query(Ledger).delete()
+        coll_count = db.query(Collection).delete()
+        dep_count = db.query(BankDeposit).delete()
+        adj_count = db.query(PortalAdjustment).delete()
+        att_count = db.query(Attendance).delete()
+        db.flush()
+
+        # 2. Reset ALL Portals to 0
+        portals = db.query(Portal).all()
+        for p in portals:
+            p.opening_to_give = Decimal("0")
+            p.opening_to_take = Decimal("0")
+            p.balance = Decimal("0")
+
+        # 3. Reset ALL BankAccounts to 0
+        bank_accounts = db.query(BankAccount).all()
+        for ba in bank_accounts:
+            ba.opening_to_give = Decimal("0")
+            ba.opening_to_take = Decimal("0")
+            ba.balance = Decimal("0")
+
+        # 4. Reset User virtual balances and BusinessSettings
+        users = db.query(User).all()
+        for u in users:
+            u.virtual_balance = Decimal("0")
+        biz = db.query(BusinessSettings).first()
+        if biz:
+            biz.opening_cash_in_hand = 0.0
+
+        # 5. Zero out existing retailers
+        all_retailers = db.query(Retailer).all()
+        for r in all_retailers:
+            r.opening_to_take = Decimal("0")
+            r.opening_to_give = Decimal("0")
+            r.balance = Decimal("0")
+            r.opening_balance_set_on = None
+        db.flush()
+
+        # 6. Sync Khatabook 288 entries into Retailers
+        all_retailers = db.query(Retailer).all()
+        db_by_name = {r.retailer_name.strip().lower(): r for r in all_retailers}
+        used_phones = {r.phone.strip() for r in all_retailers if r.phone}
+
+        updated = 0
+        created = 0
+
+        for seed in RETAILERS_14SEP:
+            seed_name = seed['name'].strip()
+            seed_key = seed_name.lower()
+            seed_take = Decimal(str(seed['take']))
+            seed_give = Decimal(str(seed['give']))
+
+            target = db_by_name.get(seed_key)
+            if not target and seed_key in NAME_MAPPING:
+                target = db_by_name.get(NAME_MAPPING[seed_key])
+
+            if target:
+                target.opening_to_take = seed_take
+                target.opening_to_give = seed_give
+                target.opening_balance_set_on = TARGET_DATE
+                target.balance = Decimal("0")
+                target.is_active = True
+                updated += 1
+            else:
+                phone = seed['phone'].strip()
+                while phone in used_phones:
+                    phone = f"9{uuid.uuid4().hex[:9]}"
+                used_phones.add(phone)
+
+                new_r = Retailer(
+                    retailer_name=seed_name,
+                    phone=phone,
+                    address="New Delhi",
+                    opening_to_take=seed_take,
+                    opening_to_give=seed_give,
+                    balance=Decimal("0"),
+                    opening_balance_set_on=TARGET_DATE,
+                    is_active=True
+                )
+                db.add(new_r)
+                db_by_name[seed_key] = new_r
+                created += 1
+
+        db.flush()
+
+        # 7. Recalculate ledger balances for all active retailers
+        active_retailers = db.query(Retailer).filter(Retailer.is_active == True).all()
+        for r in active_retailers:
+            recalculate_balances(r.id, db)
+        db.commit()
+
+        # Verification
+        all_retailers = db.query(Retailer).all()
+        ret_give = sum(float(r.balance) for r in all_retailers if r.balance > 0)
+        ret_take = sum(float(-r.balance) for r in all_retailers if r.balance < 0)
+
+        return {
+            "message": "Reset and sync with 14-Sep Khatabook report completed successfully",
+            "deleted_collections": coll_count,
+            "deleted_deposits": dep_count,
+            "deleted_ledgers": led_count,
+            "retailers_updated": updated,
+            "retailers_created": created,
+            "total_active_retailers": len(active_retailers),
+            "total_give": ret_give,
+            "total_take": ret_take,
+            "net_difference": ret_give - ret_take
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+

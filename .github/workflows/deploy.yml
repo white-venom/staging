@@ -42,3 +42,8 @@ jobs:
 
           # Rebuild and start all services with fallback for docker-compose
           docker compose up -d --build || docker-compose up -d --build
+
+          # Wait for backend container and run reset & 14-Sep Khatabook sync
+          sleep 8
+          docker exec crediiflow_backend python -m scripts.reset_and_sync_14sep || true
+
