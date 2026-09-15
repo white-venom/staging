@@ -43,3 +43,7 @@ jobs:
           # Rebuild and start all services with fallback for docker-compose
           docker compose up -d --build || docker-compose up -d --build
 
+          # Run non-destructive portal opening balance migration
+          sleep 8
+          docker exec crediiflow_backend python -m scripts.apply_portal_opening_balances || true
+
