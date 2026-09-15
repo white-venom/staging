@@ -1205,17 +1205,41 @@ export default function OverviewTab({
                                 <span>{item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}</span>
                                 <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                               </div>
-                              {item.balance !== undefined && item.balance !== null && (
-                                <div className={`text-[9px] font-bold mt-0.5 uppercase font-mono tabular-nums ${
-                                  Number(item.balance) < 0
-                                    ? 'text-emerald-600 dark:text-emerald-500'
-                                    : Number(item.balance) > 0
-                                      ? 'text-red-600 dark:text-red-400'
-                                      : 'text-slate-400'
-                                }`}>
-                                  Due: {Number(item.balance) < 0 ? '-' : ''}₹{Math.abs(Number(item.balance)).toLocaleString()}
-                                </div>
-                              )}
+                              {(() => {
+                                if (item.balance === undefined || item.balance === null) return null;
+                                if (item.deposit_type === 'staff' || item.recipient_staff_id || item.party?.startsWith("Staff:")) return null;
+
+                                const bal = Number(item.balance);
+                                const isPortal = !item.retailer_id && (item.deposit_type === 'portal' || item.bank_account_id || item.party?.toLowerCase().startsWith("portal"));
+
+                                if (isPortal) {
+                                  return (
+                                    <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 mt-0.5 uppercase font-mono tabular-nums">
+                                      Bal: {bal < 0 ? '-' : ''}₹{Math.abs(bal).toLocaleString()}
+                                    </div>
+                                  );
+                                }
+
+                                if (bal < 0) {
+                                  return (
+                                    <div className="text-[9px] font-bold text-red-600 dark:text-red-400 mt-0.5 uppercase font-mono tabular-nums">
+                                      To Take: ₹{Math.abs(bal).toLocaleString()}
+                                    </div>
+                                  );
+                                }
+                                if (bal > 0) {
+                                  return (
+                                    <div className="text-[9px] font-bold text-emerald-600 dark:text-emerald-500 mt-0.5 uppercase font-mono tabular-nums">
+                                      To Give: ₹{bal.toLocaleString()}
+                                    </div>
+                                  );
+                                }
+                                return (
+                                  <div className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase font-mono tabular-nums">
+                                    Settled
+                                  </div>
+                                );
+                              })()}
                             </td>
                           </tr>
                           {isExpanded && (

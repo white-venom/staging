@@ -516,8 +516,10 @@ export default function WalletTransferTab() {
                 options={(retailerDirectory || []).map((r: any) => {
                   const bal = r.balance || 0;
                   const balText = bal < 0 
-                    ? `To Give: ₹${Math.abs(bal).toLocaleString()}` 
-                    : `To Take: ₹${bal.toLocaleString()}`;
+                    ? `To Take: ₹${Math.abs(bal).toLocaleString()}` 
+                    : bal > 0 
+                      ? `To Give: ₹${bal.toLocaleString()}`
+                      : "Settled";
                   return {
                     value: r.id,
                     label: `${r.name} (${balText})`

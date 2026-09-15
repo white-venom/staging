@@ -991,9 +991,41 @@ export default function MobileOverview({
                       <p className={`text-[11px] font-black font-mono tabular-nums ${item.type === 'collection' ? 'text-blue-600' : 'text-red-600'}`}>
                         {item.type === 'collection' ? '+' : '-'}₹{item.amount.toLocaleString()}
                       </p>
-                      {item.balance !== undefined && item.balance !== null && (
-                        <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5 font-mono tabular-nums">Due: ₹{Number(item.balance).toLocaleString()}</p>
-                      )}
+                      {(() => {
+                        if (item.balance === undefined || item.balance === null) return null;
+                        if (item.deposit_type === 'staff' || item.recipient_staff_id || item.party?.startsWith("Staff:")) return null;
+
+                        const bal = Number(item.balance);
+                        const isPortal = !item.retailer_id && (item.deposit_type === 'portal' || item.bank_account_id || item.party?.toLowerCase().startsWith("portal"));
+
+                        if (isPortal) {
+                          return (
+                            <p className="text-[8px] font-bold text-slate-500 dark:text-slate-400 uppercase mt-0.5 font-mono tabular-nums">
+                              Bal: {bal < 0 ? '-' : ''}₹{Math.abs(bal).toLocaleString()}
+                            </p>
+                          );
+                        }
+
+                        if (bal < 0) {
+                          return (
+                            <p className="text-[8px] font-bold text-red-500 dark:text-red-400 uppercase mt-0.5 font-mono tabular-nums">
+                              To Take: ₹{Math.abs(bal).toLocaleString()}
+                            </p>
+                          );
+                        }
+                        if (bal > 0) {
+                          return (
+                            <p className="text-[8px] font-bold text-emerald-600 dark:text-emerald-500 uppercase mt-0.5 font-mono tabular-nums">
+                              To Give: ₹{bal.toLocaleString()}
+                            </p>
+                          );
+                        }
+                        return (
+                          <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5 font-mono tabular-nums">
+                            Settled
+                          </p>
+                        );
+                      })()}
                     </div>
                     <ChevronDown className={`w-3 h-3 text-slate-400 transition-colors ${isExpanded ? 'rotate-180' : ''}`} />
                   </div>
