@@ -7,7 +7,8 @@ import {
   Globe,
   X,
   ArrowLeft,
-  Edit
+  Edit,
+  BookOpen
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
@@ -256,13 +257,25 @@ export default function MobilePortals({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                   <div className="text-right">
                     <span className={`font-black text-xs font-mono tabular-nums ${group.balance < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-500'}`}>
                       {group.balance < 0 ? '-' : ''}₹{Math.round(Math.abs(group.balance || 0)).toLocaleString()}
                     </span>
                     <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-tighter mt-0.5">Net Balance</span>
                   </div>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openGroupLedger(group);
+                    }}
+                    className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 rounded-sm text-[8px] font-black uppercase tracking-wider flex items-center gap-1 border border-blue-200/80 dark:border-blue-800 cursor-pointer"
+                  >
+                    <BookOpen className="w-2.5 h-2.5" />
+                    <span>Ledger</span>
+                  </button>
 
                   <button
                     onClick={(e) => {

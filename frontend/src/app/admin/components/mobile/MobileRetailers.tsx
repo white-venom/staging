@@ -10,7 +10,8 @@ import {
   Trash2,
   X,
   ArrowLeft,
-  Edit2
+  Edit2,
+  BookOpen
 } from "lucide-react";
 import { api } from "@/app/utils/api";
 import Link from "next/link";
@@ -758,11 +759,24 @@ export default function MobileRetailers({
                   </div>
                 </div>
 
-                <div className="text-right shrink-0">
-                  <span className={`font-black text-xs font-mono tabular-nums ${(retailer.balance || 0) > 0 ? 'text-emerald-600 dark:text-emerald-500' : (retailer.balance || 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500'}`}>
-                    ₹{Math.round(Math.abs(retailer.balance || 0)).toLocaleString()}
-                  </span>
-                  <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-tighter mt-0.5">Net Balance</span>
+                <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                  <div>
+                    <span className={`font-black text-xs font-mono tabular-nums ${(retailer.balance || 0) > 0 ? 'text-emerald-600 dark:text-emerald-500' : (retailer.balance || 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500'}`}>
+                      ₹{Math.round(Math.abs(retailer.balance || 0)).toLocaleString()}
+                    </span>
+                    <span className="text-[7px] font-bold text-slate-400 uppercase block tracking-tighter mt-0.5">Net Balance</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenLedger(retailer);
+                    }}
+                    className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 rounded-sm text-[8px] font-black uppercase tracking-wider flex items-center gap-1 border border-indigo-200/80 dark:border-indigo-800 cursor-pointer"
+                  >
+                    <BookOpen className="w-2.5 h-2.5" />
+                    <span>Ledger</span>
+                  </button>
                 </div>
               </div>
             );

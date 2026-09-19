@@ -4,6 +4,7 @@ import "./globals.css";
 import PWARegister from "./components/PWARegister";
 import QueryProvider from "./components/QueryProvider";
 import MaintenanceGuard from "./components/MaintenanceGuard";
+import ThemedAlertModal from "./components/ThemedAlertModal";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -24,6 +25,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col font-sans transition-colors duration-200" suppressHydrationWarning>
         <PWARegister />
+        <ThemedAlertModal />
         <QueryProvider>
           <MaintenanceGuard>
             {children}

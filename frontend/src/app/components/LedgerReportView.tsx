@@ -458,6 +458,77 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           </div>
         </div>
 
+        {/* Quick Date Presets */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              if (data.length > 0) {
+                const dates = data.map(d => d.date.substring(0, 10)).sort();
+                setStartDate(dates[0]);
+                setEndDate(dates[dates.length - 1]);
+              } else {
+                const today = getISTDateString();
+                setStartDate(today);
+                setEndDate(today);
+              }
+            }}
+            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-sm text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+          >
+            All Time
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const today = getISTDateString();
+              setStartDate(today);
+              setEndDate(today);
+            }}
+            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-sm text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const d = new Date();
+              d.setDate(d.getDate() - 1);
+              const yest = getISTDateString(d);
+              setStartDate(yest);
+              setEndDate(yest);
+            }}
+            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-sm text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+          >
+            Yesterday
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const today = getISTDateString();
+              const firstDay = `${today.substring(0, 7)}-01`;
+              setStartDate(firstDay);
+              setEndDate(today);
+            }}
+            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-sm text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+          >
+            This Month
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const today = getISTDateString();
+              const d = new Date();
+              d.setDate(d.getDate() - 30);
+              const past = getISTDateString(d);
+              setStartDate(past);
+              setEndDate(today);
+            }}
+            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-sm text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+          >
+            Last 30 Days
+          </button>
+        </div>
+
         {/* 3. Search, Type, and Sorting Filters */}
         <div className="flex flex-col gap-2">
           <div className="relative w-full">

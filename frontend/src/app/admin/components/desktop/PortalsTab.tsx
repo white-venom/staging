@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, Plus, Globe, Edit } from "lucide-react";
+import { Search, Plus, Globe, Edit, BookOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAdmin } from "../../context/AdminContext";
 import BankAccountsPanel from "./BankAccountsPanel";
@@ -26,6 +26,7 @@ export default function PortalsTab({
 }: PortalsTabProps) {
   const router = useRouter();
   const { retailerDirectory, userDirectory } = useAdmin();
+  const [activeView, setActiveView] = useState<"directory" | "ledger">("directory");
   const [portalSearch, setPortalSearch] = useState("");
   const [selectedPortal, setSelectedPortal] = useState<any | null>(null);
   const [isAccountsPanelOpen, setIsAccountsPanelOpen] = useState(false);
@@ -41,6 +42,7 @@ export default function PortalsTab({
       ifsc_code: "",
       isGroupLedger: true
     });
+    setActiveView("ledger");
     if (!opts?.skipNav) {
       router.push(`/admin/bankAccounts/${group.id}/ledger`);
     }
@@ -57,7 +59,66 @@ export default function PortalsTab({
   }, [initialPortalLedgerId, portalDirectory]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Top Sub-Navigation Tabs */}
+      <div className="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-2.5 flex-wrap">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveView("directory");
+              setLedgerTarget(null);
+              if (initialPortalLedgerId) router.push("/admin/bankAccounts");
+            }}
+            className={`px-3.5 py-1.5 rounded-sm text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer border ${
+              activeView === "directory"
+                ? "bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-950 shadow-xs"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>Portals Directory</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveView("ledger");
+              if (!ledgerTarget && portalDirectory.length > 0) {
+                openGroupLedger(portalDirectory[0], { skipNav: true });
+              }
+            }}
+            className={`px-3.5 py-1.5 rounded-sm text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer border ${
+              activeView === "ledger"
+                ? "bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-950 shadow-xs"
+                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Particular Ledger</span>
+          </button>
+        </div>
+
+        {activeView === "ledger" && (
+          <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">Selected Portal:</span>
+            <select
+              value={ledgerTarget?.id || ""}
+              onChange={(e) => {
+                const group = portalDirectory.find((item) => String(item.id) === e.target.value);
+                if (group) openGroupLedger(group);
+              }}
+              className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer max-w-[240px] truncate"
+            >
+              {portalDirectory.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name} — Balance: {g.balance < 0 ? '-' : ''}₹{Math.abs(g.balance || 0).toLocaleString()}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400" />
@@ -138,6 +199,18 @@ export default function PortalsTab({
                   </div>
 
                   <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openGroupLedger(group);
+                    }}
+                    className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 rounded-sm text-[9px] font-black uppercase tracking-wider flex items-center gap-1 border border-blue-200/80 dark:border-blue-800 transition-colors cursor-pointer"
+                  >
+                    <BookOpen className="w-3 h-3" />
+                    <span>View Ledger</span>
+                  </button>
+
+                  <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedPortal(group);
@@ -182,6 +255,7 @@ export default function PortalsTab({
         target={ledgerTarget}
         onClose={() => {
           setLedgerTarget(null);
+          setActiveView("directory");
           if (initialPortalLedgerId) router.push("/admin/bankAccounts");
         }}
         portalDirectory={portalDirectory}
