@@ -359,35 +359,98 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return Array.from(names).map(n => ({ id: n, name: n }));
   }, [portalDirectory, deposits, collections]);
 
-  const normalizedRetailerOptions = useMemo(() => {
-    return retailerOptions.map((r: any) => ({
-      id: String(r.id || r.name || r.retailer_name),
-      name: String(r.name || r.retailer_name || r.id)
-    }));
-  }, [retailerOptions]);
+  // Format category helper (canonical title-casing, e.g. "Money Transfer")
+  const formatCategoryName = (cat: string) => {
+    if (!cat) return "";
+    return cat
+      .trim()
+      .split(/\s+/)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  };
 
-  // Unique Retailer Categories extracted from directory
-  const availableRetailerCategories = useMemo(() => {
-    const cats = new Set<string>();
-    retailerDirectory.forEach((r: any) => {
-      if (r.category && typeof r.category === "string" && r.category.trim()) {
-        cats.add(r.category.trim());
+  // Deduplicated unique retailer directory (merges duplicate names or duplicate IDs)
+  const uniqueRetailerDirectory = useMemo(() => {
+    const byKey = new Map<string, any>();
+    (retailerDirectory || []).forEach((r: any) => {
+      const id = String(r.id || "");
+      const name = (r.name || r.retailer_name || "").trim();
+      const nameLower = name.toLowerCase();
+      const key = nameLower || id;
+      if (!key) return;
+
+      const rawCat = (r.category || "").trim();
+      const normCat = formatCategoryName(rawCat);
+
+      if (!byKey.has(key)) {
+        byKey.set(key, {
+          ...r,
+          id,
+          name,
+          retailer_name: name,
+          category: normCat,
+          phone: r.phone || "",
+          area: r.area || r.address || "",
+          opening_to_take: Number(r.opening_to_take || 0),
+          opening_to_give: Number(r.opening_to_give || 0),
+          allIds: new Set<string>(id ? [id] : [])
+        });
+      } else {
+        const existing = byKey.get(key)!;
+        if (id) existing.allIds.add(id);
+        if (!existing.phone && r.phone) existing.phone = r.phone;
+        if (!existing.area && (r.area || r.address)) existing.area = r.area || r.address;
+        if (!existing.category && normCat) existing.category = normCat;
+        existing.opening_to_take += Number(r.opening_to_take || 0);
+        existing.opening_to_give += Number(r.opening_to_give || 0);
       }
     });
-    return Array.from(cats).sort();
+    return Array.from(byKey.values());
   }, [retailerDirectory]);
+
+  // Unique normalized retailer options for dropdown filter
+  const normalizedRetailerOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const opts: { id: string; name: string }[] = [];
+    uniqueRetailerDirectory.forEach((r: any) => {
+      const name = String(r.name || r.retailer_name || r.id).trim();
+      const lower = name.toLowerCase();
+      if (!seen.has(lower)) {
+        seen.add(lower);
+        opts.push({ id: String(r.id || name), name });
+      }
+    });
+    return opts;
+  }, [uniqueRetailerDirectory]);
+
+  // Unique Retailer Categories extracted from directory (case-insensitive deduplication)
+  const availableRetailerCategories = useMemo(() => {
+    const catMap = new Map<string, string>(); // lowerKey -> Canonical Name
+    uniqueRetailerDirectory.forEach((r: any) => {
+      if (r.category && typeof r.category === "string" && r.category.trim()) {
+        const lower = r.category.trim().toLowerCase();
+        if (!catMap.has(lower)) {
+          catMap.set(lower, r.category.trim());
+        }
+      }
+    });
+    return Array.from(catMap.values()).sort((a, b) => a.localeCompare(b));
+  }, [uniqueRetailerDirectory]);
 
   // Retailer Category lookup map
   const retailerCategoryMap = useMemo(() => {
     const map = new Map<string, string>();
-    retailerDirectory.forEach((r: any) => {
-      const cat = (r.category || "").trim();
+    uniqueRetailerDirectory.forEach((r: any) => {
+      const cat = r.category || "";
       if (r.id) map.set(String(r.id), cat);
-      if (r.name) map.set(r.name.toLowerCase(), cat);
-      if (r.retailer_name) map.set(r.retailer_name.toLowerCase(), cat);
+      if (r.allIds) {
+        r.allIds.forEach((altId: string) => map.set(String(altId), cat));
+      }
+      if (r.name) map.set(r.name.toLowerCase().trim(), cat);
+      if (r.retailer_name) map.set(r.retailer_name.toLowerCase().trim(), cat);
     });
     return map;
-  }, [retailerDirectory]);
+  }, [uniqueRetailerDirectory]);
 
   const normalizedPortalOptions = useMemo(() => {
     return portalOptions.map((p: any) => ({
@@ -1347,15 +1410,15 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       }
     });
 
-    // 3. Process each retailer in retailerDirectory
+    // 3. Process each unique retailer in uniqueRetailerDirectory
     const results: any[] = [];
-    (retailerDirectory || []).forEach((r: any) => {
+    uniqueRetailerDirectory.forEach((r: any) => {
       const retId = String(r.id || "");
       const retName = (r.name || r.retailer_name || "").trim();
       const retNameLower = retName.toLowerCase();
       const category = (r.category || retailerCategoryMap.get(retId) || retailerCategoryMap.get(retNameLower) || "").trim();
 
-      // Filter by Category
+      // Filter by Category (case-insensitive)
       if (selectedRetailerCategory !== "all") {
         if (category.toLowerCase() !== selectedRetailerCategory.toLowerCase()) {
           return;
@@ -1374,7 +1437,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
       // Initial Opening Balance
       let baseOpeningBalance = 0;
-      const opEntry = opEntryMap.get(retId);
+      let opEntry = opEntryMap.get(retId);
+      if (!opEntry && r.allIds) {
+        for (const altId of Array.from(r.allIds as Set<string>)) {
+          if (opEntryMap.has(altId)) {
+            opEntry = opEntryMap.get(altId);
+            break;
+          }
+        }
+      }
+
       if (opEntry) {
         const amt = Number(opEntry.amount || 0);
         baseOpeningBalance = opEntry.transaction_type === "DEBIT" ? -amt : amt;
@@ -1384,11 +1456,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         baseOpeningBalance = toGive - toTake;
       }
 
-      // Deduplicate transactions for this retailer
+      // Deduplicate transactions for this retailer across all linked IDs and names
       const seenColIds = new Set<string>();
       const retCols: any[] = [];
+      const colIdKeys = r.allIds ? Array.from(r.allIds as Set<string>) : [retId];
       const colCandidates = [
-        ...(collectionsByRetailer.get(retId) || []),
+        ...colIdKeys.flatMap((idKey: string) => collectionsByRetailer.get(idKey) || []),
         ...(collectionsByRetailer.get(retNameLower) || [])
       ];
       colCandidates.forEach((c) => {
@@ -1402,7 +1475,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       const seenDepIds = new Set<string>();
       const retDeps: any[] = [];
       const depCandidates = [
-        ...(depositsByRetailer.get(retId) || []),
+        ...colIdKeys.flatMap((idKey: string) => depositsByRetailer.get(idKey) || []),
         ...(depositsByRetailer.get(retNameLower) || [])
       ];
       depCandidates.forEach((d) => {
@@ -2629,12 +2702,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         ? "bg-white/20 text-white dark:bg-black/20 dark:text-black"
                         : "bg-slate-200 dark:bg-slate-800 text-slate-500"
                     }`}>
-                      {retailerDirectory.length}
+                      {uniqueRetailerDirectory.length}
                     </span>
                   </button>
                   {availableRetailerCategories.map((cat) => {
-                    const count = retailerDirectory.filter((r: any) => {
-                      const rCat = (r.category || retailerCategoryMap.get(String(r.id)) || "").toLowerCase();
+                    const count = uniqueRetailerDirectory.filter((r: any) => {
+                      const rCat = (r.category || "").toLowerCase();
                       return rCat === cat.toLowerCase();
                     }).length;
                     const isActive = selectedRetailerCategory.toLowerCase() === cat.toLowerCase();
