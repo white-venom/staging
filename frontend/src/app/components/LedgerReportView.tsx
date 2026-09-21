@@ -618,34 +618,38 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               : (periodNet > 0 ? "text-emerald-600" : periodNet < 0 ? "text-red-500" : "text-slate-500");
 
             return (
-              <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'} border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs gap-y-2 sm:gap-y-0`}>
+              <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'} gap-2 sm:gap-2.5`}>
                 {outstandingBalance !== undefined && (
-                  <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">{outstandingLabel}</span>
-                    <span className={`text-sm font-black mt-1 tabular-nums whitespace-nowrap ${outstandingColor}`}>
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
+                    <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">
+                      {outstandingLabel}
+                    </span>
+                    <span className={`text-sm sm:text-base font-black tabular-nums tracking-tight ${outstandingColor}`}>
                       {outstandingBalance < 0 ? "-" : ""}₹{Math.abs(outstandingBalance).toLocaleString("en-IN")}
                     </span>
                   </div>
                 )}
-                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
+                  <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">
                     {isPublic ? (subjectType === "retailer" ? "You Gave" : "Total Out") : (subjectType === "retailer" ? "You Gave" : "Total Out")}
                   </span>
-                  <span className="text-sm font-black text-red-500 mt-1 tabular-nums whitespace-nowrap">
+                  <span className="text-sm sm:text-base font-black text-red-600 tabular-nums tracking-tight">
                     ₹{stats.youGave.toLocaleString("en-IN")}
                   </span>
                 </div>
-                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
+                  <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">
                     {isPublic ? (subjectType === "retailer" ? "You Got" : "Total In") : (subjectType === "retailer" ? "You Got" : "Total In")}
                   </span>
-                  <span className="text-sm font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
+                  <span className="text-sm sm:text-base font-black text-emerald-600 tabular-nums tracking-tight">
                     ₹{stats.youGot.toLocaleString("en-IN")}
                   </span>
                 </div>
-                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Net Balance (Period)</span>
-                  <span className={`text-sm font-black mt-1 tabular-nums whitespace-nowrap ${periodNetColor}`}>
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
+                  <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">
+                    Net Balance (Period)
+                  </span>
+                  <span className={`text-sm sm:text-base font-black tabular-nums tracking-tight ${periodNetColor}`}>
                     {periodNet < 0 ? "-" : ""}₹{Math.abs(periodNet).toLocaleString("en-IN")}
                   </span>
                 </div>

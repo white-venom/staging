@@ -466,28 +466,28 @@ export default function DailyReportPage() {
               </div>
 
               {/* Balance Summary Row */}
-              <div className="grid grid-cols-4 border border-slate-200 rounded-lg bg-slate-50 py-2.5 text-center divide-x divide-slate-200 shadow-xs">
-                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Opening Balance</span>
-                  <span className="text-sm font-black text-blue-900 mt-1 tabular-nums whitespace-nowrap">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
+                  <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">Opening Balance</span>
+                  <span className="text-sm sm:text-base font-black text-blue-900 tabular-nums tracking-tight">
                     ₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Today's In</span>
-                  <span className="text-sm font-black text-emerald-600 mt-1 tabular-nums whitespace-nowrap">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
+                  <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">Today's In</span>
+                  <span className="text-sm sm:text-base font-black text-emerald-600 tabular-nums tracking-tight">
                     ₹{totalInToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Today's Out</span>
-                  <span className="text-sm font-black text-red-600 mt-1 tabular-nums whitespace-nowrap">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
+                  <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">Today's Out</span>
+                  <span className="text-sm sm:text-base font-black text-red-600 tabular-nums tracking-tight">
                     ₹{totalOutToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
-                <div className="flex flex-col justify-center px-1 py-0.5 min-w-0">
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider whitespace-nowrap">Last Balance</span>
-                  <span className="text-sm font-black text-blue-900 mt-1 tabular-nums whitespace-nowrap">
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
+                  <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">Last Balance</span>
+                  <span className="text-sm sm:text-base font-black text-blue-900 tabular-nums tracking-tight">
                     ₹{lastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
