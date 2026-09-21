@@ -9,7 +9,8 @@ import { LOGO_BASE64 } from "./logoBase64";
 export async function downloadElementAsPdf(
   elementId: string,
   filename: string,
-  marginIn: number = 0.4
+  marginIn: number = 0.4,
+  orientation: "portrait" | "landscape" = "portrait"
 ): Promise<void> {
   const element = document.getElementById(elementId);
   if (!element) {
@@ -19,8 +20,9 @@ export async function downloadElementAsPdf(
   // Constants for standard A4 page layout
   // 1 inch = 96 pixels (standard screen resolution reference)
   const pxPerInch = 96;
-  const pageWidthPx = Math.round(8.27 * pxPerInch);
-  const pageHeightPx = Math.round(11.69 * pxPerInch);
+  const isLandscape = orientation === "landscape";
+  const pageWidthPx = Math.round((isLandscape ? 11.69 : 8.27) * pxPerInch);
+  const pageHeightPx = Math.round((isLandscape ? 8.27 : 11.69) * pxPerInch);
   const marginPx = Math.round(marginIn * pxPerInch);
   const contentHeightPx = pageHeightPx - (marginPx * 2);
 
@@ -29,12 +31,15 @@ export async function downloadElementAsPdf(
   // Enforce consistent light theme / print context
   tempContainer.className = element.className;
   tempContainer.classList.remove("dark");
-  tempContainer.style.position = "absolute";
+  tempContainer.style.position = "fixed";
   tempContainer.style.left = "-9999px";
-  tempContainer.style.top = "-9999px";
+  tempContainer.style.top = "0";
   tempContainer.style.width = `${pageWidthPx}px`;
+  tempContainer.style.minWidth = `${pageWidthPx}px`;
+  tempContainer.style.maxWidth = `${pageWidthPx}px`;
   tempContainer.style.boxSizing = "border-box";
   tempContainer.style.backgroundColor = "#ffffff";
+  tempContainer.style.zIndex = "-9999";
   document.body.appendChild(tempContainer);
 
   const pages: HTMLDivElement[] = [];
@@ -42,6 +47,8 @@ export async function downloadElementAsPdf(
   function createNewPage(): HTMLDivElement {
     const page = document.createElement("div");
     page.style.width = `${pageWidthPx}px`;
+    page.style.minWidth = `${pageWidthPx}px`;
+    page.style.maxWidth = `${pageWidthPx}px`;
     page.style.height = "auto";
     page.style.boxSizing = "border-box";
     page.style.padding = `${marginPx}px`;
@@ -129,6 +136,9 @@ export async function downloadElementAsPdf(
       const tableShell = el.cloneNode(false) as HTMLTableElement;
       tableShell.style.position = "relative";
       tableShell.style.zIndex = "1";
+      tableShell.style.width = "100%";
+      tableShell.style.minWidth = "0";
+      tableShell.style.boxSizing = "border-box";
       const thead = el.querySelector("thead")?.cloneNode(true) as HTMLTableSectionElement;
       if (thead) tableShell.appendChild(thead);
       let tbody = document.createElement("tbody");
@@ -154,6 +164,9 @@ export async function downloadElementAsPdf(
             const newTableShell = el.cloneNode(false) as HTMLTableElement;
             newTableShell.style.position = "relative";
             newTableShell.style.zIndex = "1";
+            newTableShell.style.width = "100%";
+            newTableShell.style.minWidth = "0";
+            newTableShell.style.boxSizing = "border-box";
             if (thead) newTableShell.appendChild(thead.cloneNode(true));
             const newTbody = document.createElement("tbody");
             newTbody.appendChild(clonedRow);
@@ -253,7 +266,11 @@ export async function downloadElementAsPdf(
 
   // 4. Render each page using html2canvas and write to the PDF document
   try {
-    const pdf = new jsPDF({ unit: "in", format: "a4", orientation: "portrait" });
+    const pdf = new jsPDF({ 
+      unit: "in", 
+      format: "a4", 
+      orientation: isLandscape ? "landscape" : "portrait" 
+    });
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
@@ -264,6 +281,8 @@ export async function downloadElementAsPdf(
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
+        windowWidth: pageWidthPx + 60,
+        windowHeight: pageHeightPx + 60,
       });
       const imgData = canvas.toDataURL("image/jpeg", 0.95);
       pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
@@ -278,8 +297,10 @@ export async function downloadElementAsPdf(
     
     pdf.save(filename);
   } finally {
-    // Clean up temporary container
-    document.body.removeChild(tempContainer);
+    // Clean up temporary container safely
+    if (tempContainer && tempContainer.parentNode) {
+      tempContainer.parentNode.removeChild(tempContainer);
+    }
   }
 }
 

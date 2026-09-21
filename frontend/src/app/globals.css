@@ -94,17 +94,18 @@ input[type=number] {
   }
   #report-content, #report-content *,
   #pdf-ledger-report, #pdf-ledger-report *,
-  #pdf-virtual-ledger-report, #pdf-virtual-ledger-report * {
+  #pdf-virtual-ledger-report, #pdf-virtual-ledger-report *,
+  #report-export-content, #report-export-content * {
     visibility: visible;
   }
   .pdf-only {
     display: flex !important;
   }
-  #report-content, #pdf-ledger-report, #pdf-virtual-ledger-report {
+  #report-content, #pdf-ledger-report, #pdf-virtual-ledger-report, #report-export-content {
     position: absolute;
     left: 0;
     top: 0;
-    width: 100%;
+    width: 100% !important;
     margin: 0;
     padding: 0;
   }

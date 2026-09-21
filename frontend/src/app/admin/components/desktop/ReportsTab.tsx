@@ -822,32 +822,64 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
     // 3. Opening Balances (Super Distributor Cash in Hand, Retailers, Portals)
     if (businessSettings && Number(businessSettings.opening_cash_in_hand || 0) > 0) {
+      const amt = Number(businessSettings.opening_cash_in_hand);
+      const dt = businessSettings.created_at || "2026-09-01T00:00:00Z";
+      const rawDate = dt ? getISTDateString(getUtcDate(dt)) : getISTDateString();
       items.push({
         id: "op-superdist-cash",
-        timestamp: "2026-01-01T00:00:00Z",
-        rawDate: "2026-01-01",
+        timestamp: dt,
+        rawDate,
         category: "opening_balance",
-        categoryLabel: "Opening Cash in Hand",
+        categoryLabel: "Opening Cash in Hand (Office Safe)",
         fromEntity: "System Baseline Setup",
         toEntity: "Super Distributor / Office Safe",
-        inAmount: Number(businessSettings.opening_cash_in_hand),
+        inAmount: amt,
         outAmount: null,
-        netAmount: Number(businessSettings.opening_cash_in_hand),
+        netAmount: amt,
         denominations: null,
         processedBy: "Admin / System",
         referenceNo: "INIT-CASH",
-        remarks: "Opening Cash in Hand"
+        remarks: "Office Safe Opening Cash Baseline"
       });
     }
 
+    const coveredRetailerIds = new Set<string>();
+    (openingBalanceEntries || []).forEach((e: any, idx: number) => {
+      coveredRetailerIds.add(String(e.retailer_id));
+      const isDebit = e.transaction_type === "DEBIT"; // Retailer owes us (to take)
+      const amt = Number(e.amount || 0);
+      if (amt <= 0) return;
+      const dt = e.created_at || "";
+      const rawDate = dt ? getISTDateString(getUtcDate(dt)) : getISTDateString();
+      items.push({
+        id: `op-ret-entry-${e.id || idx}`,
+        timestamp: dt,
+        rawDate,
+        category: "opening_balance",
+        categoryLabel: isDebit ? "Retailer Opening (To Take)" : "Retailer Opening (To Give)",
+        fromEntity: isDebit ? (e.retailer_name || "Retailer") : "Super Distributor (Payable)",
+        toEntity: isDebit ? "Super Distributor (Receivable)" : (e.retailer_name || "Retailer"),
+        inAmount: isDebit ? amt : null,
+        outAmount: !isDebit ? amt : null,
+        netAmount: isDebit ? amt : -amt,
+        denominations: null,
+        processedBy: "Admin / Initial",
+        referenceNo: `INIT-RET-${String(e.retailer_id).slice(-4)}`,
+        remarks: "Retailer Opening Balance (Ledger Entry)"
+      });
+    });
+
     retailerDirectory.forEach((r: any) => {
+      if (coveredRetailerIds.has(String(r.id))) return;
       const toTake = Number(r.opening_to_take || 0);
       const toGive = Number(r.opening_to_give || 0);
+      const dt = r.created_at || "";
+      const rawDate = r.opening_balance_set_on || (dt ? getISTDateString(getUtcDate(dt)) : getISTDateString());
       if (toTake > 0) {
         items.push({
           id: `op-ret-take-${r.id}`,
-          timestamp: "2026-01-01T00:00:00Z",
-          rawDate: "2026-01-01",
+          timestamp: dt,
+          rawDate,
           category: "opening_balance",
           categoryLabel: "Retailer Opening (To Take)",
           fromEntity: r.name || r.retailer_name || "Retailer",
@@ -858,14 +890,14 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           denominations: null,
           processedBy: "Admin / Initial",
           referenceNo: `INIT-RET-${String(r.id).slice(-4)}`,
-          remarks: r.area ? `Route: ${r.area}` : "Opening Balance"
+          remarks: r.area ? `Route: ${r.area}` : "Retailer Opening Balance"
         });
       }
       if (toGive > 0) {
         items.push({
           id: `op-ret-give-${r.id}`,
-          timestamp: "2026-01-01T00:00:00Z",
-          rawDate: "2026-01-01",
+          timestamp: dt,
+          rawDate,
           category: "opening_balance",
           categoryLabel: "Retailer Opening (To Give)",
           fromEntity: "Super Distributor (Payable)",
@@ -876,7 +908,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           denominations: null,
           processedBy: "Admin / Initial",
           referenceNo: `INIT-RET-${String(r.id).slice(-4)}`,
-          remarks: r.area ? `Route: ${r.area}` : "Opening Balance"
+          remarks: r.area ? `Route: ${r.area}` : "Retailer Opening Balance"
         });
       }
     });
@@ -884,14 +916,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     portalDirectory.forEach((p: any) => {
       const toTake = Number(p.opening_to_take || 0);
       const toGive = Number(p.opening_to_give || 0);
+      const dt = p.created_at || "";
+      const rawDate = dt ? getISTDateString(getUtcDate(dt)) : getISTDateString();
       if (toTake > 0) {
         items.push({
           id: `op-portal-take-${p.id}`,
-          timestamp: "2026-01-01T00:00:00Z",
-          rawDate: "2026-01-01",
+          timestamp: dt,
+          rawDate,
           category: "opening_balance",
-          categoryLabel: "Portal Opening (Asset)",
-          fromEntity: p.name || "Portal",
+          categoryLabel: "Portal Opening (Asset Float)",
+          fromEntity: p.name || p.portal_name || "Portal",
           toEntity: "Portal Float Account",
           inAmount: toTake,
           outAmount: null,
@@ -899,18 +933,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           denominations: null,
           processedBy: "Admin / Initial",
           referenceNo: `INIT-PORTAL-${String(p.id).slice(-4)}`,
-          remarks: "Portal Opening Balance"
+          remarks: "Portal Opening Float Balance"
         });
       }
       if (toGive > 0) {
         items.push({
           id: `op-portal-give-${p.id}`,
-          timestamp: "2026-01-01T00:00:00Z",
-          rawDate: "2026-01-01",
+          timestamp: dt,
+          rawDate,
           category: "opening_balance",
           categoryLabel: "Portal Opening (Liability)",
           fromEntity: "Portal Float Account",
-          toEntity: p.name || "Portal",
+          toEntity: p.name || p.portal_name || "Portal",
           inAmount: null,
           outAmount: toGive,
           netAmount: -toGive,
@@ -923,14 +957,29 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     });
 
     return items;
-  }, [collections, deposits, retailerDirectory, portalDirectory, businessSettings, userDirectory]);
+  }, [collections, deposits, retailerDirectory, portalDirectory, businessSettings, userDirectory, openingBalanceEntries]);
 
   // Filtered Master Audit Trail Data
   const filteredMasterAuditData = useMemo(() => {
     return masterAuditData.filter((item) => {
-      if (dateFrom && item.rawDate < dateFrom) return false;
-      if (dateTo && item.rawDate > dateTo) return false;
-      if (masterCategoryFilter !== "all" && item.category !== masterCategoryFilter) return false;
+      const isOpening = item.category === "opening_balance";
+
+      // Category filter
+      if (masterCategoryFilter !== "all" && item.category !== masterCategoryFilter) {
+        return false;
+      }
+
+      // Date filtering logic:
+      if (masterCategoryFilter === "opening_balance") {
+        // ALWAYS show all opening balances when explicitly viewing Opening Balances category!
+      } else if (isOpening) {
+        // In "All Records", include opening balances that are effective for the selected period
+        if (dateTo && item.rawDate > dateTo) return false;
+      } else {
+        // Regular transactions: strictly filter between dateFrom and dateTo
+        if (dateFrom && item.rawDate < dateFrom) return false;
+        if (dateTo && item.rawDate > dateTo) return false;
+      }
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -949,6 +998,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
       return true;
     }).sort((a, b) => {
+      if (masterCategoryFilter === "opening_balance") {
+        const amtA = Math.abs(a.inAmount || a.outAmount || 0);
+        const amtB = Math.abs(b.inAmount || b.outAmount || 0);
+        return amtB - amtA;
+      }
       const timeA = new Date(a.timestamp || a.rawDate).getTime();
       const timeB = new Date(b.timestamp || b.rawDate).getTime();
       return timeB - timeA;
@@ -960,12 +1014,15 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     let totalIn = 0;
     let totalOut = 0;
     let totalNotes = 0;
-    let openingSum = 0;
+    let totalOpening = 0;
 
     filteredMasterAuditData.forEach((item) => {
-      if (item.inAmount) totalIn += item.inAmount;
-      if (item.outAmount) totalOut += item.outAmount;
-      if (item.category === "opening_balance") openingSum += (item.inAmount || 0) - (item.outAmount || 0);
+      if (item.category === "opening_balance") {
+        totalOpening += (item.inAmount || 0) - (item.outAmount || 0);
+      } else {
+        if (item.inAmount) totalIn += item.inAmount;
+        if (item.outAmount) totalOut += item.outAmount;
+      }
 
       const d = item.denominations || {};
       const notesSum = (
@@ -979,13 +1036,15 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       totalNotes += notesSum;
     });
 
+    const netFlow = totalIn - totalOut;
+
     return {
       totalIn,
       totalOut,
-      netFlow: totalIn - totalOut,
+      netFlow,
+      totalOpening,
       count: filteredMasterAuditData.length,
-      totalNotes,
-      openingSum
+      totalNotes
     };
   }, [filteredMasterAuditData]);
 
@@ -1780,9 +1839,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     setIsDownloadingPdf(true);
     const reportName = selectedReport === "staff_reports" 
       ? (staffSubReport === "efficiency" ? "Staff_Collection_Efficiency" : `${targetStaff ? targetStaff.name.trim().replace(/\s+/g, "_") : "Staff"}_Daily_Cash_Report`)
-      : selectedReport;
-    const filename = `${reportName}_${dateFrom}_to_${dateTo}.pdf`;
-    downloadElementAsPdf("report-export-content", filename, 0.3)
+      : (selectedReport || "Report");
+    const filename = `${reportName}_${dateFrom || "all"}_to_${dateTo || "time"}.pdf`;
+    const orientation = selectedReport === "master_audit" ? "landscape" : "portrait";
+    downloadElementAsPdf("report-export-content", filename, 0.25, orientation)
       .catch((err) => {
         console.error("PDF Download error, opening print dialog:", err);
         window.print();
@@ -3060,60 +3120,73 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           {/* MASTER AUDIT TRAIL VIEW */}
           {selectedReport === "master_audit" && (() => {
             return (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* KPI Overview Summary Cards */}
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border border-slate-200 rounded-lg bg-slate-50/70 p-3 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 border border-slate-200 rounded-lg bg-slate-50/70 p-2.5 text-center">
                   <div className="p-2 bg-white rounded-sm border border-slate-200/80">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Inflow (Credit)</span>
-                    <span className="text-sm font-black text-emerald-700 font-mono tabular-nums mt-0.5 block">
+                    <span className="text-[8.5px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider block">Opening Baseline</span>
+                    <span className={`text-xs sm:text-sm font-black font-mono tabular-nums mt-0.5 block ${masterKpis.totalOpening >= 0 ? "text-amber-700" : "text-red-700"}`}>
+                      {masterKpis.totalOpening >= 0 ? "+" : ""}₹{masterKpis.totalOpening.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="p-2 bg-white rounded-sm border border-slate-200/80">
+                    <span className="text-[8.5px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Inflow (Credit)</span>
+                    <span className="text-xs sm:text-sm font-black text-emerald-700 font-mono tabular-nums mt-0.5 block">
                       +₹{masterKpis.totalIn.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
 
                   <div className="p-2 bg-white rounded-sm border border-slate-200/80">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Outflow (Debit)</span>
-                    <span className="text-sm font-black text-red-700 font-mono tabular-nums mt-0.5 block">
+                    <span className="text-[8.5px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Outflow (Debit)</span>
+                    <span className="text-xs sm:text-sm font-black text-red-700 font-mono tabular-nums mt-0.5 block">
                       -₹{masterKpis.totalOut.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
 
                   <div className="p-2 bg-white rounded-sm border border-slate-200/80">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Net Movement</span>
-                    <span className={`text-sm font-black font-mono tabular-nums mt-0.5 block ${masterKpis.netFlow >= 0 ? "text-emerald-800" : "text-red-800"}`}>
+                    <span className="text-[8.5px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider block">Net Movement</span>
+                    <span className={`text-xs sm:text-sm font-black font-mono tabular-nums mt-0.5 block ${masterKpis.netFlow >= 0 ? "text-emerald-800" : "text-red-800"}`}>
                       {masterKpis.netFlow >= 0 ? "+" : ""}₹{masterKpis.netFlow.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
 
                   <div className="p-2 bg-white rounded-sm border border-slate-200/80">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Physical Notes</span>
-                    <span className="text-sm font-black text-slate-800 font-mono tabular-nums mt-0.5 block">
+                    <span className="text-[8.5px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Physical Notes</span>
+                    <span className="text-xs sm:text-sm font-black text-slate-800 font-mono tabular-nums mt-0.5 block">
                       {masterKpis.totalNotes.toLocaleString("en-IN")} Notes
                     </span>
                   </div>
 
                   <div className="p-2 bg-white rounded-sm border border-slate-200/80 col-span-2 sm:col-span-1">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Records Displayed</span>
-                    <span className="text-sm font-black text-indigo-700 font-mono tabular-nums mt-0.5 block">
+                    <span className="text-[8.5px] sm:text-[9px] font-black text-slate-400 uppercase tracking-wider block">Records Displayed</span>
+                    <span className="text-xs sm:text-sm font-black text-indigo-700 font-mono tabular-nums mt-0.5 block">
                       {masterKpis.count} Entries
                     </span>
                   </div>
                 </div>
 
+                {/* Mobile horizontal scroll helper banner */}
+                <div className="sm:hidden flex items-center justify-between text-[10px] font-bold text-slate-600 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-sm border border-slate-200 dark:border-slate-700">
+                  <span>👉 Swipe left/right to view all 10 columns & notes</span>
+                  <span className="font-mono text-[9px] text-slate-400">{filteredMasterAuditData.length} records</span>
+                </div>
+
                 {/* Master Table */}
-                <div className="overflow-x-auto border border-slate-200 rounded-sm">
-                  <table className="w-full text-left text-xs border-collapse font-sans">
+                <div className="overflow-x-auto border border-slate-200 rounded-sm shadow-xs -mx-1 sm:mx-0">
+                  <table className="w-full min-w-[980px] text-left text-xs border-collapse font-sans">
                     <thead>
                       <tr className="bg-slate-900 text-white uppercase text-[9.5px] font-black tracking-wider border-b border-slate-800">
                         <th className="py-2.5 px-2 text-center w-10">#</th>
                         <th className="py-2.5 px-2.5 w-28">Date & Time</th>
                         <th className="py-2.5 px-2.5 w-32">Category</th>
-                        <th className="py-2.5 px-2.5">From (Started)</th>
-                        <th className="py-2.5 px-2.5">To (Ended)</th>
+                        <th className="py-2.5 px-2.5 min-w-[120px]">From (Started)</th>
+                        <th className="py-2.5 px-2.5 min-w-[120px]">To (Ended)</th>
                         <th className="py-2.5 px-2.5 text-right w-24">In (Credit)</th>
                         <th className="py-2.5 px-2.5 text-right w-24">Out (Debit)</th>
-                        <th className="py-2.5 px-3 min-w-[180px]">Denominations</th>
+                        <th className="py-2.5 px-3 min-w-[170px]">Denominations</th>
                         <th className="py-2.5 px-2.5 w-28">Processed By</th>
-                        <th className="py-2.5 px-2.5 w-36">Remarks / Ref</th>
+                        <th className="py-2.5 px-2.5 min-w-[130px]">Remarks / Ref</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-[11px] font-medium text-slate-800">
