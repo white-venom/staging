@@ -60,64 +60,7 @@ export default function PortalsTab({
 
   return (
     <div className="space-y-4">
-      {/* Top Sub-Navigation Tabs */}
-      <div className="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-2.5 flex-wrap">
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveView("directory");
-              setLedgerTarget(null);
-              if (initialPortalLedgerId) router.push("/admin/bankAccounts");
-            }}
-            className={`px-3.5 py-1.5 rounded-sm text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer border ${
-              activeView === "directory"
-                ? "bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-950 shadow-xs"
-                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-            }`}
-          >
-            <Globe className="w-3.5 h-3.5" />
-            <span>Portals Directory</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setActiveView("ledger");
-              if (!ledgerTarget && portalDirectory.length > 0) {
-                openGroupLedger(portalDirectory[0], { skipNav: true });
-              }
-            }}
-            className={`px-3.5 py-1.5 rounded-sm text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer border ${
-              activeView === "ledger"
-                ? "bg-slate-900 border-slate-900 text-white dark:bg-slate-100 dark:border-slate-100 dark:text-slate-950 shadow-xs"
-                : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Particular Ledger</span>
-          </button>
-        </div>
 
-        {activeView === "ledger" && (
-          <div className="flex items-center gap-2 flex-1 sm:flex-initial justify-end">
-            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">Selected Portal:</span>
-            <select
-              value={ledgerTarget?.id || ""}
-              onChange={(e) => {
-                const group = portalDirectory.find((item) => String(item.id) === e.target.value);
-                if (group) openGroupLedger(group);
-              }}
-              className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm text-xs font-bold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer max-w-[240px] truncate"
-            >
-              {portalDirectory.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name} — Balance: {g.balance < 0 ? '-' : ''}₹{Math.abs(g.balance || 0).toLocaleString()}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-      </div>
 
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="relative flex-1 max-w-sm">
