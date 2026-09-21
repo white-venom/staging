@@ -190,6 +190,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   // Master Audit Category Filter: 'all' | 'retailer_in' | 'portal_out' | 'staff_handover' | 'virtual_transfer' | 'opening_balance'
   const [masterCategoryFilter, setMasterCategoryFilter] = useState<string>("all");
 
+  // Retailer Category filter for Retailer Ledger report
+  const [selectedRetailerCategory, setSelectedRetailerCategory] = useState<string>("all");
+
   // Filters State (Multi-Select & Single-Select Capable)
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRetailerIds, setSelectedRetailerIds] = useState<string[]>([]);
@@ -328,6 +331,29 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       name: String(r.name || r.retailer_name || r.id)
     }));
   }, [retailerOptions]);
+
+  // Unique Retailer Categories extracted from directory
+  const availableRetailerCategories = useMemo(() => {
+    const cats = new Set<string>();
+    retailerDirectory.forEach((r: any) => {
+      if (r.category && typeof r.category === "string" && r.category.trim()) {
+        cats.add(r.category.trim());
+      }
+    });
+    return Array.from(cats).sort();
+  }, [retailerDirectory]);
+
+  // Retailer Category lookup map
+  const retailerCategoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    retailerDirectory.forEach((r: any) => {
+      const cat = (r.category || "").trim();
+      if (r.id) map.set(String(r.id), cat);
+      if (r.name) map.set(r.name.toLowerCase(), cat);
+      if (r.retailer_name) map.set(r.retailer_name.toLowerCase(), cat);
+    });
+    return map;
+  }, [retailerDirectory]);
 
   const normalizedPortalOptions = useMemo(() => {
     return portalOptions.map((p: any) => ({
@@ -1232,9 +1258,19 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         }
       }
 
+      // Retailer Category Filter
+      if (selectedRetailerCategory !== "all") {
+        const retId = String(c.retailer_id || "");
+        const retName = (c.retailer_name || "").toLowerCase();
+        const retCat = retailerCategoryMap.get(retId) || retailerCategoryMap.get(retName) || (c.category || "");
+        if (retCat.toLowerCase() !== selectedRetailerCategory.toLowerCase()) {
+          return false;
+        }
+      }
+
       return true;
     }).sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
-  }, [collections, dateFrom, dateTo, selectedRetailerIds, selectedStaffIds, searchQuery, userDirectory]);
+  }, [collections, dateFrom, dateTo, selectedRetailerIds, selectedStaffIds, searchQuery, selectedRetailerCategory, retailerCategoryMap, userDirectory]);
 
   // Filtered Portal Ledger Data
   const filteredPortalLedger = useMemo(() => {
@@ -1592,14 +1628,17 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         ];
       });
     } else if (reportType === "retailer_ledger") {
-      headers = ["No", "Date", "Time", "Retailer Name", "Store Name", "Staff Name", "Amount (IN)", "Remarks"];
+      filename = `Retailer_Ledger_${selectedRetailerCategory !== "all" ? `${selectedRetailerCategory}_` : ""}${dateFrom}_to_${dateTo}.csv`;
+      headers = ["No", "Date", "Time", "Retailer Name", "Category", "Store Name", "Staff Name", "Amount (IN)", "Remarks"];
       rows = filteredRetailerLedger.map((c, i) => {
         const dt = formatDateDisplay(c.created_at);
+        const retCat = retailerCategoryMap.get(String(c.retailer_id)) || retailerCategoryMap.get((c.retailer_name || '').toLowerCase()) || c.category || "-";
         return [
           i + 1,
           dt.date,
           dt.time,
           `"${(c.retailer_name || '').replace(/"/g, '""')}"`,
+          `"${(retCat || '-').replace(/"/g, '""')}"`,
           `"${(c.store_name || 'Cash').replace(/"/g, '""')}"`,
           `"${getStaffName(c).replace(/"/g, '""')}"`,
           Number(c.total_amount || c.totalAmount || 0),
@@ -2174,16 +2213,34 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                   />
                 </div>
 
-                {/* FILTER BY PORTAL/BANK */}
-                <div>
-                  <MultiSelectDropdown
-                    label="Filter by Portal/Bank (Single/Multi)"
-                    placeholder="All Portals / Banks"
-                    options={normalizedPortalOptions}
-                    selectedIds={selectedPortalIds}
-                    onChange={setSelectedPortalIds}
-                  />
-                </div>
+                {/* FILTER BY PORTAL/BANK OR RETAILER CATEGORY */}
+                {selectedReport === "retailer_ledger" ? (
+                  <div>
+                    <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+                      Filter by Retailer Category
+                    </label>
+                    <select
+                      value={selectedRetailerCategory}
+                      onChange={(e) => setSelectedRetailerCategory(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                    >
+                      <option value="all">All Categories ({availableRetailerCategories.length})</option>
+                      {availableRetailerCategories.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div>
+                    <MultiSelectDropdown
+                      label="Filter by Portal/Bank (Single/Multi)"
+                      placeholder="All Portals / Banks"
+                      options={normalizedPortalOptions}
+                      selectedIds={selectedPortalIds}
+                      onChange={setSelectedPortalIds}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -2225,6 +2282,61 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </div>
               )}
             </div>
+
+            {/* Quick Retailer Category Filter Shortcuts */}
+            {selectedReport === "retailer_ledger" && availableRetailerCategories.length > 0 && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                  Retailer Category Shortcuts
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRetailerCategory("all")}
+                    className={`px-2.5 py-1 text-[10.5px] font-black rounded-xs border cursor-pointer transition-colors flex items-center gap-1.5 ${
+                      selectedRetailerCategory === "all"
+                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs"
+                        : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                    }`}
+                  >
+                    <span>All Categories</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono ${
+                      selectedRetailerCategory === "all"
+                        ? "bg-white/20 text-white dark:bg-black/20 dark:text-black"
+                        : "bg-slate-200 dark:bg-slate-800 text-slate-500"
+                    }`}>
+                      {collections.length}
+                    </span>
+                  </button>
+                  {availableRetailerCategories.map((cat) => {
+                    const count = collections.filter((c: any) => {
+                      const retCat = retailerCategoryMap.get(String(c.retailer_id)) || retailerCategoryMap.get((c.retailer_name || "").toLowerCase()) || "";
+                      return retCat.toLowerCase() === cat.toLowerCase();
+                    }).length;
+                    const isActive = selectedRetailerCategory.toLowerCase() === cat.toLowerCase();
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSelectedRetailerCategory(cat)}
+                        className={`px-2.5 py-1 text-[10.5px] font-black rounded-xs border cursor-pointer transition-colors flex items-center gap-1.5 ${
+                          isActive
+                            ? "bg-purple-600 text-white border-purple-600 shadow-xs"
+                            : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                        }`}
+                      >
+                        <span>{cat}</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono ${
+                          isActive ? "bg-white/20 text-white" : "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300"
+                        }`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Active Filter Badges & Reset Button */}
             {(selectedRetailerIds.length > 0 || selectedPortalIds.length > 0 || selectedStaffIds.length > 0 || searchQuery.trim()) && (
@@ -2626,6 +2738,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       <tbody className="divide-y divide-slate-200">
                         {filteredRetailerLedger.map((c, idx) => {
                           const dt = formatDateDisplay(c.created_at);
+                          const retCat = retailerCategoryMap.get(String(c.retailer_id)) || retailerCategoryMap.get((c.retailer_name || '').toLowerCase()) || c.category;
                           return (
                             <tr key={c.id || idx} className="hover:bg-slate-50/50 divide-x divide-slate-200">
                               <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[11px]">{idx + 1}</td>
@@ -2633,7 +2746,14 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                 <div>{dt.date}</div>
                                 <div className="text-slate-400 font-mono text-[10px] mt-0.5">{dt.time}</div>
                               </td>
-                              <td className="py-2 px-1 text-center font-bold text-slate-900 text-[11.5px]">{c.retailer_name || "Retailer"}</td>
+                              <td className="py-2 px-1 text-center font-bold text-slate-900 text-[11.5px]">
+                                <div>{c.retailer_name || "Retailer"}</div>
+                                {retCat && (
+                                  <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-black uppercase tracking-wider border border-purple-200">
+                                    {retCat}
+                                  </span>
+                                )}
+                              </td>
                               <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[11px]">{c.store_name || "Cash"}</td>
                               <td className="py-2 px-1 text-center font-bold text-slate-700 text-[11px] uppercase">{getStaffName(c)}</td>
                               <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-xs font-mono">₹{Number(c.total_amount || c.totalAmount || 0).toLocaleString("en-IN")}</td>
