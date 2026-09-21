@@ -184,8 +184,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const openingBalanceEntries = adminCtx?.openingBalanceEntries || [];
   const businessSettings = adminCtx?.businessSettings || null;
 
-  // Active Selected Report View: null = Overview cards, string = report type
-  const [selectedReport, setSelectedReport] = useState<string | null>(null);
+  // Active Selected Report View: default to "master_audit" so it opens directly
+  const [selectedReport, setSelectedReport] = useState<string | null>("master_audit");
 
   // Master Audit Category Filter: 'all' | 'retailer_in' | 'portal_out' | 'staff_handover' | 'virtual_transfer' | 'opening_balance'
   const [masterCategoryFilter, setMasterCategoryFilter] = useState<string>("all");
@@ -1808,36 +1808,6 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       title: "Master Audit & Complete Ledger",
       reports: [
         { name: "Universal Master Audit Trail", icon: Activity, formats: "PDF • CSV • Print", color: "emerald", type: "master_audit" },
-      ]
-    },
-    {
-      title: "Accounting & GST",
-      reports: [
-        { name: "Tally Friendly Import (XML)", icon: Book, formats: "XML • CSV", color: "blue", type: "tally_import" },
-      ]
-    },
-    {
-      title: "Daily Statements",
-      reports: [
-        { name: "Daybook Summary", icon: Calendar, formats: "PDF • XLSX", color: "emerald", type: "daybook" },
-        { name: "Cashbook (Physical Flow)", icon: IndianRupee, formats: "PDF • XLSX", color: "emerald", type: "cashbook" },
-        { name: "Staff Reports (Efficiency & Cash Flow)", icon: Activity, formats: "PDF • CSV • XLSX", color: "emerald", type: "staff_reports" },
-      ]
-    },
-    {
-      title: "Retailer & Portals",
-      reports: [
-        { name: "Retailer Ledger (A-Z)", icon: FileText, formats: "PDF • XLSX", color: "purple", type: "retailer_ledger" },
-        { name: "Portal Ledger", icon: PieChart, formats: "PDF • XLSX", color: "purple", type: "portal_ledger" },
-      ]
-    },
-    {
-      title: "Virtual Ledger",
-      reports: [
-        { name: "Portal → Portal Transfers", icon: Share2, formats: "PDF • CSV", color: "indigo", type: "virtual_ledger", subType: "portal_to_portal" },
-        { name: "Portal → Distributor (Gave)", icon: CreditCard, formats: "PDF • CSV", color: "indigo", type: "virtual_ledger", subType: "portal_to_dist" },
-        { name: "Distributor → Portal (Got Back)", icon: Building2, formats: "PDF • CSV", color: "indigo", type: "virtual_ledger", subType: "dist_to_portal" },
-        { name: "Virtual Ledger — All Combined", icon: BarChart, formats: "PDF • CSV", color: "indigo", type: "virtual_ledger", subType: "all" },
       ]
     }
   ];
