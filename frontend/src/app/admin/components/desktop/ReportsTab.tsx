@@ -1865,9 +1865,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
   const reportSections = [
     {
-      title: "Master Audit & Complete Ledger",
+      title: "Master Audit & Retailer Ledger",
       reports: [
         { name: "Universal Master Audit Trail", icon: Activity, formats: "PDF • CSV • Print", color: "emerald", type: "master_audit" },
+        { name: "Retailer Ledger (A-Z)", icon: FileText, formats: "PDF • XLSX", color: "purple", type: "retailer_ledger" },
       ]
     }
   ];
@@ -1947,6 +1948,34 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               <span>{isDownloadingPdf ? "Downloading..." : "PDF"}</span>
             </button>
           </div>
+        </div>
+
+        {/* Quick Report Switcher: Universal Master Audit Trail & Retailer Ledger */}
+        <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1 rounded-sm border border-slate-200 dark:border-slate-800 w-full sm:w-fit overflow-x-auto shadow-xs">
+          <button
+            type="button"
+            onClick={() => setSelectedReport("master_audit")}
+            className={`px-3 py-1.5 rounded-xs text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              selectedReport === "master_audit"
+                ? "bg-emerald-600 text-white shadow-xs"
+                : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100"
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>Universal Master Audit Trail</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedReport("retailer_ledger")}
+            className={`px-3 py-1.5 rounded-xs text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              selectedReport === "retailer_ledger"
+                ? "bg-purple-600 text-white shadow-xs"
+                : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100"
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Retailer Ledger (A-Z)</span>
+          </button>
         </div>
 
         {/* Virtual Ledger Sub-Type Selector */}
