@@ -181,9 +181,14 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const retailerDirectory = adminCtx?.retailerDirectory || [];
   const portalDirectory = adminCtx?.portalDirectory || [];
   const userDirectory = adminCtx?.userDirectory || [];
+  const openingBalanceEntries = adminCtx?.openingBalanceEntries || [];
+  const businessSettings = adminCtx?.businessSettings || null;
 
   // Active Selected Report View: null = Overview cards, string = report type
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
+
+  // Master Audit Category Filter: 'all' | 'retailer_in' | 'portal_out' | 'staff_handover' | 'virtual_transfer' | 'opening_balance'
+  const [masterCategoryFilter, setMasterCategoryFilter] = useState<string>("all");
 
   // Filters State (Multi-Select & Single-Select Capable)
   const [searchQuery, setSearchQuery] = useState("");
@@ -613,6 +618,376 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       </div>
     );
   };
+
+  // Helper date preset updater
+  const applyDatePreset = (preset: "today" | "yesterday" | "last7" | "month" | "all") => {
+    const today = getISTDateString();
+    if (preset === "today") {
+      setDateFrom(today);
+      setDateTo(today);
+    } else if (preset === "yesterday") {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      const yest = getISTDateString(d);
+      setDateFrom(yest);
+      setDateTo(yest);
+    } else if (preset === "last7") {
+      const d = new Date();
+      d.setDate(d.getDate() - 6);
+      setDateFrom(getISTDateString(d));
+      setDateTo(today);
+    } else if (preset === "month") {
+      const d = new Date();
+      const firstDay = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+      setDateFrom(firstDay);
+      setDateTo(today);
+    } else if (preset === "all") {
+      setDateFrom("");
+      setDateTo("");
+    }
+  };
+
+  // Inline concise denomination chip renderer for master table
+  const renderMasterDenomBadges = (denoms: any) => {
+    if (!denoms) return <span className="text-slate-400 font-mono text-[10px]">-</span>;
+
+    const pills: { label: string; count: number }[] = [];
+    const notesConfig = [
+      { key: "note_500", label: "500" },
+      { key: "note_200", label: "200" },
+      { key: "note_100", label: "100" },
+      { key: "note_50", label: "50" },
+      { key: "note_20", label: "20" },
+      { key: "note_10", label: "10" }
+    ];
+
+    let noteCount = 0;
+    notesConfig.forEach((n) => {
+      const cnt = Math.abs(Number(denoms[n.key] || 0));
+      if (cnt > 0) {
+        noteCount += cnt;
+        pills.push({ label: n.label, count: cnt });
+      }
+    });
+
+    const coinsVal = Math.abs(Number(denoms.coins || 0));
+    const onlineVal = Math.abs(Number(denoms.online_amount || 0));
+
+    if (pills.length === 0 && coinsVal === 0 && onlineVal === 0) {
+      return <span className="text-slate-400 font-mono text-[10px]">-</span>;
+    }
+
+    return (
+      <div className="space-y-0.5">
+        <div className="flex flex-wrap gap-1 font-mono text-[9px] tabular-nums">
+          {pills.map((p) => (
+            <span key={p.label} className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xs font-bold border border-slate-200 dark:border-slate-700">
+              ₹{p.label}×{p.count}
+            </span>
+          ))}
+          {coinsVal > 0 && (
+            <span className="px-1.5 py-0.5 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 rounded-xs font-bold border border-amber-200/60 dark:border-amber-900/40">
+              Coins: ₹{coinsVal.toFixed(2)}
+            </span>
+          )}
+          {onlineVal > 0 && (
+            <span className="px-1.5 py-0.5 bg-sky-50 dark:bg-sky-950/30 text-sky-700 dark:text-sky-400 rounded-xs font-bold border border-sky-200/60 dark:border-sky-900/40">
+              Online: ₹{onlineVal.toLocaleString("en-IN")}
+            </span>
+          )}
+        </div>
+        {noteCount > 0 && (
+          <p className="text-[8.5px] font-black text-slate-400 uppercase tracking-wider">
+            {noteCount} Notes Total
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  // Master Audit Trail Pipeline - Consolidates ALL transactions and opening balances
+  const masterAuditData = useMemo(() => {
+    const items: any[] = [];
+
+    // 1. Retailer Collections (Money In)
+    collections.forEach((c: any, idx: number) => {
+      const dt = c.created_at || c.date;
+      const rawDate = c.collection_date || getISTDateString(getUtcDate(dt));
+
+      const isCms = (c.retailer_name || "").toLowerCase().startsWith("cms");
+      const storeStr = c.store_name && c.store_name !== "Cash" ? ` (${c.store_name})` : "";
+
+      let fromEntity = c.from_office 
+        ? "Super Distributor / Office" 
+        : (c.from_staff_name ? `Staff: ${c.from_staff_name}` : `${c.retailer_name || "Retailer"}${storeStr}`);
+      if (isCms) fromEntity = `${c.retailer_name} - ${c.store_name || "Cash"}`;
+
+      let toEntity = getStaffName(c);
+      if (c.portal_name) {
+        toEntity = `${c.portal_name}${c.bank_name ? ` (${c.bank_name})` : (c.bank_account_name ? ` (${c.bank_account_name})` : "")}`;
+      } else if (c.bank_account_name) {
+        toEntity = c.bank_account_name;
+      }
+
+      const amt = Number(c.total_amount || c.totalAmount || 0);
+
+      items.push({
+        id: `col-${c.id || idx}`,
+        timestamp: dt || "",
+        rawDate,
+        category: "retailer_in",
+        categoryLabel: "Retailer Collection",
+        fromEntity,
+        toEntity,
+        inAmount: amt,
+        outAmount: null,
+        netAmount: amt,
+        denominations: c.denominations || null,
+        processedBy: getStaffName(c),
+        referenceNo: c.reference_no || `COL-${idx + 1}`,
+        remarks: c.remarks || ""
+      });
+    });
+
+    // 2. Deposits (Portal Deposits, Staff Handovers, Virtual Transfers)
+    deposits.forEach((d: any, idx: number) => {
+      const dt = d.created_at || d.date;
+      const rawDate = d.deposit_date || getISTDateString(getUtcDate(dt));
+      const amt = Number(d.amount || 0);
+      const isVirtual = (d.deposit_type || "").toLowerCase() === "virtual";
+      const isStaffHandover = (d.deposit_type || "").toLowerCase() === "staff" || Boolean(d.recipient_staff_id);
+
+      if (isVirtual) {
+        const fromPortal = d.from_portal_name || (d.from_bank_account_name ? `Portal (${d.from_bank_account_name})` : "Super Distributor");
+        const toPortal = d.portal_name || d.target_name || "Super Distributor";
+        items.push({
+          id: `dep-virt-${d.id || idx}`,
+          timestamp: dt || "",
+          rawDate,
+          category: "virtual_transfer",
+          categoryLabel: "Virtual Transfer",
+          fromEntity: fromPortal,
+          toEntity: toPortal,
+          inAmount: null,
+          outAmount: amt,
+          netAmount: -amt,
+          denominations: d.denominations || null,
+          processedBy: getStaffName(d),
+          referenceNo: d.reference_no || `VIRT-${idx + 1}`,
+          remarks: d.remarks || ""
+        });
+      } else if (isStaffHandover) {
+        const fromStaff = getStaffName(d);
+        const toDest = d.to_office 
+          ? "Super Distributor / Office" 
+          : (d.target_name || "Recipient Staff");
+        items.push({
+          id: `dep-staff-${d.id || idx}`,
+          timestamp: dt || "",
+          rawDate,
+          category: "staff_handover",
+          categoryLabel: "Staff Handover",
+          fromEntity: fromStaff,
+          toEntity: toDest,
+          inAmount: null,
+          outAmount: amt,
+          netAmount: -amt,
+          denominations: d.denominations || null,
+          processedBy: fromStaff,
+          referenceNo: d.reference_no || `STAFF-${idx + 1}`,
+          remarks: d.remarks || ""
+        });
+      } else {
+        const fromEntity = getStaffName(d);
+        const bankSuffix = d.bank_account_name ? ` (${d.bank_account_name})` : (d.bank_name ? ` (${d.bank_name})` : "");
+        const toEntity = `${d.portal_name || d.target_name || "Portal"}${bankSuffix}`;
+        items.push({
+          id: `dep-portal-${d.id || idx}`,
+          timestamp: dt || "",
+          rawDate,
+          category: "portal_out",
+          categoryLabel: "Portal Deposit",
+          fromEntity,
+          toEntity,
+          inAmount: null,
+          outAmount: amt,
+          netAmount: -amt,
+          denominations: d.denominations || null,
+          processedBy: getStaffName(d),
+          referenceNo: d.reference_no || `DEP-${idx + 1}`,
+          remarks: d.remarks || ""
+        });
+      }
+    });
+
+    // 3. Opening Balances (Super Distributor Cash in Hand, Retailers, Portals)
+    if (businessSettings && Number(businessSettings.opening_cash_in_hand || 0) > 0) {
+      items.push({
+        id: "op-superdist-cash",
+        timestamp: "2026-01-01T00:00:00Z",
+        rawDate: "2026-01-01",
+        category: "opening_balance",
+        categoryLabel: "Opening Cash in Hand",
+        fromEntity: "System Baseline Setup",
+        toEntity: "Super Distributor / Office Safe",
+        inAmount: Number(businessSettings.opening_cash_in_hand),
+        outAmount: null,
+        netAmount: Number(businessSettings.opening_cash_in_hand),
+        denominations: null,
+        processedBy: "Admin / System",
+        referenceNo: "INIT-CASH",
+        remarks: "Opening Cash in Hand"
+      });
+    }
+
+    retailerDirectory.forEach((r: any) => {
+      const toTake = Number(r.opening_to_take || 0);
+      const toGive = Number(r.opening_to_give || 0);
+      if (toTake > 0) {
+        items.push({
+          id: `op-ret-take-${r.id}`,
+          timestamp: "2026-01-01T00:00:00Z",
+          rawDate: "2026-01-01",
+          category: "opening_balance",
+          categoryLabel: "Retailer Opening (To Take)",
+          fromEntity: r.name || r.retailer_name || "Retailer",
+          toEntity: "Super Distributor (Receivable)",
+          inAmount: toTake,
+          outAmount: null,
+          netAmount: toTake,
+          denominations: null,
+          processedBy: "Admin / Initial",
+          referenceNo: `INIT-RET-${String(r.id).slice(-4)}`,
+          remarks: r.area ? `Route: ${r.area}` : "Opening Balance"
+        });
+      }
+      if (toGive > 0) {
+        items.push({
+          id: `op-ret-give-${r.id}`,
+          timestamp: "2026-01-01T00:00:00Z",
+          rawDate: "2026-01-01",
+          category: "opening_balance",
+          categoryLabel: "Retailer Opening (To Give)",
+          fromEntity: "Super Distributor (Payable)",
+          toEntity: r.name || r.retailer_name || "Retailer",
+          inAmount: null,
+          outAmount: toGive,
+          netAmount: -toGive,
+          denominations: null,
+          processedBy: "Admin / Initial",
+          referenceNo: `INIT-RET-${String(r.id).slice(-4)}`,
+          remarks: r.area ? `Route: ${r.area}` : "Opening Balance"
+        });
+      }
+    });
+
+    portalDirectory.forEach((p: any) => {
+      const toTake = Number(p.opening_to_take || 0);
+      const toGive = Number(p.opening_to_give || 0);
+      if (toTake > 0) {
+        items.push({
+          id: `op-portal-take-${p.id}`,
+          timestamp: "2026-01-01T00:00:00Z",
+          rawDate: "2026-01-01",
+          category: "opening_balance",
+          categoryLabel: "Portal Opening (Asset)",
+          fromEntity: p.name || "Portal",
+          toEntity: "Portal Float Account",
+          inAmount: toTake,
+          outAmount: null,
+          netAmount: toTake,
+          denominations: null,
+          processedBy: "Admin / Initial",
+          referenceNo: `INIT-PORTAL-${String(p.id).slice(-4)}`,
+          remarks: "Portal Opening Balance"
+        });
+      }
+      if (toGive > 0) {
+        items.push({
+          id: `op-portal-give-${p.id}`,
+          timestamp: "2026-01-01T00:00:00Z",
+          rawDate: "2026-01-01",
+          category: "opening_balance",
+          categoryLabel: "Portal Opening (Liability)",
+          fromEntity: "Portal Float Account",
+          toEntity: p.name || "Portal",
+          inAmount: null,
+          outAmount: toGive,
+          netAmount: -toGive,
+          denominations: null,
+          processedBy: "Admin / Initial",
+          referenceNo: `INIT-PORTAL-${String(p.id).slice(-4)}`,
+          remarks: "Portal Opening Balance"
+        });
+      }
+    });
+
+    return items;
+  }, [collections, deposits, retailerDirectory, portalDirectory, businessSettings, userDirectory]);
+
+  // Filtered Master Audit Trail Data
+  const filteredMasterAuditData = useMemo(() => {
+    return masterAuditData.filter((item) => {
+      if (dateFrom && item.rawDate < dateFrom) return false;
+      if (dateTo && item.rawDate > dateTo) return false;
+      if (masterCategoryFilter !== "all" && item.category !== masterCategoryFilter) return false;
+
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matches = (
+          (item.fromEntity || "").toLowerCase().includes(q) ||
+          (item.toEntity || "").toLowerCase().includes(q) ||
+          (item.categoryLabel || "").toLowerCase().includes(q) ||
+          (item.processedBy || "").toLowerCase().includes(q) ||
+          (item.referenceNo || "").toLowerCase().includes(q) ||
+          (item.remarks || "").toLowerCase().includes(q) ||
+          String(item.inAmount || "").includes(q) ||
+          String(item.outAmount || "").includes(q)
+        );
+        if (!matches) return false;
+      }
+
+      return true;
+    }).sort((a, b) => {
+      const timeA = new Date(a.timestamp || a.rawDate).getTime();
+      const timeB = new Date(b.timestamp || b.rawDate).getTime();
+      return timeB - timeA;
+    });
+  }, [masterAuditData, dateFrom, dateTo, masterCategoryFilter, searchQuery]);
+
+  // Master KPI Summary metrics
+  const masterKpis = useMemo(() => {
+    let totalIn = 0;
+    let totalOut = 0;
+    let totalNotes = 0;
+    let openingSum = 0;
+
+    filteredMasterAuditData.forEach((item) => {
+      if (item.inAmount) totalIn += item.inAmount;
+      if (item.outAmount) totalOut += item.outAmount;
+      if (item.category === "opening_balance") openingSum += (item.inAmount || 0) - (item.outAmount || 0);
+
+      const d = item.denominations || {};
+      const notesSum = (
+        Math.abs(Number(d.note_500 || 0)) +
+        Math.abs(Number(d.note_200 || 0)) +
+        Math.abs(Number(d.note_100 || 0)) +
+        Math.abs(Number(d.note_50 || 0)) +
+        Math.abs(Number(d.note_20 || 0)) +
+        Math.abs(Number(d.note_10 || 0))
+      );
+      totalNotes += notesSum;
+    });
+
+    return {
+      totalIn,
+      totalOut,
+      netFlow: totalIn - totalOut,
+      count: filteredMasterAuditData.length,
+      totalNotes,
+      openingSum
+    };
+  }, [filteredMasterAuditData]);
 
   // Filtered Daybook Summary Data (Complete Unfiltered Daily Statement for that Day)
   const filteredDaybook = useMemo(() => {
@@ -1276,9 +1651,60 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           `"${(tx.remarks || '').replace(/"/g, '""')}"`
         ];
       });
+    } else if (reportType === "master_audit") {
+      filename = `Master_Audit_Trail_${masterCategoryFilter}_${dateFrom || "all"}_to_${dateTo || "time"}.csv`;
+      headers = [
+        "No",
+        "Date",
+        "Time",
+        "Category",
+        "From (Source / Started)",
+        "To (Destination / Ended)",
+        "In / Credit (₹)",
+        "Out / Debit (₹)",
+        "Net (₹)",
+        "Denominations",
+        "Total Notes",
+        "Processed By",
+        "Reference No",
+        "Remarks"
+      ];
+      rows = filteredMasterAuditData.map((item: any, idx: number) => {
+        const dt = formatDateDisplay(item.timestamp || item.rawDate);
+        const d = item.denominations || {};
+        const denomParts: string[] = [];
+        let noteSum = 0;
+        ["500", "200", "100", "50", "20", "10"].forEach((n) => {
+          const cnt = Math.abs(Number(d[`note_${n}`] || 0));
+          if (cnt > 0) {
+            denomParts.push(`${n}x${cnt}`);
+            noteSum += cnt;
+          }
+        });
+        if (d.coins) denomParts.push(`Coins: ${d.coins}`);
+        if (d.online_amount) denomParts.push(`Online: ${d.online_amount}`);
+        const denomStr = denomParts.join(", ");
+
+        return [
+          idx + 1,
+          `"${dt.date}"`,
+          `"${dt.time}"`,
+          `"${item.categoryLabel}"`,
+          `"${(item.fromEntity || "").replace(/"/g, '""')}"`,
+          `"${(item.toEntity || "").replace(/"/g, '""')}"`,
+          item.inAmount !== null ? item.inAmount : "-",
+          item.outAmount !== null ? item.outAmount : "-",
+          item.netAmount,
+          `"${denomStr.replace(/"/g, '""')}"`,
+          noteSum,
+          `"${(item.processedBy || "").replace(/"/g, '""')}"`,
+          `"${(item.referenceNo || "").replace(/"/g, '""')}"`,
+          `"${(item.remarks || "").replace(/"/g, '""')}"`
+        ];
+      });
     }
 
-    if (rows.length === 0 && reportType !== "virtual_ledger" && reportType !== "staff_daily_cash") {
+    if (rows.length === 0 && reportType !== "virtual_ledger" && reportType !== "staff_daily_cash" && reportType !== "master_audit") {
       alert("No data available for export.");
       return;
     }
@@ -1379,6 +1805,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
   const reportSections = [
     {
+      title: "Master Audit & Complete Ledger",
+      reports: [
+        { name: "Universal Master Audit Trail", icon: Activity, formats: "PDF • CSV • Print", color: "emerald", type: "master_audit" },
+      ]
+    },
+    {
       title: "Accounting & GST",
       reports: [
         { name: "Tally Friendly Import (XML)", icon: Book, formats: "XML • CSV", color: "blue", type: "tally_import" },
@@ -1413,6 +1845,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   // If a report is selected, render the dedicated Filter & Report Viewer!
   if (selectedReport) {
     let reportTitle = "Report View";
+    if (selectedReport === "master_audit") reportTitle = "Universal Master Audit Trail (Complete Ledger)";
     if (selectedReport === "daybook") reportTitle = "Day Book Summary";
     if (selectedReport === "cashbook") reportTitle = "Cash Book (Physical & Bank Flow)";
     if (selectedReport === "retailer_ledger") reportTitle = "Retailer Ledger Report (A-Z)";
@@ -1547,8 +1980,107 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         )}
 
-        {/* Filter Panel (Hidden for Daybook Summary, Cashbook & Tally Import as requested) */}
-        {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && selectedReport !== "virtual_ledger" && (
+        {/* Master Audit Trail Filter Panel */}
+        {selectedReport === "master_audit" && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
+            {/* Quick Date Presets & Date Range */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Quick Date Shortcuts</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: "today", label: "Today" },
+                    { id: "yesterday", label: "Yesterday" },
+                    { id: "last7", label: "Last 7 Days" },
+                    { id: "month", label: "This Month" },
+                    { id: "all", label: "All Time" },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => applyDatePreset(p.id as any)}
+                      className="px-2.5 py-1 text-[10px] font-bold rounded-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer transition-colors"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 max-w-sm w-full">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Date From</label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-1">Date To</label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Category Filter Buttons */}
+            <div>
+              <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">Filter by Category</p>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { id: "all", label: "All Records", count: masterAuditData.length },
+                  { id: "retailer_in", label: "Retailer Collections", count: masterAuditData.filter(i => i.category === "retailer_in").length },
+                  { id: "portal_out", label: "Portal Deposits", count: masterAuditData.filter(i => i.category === "portal_out").length },
+                  { id: "staff_handover", label: "Staff Handovers", count: masterAuditData.filter(i => i.category === "staff_handover").length },
+                  { id: "virtual_transfer", label: "Virtual Transfers", count: masterAuditData.filter(i => i.category === "virtual_transfer").length },
+                  { id: "opening_balance", label: "Opening Balances", count: masterAuditData.filter(i => i.category === "opening_balance").length },
+                ].map((cat) => {
+                  const isActive = masterCategoryFilter === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setMasterCategoryFilter(cat.id)}
+                      className={`px-3 py-1 text-[10.5px] font-black rounded-xs border cursor-pointer transition-colors flex items-center gap-1.5 ${
+                        isActive
+                          ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white"
+                          : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                      }`}
+                    >
+                      <span>{cat.label}</span>
+                      <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono ${isActive ? "bg-white/20 text-white dark:bg-black/20 dark:text-black" : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>
+                        {cat.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Instant Search Bar */}
+            <div className="pt-1">
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Search by party, store, staff, portal, ref number, or remarks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Filter Panel (Hidden for Daybook Summary, Cashbook, Tally Import, Virtual Ledger & Master Audit as requested) */}
+        {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && selectedReport !== "virtual_ledger" && selectedReport !== "master_audit" && (
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
             {selectedReport !== "staff_reports" && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -2555,6 +3087,149 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             );
           })()}
 
+          {/* MASTER AUDIT TRAIL VIEW */}
+          {selectedReport === "master_audit" && (() => {
+            return (
+              <div className="space-y-4">
+                {/* KPI Overview Summary Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 border border-slate-200 rounded-lg bg-slate-50/70 p-3 text-center">
+                  <div className="p-2 bg-white rounded-sm border border-slate-200/80">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Inflow (Credit)</span>
+                    <span className="text-sm font-black text-emerald-700 font-mono tabular-nums mt-0.5 block">
+                      +₹{masterKpis.totalIn.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="p-2 bg-white rounded-sm border border-slate-200/80">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Outflow (Debit)</span>
+                    <span className="text-sm font-black text-red-700 font-mono tabular-nums mt-0.5 block">
+                      -₹{masterKpis.totalOut.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="p-2 bg-white rounded-sm border border-slate-200/80">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Net Movement</span>
+                    <span className={`text-sm font-black font-mono tabular-nums mt-0.5 block ${masterKpis.netFlow >= 0 ? "text-emerald-800" : "text-red-800"}`}>
+                      {masterKpis.netFlow >= 0 ? "+" : ""}₹{masterKpis.netFlow.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  <div className="p-2 bg-white rounded-sm border border-slate-200/80">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Physical Notes</span>
+                    <span className="text-sm font-black text-slate-800 font-mono tabular-nums mt-0.5 block">
+                      {masterKpis.totalNotes.toLocaleString("en-IN")} Notes
+                    </span>
+                  </div>
+
+                  <div className="p-2 bg-white rounded-sm border border-slate-200/80 col-span-2 sm:col-span-1">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Records Displayed</span>
+                    <span className="text-sm font-black text-indigo-700 font-mono tabular-nums mt-0.5 block">
+                      {masterKpis.count} Entries
+                    </span>
+                  </div>
+                </div>
+
+                {/* Master Table */}
+                <div className="overflow-x-auto border border-slate-200 rounded-sm">
+                  <table className="w-full text-left text-xs border-collapse font-sans">
+                    <thead>
+                      <tr className="bg-slate-900 text-white uppercase text-[9.5px] font-black tracking-wider border-b border-slate-800">
+                        <th className="py-2.5 px-2 text-center w-10">#</th>
+                        <th className="py-2.5 px-2.5 w-28">Date & Time</th>
+                        <th className="py-2.5 px-2.5 w-32">Category</th>
+                        <th className="py-2.5 px-2.5">From (Started)</th>
+                        <th className="py-2.5 px-2.5">To (Ended)</th>
+                        <th className="py-2.5 px-2.5 text-right w-24">In (Credit)</th>
+                        <th className="py-2.5 px-2.5 text-right w-24">Out (Debit)</th>
+                        <th className="py-2.5 px-3 min-w-[180px]">Denominations</th>
+                        <th className="py-2.5 px-2.5 w-28">Processed By</th>
+                        <th className="py-2.5 px-2.5 w-36">Remarks / Ref</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-[11px] font-medium text-slate-800">
+                      {filteredMasterAuditData.length === 0 ? (
+                        <tr>
+                          <td colSpan={10} className="text-center py-12 text-slate-400 italic">
+                            No transactions or opening balance records found matching your filters.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredMasterAuditData.map((item: any, idx: number) => {
+                          const dt = formatDateDisplay(item.timestamp || item.rawDate);
+                          
+                          let badgeBg = "bg-slate-100 text-slate-700 border-slate-200";
+                          if (item.category === "retailer_in") badgeBg = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                          else if (item.category === "portal_out") badgeBg = "bg-purple-50 text-purple-700 border-purple-200";
+                          else if (item.category === "staff_handover") badgeBg = "bg-blue-50 text-blue-700 border-blue-200";
+                          else if (item.category === "virtual_transfer") badgeBg = "bg-sky-50 text-sky-700 border-sky-200";
+                          else if (item.category === "opening_balance") badgeBg = "bg-amber-50 text-amber-800 border-amber-200";
+
+                          return (
+                            <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-2.5 px-2 text-center text-[10px] text-slate-400 font-mono">{idx + 1}</td>
+                              <td className="py-2.5 px-2.5 whitespace-nowrap">
+                                <div className="font-bold text-slate-900">{dt.date}</div>
+                                <div className="text-[9.5px] text-slate-400 font-mono">{dt.time}</div>
+                              </td>
+                              <td className="py-2.5 px-2.5">
+                                <span className={`inline-block px-2 py-0.5 text-[9px] font-black rounded-xs uppercase tracking-wider border ${badgeBg}`}>
+                                  {item.categoryLabel}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-2.5 font-bold text-slate-900">
+                                {item.fromEntity}
+                              </td>
+                              <td className="py-2.5 px-2.5 font-bold text-slate-900">
+                                {item.toEntity}
+                              </td>
+                              <td className="py-2.5 px-2.5 text-right font-black font-mono tabular-nums text-emerald-700">
+                                {item.inAmount !== null ? `+₹${item.inAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-"}
+                              </td>
+                              <td className="py-2.5 px-2.5 text-right font-black font-mono tabular-nums text-red-700">
+                                {item.outAmount !== null ? `-₹${item.outAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-"}
+                              </td>
+                              <td className="py-2.5 px-3 align-middle">
+                                {renderMasterDenomBadges(item.denominations)}
+                              </td>
+                              <td className="py-2.5 px-2.5 text-slate-600 text-[10px] font-semibold">
+                                {item.processedBy}
+                              </td>
+                              <td className="py-2.5 px-2.5 text-[10px] text-slate-500">
+                                {item.referenceNo && (
+                                  <span className="font-mono text-[9px] text-slate-400 block">{item.referenceNo}</span>
+                                )}
+                                {item.remarks && (
+                                  <span className="truncate block max-w-[140px] text-slate-700" title={item.remarks}>{item.remarks}</span>
+                                )}
+                                {!item.referenceNo && !item.remarks && <span className="text-slate-300">-</span>}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                    {filteredMasterAuditData.length > 0 && (
+                      <tfoot>
+                        <tr className="bg-slate-100 font-black text-slate-900 border-t-2 border-slate-300 uppercase text-[10px]">
+                          <td colSpan={5} className="py-2.5 px-3 text-right tracking-wider">Grand Totals:</td>
+                          <td className="py-2.5 px-2.5 text-right text-emerald-800 font-mono text-xs tabular-nums">
+                            +₹{masterKpis.totalIn.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="py-2.5 px-2.5 text-right text-red-800 font-mono text-xs tabular-nums">
+                            -₹{masterKpis.totalOut.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td colSpan={3} className="py-2.5 px-3 text-slate-600 text-[9.5px]">
+                            {masterKpis.totalNotes.toLocaleString("en-IN")} Physical Notes ({masterKpis.count} Total Rows)
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+
         </div>
       </div>
     );
@@ -2625,6 +3300,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                   key={rIdx} 
                   onClick={() => {
                     if (report.type) {
+                      if (report.type === "master_audit") {
+                        setDateFrom("");
+                        setDateTo("");
+                        setMasterCategoryFilter("all");
+                        setSelectedReport("master_audit");
+                        return;
+                      }
                       if (report.subType) setVirtualLedgerSubType(report.subType);
                       if (report.type === "virtual_ledger") {
                         // Clear date filters so all-time records show
@@ -2651,6 +3333,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     onClick={(e) => {
                        e.stopPropagation();
                        if (report.type) {
+                         if (report.type === "master_audit") {
+                           setDateFrom("");
+                           setDateTo("");
+                           setMasterCategoryFilter("all");
+                           setSelectedReport("master_audit");
+                           return;
+                         }
                          if (report.subType) setVirtualLedgerSubType(report.subType);
                          if (report.type === "virtual_ledger") {
                            setDateFrom("");
