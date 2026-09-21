@@ -1414,29 +1414,64 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       });
 
       let openingBalance = baseOpeningBalance;
+      let cashIn = 0;
+      let virtualIn = 0;
       let totalIn = 0;
+      let cashOut = 0;
+      let virtualOut = 0;
       let totalOut = 0;
       let txCount = 0;
 
-      // Process Collections
+      // Process Collections (Inflow from Retailer)
       retCols.forEach((c) => {
         const cDate = c.collection_date || (c.created_at ? getISTDateString(getUtcDate(c.created_at)) : "");
         const amt = Number(c.total_amount || c.totalAmount || 0);
+
+        // Determine Virtual (Online/Bank) vs Physical Cash
+        let vAmt = Number(c.denominations?.online_amount || 0);
+        if (vAmt === 0 && (c.bank_account_id || c.bankAccountName) && (!c.denominations || (!c.denominations.note_500 && !c.denominations.note_200 && !c.denominations.note_100))) {
+          vAmt = amt;
+        }
+        if (vAmt > amt) vAmt = amt;
+        const cAmt = Math.max(0, amt - vAmt);
+
         if (dateFrom && cDate && cDate < dateFrom) {
           openingBalance += amt;
         } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
+          cashIn += cAmt;
+          virtualIn += vAmt;
           totalIn += amt;
           txCount += 1;
         }
       });
 
-      // Process Deposits / Payouts / Refunds
+      // Process Deposits / Payouts / Refunds (Outflow to Retailer)
       retDeps.forEach((d) => {
         const dDate = d.deposit_date || (d.created_at ? getISTDateString(getUtcDate(d.created_at)) : "");
         const amt = Number(d.amount || 0);
+
+        // Determine Virtual vs Cash for Outflow
+        const isVirtualTx = d.deposit_type === "virtual" || d.payment_mode === "online" || d.payment_mode === "bank" || d.paymentMode === "online" || d.paymentMode === "bank";
+        let vAmt = 0;
+        let cAmt = 0;
+
+        if (isVirtualTx) {
+          vAmt = amt;
+        } else if (d.denominations) {
+          vAmt = Number(d.denominations?.online_amount || 0);
+          if (vAmt > amt) vAmt = amt;
+          cAmt = Math.max(0, amt - vAmt);
+        } else if (d.payment_mode === "cash" || d.paymentMode === "cash" || (!d.bank_account_id && !d.portal_id)) {
+          cAmt = amt;
+        } else {
+          vAmt = amt;
+        }
+
         if (dateFrom && dDate && dDate < dateFrom) {
           openingBalance -= amt;
         } else if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
+          cashOut += cAmt;
+          virtualOut += vAmt;
           totalOut += amt;
           txCount += 1;
         }
@@ -1451,7 +1486,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         area: r.area || "",
         category: category || "General",
         openingBalance,
+        cashIn,
+        virtualIn,
         totalIn,
+        cashOut,
+        virtualOut,
         totalOut,
         txCount,
         closingBalance,
@@ -1465,11 +1504,26 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const categorySummaryTotals = useMemo(() => {
     const totalRetailers = filteredRetailerCategorySummary.length;
     const totalOpening = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.openingBalance, 0);
+    const totalCashIn = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.cashIn, 0);
+    const totalVirtualIn = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.virtualIn, 0);
     const totalIn = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.totalIn, 0);
+    const totalCashOut = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.cashOut, 0);
+    const totalVirtualOut = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.virtualOut, 0);
     const totalOut = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.totalOut, 0);
     const totalTxCount = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.txCount, 0);
     const totalClosing = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.closingBalance, 0);
-    return { totalRetailers, totalOpening, totalIn, totalOut, totalTxCount, totalClosing };
+    return {
+      totalRetailers,
+      totalOpening,
+      totalCashIn,
+      totalVirtualIn,
+      totalIn,
+      totalCashOut,
+      totalVirtualOut,
+      totalOut,
+      totalTxCount,
+      totalClosing
+    };
   }, [filteredRetailerCategorySummary]);
 
   // Filtered Portal Ledger Data
@@ -1848,7 +1902,23 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       });
     } else if (reportType === "retailer_category_summary") {
       filename = `Retailer_Category_Summary_${selectedRetailerCategory !== "all" ? `${selectedRetailerCategory}_` : ""}${dateFrom || "all"}_to_${dateTo || "time"}.csv`;
-      headers = ["No", "Retailer Name", "Category", "Phone", "Route / Area", "Opening Balance", "Total IN (Collections)", "Total OUT (Payouts)", "Total Transactions", "Closing Balance", "Status"];
+      headers = [
+        "No",
+        "Retailer Name",
+        "Category",
+        "Phone",
+        "Route / Area",
+        "Opening Balance",
+        "Cash IN",
+        "Virtual IN",
+        "Total IN",
+        "Cash OUT",
+        "Virtual OUT",
+        "Total OUT",
+        "Total Transactions",
+        "Closing Balance",
+        "Status"
+      ];
       rows = filteredRetailerCategorySummary.map((r, i) => [
         i + 1,
         `"${(r.name || '').replace(/"/g, '""')}"`,
@@ -1856,7 +1926,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         `"${(r.phone || '').replace(/"/g, '""')}"`,
         `"${(r.area || '').replace(/"/g, '""')}"`,
         r.openingBalance,
+        r.cashIn,
+        r.virtualIn,
         r.totalIn,
+        r.cashOut,
+        r.virtualOut,
         r.totalOut,
         r.txCount,
         r.closingBalance,
@@ -3175,12 +3249,20 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     <span className="text-base font-black text-emerald-600 font-mono mt-0.5 block">
                       ₹{categorySummaryTotals.totalIn.toLocaleString("en-IN")}
                     </span>
+                    <div className="flex items-center justify-center gap-1 text-[8.5px] font-bold mt-1 font-mono">
+                      <span className="text-emerald-800 bg-emerald-100/70 px-1 py-0.2 rounded-xs">Cash: ₹{categorySummaryTotals.totalCashIn.toLocaleString("en-IN")}</span>
+                      <span className="text-blue-800 bg-blue-100/70 px-1 py-0.2 rounded-xs">Virt: ₹{categorySummaryTotals.totalVirtualIn.toLocaleString("en-IN")}</span>
+                    </div>
                   </div>
                   <div className="border border-red-100 bg-red-50/50 rounded-lg p-2.5 text-center shadow-xs">
                     <span className="text-[9px] font-black text-red-700 uppercase tracking-wider block">Total OUT (Payouts)</span>
                     <span className="text-base font-black text-red-600 font-mono mt-0.5 block">
                       ₹{categorySummaryTotals.totalOut.toLocaleString("en-IN")}
                     </span>
+                    <div className="flex items-center justify-center gap-1 text-[8.5px] font-bold mt-1 font-mono">
+                      <span className="text-red-800 bg-red-100/70 px-1 py-0.2 rounded-xs">Cash: ₹{categorySummaryTotals.totalCashOut.toLocaleString("en-IN")}</span>
+                      <span className="text-purple-800 bg-purple-100/70 px-1 py-0.2 rounded-xs">Virt: ₹{categorySummaryTotals.totalVirtualOut.toLocaleString("en-IN")}</span>
+                    </div>
                   </div>
                   <div className="border border-slate-200 rounded-lg bg-white p-2.5 text-center shadow-xs">
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Txns</span>
@@ -3202,24 +3284,41 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       <div className="text-xs text-slate-400 italic">No retailers match the category and search filters.</div>
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[850px]">
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[950px]">
                       <thead>
-                        <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2.5 px-1 border-r border-slate-200 text-center w-[4%] text-[10.5px] uppercase">#</th>
-                          <th className="py-2.5 px-2 border-r border-slate-200 text-left w-[24%] text-[10.5px] uppercase">Retailer & Route</th>
-                          <th className="py-2.5 px-1 border-r border-slate-200 text-center w-[11%] text-[10.5px] uppercase">Category</th>
-                          <th className="py-2.5 px-2 border-r border-slate-200 text-center w-[14%] text-[10.5px] uppercase">Opening Bal</th>
-                          <th className="py-2.5 px-2 border-r border-slate-200 text-center w-[13%] text-[10.5px] uppercase">Total IN (Colls)</th>
-                          <th className="py-2.5 px-2 border-r border-slate-200 text-center w-[12%] text-[10.5px] uppercase">Total OUT</th>
-                          <th className="py-2.5 px-1 border-r border-slate-200 text-center w-[7%] text-[10.5px] uppercase">Txns</th>
-                          <th className="py-2.5 px-2 text-center w-[15%] text-[10.5px] uppercase">Closing Bal</th>
+                        {/* Group Header Row */}
+                        <tr className="bg-slate-200/90 border-b border-slate-300 text-slate-900 font-black text-[10px] uppercase">
+                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[4%]">#</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-left w-[20%]">Retailer & Route</th>
+                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[9%]">Category</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-center w-[12%]">Opening Bal</th>
+                          <th colSpan={3} className="py-1 px-1 border-r border-emerald-300 text-center bg-emerald-100/80 text-emerald-950 font-black tracking-wider">
+                            Total IN (Collections)
+                          </th>
+                          <th colSpan={3} className="py-1 px-1 border-r border-red-300 text-center bg-red-100/80 text-red-950 font-black tracking-wider">
+                            Total OUT (Payouts / Refunds)
+                          </th>
+                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[6%]">Txns</th>
+                          <th rowSpan={2} className="py-2 px-2 text-center w-[13%]">Closing Bal</th>
+                        </tr>
+                        {/* Sub-Column Header Row */}
+                        <tr className="bg-slate-100 border-b border-slate-300 text-slate-800 font-bold text-[9.5px] uppercase">
+                          {/* IN Categories */}
+                          <th className="py-1.5 px-1 border-r border-slate-200 text-center w-[8%] bg-emerald-50/70 text-emerald-800">Cash IN</th>
+                          <th className="py-1.5 px-1 border-r border-slate-200 text-center w-[8%] bg-blue-50/70 text-blue-800">Virtual IN</th>
+                          <th className="py-1.5 px-1 border-r border-emerald-300 text-center w-[9%] bg-emerald-100 text-emerald-950 font-black">Total IN</th>
+
+                          {/* OUT Categories */}
+                          <th className="py-1.5 px-1 border-r border-slate-200 text-center w-[8%] bg-red-50/70 text-red-800">Cash OUT</th>
+                          <th className="py-1.5 px-1 border-r border-slate-200 text-center w-[8%] bg-purple-50/70 text-purple-800">Virtual OUT</th>
+                          <th className="py-1.5 px-1 border-r border-red-300 text-center w-[9%] bg-red-100 text-red-950 font-black">Total OUT</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
                         {filteredRetailerCategorySummary.map((r, idx) => (
                           <tr key={r.id || idx} className="hover:bg-slate-50/70 divide-x divide-slate-200 transition-colors">
-                            <td className="py-2.5 px-1 text-center font-bold text-slate-700 text-[11px]">{idx + 1}</td>
-                            <td className="py-2.5 px-2 text-left">
+                            <td className="py-2 px-1 text-center font-bold text-slate-700 text-[11px]">{idx + 1}</td>
+                            <td className="py-2 px-2 text-left">
                               <div className="flex items-center justify-between gap-1">
                                 <span className="font-bold text-slate-900 text-[12px] truncate">{r.name}</span>
                                 {setShowRetailerDrawer && (
@@ -3241,26 +3340,43 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                 {r.area && <span>📍 {r.area}</span>}
                               </div>
                             </td>
-                            <td className="py-2.5 px-1 text-center">
+                            <td className="py-2 px-1 text-center">
                               <span className="inline-block px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-black uppercase tracking-wider border border-purple-200">
                                 {r.category}
                               </span>
                             </td>
-                            <td className="py-2.5 px-2 text-center text-xs">
+                            <td className="py-2 px-2 text-center text-xs">
                               {formatBal(r.openingBalance)}
                             </td>
-                            <td className="py-2.5 px-2 text-center font-extrabold text-emerald-600 text-xs font-mono">
+
+                            {/* IN Subcolumns */}
+                            <td className="py-2 px-1 text-center font-bold text-slate-800 text-[11px] font-mono bg-emerald-50/20">
+                              {r.cashIn > 0 ? `₹${r.cashIn.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                            </td>
+                            <td className="py-2 px-1 text-center font-bold text-blue-700 text-[11px] font-mono bg-blue-50/20">
+                              {r.virtualIn > 0 ? `₹${r.virtualIn.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                            </td>
+                            <td className="py-2 px-1 text-center font-extrabold text-emerald-600 text-[11.5px] font-mono bg-emerald-50/50">
                               ₹{r.totalIn.toLocaleString("en-IN")}
                             </td>
-                            <td className="py-2.5 px-2 text-center font-extrabold text-red-500 text-xs font-mono">
+
+                            {/* OUT Subcolumns */}
+                            <td className="py-2 px-1 text-center font-bold text-slate-800 text-[11px] font-mono bg-red-50/20">
+                              {r.cashOut > 0 ? `₹${r.cashOut.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                            </td>
+                            <td className="py-2 px-1 text-center font-bold text-purple-700 text-[11px] font-mono bg-purple-50/20">
+                              {r.virtualOut > 0 ? `₹${r.virtualOut.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                            </td>
+                            <td className="py-2 px-1 text-center font-extrabold text-red-500 text-[11.5px] font-mono bg-red-50/50">
                               ₹{r.totalOut.toLocaleString("en-IN")}
                             </td>
-                            <td className="py-2.5 px-1 text-center">
+
+                            <td className="py-2 px-1 text-center">
                               <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">
                                 {r.txCount}
                               </span>
                             </td>
-                            <td className="py-2.5 px-2 text-center text-xs font-bold">
+                            <td className="py-2 px-2 text-center text-xs font-bold">
                               {formatBal(r.closingBalance)}
                             </td>
                           </tr>
