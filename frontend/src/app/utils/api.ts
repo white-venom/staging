@@ -81,9 +81,10 @@ function isTokenExpired(token: string | undefined): boolean {
 async function request<T>(endpoint: string, options: RequestInit = {}, retry = true): Promise<T> {
   const isAuthEndpoint = endpoint.includes("/auth/login") || endpoint.includes("/auth/refresh") || endpoint.includes("/auth/exchange-ticket");
 
-  // Proactive token refresh if token is expired or if refresh is already in flight
-  let token = useAppStore.getState().currentUser?.token;
-  if (!isAuthEndpoint && token && isTokenExpired(token)) {
+  // Proactive token refresh if token is missing/expired (e.g. after page reload) or if refresh is already in flight
+  const currentUser = useAppStore.getState().currentUser;
+  let token = currentUser?.token;
+  if (!isAuthEndpoint && currentUser && (!token || isTokenExpired(token))) {
     token = (await refreshAccessToken()) || token;
   } else if (!isAuthEndpoint && refreshPromise) {
     token = (await refreshPromise) || token;

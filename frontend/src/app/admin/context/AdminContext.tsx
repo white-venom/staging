@@ -57,8 +57,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   };
 
   const fetchData = useCallback(async (showLoading = true) => {
-    const token = currentUser?.token;
-    if (!token) return;
+    if (!currentUser) return;
 
     if (showLoading) setIsLoading(true);
     try {
