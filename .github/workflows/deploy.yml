@@ -43,3 +43,7 @@ jobs:
           # Rebuild and start all services with fallback for docker-compose
           docker compose up -d --build || docker-compose up -d --build
 
+          # Run reset and sync for 21-Sep-2026 opening balances
+          sleep 8
+          docker exec crediiflow_backend python -m scripts.reset_and_sync_21sep || true
+
