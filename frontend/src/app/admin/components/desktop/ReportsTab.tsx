@@ -183,6 +183,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const userDirectory = adminCtx?.userDirectory || [];
   const openingBalanceEntries = adminCtx?.openingBalanceEntries || [];
   const businessSettings = adminCtx?.businessSettings || null;
+  const setShowRetailerDrawer = adminCtx?.setShowRetailerDrawer;
+  const setLedgerSearchTerm = adminCtx?.setLedgerSearchTerm;
 
   // Active Selected Report View: null = Overview cards, string = report type
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
@@ -1272,6 +1274,168 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     }).sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
   }, [collections, dateFrom, dateTo, selectedRetailerIds, selectedStaffIds, searchQuery, selectedRetailerCategory, retailerCategoryMap, userDirectory]);
 
+  // Aggregated Retailer Category Summary Report Data
+  const filteredRetailerCategorySummary = useMemo(() => {
+    // 1. Map of opening balance entries if any
+    const opEntryMap = new Map<string, any>();
+    (openingBalanceEntries || []).forEach((e: any) => {
+      opEntryMap.set(String(e.retailer_id), e);
+    });
+
+    // 2. Pre-index collections and deposits by retailer
+    const collectionsByRetailer = new Map<string, any[]>();
+    collections.forEach((c: any) => {
+      const idKey = c.retailer_id ? String(c.retailer_id) : "";
+      const nameKey = (c.retailer_name || c.retailerName || "").trim().toLowerCase();
+      if (idKey) {
+        if (!collectionsByRetailer.has(idKey)) collectionsByRetailer.set(idKey, []);
+        collectionsByRetailer.get(idKey)!.push(c);
+      }
+      if (nameKey) {
+        if (!collectionsByRetailer.has(nameKey)) collectionsByRetailer.set(nameKey, []);
+        collectionsByRetailer.get(nameKey)!.push(c);
+      }
+    });
+
+    const depositsByRetailer = new Map<string, any[]>();
+    deposits.forEach((d: any) => {
+      const idKey = d.retailer_id ? String(d.retailer_id) : "";
+      const nameKey = (d.retailer_name || d.target_name || "").trim().toLowerCase();
+      if (idKey) {
+        if (!depositsByRetailer.has(idKey)) depositsByRetailer.set(idKey, []);
+        depositsByRetailer.get(idKey)!.push(d);
+      }
+      if (nameKey) {
+        if (!depositsByRetailer.has(nameKey)) depositsByRetailer.set(nameKey, []);
+        depositsByRetailer.get(nameKey)!.push(d);
+      }
+    });
+
+    // 3. Process each retailer in retailerDirectory
+    const results: any[] = [];
+    (retailerDirectory || []).forEach((r: any) => {
+      const retId = String(r.id || "");
+      const retName = (r.name || r.retailer_name || "").trim();
+      const retNameLower = retName.toLowerCase();
+      const category = (r.category || retailerCategoryMap.get(retId) || retailerCategoryMap.get(retNameLower) || "").trim();
+
+      // Filter by Category
+      if (selectedRetailerCategory !== "all") {
+        if (category.toLowerCase() !== selectedRetailerCategory.toLowerCase()) {
+          return;
+        }
+      }
+
+      // Filter by Search Query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const phone = String(r.phone || "").toLowerCase();
+        const area = String(r.area || "").toLowerCase();
+        if (!retNameLower.includes(q) && !phone.includes(q) && !area.includes(q) && !category.toLowerCase().includes(q)) {
+          return;
+        }
+      }
+
+      // Initial Opening Balance
+      let baseOpeningBalance = 0;
+      const opEntry = opEntryMap.get(retId);
+      if (opEntry) {
+        const amt = Number(opEntry.amount || 0);
+        baseOpeningBalance = opEntry.transaction_type === "DEBIT" ? -amt : amt;
+      } else {
+        const toTake = Number(r.opening_to_take || 0);
+        const toGive = Number(r.opening_to_give || 0);
+        baseOpeningBalance = toGive - toTake;
+      }
+
+      // Deduplicate transactions for this retailer
+      const seenColIds = new Set<string>();
+      const retCols: any[] = [];
+      const colCandidates = [
+        ...(collectionsByRetailer.get(retId) || []),
+        ...(collectionsByRetailer.get(retNameLower) || [])
+      ];
+      colCandidates.forEach((c) => {
+        const cid = String(c.id || `${c.created_at}-${c.total_amount}`);
+        if (!seenColIds.has(cid)) {
+          seenColIds.add(cid);
+          retCols.push(c);
+        }
+      });
+
+      const seenDepIds = new Set<string>();
+      const retDeps: any[] = [];
+      const depCandidates = [
+        ...(depositsByRetailer.get(retId) || []),
+        ...(depositsByRetailer.get(retNameLower) || [])
+      ];
+      depCandidates.forEach((d) => {
+        const did = String(d.id || `${d.created_at}-${d.amount}`);
+        if (!seenDepIds.has(did)) {
+          seenDepIds.add(did);
+          retDeps.push(d);
+        }
+      });
+
+      let openingBalance = baseOpeningBalance;
+      let totalIn = 0;
+      let totalOut = 0;
+      let txCount = 0;
+
+      // Process Collections
+      retCols.forEach((c) => {
+        const cDate = c.collection_date || (c.created_at ? getISTDateString(getUtcDate(c.created_at)) : "");
+        const amt = Number(c.total_amount || c.totalAmount || 0);
+        if (dateFrom && cDate && cDate < dateFrom) {
+          openingBalance += amt;
+        } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
+          totalIn += amt;
+          txCount += 1;
+        }
+      });
+
+      // Process Deposits / Payouts / Refunds
+      retDeps.forEach((d) => {
+        const dDate = d.deposit_date || (d.created_at ? getISTDateString(getUtcDate(d.created_at)) : "");
+        const amt = Number(d.amount || 0);
+        if (dateFrom && dDate && dDate < dateFrom) {
+          openingBalance -= amt;
+        } else if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
+          totalOut += amt;
+          txCount += 1;
+        }
+      });
+
+      const closingBalance = openingBalance + totalIn - totalOut;
+
+      results.push({
+        id: retId,
+        name: retName || "Retailer",
+        phone: r.phone || "",
+        area: r.area || "",
+        category: category || "General",
+        openingBalance,
+        totalIn,
+        totalOut,
+        txCount,
+        closingBalance,
+        ledgerToken: r.ledger_token
+      });
+    });
+
+    return results.sort((a, b) => a.name.localeCompare(b.name));
+  }, [retailerDirectory, collections, deposits, openingBalanceEntries, selectedRetailerCategory, searchQuery, dateFrom, dateTo, retailerCategoryMap]);
+
+  const categorySummaryTotals = useMemo(() => {
+    const totalRetailers = filteredRetailerCategorySummary.length;
+    const totalOpening = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.openingBalance, 0);
+    const totalIn = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.totalIn, 0);
+    const totalOut = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.totalOut, 0);
+    const totalTxCount = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.txCount, 0);
+    const totalClosing = filteredRetailerCategorySummary.reduce((sum, r) => sum + r.closingBalance, 0);
+    return { totalRetailers, totalOpening, totalIn, totalOut, totalTxCount, totalClosing };
+  }, [filteredRetailerCategorySummary]);
+
   // Filtered Portal Ledger Data
   const filteredPortalLedger = useMemo(() => {
     return deposits.filter((d: any) => {
@@ -1645,6 +1809,22 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           `"${(c.remarks || '').replace(/"/g, '""')}"`
         ];
       });
+    } else if (reportType === "retailer_category_summary") {
+      filename = `Retailer_Category_Summary_${selectedRetailerCategory !== "all" ? `${selectedRetailerCategory}_` : ""}${dateFrom || "all"}_to_${dateTo || "time"}.csv`;
+      headers = ["No", "Retailer Name", "Category", "Phone", "Route / Area", "Opening Balance", "Total IN (Collections)", "Total OUT (Payouts)", "Total Transactions", "Closing Balance", "Status"];
+      rows = filteredRetailerCategorySummary.map((r, i) => [
+        i + 1,
+        `"${(r.name || '').replace(/"/g, '""')}"`,
+        `"${(r.category || 'General').replace(/"/g, '""')}"`,
+        `"${(r.phone || '').replace(/"/g, '""')}"`,
+        `"${(r.area || '').replace(/"/g, '""')}"`,
+        r.openingBalance,
+        r.totalIn,
+        r.totalOut,
+        r.txCount,
+        r.closingBalance,
+        r.closingBalance > 0 ? "Advance" : r.closingBalance < 0 ? "Due" : "Settled"
+      ]);
     } else if (reportType === "portal_ledger") {
       headers = ["No", "Date", "Time", "Portal / Bank", "Deposit Type", "Target Name", "Staff Name", "Amount (OUT)", "Remarks"];
       rows = filteredPortalLedger.map((d, i) => {
@@ -1880,7 +2060,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       ? (staffSubReport === "efficiency" ? "Staff_Collection_Efficiency" : `${targetStaff ? targetStaff.name.trim().replace(/\s+/g, "_") : "Staff"}_Daily_Cash_Report`)
       : (selectedReport || "Report");
     const filename = `${reportName}_${dateFrom || "all"}_to_${dateTo || "time"}.pdf`;
-    const orientation = selectedReport === "master_audit" ? "landscape" : "portrait";
+    const orientation = (selectedReport === "master_audit" || selectedReport === "retailer_category_summary") ? "landscape" : "portrait";
     downloadElementAsPdf("report-export-content", filename, 0.25, orientation)
       .catch((err) => {
         console.error("PDF Download error, opening print dialog:", err);
@@ -1913,6 +2093,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       title: "Retailer & Portals",
       reports: [
         { name: "Retailer Ledger (A-Z)", icon: FileText, formats: "PDF • XLSX", color: "purple", type: "retailer_ledger" },
+        { name: "Retailer Category Summary", icon: BarChart, formats: "PDF • CSV", color: "blue", type: "retailer_category_summary" },
       ]
     }
   ];
@@ -1924,6 +2105,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     if (selectedReport === "daybook") reportTitle = "Day Book Summary";
     if (selectedReport === "cashbook") reportTitle = "Cash Book (Physical & Bank Flow)";
     if (selectedReport === "retailer_ledger") reportTitle = "Retailer Ledger Report (A-Z)";
+    if (selectedReport === "retailer_category_summary") reportTitle = "Retailer Category Summary & Movement Report";
     if (selectedReport === "portal_ledger") reportTitle = "Portal Ledger Report";
     if (selectedReport === "staff_reports") {
       reportTitle = staffSubReport === "efficiency"
@@ -1953,7 +2135,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             <div className="min-w-0">
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider truncate">{reportTitle}</h2>
               <p className="text-[10px] text-slate-400 font-bold truncate">
-                {selectedReport === "daybook" || selectedReport === "cashbook" || selectedReport === "tally_import" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator"}
+                {selectedReport === "retailer_category_summary" ? "Aggregated opening balance, movements & closing balance by retailer category" : (selectedReport === "daybook" || selectedReport === "cashbook" || selectedReport === "tally_import" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator")}
               </p>
             </div>
           </div>
@@ -2019,6 +2201,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Retailer Ledger (A-Z)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedReport("retailer_category_summary")}
+            className={`px-3 py-1.5 rounded-xs text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              selectedReport === "retailer_category_summary"
+                ? "bg-blue-600 text-white shadow-xs"
+                : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100"
+            }`}
+          >
+            <BarChart className="w-3.5 h-3.5" />
+            <span>Retailer Category Summary</span>
           </button>
         </div>
 
@@ -2182,8 +2376,147 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         )}
 
-        {/* Filter Panel (Hidden for Daybook Summary, Cashbook, Tally Import, Virtual Ledger & Master Audit as requested) */}
-        {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && selectedReport !== "virtual_ledger" && selectedReport !== "master_audit" && (
+        {/* Retailer Category Summary Filter Panel - Only 2 Filters: Date & Retailer Category */}
+        {selectedReport === "retailer_category_summary" && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
+            {/* Quick Date Presets & Date Range */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">1. Filter by Date Range</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: "today", label: "Today" },
+                    { id: "yesterday", label: "Yesterday" },
+                    { id: "last7", label: "Last 7 Days" },
+                    { id: "month", label: "This Month" },
+                    { id: "all", label: "All Time" },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => applyDatePreset(p.id as any)}
+                      className="px-2.5 py-1 text-[10px] font-bold rounded-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer transition-colors"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Date From</label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xs px-2.5 py-1 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Date To</label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xs px-2.5 py-1 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Retailer Category Dropdown & Quick Search */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+                  2. Filter by Retailer Category
+                </label>
+                <select
+                  value={selectedRetailerCategory}
+                  onChange={(e) => setSelectedRetailerCategory(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Categories ({availableRetailerCategories.length})</option>
+                  {availableRetailerCategories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+                  Quick Search Retailer
+                </label>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search retailer name, phone, or route..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Retailer Category Pill Shortcuts */}
+            {availableRetailerCategories.length > 0 && (
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">
+                  Category Shortcuts
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRetailerCategory("all")}
+                    className={`px-2.5 py-1 text-[10.5px] font-black rounded-xs border cursor-pointer transition-colors flex items-center gap-1.5 ${
+                      selectedRetailerCategory === "all"
+                        ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs"
+                        : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                    }`}
+                  >
+                    <span>All Categories</span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono ${
+                      selectedRetailerCategory === "all"
+                        ? "bg-white/20 text-white dark:bg-black/20 dark:text-black"
+                        : "bg-slate-200 dark:bg-slate-800 text-slate-500"
+                    }`}>
+                      {retailerDirectory.length}
+                    </span>
+                  </button>
+                  {availableRetailerCategories.map((cat) => {
+                    const count = retailerDirectory.filter((r: any) => {
+                      const rCat = (r.category || retailerCategoryMap.get(String(r.id)) || "").toLowerCase();
+                      return rCat === cat.toLowerCase();
+                    }).length;
+                    const isActive = selectedRetailerCategory.toLowerCase() === cat.toLowerCase();
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSelectedRetailerCategory(cat)}
+                        className={`px-2.5 py-1 text-[10.5px] font-black rounded-xs border cursor-pointer transition-colors flex items-center gap-1.5 ${
+                          isActive
+                            ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                            : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                        }`}
+                      >
+                        <span>{cat}</span>
+                        <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono ${
+                          isActive ? "bg-white/20 text-white" : "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300"
+                        }`}>
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Filter Panel (Hidden for Daybook Summary, Cashbook, Tally Import, Virtual Ledger, Master Audit & Retailer Category Summary as requested) */}
+        {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && selectedReport !== "virtual_ledger" && selectedReport !== "master_audit" && selectedReport !== "retailer_category_summary" && (
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
             {selectedReport !== "staff_reports" && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -2761,6 +3094,139 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                             </tr>
                           );
                         })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* RETAILER CATEGORY SUMMARY VIEW */}
+          {selectedReport === "retailer_category_summary" && (() => {
+            const formatBal = (amt: number) => {
+              if (amt === 0) return <span className="font-mono text-slate-500 font-bold">₹0</span>;
+              if (amt > 0) return (
+                <span className="font-mono text-emerald-600 font-bold">
+                  +₹{amt.toLocaleString("en-IN")}{" "}
+                  <span className="text-[8px] font-sans font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded-xs uppercase">Adv</span>
+                </span>
+              );
+              return (
+                <span className="font-mono text-red-600 font-bold">
+                  -₹{Math.abs(amt).toLocaleString("en-IN")}{" "}
+                  <span className="text-[8px] font-sans font-black text-red-700 bg-red-50 border border-red-200 px-1 py-0.2 rounded-xs uppercase">Due</span>
+                </span>
+              );
+            };
+
+            return (
+              <div className="space-y-3">
+                {/* 6-KPI Summary Bar */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  <div className="border border-slate-200 rounded-lg bg-white p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Retailers</span>
+                    <span className="text-base font-black text-slate-900 mt-0.5 block">{categorySummaryTotals.totalRetailers} Listed</span>
+                  </div>
+                  <div className="border border-slate-200 rounded-lg bg-white p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Opening Balance</span>
+                    <div className="text-sm font-black mt-0.5">{formatBal(categorySummaryTotals.totalOpening)}</div>
+                  </div>
+                  <div className="border border-emerald-100 bg-emerald-50/50 rounded-lg p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wider block">Total IN (Colls)</span>
+                    <span className="text-base font-black text-emerald-600 font-mono mt-0.5 block">
+                      ₹{categorySummaryTotals.totalIn.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                  <div className="border border-red-100 bg-red-50/50 rounded-lg p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-red-700 uppercase tracking-wider block">Total OUT (Payouts)</span>
+                    <span className="text-base font-black text-red-600 font-mono mt-0.5 block">
+                      ₹{categorySummaryTotals.totalOut.toLocaleString("en-IN")}
+                    </span>
+                  </div>
+                  <div className="border border-slate-200 rounded-lg bg-white p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Txns</span>
+                    <span className="text-base font-black text-slate-800 font-mono mt-0.5 block">
+                      {categorySummaryTotals.totalTxCount}
+                    </span>
+                  </div>
+                  <div className="border border-blue-100 bg-blue-50/50 rounded-lg p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-blue-700 uppercase tracking-wider block">Closing Balance</span>
+                    <div className="text-sm font-black mt-0.5">{formatBal(categorySummaryTotals.totalClosing)}</div>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
+                  {filteredRetailerCategorySummary.length === 0 ? (
+                    <div className="p-10 text-center space-y-1 bg-white">
+                      <div className="text-sm font-black text-slate-700">No retailers found</div>
+                      <div className="text-xs text-slate-400 italic">No retailers match the category and search filters.</div>
+                    </div>
+                  ) : (
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[850px]">
+                      <thead>
+                        <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
+                          <th className="py-2.5 px-1 border-r border-slate-200 text-center w-[4%] text-[10.5px] uppercase">#</th>
+                          <th className="py-2.5 px-2 border-r border-slate-200 text-left w-[24%] text-[10.5px] uppercase">Retailer & Route</th>
+                          <th className="py-2.5 px-1 border-r border-slate-200 text-center w-[11%] text-[10.5px] uppercase">Category</th>
+                          <th className="py-2.5 px-2 border-r border-slate-200 text-center w-[14%] text-[10.5px] uppercase">Opening Bal</th>
+                          <th className="py-2.5 px-2 border-r border-slate-200 text-center w-[13%] text-[10.5px] uppercase">Total IN (Colls)</th>
+                          <th className="py-2.5 px-2 border-r border-slate-200 text-center w-[12%] text-[10.5px] uppercase">Total OUT</th>
+                          <th className="py-2.5 px-1 border-r border-slate-200 text-center w-[7%] text-[10.5px] uppercase">Txns</th>
+                          <th className="py-2.5 px-2 text-center w-[15%] text-[10.5px] uppercase">Closing Bal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {filteredRetailerCategorySummary.map((r, idx) => (
+                          <tr key={r.id || idx} className="hover:bg-slate-50/70 divide-x divide-slate-200 transition-colors">
+                            <td className="py-2.5 px-1 text-center font-bold text-slate-700 text-[11px]">{idx + 1}</td>
+                            <td className="py-2.5 px-2 text-left">
+                              <div className="flex items-center justify-between gap-1">
+                                <span className="font-bold text-slate-900 text-[12px] truncate">{r.name}</span>
+                                {setShowRetailerDrawer && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (setLedgerSearchTerm) setLedgerSearchTerm(r.name);
+                                      setShowRetailerDrawer(true);
+                                    }}
+                                    className="text-[9px] font-bold text-blue-600 hover:underline px-1 py-0.5 rounded hover:bg-blue-50 cursor-pointer shrink-0"
+                                    title="Open Retailer Ledger"
+                                  >
+                                    Ledger →
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium mt-0.5">
+                                {r.phone && <span>📞 {r.phone}</span>}
+                                {r.area && <span>📍 {r.area}</span>}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-1 text-center">
+                              <span className="inline-block px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-black uppercase tracking-wider border border-purple-200">
+                                {r.category}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2 text-center text-xs">
+                              {formatBal(r.openingBalance)}
+                            </td>
+                            <td className="py-2.5 px-2 text-center font-extrabold text-emerald-600 text-xs font-mono">
+                              ₹{r.totalIn.toLocaleString("en-IN")}
+                            </td>
+                            <td className="py-2.5 px-2 text-center font-extrabold text-red-500 text-xs font-mono">
+                              ₹{r.totalOut.toLocaleString("en-IN")}
+                            </td>
+                            <td className="py-2.5 px-1 text-center">
+                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">
+                                {r.txCount}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-2 text-center text-xs font-bold">
+                              {formatBal(r.closingBalance)}
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   )}
@@ -3504,6 +3970,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         setSelectedReport("master_audit");
                         return;
                       }
+                      if (report.type === "retailer_category_summary") {
+                        setSelectedRetailerCategory("all");
+                        setSelectedReport("retailer_category_summary");
+                        return;
+                      }
                       if (report.subType) setVirtualLedgerSubType(report.subType);
                       if (report.type === "virtual_ledger") {
                         // Clear date filters so all-time records show
@@ -3535,6 +4006,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                            setDateTo("");
                            setMasterCategoryFilter("all");
                            setSelectedReport("master_audit");
+                           return;
+                         }
+                         if (report.type === "retailer_category_summary") {
+                           setSelectedRetailerCategory("all");
+                           setSelectedReport("retailer_category_summary");
                            return;
                          }
                          if (report.subType) setVirtualLedgerSubType(report.subType);
