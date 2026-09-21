@@ -391,6 +391,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           category: normCat,
           phone: r.phone || "",
           area: r.area || r.address || "",
+          balance: Number(r.balance || 0),
           opening_to_take: Number(r.opening_to_take || 0),
           opening_to_give: Number(r.opening_to_give || 0),
           allIds: new Set<string>(id ? [id] : [])
@@ -401,6 +402,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         if (!existing.phone && r.phone) existing.phone = r.phone;
         if (!existing.area && (r.area || r.address)) existing.area = r.area || r.address;
         if (!existing.category && normCat) existing.category = normCat;
+        if (typeof r.balance === "number" && !isNaN(r.balance)) {
+          existing.balance = (existing.balance || 0) + r.balance;
+        }
         existing.opening_to_take += Number(r.opening_to_take || 0);
         existing.opening_to_give += Number(r.opening_to_give || 0);
       }
@@ -970,7 +974,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     const coveredRetailerIds = new Set<string>();
     (openingBalanceEntries || []).forEach((e: any, idx: number) => {
       coveredRetailerIds.add(String(e.retailer_id));
-      const isDebit = e.transaction_type === "DEBIT"; // Retailer owes us (to take)
+      const isDebit = String(e.transaction_type || "").toLowerCase() === "debit"; // Retailer owes us (to take)
       const amt = Number(e.amount || 0);
       if (amt <= 0) return;
       const dt = e.created_at || "";
@@ -1448,8 +1452,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       }
 
       if (opEntry) {
-        const amt = Number(opEntry.amount || 0);
-        baseOpeningBalance = opEntry.transaction_type === "DEBIT" ? -amt : amt;
+        if (typeof opEntry.balance === "number" && !isNaN(opEntry.balance)) {
+          baseOpeningBalance = Number(opEntry.balance);
+        } else {
+          const amt = Number(opEntry.amount || 0);
+          const isDebit = String(opEntry.transaction_type || "").toLowerCase() === "debit";
+          baseOpeningBalance = isDebit ? -amt : amt;
+        }
       } else {
         const toTake = Number(r.opening_to_take || 0);
         const toGive = Number(r.opening_to_give || 0);
@@ -1486,11 +1495,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         }
       });
 
-      // Check if this retailer is in Money Transfer category or service
-      const isMoneyTransferRetailer = category.toLowerCase().includes("money transfer") ||
-        category.toLowerCase().includes("money_transfer") ||
-        category.toLowerCase() === "moneytransfer" ||
-        retNameLower.includes("money transfer");
+      // Safety net: if retailer has a non-zero ledger balance from backend but baseOpeningBalance is 0 and no transactions exist
+      if (baseOpeningBalance === 0 && retCols.length === 0 && retDeps.length === 0 && typeof r.balance === "number" && r.balance !== 0) {
+        baseOpeningBalance = r.balance;
+      }
 
       let openingBalance = baseOpeningBalance;
       let cashIn = 0;
@@ -1501,7 +1509,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       let totalOut = 0;
       let txCount = 0;
 
-      // Process Collections (Inflow for normal retailers, Outflow for Money Transfer retailers)
+      // Process Collections (All collections are Inflow from retailer to business)
       retCols.forEach((c) => {
         const cDate = c.collection_date || (c.created_at ? getISTDateString(getUtcDate(c.created_at)) : "");
         const amt = Number(c.total_amount || c.totalAmount || 0);
@@ -1514,26 +1522,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         if (vAmt > amt) vAmt = amt;
         const cAmt = Math.max(0, amt - vAmt);
 
-        if (isMoneyTransferRetailer) {
-          // For Money Transfer category, funds to retailer represent Outflow (Cash OUT / Virtual OUT)
-          if (dateFrom && cDate && cDate < dateFrom) {
-            openingBalance -= amt;
-          } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
-            cashOut += cAmt;
-            virtualOut += vAmt;
-            totalOut += amt;
-            txCount += 1;
-          }
-        } else {
-          // Normal Retailer Inflow
-          if (dateFrom && cDate && cDate < dateFrom) {
-            openingBalance += amt;
-          } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
-            cashIn += cAmt;
-            virtualIn += vAmt;
-            totalIn += amt;
-            txCount += 1;
-          }
+        if (dateFrom && cDate && cDate < dateFrom) {
+          openingBalance += amt;
+        } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
+          cashIn += cAmt;
+          virtualIn += vAmt;
+          totalIn += amt;
+          txCount += 1;
         }
       });
 
