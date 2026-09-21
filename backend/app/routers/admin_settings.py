@@ -497,4 +497,214 @@ def api_reset_and_sync_khatabook_14sep(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/reset-and-sync-khatabook-21sep")
+def api_reset_and_sync_khatabook_21sep(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin)
+):
+    """
+    Deletes all transaction entries (collections, deposits, ledgers, adjustments, attendance)
+    and seeds opening balances for all retailers and portals from the 21 September 2026 Khatabook report.
+    """
+    from scripts.reset_and_sync_21sep import PORTALS_DATA, RETAILERS_DATA, TARGET_DATE
+    from app.database.models import (
+        Retailer, Portal, BankAccount, User,
+        Collection, BankDeposit, Ledger, Denomination, DenominationBaseline,
+        PortalAdjustment, Attendance, BusinessSettings
+    )
+    from app.logic.ledger import recalculate_balances
+    from decimal import Decimal
+    from sqlalchemy import text
+    import uuid
+
+    try:
+        # 1. Clear all transactions
+        db.execute(text("UPDATE collections SET mirror_deposit_id = NULL, online_routing_deposit_id = NULL"))
+        den_count = db.query(Denomination).delete()
+        base_count = db.query(DenominationBaseline).delete()
+        led_count = db.query(Ledger).delete()
+        coll_count = db.query(Collection).delete()
+        dep_count = db.query(BankDeposit).delete()
+        adj_count = db.query(PortalAdjustment).delete()
+        att_count = db.query(Attendance).delete()
+        db.flush()
+
+        # 2. Reset user virtual balances & business settings
+        users = db.query(User).all()
+        for u in users:
+            u.virtual_balance = Decimal("0")
+        biz = db.query(BusinessSettings).first()
+        if biz:
+            biz.opening_cash_in_hand = 0.0
+
+        # 3. Sync Portals and their Primary BankAccount
+        existing_portals = db.query(Portal).all()
+        portal_by_lower = {p.name.strip().lower(): p for p in existing_portals}
+
+        for p in existing_portals:
+            p.opening_to_take = Decimal("0")
+            p.opening_to_give = Decimal("0")
+            p.balance = Decimal("0")
+
+        existing_bank_accounts = db.query(BankAccount).all()
+        for ba in existing_bank_accounts:
+            ba.opening_to_take = Decimal("0")
+            ba.opening_to_give = Decimal("0")
+            ba.balance = Decimal("0")
+        db.flush()
+
+        synced_portals = 0
+        created_portals = 0
+
+        for p_info in PORTALS_DATA:
+            p_name = p_info['name'].strip()
+            p_key = p_name.lower()
+            p_take = Decimal(str(p_info['take']))
+            p_give = Decimal(str(p_info['give']))
+            p_bal = p_take - p_give
+
+            portal = portal_by_lower.get(p_key)
+            if not portal and p_key.startswith("portal "):
+                portal = portal_by_lower.get(p_key[7:])
+            if not portal and p_key.startswith("od "):
+                portal = portal_by_lower.get(p_key[3:])
+
+            if portal:
+                portal.name = p_name
+                portal.opening_to_take = p_take
+                portal.opening_to_give = p_give
+                portal.balance = p_bal
+                synced_portals += 1
+            else:
+                portal = Portal(
+                    name=p_name,
+                    opening_to_take=p_take,
+                    opening_to_give=p_give,
+                    balance=p_bal
+                )
+                db.add(portal)
+                db.flush()
+                portal_by_lower[p_key] = portal
+                created_portals += 1
+
+            primary_account = db.query(BankAccount).filter(BankAccount.portal_id == portal.id).first()
+            if not primary_account:
+                primary_account = BankAccount(
+                    portal_id=portal.id,
+                    bank_account_name=f"{p_name} Primary",
+                    bank_name="Default Bank",
+                    show_in_online_payment=True,
+                    opening_to_take=p_take,
+                    opening_to_give=p_give,
+                    balance=p_bal
+                )
+                db.add(primary_account)
+            else:
+                primary_account.opening_to_take = p_take
+                primary_account.opening_to_give = p_give
+                primary_account.balance = p_bal
+
+        db.flush()
+
+        # 4. Remove Portal entries from Retailers table
+        portal_name_keys = {p['name'].strip().lower() for p in PORTALS_DATA}
+        portal_name_keys.discard("cash portal")
+
+        existing_retailers = db.query(Retailer).all()
+        for r in existing_retailers:
+            if r.retailer_name.strip().lower() in portal_name_keys:
+                db.delete(r)
+        db.flush()
+
+        # 5. Zero out remaining retailers
+        all_retailers = db.query(Retailer).all()
+        for r in all_retailers:
+            r.opening_to_take = Decimal("0")
+            r.opening_to_give = Decimal("0")
+            r.balance = Decimal("0")
+            r.opening_balance_set_on = None
+        db.flush()
+
+        # 6. Sync Retailers
+        db_by_name = {r.retailer_name.strip().lower(): r for r in all_retailers}
+        used_phones = {r.phone.strip() for r in all_retailers if r.phone}
+
+        updated_ret = 0
+        created_ret = 0
+
+        for seed in RETAILERS_DATA:
+            seed_name = seed['name'].strip()
+            seed_key = seed_name.lower()
+            seed_take = Decimal(str(seed['take']))
+            seed_give = Decimal(str(seed['give']))
+
+            target = db_by_name.get(seed_key)
+            if target:
+                target.retailer_name = seed_name
+                target.opening_to_take = seed_take
+                target.opening_to_give = seed_give
+                target.opening_balance_set_on = TARGET_DATE
+                target.balance = Decimal("0")
+                target.is_active = True
+                updated_ret += 1
+            else:
+                phone = seed['phone'].strip()
+                while phone in used_phones:
+                    phone = f"9{uuid.uuid4().hex[:9]}"
+                used_phones.add(phone)
+
+                new_r = Retailer(
+                    retailer_name=seed_name,
+                    phone=phone,
+                    address="New Delhi",
+                    opening_to_take=seed_take,
+                    opening_to_give=seed_give,
+                    balance=Decimal("0"),
+                    opening_balance_set_on=TARGET_DATE,
+                    is_active=True
+                )
+                db.add(new_r)
+                db_by_name[seed_key] = new_r
+                created_ret += 1
+
+        db.flush()
+
+        # 7. Recalculate ledger balances
+        active_retailers = db.query(Retailer).filter(Retailer.is_active == True).all()
+        for r in active_retailers:
+            recalculate_balances(r.id, db)
+        db.commit()
+
+        # 8. Verification
+        all_retailers = db.query(Retailer).all()
+        all_portals = db.query(Portal).all()
+
+        ret_give = sum(float(r.balance) for r in all_retailers if r.balance > 0)
+        ret_take = sum(float(-r.balance) for r in all_retailers if r.balance < 0)
+        p_take = sum(float(p.balance) for p in all_portals if p.balance > 0)
+        p_give = sum(float(-p.balance) for p in all_portals if p.balance < 0)
+
+        total_give = ret_give + p_give
+        total_take = ret_take + p_take
+
+        return {
+            "message": "Reset and sync with 21-Sep Khatabook report completed successfully",
+            "deleted_collections": coll_count,
+            "deleted_deposits": dep_count,
+            "deleted_ledgers": led_count,
+            "retailers_updated": updated_ret,
+            "retailers_created": created_ret,
+            "portals_synced": synced_portals + created_portals,
+            "total_give": total_give,
+            "total_take": total_take,
+            "target": 7754555.00,
+            "is_matched": abs(total_give - 7754555.00) < 0.01 and abs(total_take - 7754555.00) < 0.01
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
 

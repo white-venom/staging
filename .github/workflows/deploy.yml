@@ -39,19 +39,9 @@ jobs:
           docker container prune -f || true
           docker network prune -f || true
           docker image prune -f || true
+          docker builder prune -f || true
 
           # Rebuild and start all services with fallback for docker-compose
           docker compose up -d --build || docker-compose up -d --build
 
-          # Wait for backend container to be running before executing sync
-          echo "Waiting for crediiflow_backend to become ready..."
-          for i in $(seq 1 20); do
-            if docker ps --filter "name=crediiflow_backend" --filter "status=running" | grep -q crediiflow_backend; then
-              echo "crediiflow_backend is running!"
-              break
-            fi
-            sleep 3
-          done
-          sleep 5
-          docker exec crediiflow_backend python scripts/reset_and_sync_21sep.py || true
 
