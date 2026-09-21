@@ -1413,6 +1413,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         }
       });
 
+      // Check if this retailer is in Money Transfer category or service
+      const isMoneyTransferRetailer = category.toLowerCase().includes("money transfer") ||
+        category.toLowerCase().includes("money_transfer") ||
+        category.toLowerCase() === "moneytransfer" ||
+        retNameLower.includes("money transfer");
+
       let openingBalance = baseOpeningBalance;
       let cashIn = 0;
       let virtualIn = 0;
@@ -1422,7 +1428,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       let totalOut = 0;
       let txCount = 0;
 
-      // Process Collections (Inflow from Retailer)
+      // Process Collections (Inflow for normal retailers, Outflow for Money Transfer retailers)
       retCols.forEach((c) => {
         const cDate = c.collection_date || (c.created_at ? getISTDateString(getUtcDate(c.created_at)) : "");
         const amt = Number(c.total_amount || c.totalAmount || 0);
@@ -1435,17 +1441,30 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         if (vAmt > amt) vAmt = amt;
         const cAmt = Math.max(0, amt - vAmt);
 
-        if (dateFrom && cDate && cDate < dateFrom) {
-          openingBalance += amt;
-        } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
-          cashIn += cAmt;
-          virtualIn += vAmt;
-          totalIn += amt;
-          txCount += 1;
+        if (isMoneyTransferRetailer) {
+          // For Money Transfer category, funds to retailer represent Outflow (Cash OUT / Virtual OUT)
+          if (dateFrom && cDate && cDate < dateFrom) {
+            openingBalance -= amt;
+          } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
+            cashOut += cAmt;
+            virtualOut += vAmt;
+            totalOut += amt;
+            txCount += 1;
+          }
+        } else {
+          // Normal Retailer Inflow
+          if (dateFrom && cDate && cDate < dateFrom) {
+            openingBalance += amt;
+          } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
+            cashIn += cAmt;
+            virtualIn += vAmt;
+            totalIn += amt;
+            txCount += 1;
+          }
         }
       });
 
-      // Process Deposits / Payouts / Refunds (Outflow to Retailer)
+      // Process Deposits / Payouts / Refunds
       retDeps.forEach((d) => {
         const dDate = d.deposit_date || (d.created_at ? getISTDateString(getUtcDate(d.created_at)) : "");
         const amt = Number(d.amount || 0);
@@ -1467,13 +1486,32 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           vAmt = amt;
         }
 
-        if (dateFrom && dDate && dDate < dateFrom) {
-          openingBalance -= amt;
-        } else if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
-          cashOut += cAmt;
-          virtualOut += vAmt;
-          totalOut += amt;
-          txCount += 1;
+        const isRefund = d.isRefund === true || d.payment_mode === "refund" || d.paymentMode === "refund";
+
+        if (isRefund) {
+          // Refund from retailer back to business is Inflow
+          if (dateFrom && dDate && dDate < dateFrom) {
+            openingBalance += amt;
+          } else if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
+            if (isVirtualTx) {
+              virtualIn += amt;
+            } else {
+              cashIn += cAmt;
+              virtualIn += vAmt;
+            }
+            totalIn += amt;
+            txCount += 1;
+          }
+        } else {
+          // Outflow to Retailer
+          if (dateFrom && dDate && dDate < dateFrom) {
+            openingBalance -= amt;
+          } else if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
+            cashOut += cAmt;
+            virtualOut += vAmt;
+            totalOut += amt;
+            txCount += 1;
+          }
         }
       });
 
