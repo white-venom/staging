@@ -184,8 +184,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const openingBalanceEntries = adminCtx?.openingBalanceEntries || [];
   const businessSettings = adminCtx?.businessSettings || null;
 
-  // Active Selected Report View: default to "master_audit" so it opens directly
-  const [selectedReport, setSelectedReport] = useState<string | null>("master_audit");
+  // Active Selected Report View: null = Overview cards, string = report type
+  const [selectedReport, setSelectedReport] = useState<string | null>(null);
 
   // Master Audit Category Filter: 'all' | 'retailer_in' | 'portal_out' | 'staff_handover' | 'virtual_transfer' | 'opening_balance'
   const [masterCategoryFilter, setMasterCategoryFilter] = useState<string>("all");
@@ -1865,9 +1865,14 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
   const reportSections = [
     {
-      title: "Master Audit & Retailer Ledger",
+      title: "Master Audit & Complete Ledger",
       reports: [
         { name: "Universal Master Audit Trail", icon: Activity, formats: "PDF • CSV • Print", color: "emerald", type: "master_audit" },
+      ]
+    },
+    {
+      title: "Retailer & Portals",
+      reports: [
         { name: "Retailer Ledger (A-Z)", icon: FileText, formats: "PDF • XLSX", color: "purple", type: "retailer_ledger" },
       ]
     }
