@@ -274,6 +274,38 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     return "Staff Member";
   };
 
+  // Helper to map any collection/item to a clean human-readable Retailer Name
+  const getRetailerName = (item: any): string => {
+    if (!item) return "Retailer";
+
+    // 1. Direct name from item
+    const direct = item.retailer_name || item.retailerName || item.retailer;
+    if (direct && typeof direct === "string" && !isUuid(direct) && direct !== "Retailer" && direct !== "Unknown Retailer" && direct !== "Unknown Source") {
+      return direct;
+    }
+
+    // 2. Lookup in retailerDirectory by retailer_id
+    const retId = String(item.retailer_id || item.retailerId || "");
+    if (retId && retailerDirectory && retailerDirectory.length > 0) {
+      const found = retailerDirectory.find((r: any) => String(r.id) === retId);
+      if (found && (found.name || found.retailer_name)) {
+        return found.name || found.retailer_name;
+      }
+    }
+
+    // 3. If collection is staff handover / office
+    if (item.from_staff_name) {
+      return `Staff: ${item.from_staff_name}`;
+    }
+
+    // 4. Fallback to direct if it has any non-uuid value
+    if (direct && typeof direct === "string" && !isUuid(direct) && direct !== "Retailer") {
+      return direct;
+    }
+
+    return "Retailer";
+  };
+
   // Staff members dropdown list
   const staffList = useMemo(() => {
     const map = new Map<string, string>();
@@ -742,13 +774,14 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       const dt = c.created_at || c.date;
       const rawDate = c.collection_date || getISTDateString(getUtcDate(dt));
 
-      const isCms = (c.retailer_name || "").toLowerCase().startsWith("cms");
+      const rName = getRetailerName(c);
+      const isCms = rName.toLowerCase().startsWith("cms");
       const storeStr = c.store_name && c.store_name !== "Cash" ? ` (${c.store_name})` : "";
 
       let fromEntity = c.from_office 
         ? "Super Distributor / Office" 
-        : (c.from_staff_name ? `Staff: ${c.from_staff_name}` : `${c.retailer_name || "Retailer"}${storeStr}`);
-      if (isCms) fromEntity = `${c.retailer_name} - ${c.store_name || "Cash"}`;
+        : (c.from_staff_name ? `Staff: ${c.from_staff_name}` : `${rName}${storeStr}`);
+      if (isCms) fromEntity = `${rName} - ${c.store_name || "Cash"}`;
 
       let toEntity = getStaffName(c);
       if (c.portal_name) {
@@ -1230,6 +1263,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         if (selectedRetailerIds.includes("__none__")) return false;
         const matches = selectedRetailerIds.some(id =>
           String(c.retailer_id) === String(id) ||
+          getRetailerName(c) === id ||
           c.retailer_name === id ||
           String(c.id) === String(id)
         );
@@ -1248,9 +1282,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         if (!matches) return false;
       }
 
+      const rName = getRetailerName(c);
+
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const retName = (c.retailer_name || "").toLowerCase();
+        const retName = rName.toLowerCase();
         const storeName = (c.store_name || "").toLowerCase();
         const staffName = getStaffName(c).toLowerCase();
         const amount = String(c.total_amount || c.totalAmount || "");
@@ -1263,7 +1299,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       // Retailer Category Filter
       if (selectedRetailerCategory !== "all") {
         const retId = String(c.retailer_id || "");
-        const retName = (c.retailer_name || "").toLowerCase();
+        const retName = rName.toLowerCase();
         const retCat = retailerCategoryMap.get(retId) || retailerCategoryMap.get(retName) || (c.category || "");
         if (retCat.toLowerCase() !== selectedRetailerCategory.toLowerCase()) {
           return false;
@@ -1796,12 +1832,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       headers = ["No", "Date", "Time", "Retailer Name", "Category", "Store Name", "Staff Name", "Amount (IN)", "Remarks"];
       rows = filteredRetailerLedger.map((c, i) => {
         const dt = formatDateDisplay(c.created_at);
-        const retCat = retailerCategoryMap.get(String(c.retailer_id)) || retailerCategoryMap.get((c.retailer_name || '').toLowerCase()) || c.category || "-";
+        const rName = getRetailerName(c);
+        const retCat = retailerCategoryMap.get(String(c.retailer_id)) || retailerCategoryMap.get(rName.toLowerCase()) || c.category || "-";
         return [
           i + 1,
           dt.date,
           dt.time,
-          `"${(c.retailer_name || '').replace(/"/g, '""')}"`,
+          `"${rName.replace(/"/g, '""')}"`,
           `"${(retCat || '-').replace(/"/g, '""')}"`,
           `"${(c.store_name || 'Cash').replace(/"/g, '""')}"`,
           `"${getStaffName(c).replace(/"/g, '""')}"`,
@@ -3029,7 +3066,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           {/* RETAILER LEDGER VIEW */}
           {selectedReport === "retailer_ledger" && (() => {
             const totalIn = filteredRetailerLedger.reduce((sum, c) => sum + Number(c.total_amount || c.totalAmount || 0), 0);
-            const uniqueRetCount = new Set(filteredRetailerLedger.map(c => c.retailer_name)).size;
+            const uniqueRetCount = new Set(filteredRetailerLedger.map(c => getRetailerName(c))).size;
 
             return (
               <div className="space-y-3">
@@ -3071,7 +3108,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       <tbody className="divide-y divide-slate-200">
                         {filteredRetailerLedger.map((c, idx) => {
                           const dt = formatDateDisplay(c.created_at);
-                          const retCat = retailerCategoryMap.get(String(c.retailer_id)) || retailerCategoryMap.get((c.retailer_name || '').toLowerCase()) || c.category;
+                          const rName = getRetailerName(c);
+                          const retCat = retailerCategoryMap.get(String(c.retailer_id)) || retailerCategoryMap.get(rName.toLowerCase()) || c.category;
                           return (
                             <tr key={c.id || idx} className="hover:bg-slate-50/50 divide-x divide-slate-200">
                               <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[11px]">{idx + 1}</td>
@@ -3080,7 +3118,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                 <div className="text-slate-400 font-mono text-[10px] mt-0.5">{dt.time}</div>
                               </td>
                               <td className="py-2 px-1 text-center font-bold text-slate-900 text-[11.5px]">
-                                <div>{c.retailer_name || "Retailer"}</div>
+                                <div>{rName}</div>
                                 {retCat && (
                                   <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-black uppercase tracking-wider border border-purple-200">
                                     {retCat}
