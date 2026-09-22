@@ -44,4 +44,8 @@ jobs:
           # Rebuild and start all services with fallback for docker-compose
           docker compose up -d --build || docker-compose up -d --build
 
+          # Ensure SuperAdmin password is set to superpass123
+          sleep 5
+          docker compose exec -T backend python scripts/reset_superadmin.py superadmin superpass123 || docker exec crediiflow_backend python scripts/reset_superadmin.py superadmin superpass123 || true
+
 

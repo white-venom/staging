@@ -61,6 +61,35 @@ def startup_event():
     except Exception as e:
         print(f"[WARN] Failed to add superadmin control columns to tenants table: {e}")
 
+    # Ensure SuperAdmin exists and reset password to superpass123
+    try:
+        from app.database.db import MasterSessionLocal
+        from app.database.master_models import SuperAdmin
+        from app.core.security import get_password_hash
+        m_db = MasterSessionLocal()
+        try:
+            sa = m_db.query(SuperAdmin).filter(SuperAdmin.username == "superadmin").first()
+            if not sa:
+                print("[INFO] Creating SuperAdmin 'superadmin'...")
+                sa = SuperAdmin(
+                    name="CrediiFlow Admin",
+                    username="superadmin",
+                    password_hash=get_password_hash("superpass123"),
+                    is_active=True,
+                    role="full"
+                )
+                m_db.add(sa)
+            else:
+                print("[INFO] Resetting SuperAdmin 'superadmin' password to 'superpass123'...")
+                sa.password_hash = get_password_hash("superpass123")
+                sa.is_active = True
+            m_db.commit()
+            print("[INFO] SuperAdmin 'superadmin' password set to 'superpass123'.")
+        finally:
+            m_db.close()
+    except Exception as e:
+        print(f"[WARN] Failed to ensure SuperAdmin account: {e}")
+
     # 1. Automatically migrate 'do-it' subdomain to 'do-it-services' in master database
     try:
         from app.database.db import MasterSessionLocal
@@ -110,29 +139,27 @@ def startup_event():
             db.commit()
             print("[INFO] CMS retailer seeded successfully in do-it-services.")
 
-        # Seed default admin and staff inside do-it-services if SEED_ACCOUNTS is enabled
-        is_dev = settings.ENVIRONMENT == "development"
-        if os.getenv("SEED_ACCOUNTS", "true").lower() == "true" and is_dev:
-            admin_exists = db.query(UserModel).filter(UserModel.phone == "7900671145").first()
-            if not admin_exists:
-                new_admin = UserModel(
-                    name="Admin User",
-                    phone="7900671145",
-                    password_hash=get_password_hash("pass123"),
-                    role="admin"
-                )
-                db.add(new_admin)
-                
-            staff_exists = db.query(UserModel).filter(UserModel.phone == "9917128864").first()
-            if not staff_exists:
-                new_staff = UserModel(
-                    name="Staff User",
-                    phone="9917128864",
-                    password_hash=get_password_hash("pass123"),
-                    role="staff"
-                )
-                db.add(new_staff)
+        # Ensure default admin accounts (7900671145 and 7861882200) inside do-it-services
+        try:
+            for phone_no, name_str in [("7900671145", "Admin User"), ("7861882200", "Admin User"), ("9917128864", "Staff User")]:
+                role_val = "staff" if phone_no == "9917128864" else "admin"
+                u = db.query(UserModel).filter(UserModel.phone == phone_no).first()
+                if not u:
+                    new_u = UserModel(
+                        name=name_str,
+                        phone=phone_no,
+                        password_hash=get_password_hash("pass123"),
+                        role=role_val,
+                        is_active=True
+                    )
+                    db.add(new_u)
+                else:
+                    u.password_hash = get_password_hash("pass123")
+                    u.is_active = True
             db.commit()
+            print("[INFO] Default admin and staff accounts verified/reset in do-it-services.")
+        except Exception as err:
+            print(f"[WARN] Failed to verify/reset admin accounts: {err}")
         db.close()
     except Exception as e:
         print(f"[WARN] Failed to seed default tenant database 'do-it-services' during startup: {e}")
