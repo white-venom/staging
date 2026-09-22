@@ -26,6 +26,8 @@ import {
 import { useAdmin } from "../../context/AdminContext";
 import { getISTDateString, getUtcDate } from "../../../utils/dateHelpers";
 import { downloadElementAsPdf } from "../../../utils/downloadElementAsPdf";
+import { api } from "@/app/utils/api";
+import LedgerReportView from "../../../components/LedgerReportView";
 
 interface ReportsTabProps {
   collections: any[];
@@ -208,6 +210,49 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
   const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [staffSubReport, setStaffSubReport] = useState<"efficiency" | "daily_cash">("efficiency");
+
+  // Retailer Ledger Modal State (view complete retailer ledger on click)
+  const [isLedgerModalOpen, setIsLedgerModalOpen] = useState(false);
+  const [ledgerRetailer, setLedgerRetailer] = useState<any | null>(null);
+  const [ledgerData, setLedgerData] = useState<any[]>([]);
+  const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  const handleOpenRetailerLedger = async (r: any) => {
+    const matchedRetailer = (retailerDirectory || []).find(
+      (rd: any) => String(rd.id) === String(r.id) || (rd.name || "").trim().toLowerCase() === (r.name || "").trim().toLowerCase()
+    ) || r;
+
+    const token = r.ledgerToken || r.ledger_token || matchedRetailer?.ledger_token;
+
+    const targetRetailer = {
+      ...matchedRetailer,
+      ...r,
+      ledger_token: token || matchedRetailer?.ledger_token || r.ledger_token,
+      phone: r.phone || matchedRetailer?.phone || "",
+      area: r.area || matchedRetailer?.area || matchedRetailer?.address || ""
+    };
+
+    setLedgerRetailer(targetRetailer);
+    setIsLedgerModalOpen(true);
+    setLoadingLedger(true);
+
+    if (!targetRetailer.ledger_token) {
+      alert("Ledger token not found for this retailer");
+      setLoadingLedger(false);
+      return;
+    }
+
+    try {
+      const res = await api.getPublicLedger(targetRetailer.ledger_token);
+      setLedgerData(res.statement_history || []);
+      setLedgerOutstanding(res.outstanding_balance || 0);
+    } catch (err: any) {
+      alert("Failed to load ledger: " + (err?.message || "Unknown error"));
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
 
   // Helper date formatter
   const formatDateDisplay = (dateStr: string) => {
@@ -402,6 +447,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         if (!existing.phone && r.phone) existing.phone = r.phone;
         if (!existing.area && (r.area || r.address)) existing.area = r.area || r.address;
         if (!existing.category && normCat) existing.category = normCat;
+        if (!existing.ledger_token && (r.ledger_token || r.ledgerToken)) {
+          existing.ledger_token = r.ledger_token || r.ledgerToken;
+        }
         if (typeof r.balance === "number" && !isNaN(r.balance)) {
           existing.balance = (existing.balance || 0) + r.balance;
         }
@@ -1667,7 +1715,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         totalOut,
         txCount,
         closingBalance,
-        ledgerToken: r.ledger_token
+        ledgerToken: r.ledger_token || r.ledgerToken
       });
     });
 
@@ -3389,9 +3437,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                 <div className="text-slate-400 font-mono text-[10px] mt-0.5">{dt.time}</div>
                               </td>
                               <td className="py-2 px-1 text-center font-bold text-slate-900 text-[11.5px]">
-                                <div>{rName}</div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenRetailerLedger({ id: c.retailer_id, name: rName })}
+                                  className="hover:text-blue-600 hover:underline cursor-pointer font-bold transition-colors"
+                                  title="Click to view retailer ledger"
+                                >
+                                  {rName}
+                                </button>
                                 {retCat && (
-                                  <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-black uppercase tracking-wider border border-purple-200">
+                                  <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-black uppercase tracking-wider border border-purple-200 block mx-auto">
                                     {retCat}
                                   </span>
                                 )}
@@ -3485,18 +3540,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       <thead>
                         {/* Group Header Row */}
                         <tr className="bg-slate-200/90 border-b border-slate-300 text-slate-900 font-black text-[10px] uppercase">
-                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[4%]">#</th>
-                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-left w-[20%]">Retailer & Route</th>
-                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[9%]">Category</th>
-                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-center w-[12%]">Opening Bal</th>
+                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[4%] min-w-[32px]">#</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-left w-[22%] min-w-[170px]">Retailer & Route</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px]">Opening Bal</th>
+                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[9%] min-w-[85px]">Category</th>
                           <th colSpan={3} className="py-1 px-1 border-r border-emerald-300 text-center bg-emerald-100/80 text-emerald-950 font-black tracking-wider">
                             Total IN (Collections)
                           </th>
                           <th colSpan={3} className="py-1 px-1 border-r border-red-300 text-center bg-red-100/80 text-red-950 font-black tracking-wider">
                             Total OUT (Payouts / Refunds)
                           </th>
-                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[6%]">Txns</th>
-                          <th rowSpan={2} className="py-2 px-2 text-center w-[13%]">Closing Bal</th>
+                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[6%] min-w-[45px]">Txns</th>
+                          <th rowSpan={2} className="py-2 px-2 text-center w-[13%] min-w-[100px]">Closing Bal</th>
                         </tr>
                         {/* Sub-Column Header Row */}
                         <tr className="bg-slate-100 border-b border-slate-300 text-slate-800 font-bold text-[9.5px] uppercase">
@@ -3515,35 +3570,52 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         {filteredRetailerCategorySummary.map((r, idx) => (
                           <tr key={r.id || idx} className="hover:bg-slate-50/70 divide-x divide-slate-200 transition-colors">
                             <td className="py-2 px-1 text-center font-bold text-slate-700 text-[11px]">{idx + 1}</td>
-                            <td className="py-2 px-2 text-left">
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="font-bold text-slate-900 text-[12px] truncate">{r.name}</span>
-                                {setShowRetailerDrawer && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      if (setLedgerSearchTerm) setLedgerSearchTerm(r.name);
-                                      setShowRetailerDrawer(true);
-                                    }}
-                                    className="text-[9px] font-bold text-blue-600 hover:underline px-1 py-0.5 rounded hover:bg-blue-50 cursor-pointer shrink-0"
-                                    title="Open Retailer Ledger"
-                                  >
-                                    Ledger →
-                                  </button>
+                            <td className="py-2.5 px-2.5 text-left align-top">
+                              <div className="flex items-start justify-between gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenRetailerLedger(r)}
+                                  className="font-bold text-slate-900 hover:text-blue-600 hover:underline text-[12px] text-left break-words leading-snug cursor-pointer flex-1 transition-colors"
+                                  title="Click to open Retailer Ledger"
+                                >
+                                  {r.name}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenRetailerLedger(r)}
+                                  className="text-[9.5px] font-bold text-blue-600 hover:text-blue-800 hover:underline px-1.5 py-0.5 rounded bg-blue-50 hover:bg-blue-100 border border-blue-200 cursor-pointer shrink-0 inline-flex items-center gap-0.5 mt-0.5 transition-colors"
+                                  title="Open Retailer Ledger"
+                                >
+                                  Ledger →
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-slate-500 font-medium mt-1">
+                                {r.phone && (
+                                  <span className="inline-flex items-center gap-1 font-mono">
+                                    <span>📞</span>
+                                    <span>{r.phone}</span>
+                                  </span>
+                                )}
+                                {r.area && (
+                                  <span className="inline-flex items-center gap-1">
+                                    <span>📍</span>
+                                    <span>{r.area}</span>
+                                  </span>
+                                )}
+                                {r.category && (
+                                  <span className="inline-block px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 text-[8.5px] font-black uppercase tracking-wider border border-purple-200">
+                                    {r.category}
+                                  </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium mt-0.5">
-                                {r.phone && <span>📞 {r.phone}</span>}
-                                {r.area && <span>📍 {r.area}</span>}
-                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-center text-xs whitespace-nowrap bg-slate-50/30 font-semibold">
+                              {formatBal(r.openingBalance)}
                             </td>
                             <td className="py-2 px-1 text-center">
                               <span className="inline-block px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 text-[9px] font-black uppercase tracking-wider border border-purple-200">
                                 {r.category}
                               </span>
-                            </td>
-                            <td className="py-2 px-2 text-center text-xs">
-                              {formatBal(r.openingBalance)}
                             </td>
 
                             {/* IN Subcolumns */}
@@ -4389,6 +4461,44 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         ))}
       </div>
+
+      {/* RETAILER LEDGER REPORT MODAL */}
+      {isLedgerModalOpen && ledgerRetailer && (
+        <div className="fixed inset-0 bg-slate-950 z-[100] overflow-y-auto select-none">
+          {loadingLedger ? (
+            <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+              <div className="w-8 h-8 border-4 border-slate-700 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : (
+            <LedgerReportView 
+              title={ledgerRetailer.name}
+              subtitle={ledgerRetailer.area ? `Route: ${ledgerRetailer.area}` : undefined}
+              data={ledgerData}
+              outstandingBalance={ledgerOutstanding}
+              isPublic={false}
+              onBack={() => {
+                setIsLedgerModalOpen(false);
+                setLedgerRetailer(null);
+              }}
+              onRefresh={() => {
+                if (ledgerRetailer?.ledger_token) {
+                  api.getPublicLedger(ledgerRetailer.ledger_token).then((res) => {
+                    setLedgerData(res.statement_history || []);
+                    setLedgerOutstanding(res.outstanding_balance || 0);
+                  }).catch(console.error);
+                }
+              }}
+              phone={ledgerRetailer.phone}
+              subjectType="retailer"
+              publicLink={
+                typeof window !== "undefined" && ledgerRetailer.ledger_token
+                  ? `${window.location.origin}/public/ledger/${ledgerRetailer.ledger_token}`
+                  : ""
+              }
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
