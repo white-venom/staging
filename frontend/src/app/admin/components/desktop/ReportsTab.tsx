@@ -1521,7 +1521,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
         // Determine Online (Bank/UPI) vs Physical Cash
         let vAmt = Number(c.denominations?.online_amount || 0);
-        if (vAmt === 0 && (c.bank_account_id || c.bankAccountName) && (!c.denominations || (!c.denominations.note_500 && !c.denominations.note_200 && !c.denominations.note_100))) {
+        const isExplicitOnline = c.payment_mode === "online" || c.payment_mode === "bank" || c.paymentMode === "online" || c.paymentMode === "bank";
+        if (isExplicitOnline && vAmt === 0) {
           vAmt = amt;
         }
         if (vAmt > amt) vAmt = amt;
