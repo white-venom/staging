@@ -21,13 +21,15 @@ import {
   Users,
   Building2,
   CreditCard,
-  Share2
+  Share2,
+  Globe
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { getISTDateString, getUtcDate } from "../../../utils/dateHelpers";
 import { downloadElementAsPdf } from "../../../utils/downloadElementAsPdf";
 import { api } from "@/app/utils/api";
 import LedgerReportView from "../../../components/LedgerReportView";
+import BankAccountLedgerModal, { type LedgerTarget } from "../../../components/BankAccountLedgerModal";
 
 interface ReportsTabProps {
   collections: any[];
@@ -217,6 +219,22 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const [ledgerData, setLedgerData] = useState<any[]>([]);
   const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
   const [loadingLedger, setLoadingLedger] = useState(false);
+
+  // Portal Ledger Modal State (view complete portal ledger on click)
+  const [portalLedgerTarget, setPortalLedgerTarget] = useState<LedgerTarget | null>(null);
+  const [selectedPortalOnlineFilter, setSelectedPortalOnlineFilter] = useState<"all" | "online" | "standard">("all");
+
+  const handleOpenPortalLedger = (p: any) => {
+    const group = p?.portal || p;
+    setPortalLedgerTarget({
+      id: group.id,
+      bank_account_name: group.name,
+      bank_name: "Consolidated Group Wallet",
+      bank_account_no: "All Connected Banks",
+      ifsc_code: "",
+      isGroupLedger: true
+    });
+  };
 
   const handleOpenRetailerLedger = async (r: any) => {
     const matchedRetailer = (retailerDirectory || []).find(
@@ -1749,6 +1767,180 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     };
   }, [filteredRetailerCategorySummary]);
 
+  // ─── Filtered Portal Summary Data Calculation ───────────────────────────
+  const filteredPortalSummary = useMemo(() => {
+    const results: any[] = [];
+
+    (portalDirectory || []).forEach((portal: any) => {
+      const portalId = String(portal.id || "");
+      const portalName = (portal.name || "Portal").trim();
+      const accounts = portal.bank_accounts || portal.bankAccounts || [];
+      const accountIds = new Set(accounts.map((a: any) => String(a.id)));
+      const isOnline = Boolean(portal.show_in_online_payment || accounts.some((a: any) => a.show_in_online_payment));
+
+      // Quick Search Filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const matchesName = portalName.toLowerCase().includes(q);
+        const matchesAcc = accounts.some((a: any) => 
+          (a.bank_account_name || "").toLowerCase().includes(q) || 
+          (a.bank_name || "").toLowerCase().includes(q) ||
+          (a.bank_account_no || "").toLowerCase().includes(q)
+        );
+        if (!matchesName && !matchesAcc) return;
+      }
+
+      // Online status filter
+      if (selectedPortalOnlineFilter === "online" && !isOnline) return;
+      if (selectedPortalOnlineFilter === "standard" && isOnline) return;
+
+      // Base opening balance
+      const toTake = Number(portal.opening_to_take || 0);
+      const toGive = Number(portal.opening_to_give || 0);
+      let baseOpening = toTake - toGive;
+
+      if (baseOpening === 0 && typeof portal.balance === "number" && portal.balance !== 0) {
+        baseOpening = Number(portal.balance);
+      }
+
+      let openingBalance = baseOpening;
+      let cashIn = 0;
+      let onlineIn = 0;
+      let totalIn = 0;
+      let cashOut = 0;
+      let onlineOut = 0;
+      let totalOut = 0;
+      let txCount = 0;
+
+      deposits.forEach((d: any) => {
+        const dDate = d.deposit_date || (d.created_at ? getISTDateString(getUtcDate(d.created_at)) : "");
+        const amt = Number(d.amount || 0);
+        if (amt === 0) return;
+
+        const isDirectPortal = String(d.portal_id || "") === portalId || (d.portal_name && d.portal_name.toLowerCase() === portalName.toLowerCase());
+        const isTargetAccount = d.bank_account_id && accountIds.has(String(d.bank_account_id));
+        const isFromAccount = d.from_bank_account_id && accountIds.has(String(d.from_bank_account_id));
+
+        if (!isDirectPortal && !isTargetAccount && !isFromAccount) return;
+
+        const isVirtualRefund = d.deposit_type === "virtual" && (d.is_refund === true || d.payment_mode === "refund" || d.paymentMode === "refund");
+        const isPortalTransferIn = d.deposit_type === "portal_transfer" && isTargetAccount;
+        const isPortalTransferOut = d.deposit_type === "portal_transfer" && isFromAccount;
+        const isRegularDepositIn = d.deposit_type === "portal" || (!d.deposit_type && isTargetAccount);
+        const isVirtualPayoutOut = d.deposit_type === "virtual" && !isVirtualRefund;
+
+        const isInflow = isRegularDepositIn || isVirtualRefund || isPortalTransferIn;
+        const isOutflow = isVirtualPayoutOut || isPortalTransferOut;
+
+        const isOnlineTx = d.deposit_type === "virtual" || d.deposit_type === "portal_transfer" || d.payment_mode === "online" || d.payment_mode === "bank" || d.paymentMode === "online" || d.paymentMode === "bank";
+        let vAmt = isOnlineTx ? amt : Number(d.denominations?.online_amount || 0);
+        if (vAmt > amt) vAmt = amt;
+        const cAmt = Math.max(0, amt - vAmt);
+
+        if (isInflow) {
+          if (dateFrom && dDate && dDate < dateFrom) {
+            openingBalance += amt;
+          } else if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
+            if (isOnlineTx) {
+              onlineIn += amt;
+            } else {
+              cashIn += cAmt;
+              onlineIn += vAmt;
+            }
+            totalIn += amt;
+            txCount += 1;
+          }
+        } else if (isOutflow) {
+          if (dateFrom && dDate && dDate < dateFrom) {
+            openingBalance -= amt;
+          } else if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
+            if (isOnlineTx) {
+              onlineOut += amt;
+            } else {
+              cashOut += cAmt;
+              onlineOut += vAmt;
+            }
+            totalOut += amt;
+            txCount += 1;
+          }
+        }
+      });
+
+      collections.forEach((c: any) => {
+        const cDate = c.collection_date || (c.created_at ? getISTDateString(getUtcDate(c.created_at)) : "");
+        const amt = Number(c.total_amount || c.totalAmount || 0);
+        if (amt === 0) return;
+
+        const isTargetAccount = c.bank_account_id && accountIds.has(String(c.bank_account_id));
+        if (!isTargetAccount) return;
+
+        let vAmt = Number(c.denominations?.online_amount || 0);
+        const isExplicitOnline = c.payment_mode === "online" || c.payment_mode === "bank" || c.paymentMode === "online" || c.paymentMode === "bank";
+        if (isExplicitOnline && vAmt === 0) vAmt = amt;
+        if (vAmt > amt) vAmt = amt;
+        const cAmt = Math.max(0, amt - vAmt);
+
+        if (dateFrom && cDate && cDate < dateFrom) {
+          openingBalance += amt;
+        } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
+          cashIn += cAmt;
+          onlineIn += vAmt;
+          totalIn += amt;
+          txCount += 1;
+        }
+      });
+
+      const closingBalance = openingBalance + totalIn - totalOut;
+
+      results.push({
+        id: portalId,
+        name: portalName,
+        portal,
+        accountsCount: accounts.length,
+        accounts,
+        isOnline,
+        openingBalance,
+        cashIn,
+        onlineIn,
+        virtualIn: onlineIn,
+        totalIn,
+        cashOut,
+        onlineOut,
+        virtualOut: onlineOut,
+        totalOut,
+        txCount,
+        closingBalance
+      });
+    });
+
+    return results.sort((a, b) => a.name.localeCompare(b.name));
+  }, [portalDirectory, deposits, collections, dateFrom, dateTo, searchQuery, selectedPortalOnlineFilter]);
+
+  const portalSummaryTotals = useMemo(() => {
+    const totalPortals = filteredPortalSummary.length;
+    const totalOpening = filteredPortalSummary.reduce((sum, p) => sum + p.openingBalance, 0);
+    const totalCashIn = filteredPortalSummary.reduce((sum, p) => sum + p.cashIn, 0);
+    const totalOnlineIn = filteredPortalSummary.reduce((sum, p) => sum + (p.onlineIn ?? 0), 0);
+    const totalIn = filteredPortalSummary.reduce((sum, p) => sum + p.totalIn, 0);
+    const totalCashOut = filteredPortalSummary.reduce((sum, p) => sum + p.cashOut, 0);
+    const totalOnlineOut = filteredPortalSummary.reduce((sum, p) => sum + (p.onlineOut ?? 0), 0);
+    const totalOut = filteredPortalSummary.reduce((sum, p) => sum + p.totalOut, 0);
+    const totalTxCount = filteredPortalSummary.reduce((sum, p) => sum + p.txCount, 0);
+    const totalClosing = filteredPortalSummary.reduce((sum, p) => sum + p.closingBalance, 0);
+    return {
+      totalPortals,
+      totalOpening,
+      totalCashIn,
+      totalOnlineIn,
+      totalIn,
+      totalCashOut,
+      totalOnlineOut,
+      totalOut,
+      totalTxCount,
+      totalClosing
+    };
+  }, [filteredPortalSummary]);
+
   // Filtered Portal Ledger Data
   const filteredPortalLedger = useMemo(() => {
     return deposits.filter((d: any) => {
@@ -2181,6 +2373,40 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         r.closingBalance,
         r.closingBalance > 0 ? "Advance" : r.closingBalance < 0 ? "Due" : "Settled"
       ]);
+    } else if (reportType === "portal_summary") {
+      filename = `Portal_Summary_${dateFrom || "all"}_to_${dateTo || "time"}.csv`;
+      headers = [
+        "No",
+        "Portal Name",
+        "Status",
+        "Connected Accounts",
+        "Opening Balance",
+        "Cash IN",
+        "Online IN",
+        "Total IN",
+        "Cash OUT",
+        "Online OUT",
+        "Total OUT",
+        "Total Transactions",
+        "Closing Balance",
+        "Balance Type"
+      ];
+      rows = filteredPortalSummary.map((p, i) => [
+        i + 1,
+        `"${(p.name || '').replace(/"/g, '""')}"`,
+        p.isOnline ? "Online" : "Standard",
+        p.accountsCount,
+        p.openingBalance,
+        p.cashIn,
+        p.onlineIn,
+        p.totalIn,
+        p.cashOut,
+        p.onlineOut,
+        p.totalOut,
+        p.txCount,
+        p.closingBalance,
+        p.closingBalance > 0 ? "Advance" : p.closingBalance < 0 ? "Due" : "Settled"
+      ]);
     } else if (reportType === "portal_ledger") {
       headers = ["No", "Date", "Time", "Portal / Bank", "Deposit Type", "Target Name", "Staff Name", "Amount (OUT)", "Remarks"];
       rows = filteredPortalLedger.map((d, i) => {
@@ -2416,7 +2642,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       ? (staffSubReport === "efficiency" ? "Staff_Collection_Efficiency" : `${targetStaff ? targetStaff.name.trim().replace(/\s+/g, "_") : "Staff"}_Daily_Cash_Report`)
       : (selectedReport || "Report");
     const filename = `${reportName}_${dateFrom || "all"}_to_${dateTo || "time"}.pdf`;
-    const orientation = (selectedReport === "master_audit" || selectedReport === "retailer_category_summary") ? "landscape" : "portrait";
+    const orientation = (selectedReport === "master_audit" || selectedReport === "retailer_category_summary" || selectedReport === "portal_summary") ? "landscape" : "portrait";
     downloadElementAsPdf("report-export-content", filename, 0.25, orientation)
       .catch((err) => {
         console.error("PDF Download error, opening print dialog:", err);
@@ -2450,6 +2676,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       reports: [
         { name: "Retailer Ledger (A-Z)", icon: FileText, formats: "PDF • XLSX", color: "purple", type: "retailer_ledger" },
         { name: "Retailer Category Summary", icon: BarChart, formats: "PDF • CSV", color: "blue", type: "retailer_category_summary" },
+        { name: "Portal Summary", icon: Globe, formats: "PDF • CSV", color: "indigo", type: "portal_summary" },
       ]
     }
   ];
@@ -2462,6 +2689,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     if (selectedReport === "cashbook") reportTitle = "Cash Book (Physical & Bank Flow)";
     if (selectedReport === "retailer_ledger") reportTitle = "Retailer Ledger Report (A-Z)";
     if (selectedReport === "retailer_category_summary") reportTitle = "Retailer Category Summary & Movement Report";
+    if (selectedReport === "portal_summary") reportTitle = "Portal Summary & Movement Report";
     if (selectedReport === "portal_ledger") reportTitle = "Portal Ledger Report";
     if (selectedReport === "staff_reports") {
       reportTitle = staffSubReport === "efficiency"
@@ -2491,7 +2719,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             <div className="min-w-0">
               <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider truncate">{reportTitle}</h2>
               <p className="text-[10px] text-slate-400 font-bold truncate">
-                {selectedReport === "retailer_category_summary" ? "Aggregated opening balance, movements & closing balance by retailer category" : (selectedReport === "daybook" || selectedReport === "cashbook" || selectedReport === "tally_import" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator")}
+                {selectedReport === "retailer_category_summary" ? "Aggregated opening balance, movements & closing balance by retailer category" : (selectedReport === "portal_summary" ? "Aggregated opening balance, movements & closing balance by portal" : (selectedReport === "daybook" || selectedReport === "cashbook" || selectedReport === "tally_import" ? "Complete Daily Statement (Unfiltered)" : "Interactive data filter & statement generator"))}
               </p>
             </div>
           </div>
@@ -2569,6 +2797,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           >
             <BarChart className="w-3.5 h-3.5" />
             <span>Retailer Category Summary</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelectedReport("portal_summary")}
+            className={`px-3 py-1.5 rounded-xs text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 shrink-0 ${
+              selectedReport === "portal_summary"
+                ? "bg-indigo-600 text-white shadow-xs"
+                : "bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100"
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            <span>Portal Summary</span>
           </button>
         </div>
 
@@ -2871,8 +3111,140 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           </div>
         )}
 
-        {/* Filter Panel (Hidden for Daybook Summary, Cashbook, Tally Import, Virtual Ledger, Master Audit & Retailer Category Summary as requested) */}
-        {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && selectedReport !== "virtual_ledger" && selectedReport !== "master_audit" && selectedReport !== "retailer_category_summary" && (
+        {/* Portal Summary Filter Panel */}
+        {selectedReport === "portal_summary" && (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
+            {/* Quick Date Presets & Date Range */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1.5">1. Filter by Date Range</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: "today", label: "Today" },
+                    { id: "yesterday", label: "Yesterday" },
+                    { id: "last7", label: "Last 7 Days" },
+                    { id: "month", label: "This Month" },
+                    { id: "all", label: "All Time" },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => applyDatePreset(p.id as any)}
+                      className="px-2.5 py-1 text-[10px] font-bold rounded-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 cursor-pointer transition-colors"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Date From</label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xs px-2.5 py-1 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-wider block mb-0.5">Date To</label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xs px-2.5 py-1 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Portal Type & Search */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+                  2. Filter by Portal Type
+                </label>
+                <select
+                  value={selectedPortalOnlineFilter}
+                  onChange={(e) => setSelectedPortalOnlineFilter(e.target.value as any)}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Portals ({portalDirectory.length})</option>
+                  <option value="online">Online Enabled Only</option>
+                  <option value="standard">Standard / Offline Only</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+                  Quick Search Portal / Bank Account
+                </label>
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search portal name or account..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-8 pr-3 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Shortcut Pills */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => setSelectedPortalOnlineFilter("all")}
+                className={`px-2.5 py-1 text-[10.5px] font-black rounded-xs border cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  selectedPortalOnlineFilter === "all"
+                    ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-xs"
+                    : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                }`}
+              >
+                <span>All Portals</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono ${
+                  selectedPortalOnlineFilter === "all"
+                    ? "bg-white/20 text-white dark:bg-black/20 dark:text-black"
+                    : "bg-slate-200 dark:bg-slate-800 text-slate-500"
+                }`}>
+                  {portalDirectory.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPortalOnlineFilter("online")}
+                className={`px-2.5 py-1 text-[10.5px] font-black rounded-xs border cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  selectedPortalOnlineFilter === "online"
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                    : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                }`}
+              >
+                <span>Online Only</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[8.5px] font-mono ${
+                  selectedPortalOnlineFilter === "online" ? "bg-white/20 text-white" : "bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300"
+                }`}>
+                  {portalDirectory.filter((p: any) => p.show_in_online_payment || (p.bank_accounts || p.bankAccounts || []).some((a: any) => a.show_in_online_payment)).length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedPortalOnlineFilter("standard")}
+                className={`px-2.5 py-1 text-[10.5px] font-black rounded-xs border cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  selectedPortalOnlineFilter === "standard"
+                    ? "bg-slate-700 text-white border-slate-700 shadow-xs"
+                    : "bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300"
+                }`}
+              >
+                <span>Standard Only</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Filter Panel (Hidden for Daybook Summary, Cashbook, Tally Import, Virtual Ledger, Master Audit, Retailer Category Summary & Portal Summary as requested) */}
+        {selectedReport !== "daybook" && selectedReport !== "cashbook" && selectedReport !== "tally_import" && selectedReport !== "virtual_ledger" && selectedReport !== "master_audit" && selectedReport !== "retailer_category_summary" && selectedReport !== "portal_summary" && (
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm p-3.5 space-y-3">
             {selectedReport !== "staff_reports" && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -3658,6 +4030,200 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             );
           })()}
 
+          {/* PORTAL SUMMARY VIEW */}
+          {selectedReport === "portal_summary" && (() => {
+            const formatBal = (amt: number) => {
+              if (amt === 0) return <span className="font-mono text-slate-500 font-bold">₹0</span>;
+              if (amt > 0) return (
+                <span className="font-mono text-emerald-600 font-bold">
+                  +₹{amt.toLocaleString("en-IN")}{" "}
+                  <span className="text-[8px] font-sans font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 py-0.2 rounded-xs uppercase">Adv</span>
+                </span>
+              );
+              return (
+                <span className="font-mono text-red-600 font-bold">
+                  -₹{Math.abs(amt).toLocaleString("en-IN")}{" "}
+                  <span className="text-[8px] font-sans font-black text-red-700 bg-red-50 border border-red-200 px-1 py-0.2 rounded-xs uppercase">Due</span>
+                </span>
+              );
+            };
+
+            return (
+              <div className="space-y-3">
+                {/* 6-KPI Summary Bar */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                  <div className="border border-slate-200 rounded-lg bg-white p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Portals</span>
+                    <span className="text-base font-black text-slate-900 mt-0.5 block">{portalSummaryTotals.totalPortals} Listed</span>
+                  </div>
+                  <div className="border border-slate-200 rounded-lg bg-white p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Opening Balance</span>
+                    <div className="text-sm font-black mt-0.5">{formatBal(portalSummaryTotals.totalOpening)}</div>
+                  </div>
+                  <div className="border border-emerald-100 bg-emerald-50/50 rounded-lg p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wider block">Total IN (Deposits)</span>
+                    <span className="text-base font-black text-emerald-600 font-mono mt-0.5 block">
+                      ₹{portalSummaryTotals.totalIn.toLocaleString("en-IN")}
+                    </span>
+                    <div className="flex items-center justify-center gap-1 text-[8.5px] font-bold mt-1 font-mono">
+                      <span className="text-emerald-800 bg-emerald-100/70 px-1 py-0.2 rounded-xs">Cash: ₹{portalSummaryTotals.totalCashIn.toLocaleString("en-IN")}</span>
+                      <span className="text-blue-800 bg-blue-100/70 px-1 py-0.2 rounded-xs">Online: ₹{portalSummaryTotals.totalOnlineIn.toLocaleString("en-IN")}</span>
+                    </div>
+                  </div>
+                  <div className="border border-red-100 bg-red-50/50 rounded-lg p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-red-700 uppercase tracking-wider block">Total OUT (Payouts)</span>
+                    <span className="text-base font-black text-red-600 font-mono mt-0.5 block">
+                      ₹{portalSummaryTotals.totalOut.toLocaleString("en-IN")}
+                    </span>
+                    <div className="flex items-center justify-center gap-1 text-[8.5px] font-bold mt-1 font-mono">
+                      <span className="text-red-800 bg-red-100/70 px-1 py-0.2 rounded-xs">Cash: ₹{portalSummaryTotals.totalCashOut.toLocaleString("en-IN")}</span>
+                      <span className="text-purple-800 bg-purple-100/70 px-1 py-0.2 rounded-xs">Online: ₹{portalSummaryTotals.totalOnlineOut.toLocaleString("en-IN")}</span>
+                    </div>
+                  </div>
+                  <div className="border border-slate-200 rounded-lg bg-white p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Total Txns</span>
+                    <span className="text-base font-black text-slate-800 font-mono mt-0.5 block">
+                      {portalSummaryTotals.totalTxCount}
+                    </span>
+                  </div>
+                  <div className="border border-indigo-100 bg-indigo-50/50 rounded-lg p-2.5 text-center shadow-xs">
+                    <span className="text-[9px] font-black text-indigo-700 uppercase tracking-wider block">Closing Balance</span>
+                    <div className="text-sm font-black mt-0.5">{formatBal(portalSummaryTotals.totalClosing)}</div>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="border border-slate-200 rounded-lg overflow-x-auto bg-white shadow-xs">
+                  {filteredPortalSummary.length === 0 ? (
+                    <div className="p-10 text-center space-y-1 bg-white">
+                      <div className="text-sm font-black text-slate-700">No portals found</div>
+                      <div className="text-xs text-slate-400 italic">No portals match the filter criteria.</div>
+                    </div>
+                  ) : (
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[980px]">
+                      <thead>
+                        {/* Group Header Row */}
+                        <tr className="bg-slate-200/90 border-b border-slate-300 text-slate-900 font-black text-[10px] uppercase">
+                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[4%] min-w-[32px]">#</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-left w-[24%] min-w-[170px]">Portal & Accounts</th>
+                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px]">Opening Bal</th>
+                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[9%] min-w-[85px]">Status</th>
+                          <th colSpan={3} className="py-1 px-1 border-r border-emerald-300 text-center bg-emerald-100/80 text-emerald-950 font-black tracking-wider">
+                            Total IN (Deposits / Inflow)
+                          </th>
+                          <th colSpan={3} className="py-1 px-1 border-r border-red-300 text-center bg-red-100/80 text-red-950 font-black tracking-wider">
+                            Total OUT (Payouts / Transfers)
+                          </th>
+                          <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[6%] min-w-[45px]">Txns</th>
+                          <th rowSpan={2} className="py-2 px-2 text-center w-[13%] min-w-[100px]">Closing Bal</th>
+                        </tr>
+                        {/* Sub-Column Header Row */}
+                        <tr className="bg-slate-100 border-b border-slate-300 text-slate-800 font-bold text-[9.5px] uppercase">
+                          {/* IN Categories */}
+                          <th className="py-1.5 px-1 border-r border-slate-200 text-center w-[8%] bg-emerald-50/70 text-emerald-800">Cash IN</th>
+                          <th className="py-1.5 px-1 border-r border-slate-200 text-center w-[8%] bg-blue-50/70 text-blue-800">Online IN</th>
+                          <th className="py-1.5 px-1 border-r border-emerald-300 text-center w-[9%] bg-emerald-100 text-emerald-950 font-black">Total IN</th>
+
+                          {/* OUT Categories */}
+                          <th className="py-1.5 px-1 border-r border-slate-200 text-center w-[8%] bg-red-50/70 text-red-800">Cash OUT</th>
+                          <th className="py-1.5 px-1 border-r border-slate-200 text-center w-[8%] bg-purple-50/70 text-purple-800">Online OUT</th>
+                          <th className="py-1.5 px-1 border-r border-red-300 text-center w-[9%] bg-red-100 text-red-950 font-black">Total OUT</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {filteredPortalSummary.map((p, idx) => (
+                          <tr key={p.id || idx} className="hover:bg-slate-50/70 divide-x divide-slate-200 transition-colors">
+                            <td className="py-2 px-1 text-center font-bold text-slate-700 text-[11px]">{idx + 1}</td>
+                            <td className="py-2.5 px-2.5 text-left align-top">
+                              <div className="flex items-start justify-between gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenPortalLedger(p.portal || p)}
+                                  className="font-bold text-slate-900 hover:text-indigo-600 hover:underline text-[12px] text-left break-words leading-snug cursor-pointer flex-1 transition-colors"
+                                  title="Click to open Portal Ledger"
+                                >
+                                  {p.name}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenPortalLedger(p.portal || p)}
+                                  className="text-[9.5px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline px-1.5 py-0.5 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 cursor-pointer shrink-0 inline-flex items-center gap-0.5 mt-0.5 transition-colors"
+                                  title="Open Portal Ledger"
+                                >
+                                  Ledger →
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-slate-500 font-medium mt-1">
+                                <span className="inline-flex items-center gap-1">
+                                  <Building2 className="w-3 h-3 text-slate-400" />
+                                  <span>{p.accountsCount} {p.accountsCount === 1 ? "Account" : "Accounts"}</span>
+                                </span>
+                                {p.isOnline ? (
+                                  <span className="inline-block px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 text-[8.5px] font-black uppercase tracking-wider border border-emerald-200">
+                                    Online
+                                  </span>
+                                ) : (
+                                  <span className="inline-block px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 text-[8.5px] font-bold uppercase tracking-wider border border-slate-200">
+                                    Standard
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-2 px-2 text-center text-xs whitespace-nowrap bg-slate-50/30 font-semibold">
+                              {formatBal(p.openingBalance)}
+                            </td>
+                            <td className="py-2 px-1 text-center">
+                              {p.isOnline ? (
+                                <span className="inline-block px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[9px] font-black uppercase tracking-wider border border-emerald-200">
+                                  Online
+                                </span>
+                              ) : (
+                                <span className="inline-block px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-wider border border-slate-200">
+                                  Standard
+                                </span>
+                              )}
+                            </td>
+
+                            {/* IN Subcolumns */}
+                            <td className="py-2 px-1 text-center font-bold text-slate-800 text-[11px] font-mono whitespace-nowrap bg-emerald-50/20">
+                              {p.cashIn > 0 ? `₹${p.cashIn.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                            </td>
+                            <td className="py-2 px-1 text-center font-bold text-blue-700 text-[11px] font-mono whitespace-nowrap bg-blue-50/20">
+                              {p.onlineIn > 0 ? `₹${p.onlineIn.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                            </td>
+                            <td className="py-2 px-1 text-center font-extrabold text-emerald-600 text-[11.5px] font-mono whitespace-nowrap bg-emerald-50/50">
+                              ₹{p.totalIn.toLocaleString("en-IN")}
+                            </td>
+
+                            {/* OUT Subcolumns */}
+                            <td className="py-2 px-1 text-center font-bold text-slate-800 text-[11px] font-mono whitespace-nowrap bg-red-50/20">
+                              {p.cashOut > 0 ? `₹${p.cashOut.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                            </td>
+                            <td className="py-2 px-1 text-center font-bold text-purple-700 text-[11px] font-mono whitespace-nowrap bg-purple-50/20">
+                              {p.onlineOut > 0 ? `₹${p.onlineOut.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
+                            </td>
+                            <td className="py-2 px-1 text-center font-extrabold text-red-500 text-[11.5px] font-mono whitespace-nowrap bg-red-50/50">
+                              ₹{p.totalOut.toLocaleString("en-IN")}
+                            </td>
+
+                            <td className="py-2 px-1 text-center">
+                              <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 font-mono">
+                                {p.txCount}
+                              </span>
+                            </td>
+                            <td className="py-2 px-2 text-center text-xs font-bold">
+                              {formatBal(p.closingBalance)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* PORTAL LEDGER VIEW */}
           {selectedReport === "portal_ledger" && (() => {
             const totalOut = filteredPortalLedger.reduce((sum, d) => sum + Number(d.amount || 0), 0);
@@ -4398,6 +4964,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         setSelectedReport("retailer_category_summary");
                         return;
                       }
+                      if (report.type === "portal_summary") {
+                        setSelectedPortalOnlineFilter("all");
+                        setSelectedReport("portal_summary");
+                        return;
+                      }
                       if (report.subType) setVirtualLedgerSubType(report.subType);
                       if (report.type === "virtual_ledger") {
                         // Clear date filters so all-time records show
@@ -4434,6 +5005,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                          if (report.type === "retailer_category_summary") {
                            setSelectedRetailerCategory("all");
                            setSelectedReport("retailer_category_summary");
+                           return;
+                         }
+                         if (report.type === "portal_summary") {
+                           setSelectedPortalOnlineFilter("all");
+                           setSelectedReport("portal_summary");
                            return;
                          }
                          if (report.subType) setVirtualLedgerSubType(report.subType);
@@ -4498,6 +5074,21 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             />
           )}
         </div>
+      )}
+
+      {/* PORTAL LEDGER REPORT MODAL */}
+      {portalLedgerTarget && (
+        <BankAccountLedgerModal
+          target={portalLedgerTarget}
+          onClose={() => setPortalLedgerTarget(null)}
+          portalDirectory={portalDirectory}
+          retailerDirectory={retailerDirectory}
+          userDirectory={userDirectory}
+          showToastNotification={(msg) => alert(msg)}
+          fetchData={() => {
+            if (adminCtx?.fetchData) adminCtx.fetchData();
+          }}
+        />
       )}
     </div>
   );
