@@ -30,7 +30,7 @@ import InlineSelect from "@/app/components/InlineSelect";
 
 export default function MobileLedger() {
   const router = useRouter();
-  const { collections, deposits, retailerDirectory, portalDirectory, fetchData, showToastNotification, userDirectory } = useAdmin();
+  const { collections, deposits, openingBalanceEntries, retailerDirectory, portalDirectory, fetchData, showToastNotification, userDirectory } = useAdmin();
   const [search, setSearch] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -241,7 +241,7 @@ export default function MobileLedger() {
     dateFrom: getTodayDateString(),
     dateTo: getTodayDateString(),
     staff: 'all',
-    selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist"],
+    selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist", "opening-balance"],
     retailerId: 'all',
     storeId: 'all',
     portalId: 'all',
@@ -280,10 +280,11 @@ export default function MobileLedger() {
           return d.targetName?.replace(/^(Retailer:?\s*-\s*|Retailer:?\s*)/i, "") || "Retailer";
         }
         return d.portalId ? `${d.portalName} (${d.targetName})` : d.targetName;
-      })
+      }),
+      ...(openingBalanceEntries || []).map((e: any) => e.retailer_name)
     ];
     return Array.from(new Set(rawParties.filter(Boolean))).sort() as string[];
-  }, [collections, deposits, retailerDirectory]);
+  }, [collections, deposits, openingBalanceEntries, retailerDirectory]);
 
   const bankAccountList = useMemo(() => {
     const rawBankAccounts = [
@@ -341,6 +342,39 @@ export default function MobileLedger() {
           party,
           bankAccount: isVirtual ? (d.portalName || d.bankAccountName || d.targetName) : d.targetName, 
           staff: d.staffName || "Admin"
+        };
+      }),
+      ...(openingBalanceEntries || []).map((e: any) => {
+        let dtStr = e.opening_balance_set_on ? `${e.opening_balance_set_on} 00:00:00` : (e.created_at || "").replace("T", " ").split(".")[0];
+        if (!e.opening_balance_set_on && e.created_at) {
+          try {
+            const cleanCreatedAt = e.created_at.replace(" ", "T");
+            const dateObj = new Date(cleanCreatedAt + (cleanCreatedAt.includes("Z") ? "" : "Z"));
+            const formatted = new Intl.DateTimeFormat('en-GB', {
+              year: 'numeric', month: '2-digit', day: '2-digit',
+              hour: '2-digit', minute: '2-digit', hour12: false,
+              timeZone: 'Asia/Kolkata'
+            }).format(dateObj).replace(',', '').replace(/\//g, '-');
+            const [datePart, timePart] = formatted.split(' ');
+            const [day, month, year] = datePart.split('-');
+            dtStr = `${year}-${month}-${day} ${timePart}`;
+          } catch (_) {}
+        }
+        return {
+          id: e.id,
+          date: dtStr,
+          party: e.retailer_name || "Retailer",
+          retailer_id: e.retailer_id,
+          store_name: null,
+          bankAccount: null,
+          staff: "Admin",
+          amount: e.amount,
+          totalAmount: e.amount,
+          balance_snapshot: e.balance,
+          type: 'opening-balance',
+          txType: 'opening-balance',
+          transaction_type: e.transaction_type,
+          rawRecord: e
         };
       })
     ];
@@ -405,11 +439,11 @@ export default function MobileLedger() {
     });
 
     return combined;
-  }, [collections, deposits, search, filters]);
+  }, [collections, deposits, openingBalanceEntries, search, filters]);
 
   const isAnyFilterActive = useMemo(() => {
     return filters.staff !== 'all' || 
-           filters.selectedTypes.length < 4 || 
+           filters.selectedTypes.length < 5 || 
            filters.retailerId !== 'all' || 
            filters.storeId !== 'all' || 
            filters.portalId !== 'all' || 
@@ -494,7 +528,7 @@ export default function MobileLedger() {
                 dateFrom: today,
                 dateTo: today,
                 staff: 'all',
-                selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist"],
+                selectedTypes: ["cash-in", "cash-out", "virtual-transfer", "move-to-dist", "opening-balance"],
                 retailerId: 'all',
                 storeId: 'all',
                 portalId: 'all',
@@ -550,6 +584,9 @@ export default function MobileLedger() {
                                ? `${item.party} - ${item.store_name || "Cash"}`
                                : item.party || 'General Entry'}
                            </span>
+                           {item.type === 'opening-balance' && (
+                             <span className="text-[9px] font-black px-1.5 py-0.2 rounded-sm bg-amber-100 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 uppercase tracking-wider">Opening</span>
+                           )}
                            {item.store_name && !(item.type === 'collection' && item.party?.toLowerCase().startsWith("cms")) && (
                              <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">({item.store_name})</span>
                            )}
@@ -565,33 +602,37 @@ export default function MobileLedger() {
                            )}
                          </div>
                          <div className="flex items-center gap-1 no-print" onClick={e => e.stopPropagation()}>
-                           <button
-                             onClick={() => {
-                               if (item.txType === 'cash-in') {
-                                 shareCollectionEntry(item, item.staff || 'Staff');
-                               } else {
-                                 shareDepositEntry(item, item.staff || 'Staff');
-                               }
-                             }}
-                             className="p-0.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 rounded-sm hover:bg-emerald-100 transition-colors cursor-pointer"
-                             title="Share Entry"
-                           >
-                             <Share2 className="w-3.5 h-3.5" />
-                           </button>
-                           <button
-                             onClick={() => handleStartEditCollection(item)}
-                             className="p-0.5 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-sm hover:bg-blue-100 transition-colors cursor-pointer"
-                             title="Edit Entry"
-                           >
-                             <Edit2 className="w-3.5 h-3.5" />
-                           </button>
-                           <button
-                             onClick={() => handleDeleteEntry(item)}
-                             className="p-0.5 bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 rounded-sm hover:bg-red-100 transition-colors cursor-pointer"
-                             title="Delete Entry"
-                           >
-                             <Trash2 className="w-3.5 h-3.5" />
-                           </button>
+                           {item.type !== 'opening-balance' && (
+                             <>
+                               <button
+                                 onClick={() => {
+                                   if (item.txType === 'cash-in') {
+                                     shareCollectionEntry(item, item.staff || 'Staff');
+                                   } else {
+                                     shareDepositEntry(item, item.staff || 'Staff');
+                                   }
+                                 }}
+                                 className="p-0.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400 rounded-sm hover:bg-emerald-100 transition-colors cursor-pointer"
+                                 title="Share Entry"
+                               >
+                                 <Share2 className="w-3.5 h-3.5" />
+                               </button>
+                               <button
+                                 onClick={() => handleStartEditCollection(item)}
+                                 className="p-0.5 bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-sm hover:bg-blue-100 transition-colors cursor-pointer"
+                                 title="Edit Entry"
+                               >
+                                 <Edit2 className="w-3.5 h-3.5" />
+                               </button>
+                               <button
+                                 onClick={() => handleDeleteEntry(item)}
+                                 className="p-0.5 bg-red-50 text-red-600 dark:bg-red-950/20 dark:text-red-400 rounded-sm hover:bg-red-100 transition-colors cursor-pointer"
+                                 title="Delete Entry"
+                               >
+                                 <Trash2 className="w-3.5 h-3.5" />
+                               </button>
+                             </>
+                           )}
                            <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                          </div>
                        </div>
@@ -607,12 +648,13 @@ export default function MobileLedger() {
                         Cash-in (a collection) and move-to-dist (a refund to portal) both increase this ledger (In / Got);
                         virtual-transfer (load to retailer) and cash-out both decrease it (Out / Gave). */}
                     {(() => {
-                      const isMoneyIn = item.type === 'collection' || item.txType === 'cash-in' || item.txType === 'move-to-dist';
+                      const isOpening = item.type === 'opening-balance' || item.txType === 'opening-balance';
+                      const isMoneyIn = isOpening ? (item.transaction_type === 'credit') : (item.type === 'collection' || item.txType === 'cash-in' || item.txType === 'move-to-dist');
                       return (
                         <>
                           <td className="py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-center">
-                            <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded-sm ${isMoneyIn ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                              {isMoneyIn ? 'Cash In' : 'Cash Out'}
+                            <span className={`text-[10px] font-black uppercase px-1.5 py-0.5 rounded-sm ${isOpening ? 'bg-amber-50 text-amber-700' : (isMoneyIn ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600')}`}>
+                              {isOpening ? (isMoneyIn ? 'Opening (+)' : 'Opening (-)') : (isMoneyIn ? 'Cash In' : 'Cash Out')}
                             </span>
                           </td>
                           <td className={`py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums whitespace-nowrap ${isMoneyIn ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>

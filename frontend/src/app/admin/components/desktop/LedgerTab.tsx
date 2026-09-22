@@ -345,8 +345,8 @@ export default function LedgerTab({
     // or edited later, but not tied to a collection_id or deposit_id -- so they
     // need their own mapping here rather than fitting the two shapes above.
     ...(openingBalanceEntries || []).map((e: any) => {
-      let dtStr = (e.created_at || "").replace("T", " ").split(".")[0];
-      if (e.created_at) {
+      let dtStr = e.opening_balance_set_on ? `${e.opening_balance_set_on} 00:00:00` : (e.created_at || "").replace("T", " ").split(".")[0];
+      if (!e.opening_balance_set_on && e.created_at) {
         try {
           const cleanCreatedAt = e.created_at.replace(" ", "T");
           const dateObj = new Date(cleanCreatedAt + (cleanCreatedAt.includes("Z") ? "" : "Z"));

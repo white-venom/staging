@@ -131,6 +131,7 @@ def get_opening_balance_entries(
             "amount": float(e.amount),
             "balance": float(e.balance),
             "created_at": e.created_at.isoformat(),
+            "opening_balance_set_on": e.retailer.opening_balance_set_on.isoformat() if (e.retailer and e.retailer.opening_balance_set_on) else None,
         }
         for e in entries
     ]

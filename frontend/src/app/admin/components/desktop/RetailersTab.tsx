@@ -201,7 +201,18 @@ export default function RetailersTab({
     setSelectedNewRemarks(item.remarks || "");
     setSelectedNewDate((item.date || "").split(" ")[0]);
     
-    const isOnlineCol = !isDeposit && (item.bank_account_id != null || (item.denominations && Number(item.denominations.online_amount || 0) > 0));
+    const onlineAmt = Number(item.denominations?.online_amount || 0);
+    const hasExplicitOnline = item.payment_mode === "online" || item.paymentMode === "online";
+    const hasCashNotes = item.denominations && (
+      Number(item.denominations.note_500 || 0) > 0 ||
+      Number(item.denominations.note_200 || 0) > 0 ||
+      Number(item.denominations.note_100 || 0) > 0 ||
+      Number(item.denominations.note_50 || 0) > 0 ||
+      Number(item.denominations.note_20 || 0) > 0 ||
+      Number(item.denominations.note_10 || 0) > 0 ||
+      Number(item.denominations.coins || 0) > 0
+    );
+    const isOnlineCol = !isDeposit && !hasCashNotes && (onlineAmt > 0 || hasExplicitOnline);
     const initialPaymentMode = isDeposit ? (item.payment_mode || "online") : (isOnlineCol ? "online" : "cash");
     setSelectedNewPaymentMode(initialPaymentMode);
     setSelectedNewAmount(Number(item.amount || 0));

@@ -551,7 +551,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         };
       })
     ];
-    return items.sort((a, b) => getUtcDate(a.created_at).getTime() - getUtcDate(b.created_at).getTime());
+    return items.sort((a, b) => {
+      const timeA = a.date ? new Date(a.date.replace(' ', 'T')).getTime() : getUtcDate(a.created_at).getTime();
+      const timeB = b.date ? new Date(b.date.replace(' ', 'T')).getTime() : getUtcDate(b.created_at).getTime();
+      return timeA - timeB;
+    });
   }, [staffFilteredCollections, staffFilteredDeposits, targetStaff]);
 
   const staffOpeningBalance = useMemo(() => {
@@ -977,8 +981,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       const isDebit = String(e.transaction_type || "").toLowerCase() === "debit"; // Retailer owes us (to take)
       const amt = Number(e.amount || 0);
       if (amt <= 0) return;
-      const dt = e.created_at || "";
-      const rawDate = dt ? getISTDateString(getUtcDate(dt)) : getISTDateString();
+      const rawDate = e.opening_balance_set_on || (e.created_at ? getISTDateString(getUtcDate(e.created_at)) : getISTDateString());
+      const dt = e.opening_balance_set_on ? `${e.opening_balance_set_on}T00:00:00Z` : (e.created_at || "");
       items.push({
         id: `op-ret-entry-${e.id || idx}`,
         timestamp: dt,
@@ -1131,9 +1135,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         const amtB = Math.abs(b.inAmount || b.outAmount || 0);
         return amtB - amtA;
       }
-      const timeA = new Date(a.timestamp || a.rawDate).getTime();
-      const timeB = new Date(b.timestamp || b.rawDate).getTime();
-      return timeB - timeA;
+      const dateA = a.rawDate || (a.timestamp ? a.timestamp.split("T")[0] : "");
+      const dateB = b.rawDate || (b.timestamp ? b.timestamp.split("T")[0] : "");
+      const cmp = dateB.localeCompare(dateA);
+      if (cmp !== 0) return cmp;
+      return getUtcDate(b.timestamp || b.rawDate).getTime() - getUtcDate(a.timestamp || a.rawDate).getTime();
     });
   }, [masterAuditData, dateFrom, dateTo, masterCategoryFilter, searchQuery]);
 
@@ -1205,6 +1211,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
     // Deposits = Payments (Credit Cash / OUT)
     deposits.forEach((d: any, idx: number) => {
+      // Exclude internal portal auto-routing deposits from online collections
+      const isPortalAutoRouting = d.deposit_type === "portal" && (d.payment_mode === "online" || d.paymentMode === "online") && (d.retailer_id || d.target_name?.includes("Retailer"));
+      if (isPortalAutoRouting) return;
+
       const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       if (dateFrom && dDate < dateFrom) return;
       if (dateTo && dDate > dateTo) return;
@@ -1244,7 +1254,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       );
     }
 
-    return result.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+    return result.sort((a, b) => {
+      const cmp = (b.cDate || "").localeCompare(a.cDate || "");
+      if (cmp !== 0) return cmp;
+      return getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime();
+    });
   }, [collections, deposits, dateFrom, dateTo, searchQuery, userDirectory]);
 
   // Filtered Cashbook Data (Two-Sided T-Account Receipts Dr / Payments Cr Format)
@@ -1258,16 +1272,22 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       if (dateFrom && cDate < dateFrom) return;
       if (dateTo && cDate > dateTo) return;
 
-      const isBank = (c.payment_mode || c.paymentMode || "").toLowerCase() === "online" || (c.payment_mode || c.paymentMode || "").toLowerCase() === "bank";
       const amt = Number(c.total_amount || c.totalAmount || 0);
+      let vAmt = Number(c.denominations?.online_amount || 0);
+      const isExplicitOnline = (c.payment_mode || c.paymentMode || "").toLowerCase() === "online" || (c.payment_mode || c.paymentMode || "").toLowerCase() === "bank";
+      if (isExplicitOnline && vAmt === 0) vAmt = amt;
+      if (vAmt > amt) vAmt = amt;
+      const cAmt = Math.max(0, amt - vAmt);
+      const isBank = vAmt > 0;
 
       receipts.push({
         id: c.id || `rec_${idx}`,
         created_at: c.created_at,
+        cDate,
         particulars: c.retailer_name || "Cash Collection",
         subText: c.store_name ? `Store: ${c.store_name}` : `Staff: ${getStaffName(c)}`,
-        cashAmt: isBank ? 0 : amt,
-        bankAmt: isBank ? amt : 0,
+        cashAmt: cAmt,
+        bankAmt: vAmt,
         remarks: c.remarks || "-",
         isBank
       });
@@ -1275,27 +1295,49 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
     // Payments (Cr. Side) - Deposits / Handovers
     deposits.forEach((d: any, idx: number) => {
+      // Exclude internal portal auto-routing deposits from online collections
+      const isPortalAutoRouting = d.deposit_type === "portal" && (d.payment_mode === "online" || d.paymentMode === "online") && (d.retailer_id || d.target_name?.includes("Retailer"));
+      if (isPortalAutoRouting) return;
+
       const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       if (dateFrom && dDate < dateFrom) return;
       if (dateTo && dDate > dateTo) return;
 
-      const isBank = d.deposit_type === "portal" || d.deposit_type === "virtual" || (d.payment_mode || d.paymentMode || "").toLowerCase() === "online";
       const amt = Number(d.amount || 0);
+      const isOnlineTx = d.deposit_type === "virtual" || d.deposit_type === "portal_transfer" || (d.payment_mode || d.paymentMode || "").toLowerCase() === "online";
+      let vAmt = 0;
+      if (isOnlineTx) {
+        vAmt = amt;
+      } else if (d.denominations) {
+        vAmt = Number(d.denominations?.online_amount || 0);
+        if (vAmt > amt) vAmt = amt;
+      }
+      const cAmt = Math.max(0, amt - vAmt);
+      const isBank = vAmt > 0;
 
       payments.push({
         id: d.id || `pay_${idx}`,
         created_at: d.created_at,
+        dDate,
         particulars: d.portal_name || d.target_name || "Cash Deposit",
         subText: d.deposit_type ? `Type: ${d.deposit_type.toUpperCase()}` : `Staff: ${getStaffName(d)}`,
-        cashAmt: isBank ? 0 : amt,
-        bankAmt: isBank ? amt : 0,
+        cashAmt: cAmt,
+        bankAmt: vAmt,
         remarks: d.remarks || "-",
         isBank
       });
     });
 
-    receipts.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
-    payments.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+    receipts.sort((a, b) => {
+      const cmp = (b.cDate || "").localeCompare(a.cDate || "");
+      if (cmp !== 0) return cmp;
+      return getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime();
+    });
+    payments.sort((a, b) => {
+      const cmp = (b.dDate || "").localeCompare(a.dDate || "");
+      if (cmp !== 0) return cmp;
+      return getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime();
+    });
 
     const totalCashReceipts = receipts.reduce((sum, r) => sum + r.cashAmt, 0);
     const totalBankReceipts = receipts.reduce((sum, r) => sum + r.bankAmt, 0);
@@ -1374,7 +1416,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       }
 
       return true;
-    }).sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+    }).sort((a, b) => {
+      const dateA = a.collection_date || getISTDateString(getUtcDate(a.created_at));
+      const dateB = b.collection_date || getISTDateString(getUtcDate(b.created_at));
+      const cmp = dateB.localeCompare(dateA);
+      if (cmp !== 0) return cmp;
+      return getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime();
+    });
   }, [collections, dateFrom, dateTo, selectedRetailerIds, selectedStaffIds, searchQuery, selectedRetailerCategory, retailerCategoryMap, userDirectory]);
 
   // Aggregated Retailer Category Summary Report Data
@@ -1505,7 +1553,18 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         baseOpeningBalance = r.balance;
       }
 
-      let openingBalance = baseOpeningBalance;
+      // Check effective date of the opening balance
+      const opDate = opEntry?.opening_balance_set_on || r.opening_balance_set_on || (opEntry?.created_at ? getISTDateString(getUtcDate(opEntry.created_at)) : (r.created_at ? getISTDateString(getUtcDate(r.created_at)) : ""));
+      
+      // If the opening balance was set after dateTo, exclude it from this historical period
+      if (dateTo && opDate && opDate > dateTo) {
+        baseOpeningBalance = 0;
+      }
+
+      const isOpBeforePeriod = !dateFrom || !opDate || opDate < dateFrom;
+      const isOpDuringPeriod = dateFrom && opDate && opDate >= dateFrom && (!dateTo || opDate <= dateTo);
+      const periodOpeningAdj = isOpDuringPeriod ? baseOpeningBalance : 0;
+      let openingBalance = isOpBeforePeriod ? baseOpeningBalance : 0;
       let cashIn = 0;
       let onlineIn = 0;
       let totalIn = 0;
@@ -1589,7 +1648,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         }
       });
 
-      const closingBalance = openingBalance + totalIn - totalOut;
+      const closingBalance = openingBalance + totalIn - totalOut + periodOpeningAdj;
 
       results.push({
         id: retId,
@@ -1684,7 +1743,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       }
 
       return true;
-    }).sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+    }).sort((a, b) => {
+      const dateA = a.deposit_date || getISTDateString(getUtcDate(a.created_at));
+      const dateB = b.deposit_date || getISTDateString(getUtcDate(b.created_at));
+      const cmp = dateB.localeCompare(dateA);
+      if (cmp !== 0) return cmp;
+      return getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime();
+    });
   }, [deposits, dateFrom, dateTo, selectedPortalIds, selectedStaffIds, searchQuery, userDirectory]);
 
   // Filtered Staff Collection Efficiency Data
@@ -1788,6 +1853,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       combined.push({
         id: c.id || `col_${idx}`,
         created_at: c.created_at,
+        rawDate: cDate,
         voucherDate: dateFormatted,
         voucherTypeName: "Receipt",
         voucherNumber: c.reference_no || `REC-${idx + 1}`,
@@ -1808,6 +1874,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
     // Deposits (Payment Vouchers)
     deposits.forEach((d: any, idx: number) => {
+      // Exclude internal portal auto-routing deposits from online collections
+      const isPortalAutoRouting = d.deposit_type === "portal" && (d.payment_mode === "online" || d.paymentMode === "online") && (d.retailer_id || d.target_name?.includes("Retailer"));
+      if (isPortalAutoRouting) return;
+
       const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       if (dateFrom && dDate < dateFrom) return;
       if (dateTo && dDate > dateTo) return;
@@ -1823,6 +1893,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       combined.push({
         id: d.id || `dep_${idx}`,
         created_at: d.created_at,
+        rawDate: dDate,
         voucherDate: dateFormatted,
         voucherTypeName: vchType,
         voucherNumber: d.reference_no || `PAY-${idx + 1}`,
@@ -1841,7 +1912,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       });
     });
 
-    return combined.sort((a, b) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+    return combined.sort((a, b) => {
+      const cmp = (b.rawDate || "").localeCompare(a.rawDate || "");
+      if (cmp !== 0) return cmp;
+      return getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime();
+    });
   }, [collections, deposits, dateFrom, dateTo]);
 
   // ── Virtual Ledger Data (Portal-to-Portal, Portal-to-Distributor, Dist-to-Portal)
@@ -1904,7 +1979,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           rawRecord: d
         };
       })
-      .sort((a: any, b: any) => getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime());
+      .sort((a: any, b: any) => {
+        const dateA = String(a.date || "").split(" ")[0];
+        const dateB = String(b.date || "").split(" ")[0];
+        const cmp = dateB.localeCompare(dateA);
+        if (cmp !== 0) return cmp;
+        return getUtcDate(b.created_at).getTime() - getUtcDate(a.created_at).getTime();
+      });
   }, [deposits, dateFrom, dateTo, virtualLedgerSubType]);
 
   // Export handlers

@@ -116,7 +116,11 @@ export default function DailyReportPage() {
         detailsText: isRecipient ? `Received from ${d.staff_name}` : targetDisp
       };
     })
-  ].sort((a, b) => getUtcDate(a.created_at).getTime() - getUtcDate(b.created_at).getTime());
+  ].sort((a, b) => {
+    const timeA = a.date ? new Date(a.date.replace(' ', 'T')).getTime() : getUtcDate(a.created_at).getTime();
+    const timeB = b.date ? new Date(b.date.replace(' ', 'T')).getTime() : getUtcDate(b.created_at).getTime();
+    return timeA - timeB;
+  });
 
   // Calculate Running Balances -- bucketed by collection_date/deposit_date, not
   // created_at, matching the filters above.

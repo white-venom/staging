@@ -209,8 +209,8 @@ export default function VirtualLedgerTab() {
         return true;
       })
       .sort((a: any, b: any) => {
-        const da = a.created_at || a.date;
-        const db = b.created_at || b.date;
+        const da = a.date || a.created_at;
+        const db = b.date || b.created_at;
         if (sortBy === "date-desc") return new Date(db || 0).getTime() - new Date(da || 0).getTime();
         if (sortBy === "date-asc") return new Date(da || 0).getTime() - new Date(db || 0).getTime();
         if (sortBy === "amount-desc") return (b.amount || 0) - (a.amount || 0);

@@ -181,7 +181,8 @@ export default function MobileFilterDrawer({
                 { id: "cash-in", label: "Cash In" },
                 { id: "cash-out", label: "Cash Out" },
                 { id: "virtual-transfer", label: "Virtual Transfer" },
-                { id: "move-to-dist", label: "Move to Distributor" }
+                { id: "move-to-dist", label: "Move to Distributor" },
+                { id: "opening-balance", label: "Opening Balance" }
               ].map((t) => {
                 const isActive = filters.selectedTypes.includes(t.id);
                 return (

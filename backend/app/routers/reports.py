@@ -444,12 +444,14 @@ def get_staff_daily_summary(
     ) or Decimal("0.00")
     collections_before += legacy_incoming_before
 
-    # 2. Total Deposits (Out) before the selected date
+    # 2. Total Deposits (Out) before the selected date (cash deductions only)
     deposits_before = db.scalar(
         select(func.sum(BankDeposit.amount))
         .where(and_(
             BankDeposit.staff_id == target_staff_id,
-            BankDeposit.deposit_date < selected_date
+            BankDeposit.deposit_date < selected_date,
+            BankDeposit.deposit_type != "virtual",
+            BankDeposit.payment_mode != "online"
         ))
     ) or Decimal("0.00")
 
@@ -478,12 +480,14 @@ def get_staff_daily_summary(
     ) or Decimal("0.00")
     collections_today += legacy_incoming_today
 
-    # 4. Total Deposits (Out) today
+    # 4. Total Deposits (Out) today (cash deductions only)
     deposits_today = db.scalar(
         select(func.sum(BankDeposit.amount))
         .where(and_(
             BankDeposit.staff_id == target_staff_id,
-            BankDeposit.deposit_date == selected_date
+            BankDeposit.deposit_date == selected_date,
+            BankDeposit.deposit_type != "virtual",
+            BankDeposit.payment_mode != "online"
         ))
     ) or Decimal("0.00")
 
@@ -552,7 +556,8 @@ def get_staff_ledger(
         .where(
             and_(
                 BankDeposit.staff_id == staff_id,
-                BankDeposit.deposit_type != "virtual"
+                BankDeposit.deposit_type != "virtual",
+                BankDeposit.payment_mode != "online"
             )
         )
     ).all()

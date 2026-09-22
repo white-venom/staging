@@ -352,8 +352,8 @@ export default function WalletTransferTab() {
     const virtualDeps = (deposits || []).filter((d: any) => d.depositType === "virtual");
     return [...virtualDeps]
       .sort((a: any, b: any) => {
-        const da = a.created_at || a.date;
-        const db = b.created_at || b.date;
+        const da = a.date || a.created_at;
+        const db = b.date || b.created_at;
         return new Date(db || 0).getTime() - new Date(da || 0).getTime();
       })
       .slice(0, 10);

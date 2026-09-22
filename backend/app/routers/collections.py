@@ -421,24 +421,6 @@ def verify_collection(
     collection.status = "verified"
 
     # 2. Bookkeep: Insert Credit transaction in Ledgers
-    # Calculate previous balance
-    latest_ledger = db.scalar(
-        select(Ledger)
-        .where(Ledger.retailer_id == collection.retailer_id)
-        .order_by(desc(Ledger.created_at), desc(Ledger.id))
-        .limit(1)
-    )
-    
-    if latest_ledger:
-        prev_balance = latest_ledger.balance
-    else:
-        # Respect opening balance
-        prev_balance = Decimal(str(collection.retailer.opening_to_take or 0))
-    
-    # Collections reduce what they owe CrediiFlow (credit)
-    # Raw signed running total (see submit_collection for the same convention)
-    new_balance = prev_balance + collection.total_amount
-
     store_name = "Cash"
     if collection.store_id:
         store_obj = db.scalar(select(Store).where(Store.id == collection.store_id))
@@ -449,15 +431,20 @@ def verify_collection(
         retailer_id=collection.retailer_id,
         transaction_type="credit",
         amount=collection.total_amount,
-        balance=new_balance,
+        balance=Decimal("0.00"),
         description=store_name,
         collection_id=collection.id
     )
     db.add(ledger_entry)
+    db.flush()
     
-    # UPDATE RETAILER BALANCE FIELD
-    if collection.retailer:
-        collection.retailer.balance = new_balance
+    # Deterministically recalculate all chronological balances for this retailer
+    from app.logic.ledger import recalculate_balances
+    recalculate_balances(collection.retailer_id, db)
+
+    # Sync balance snapshot on collection from the recalculated ledger entry
+    db.refresh(ledger_entry)
+    collection.balance_snapshot = ledger_entry.balance
     
     db.commit()
     db.refresh(collection)

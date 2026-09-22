@@ -153,8 +153,12 @@ export default function StaffLedgerPage() {
       };
     })
   ]
-  .filter(item => item.created_at)
-  .sort((a, b) => new Date(getUtcDate(a.created_at)).getTime() - new Date(getUtcDate(b.created_at)).getTime());
+  .filter(item => item.created_at || item.date)
+  .sort((a, b) => {
+    const timeA = a.date ? new Date(a.date.replace(' ', 'T')).getTime() : new Date(getUtcDate(a.created_at)).getTime();
+    const timeB = b.date ? new Date(b.date.replace(' ', 'T')).getTime() : new Date(getUtcDate(b.created_at)).getTime();
+    return timeA - timeB;
+  });
 
   // Compute opening/closing balances for every item
   let runningBal = 0;
@@ -204,8 +208,8 @@ export default function StaffLedgerPage() {
 
   // Apply sorting
   const sortedCombined = [...filteredCombined].sort((a, b) => {
-    const timeA = new Date(getUtcDate(a.created_at)).getTime();
-    const timeB = new Date(getUtcDate(b.created_at)).getTime();
+    const timeA = a.date ? new Date(a.date.replace(' ', 'T')).getTime() : new Date(getUtcDate(a.created_at)).getTime();
+    const timeB = b.date ? new Date(b.date.replace(' ', 'T')).getTime() : new Date(getUtcDate(b.created_at)).getTime();
     
     if (sortBy === "date-desc") return timeB - timeA;
     if (sortBy === "date-asc") return timeA - timeB;
