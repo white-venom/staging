@@ -3033,15 +3033,15 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       No daybook transactions found for {dateFrom}.
                     </div>
                   ) : (
-                    <table className="w-full min-w-[600px] text-xs text-left border-collapse table-fixed">
+                    <table className="w-full min-w-[660px] text-xs text-left border-collapse table-fixed">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] text-[11px] uppercase">Date</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[34%] text-[11px] uppercase">Particulars</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[14%] text-[11px] uppercase">Vch Type</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[10%] text-[11px] uppercase">Vch No.</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[15%] text-[11px] uppercase">Debit Amount (IN)</th>
-                          <th className="py-2 px-0.5 text-center w-[15%] text-[11px] uppercase">Credit Amount (OUT)</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[12%] min-w-[80px] text-[11px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center min-w-[180px] text-[11px] uppercase">Particulars</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[14%] min-w-[85px] text-[11px] uppercase">Vch Type</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[10%] min-w-[70px] text-[11px] uppercase">Vch No.</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[110px] min-w-[105px] text-[11px] uppercase">Debit Amount (IN)</th>
+                          <th className="py-2 px-0.5 text-center w-[110px] min-w-[105px] text-[11px] uppercase">Credit Amount (OUT)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -3069,10 +3069,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               <td className="py-2 px-0.5 text-center font-mono text-slate-600 text-[11px]">
                                 {tx.vchNo}
                               </td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-xs font-mono">
+                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-xs font-mono whitespace-nowrap">
                                 {tx.isReceipt ? `₹${Number(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-xs font-mono">
+                              <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-xs font-mono whitespace-nowrap">
                                 {!tx.isReceipt ? `₹${Number(tx.amount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                             </tr>
@@ -3133,7 +3133,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       No cashbook transactions recorded for the selected date.
                     </div>
                   ) : (
-                    <table className="w-full min-w-[700px] text-xs text-left border-collapse table-fixed">
+                    <table className="w-full min-w-[840px] text-xs text-left border-collapse table-fixed">
                       <thead>
                         {/* Group Header */}
                         <tr className="bg-sky-900 text-white font-black text-[11px] uppercase border-b border-sky-950">
@@ -3147,16 +3147,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         {/* Sub Column Header */}
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold text-[10px] uppercase">
                           {/* Dr Side */}
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%]">Receipt Particulars</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%]">Cash</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%]">Bank</th>
-                          <th className="py-2 px-0.5 border-r-2 border-slate-300 text-center w-[10%]">Remarks</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center min-w-[140px]">Receipt Particulars</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[100px] min-w-[95px]">Cash</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[100px] min-w-[95px]">Bank</th>
+                          <th className="py-2 px-0.5 border-r-2 border-slate-300 text-center min-w-[80px]">Remarks</th>
                           
                           {/* Cr Side */}
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%]">Payment Particulars</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%]">Cash</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%]">Bank</th>
-                          <th className="py-2 px-0.5 text-center w-[10%]">Remarks</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center min-w-[140px]">Payment Particulars</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[100px] min-w-[95px]">Cash</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[100px] min-w-[95px]">Bank</th>
+                          <th className="py-2 px-0.5 text-center min-w-[80px]">Remarks</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -3175,10 +3175,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                   </>
                                 ) : <span className="text-slate-300">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-emerald-600 text-[11px] font-mono">
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-emerald-600 text-[11px] font-mono whitespace-nowrap">
                                 {r && !r.isBank ? `₹${r.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-indigo-600 text-[11px] font-mono">
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-indigo-600 text-[11px] font-mono whitespace-nowrap">
                                 {r && r.isBank ? `₹${r.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                               <td className="py-2 px-0.5 border-r-2 border-slate-300 text-center text-slate-500 italic text-[10px]">
@@ -3194,10 +3194,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                   </>
                                 ) : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[11px] font-mono">
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[11px] font-mono whitespace-nowrap">
                                 {p && !p.isBank ? `₹${p.cashAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[11px] font-mono">
+                              <td className="py-2 px-0.5 border-r border-slate-200 text-center font-bold text-red-500 text-[11px] font-mono whitespace-nowrap">
                                 {p && p.isBank ? `₹${p.bankAmt.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                               <td className="py-2 px-0.5 text-center text-slate-500 italic text-[10px]">
@@ -3211,13 +3211,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         {/* Totals Row */}
                         <tr className="bg-slate-100 font-black text-[11px] border-t-2 border-slate-300 text-slate-900">
                           <td className="py-2 px-1 text-center border-r border-slate-200 uppercase">Total Receipts (Dr)</td>
-                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-emerald-700">₹{totalCashReceipts.toLocaleString("en-IN")}</td>
-                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-indigo-700">₹{totalBankReceipts.toLocaleString("en-IN")}</td>
+                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-emerald-700 whitespace-nowrap">₹{totalCashReceipts.toLocaleString("en-IN")}</td>
+                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-indigo-700 whitespace-nowrap">₹{totalBankReceipts.toLocaleString("en-IN")}</td>
                           <td className="py-2 px-0.5 border-r-2 border-slate-300 text-center">-</td>
 
                           <td className="py-2 px-1 text-center border-r border-slate-200 uppercase">Total Payments (Cr)</td>
-                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-red-600">₹{totalCashPayments.toLocaleString("en-IN")}</td>
-                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-red-600">₹{totalBankPayments.toLocaleString("en-IN")}</td>
+                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-red-600 whitespace-nowrap">₹{totalCashPayments.toLocaleString("en-IN")}</td>
+                          <td className="py-2 px-0.5 text-center border-r border-slate-200 font-mono text-red-600 whitespace-nowrap">₹{totalBankPayments.toLocaleString("en-IN")}</td>
                           <td className="py-2 px-0.5 text-center">-</td>
                         </tr>
 
@@ -3227,10 +3227,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                             Closing Cash & Bank Position
                           </td>
                           <td className="py-2 px-1 text-center border-r border-slate-200 uppercase font-black">Balance c/d</td>
-                          <td className={`py-2 px-0.5 text-center border-r border-slate-200 font-mono ${netCashBalance >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                          <td className={`py-2 px-0.5 text-center border-r border-slate-200 font-mono whitespace-nowrap ${netCashBalance >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                             ₹{netCashBalance.toLocaleString("en-IN")}
                           </td>
-                          <td className={`py-2 px-0.5 text-center border-r border-slate-200 font-mono ${netBankBalance >= 0 ? 'text-indigo-700' : 'text-red-700'}`}>
+                          <td className={`py-2 px-0.5 text-center border-r border-slate-200 font-mono whitespace-nowrap ${netBankBalance >= 0 ? 'text-indigo-700' : 'text-red-700'}`}>
                             ₹{netBankBalance.toLocaleString("en-IN")}
                           </td>
                           <td className="py-2 px-0.5 text-center">-</td>
@@ -3273,16 +3273,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       No retailer collection records found matching the filters.
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[600px]">
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[660px]">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[11px] uppercase">No</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[11px] uppercase">Date</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[25%] text-[11px] uppercase">Retailer</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Store</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[15%] text-[11px] uppercase">Staff</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[14%] text-[11px] uppercase">Amount (IN)</th>
-                          <th className="py-2 px-1 text-center w-[10%] text-[11px] uppercase">Remarks</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[38px] min-w-[38px] text-[11px] uppercase">No</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[85px] min-w-[85px] text-[11px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center min-w-[160px] text-[11px] uppercase">Retailer</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[110px] min-w-[100px] text-[11px] uppercase">Store</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[100px] min-w-[90px] text-[11px] uppercase">Staff</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[110px] min-w-[105px] text-[11px] uppercase">Amount (IN)</th>
+                          <th className="py-2 px-1 text-center w-[90px] min-w-[80px] text-[11px] uppercase">Remarks</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -3307,7 +3307,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               </td>
                               <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[11px]">{c.store_name || "Cash"}</td>
                               <td className="py-2 px-1 text-center font-bold text-slate-700 text-[11px] uppercase">{getStaffName(c)}</td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-xs font-mono">₹{Number(c.total_amount || c.totalAmount || 0).toLocaleString("en-IN")}</td>
+                              <td className="py-2 px-0.5 text-center font-extrabold text-emerald-600 text-xs font-mono whitespace-nowrap">₹{Number(c.total_amount || c.totalAmount || 0).toLocaleString("en-IN")}</td>
                               <td className="py-2 px-1 text-center text-slate-500 italic text-[10px]">{c.remarks || "-"}</td>
                             </tr>
                           );
@@ -3390,7 +3390,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       <div className="text-xs text-slate-400 italic">No retailers match the category and search filters.</div>
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[950px]">
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[1020px]">
                       <thead>
                         {/* Group Header Row */}
                         <tr className="bg-slate-200/90 border-b border-slate-300 text-slate-900 font-black text-[10px] uppercase">
@@ -3456,24 +3456,24 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                             </td>
 
                             {/* IN Subcolumns */}
-                            <td className="py-2 px-1 text-center font-bold text-slate-800 text-[11px] font-mono bg-emerald-50/20">
+                            <td className="py-2 px-1 text-center font-bold text-slate-800 text-[11px] font-mono whitespace-nowrap bg-emerald-50/20">
                               {r.cashIn > 0 ? `₹${r.cashIn.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
-                            <td className="py-2 px-1 text-center font-bold text-blue-700 text-[11px] font-mono bg-blue-50/20">
+                            <td className="py-2 px-1 text-center font-bold text-blue-700 text-[11px] font-mono whitespace-nowrap bg-blue-50/20">
                               {r.virtualIn > 0 ? `₹${r.virtualIn.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
-                            <td className="py-2 px-1 text-center font-extrabold text-emerald-600 text-[11.5px] font-mono bg-emerald-50/50">
+                            <td className="py-2 px-1 text-center font-extrabold text-emerald-600 text-[11.5px] font-mono whitespace-nowrap bg-emerald-50/50">
                               ₹{r.totalIn.toLocaleString("en-IN")}
                             </td>
 
                             {/* OUT Subcolumns */}
-                            <td className="py-2 px-1 text-center font-bold text-slate-800 text-[11px] font-mono bg-red-50/20">
+                            <td className="py-2 px-1 text-center font-bold text-slate-800 text-[11px] font-mono whitespace-nowrap bg-red-50/20">
                               {r.cashOut > 0 ? `₹${r.cashOut.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
-                            <td className="py-2 px-1 text-center font-bold text-purple-700 text-[11px] font-mono bg-purple-50/20">
+                            <td className="py-2 px-1 text-center font-bold text-purple-700 text-[11px] font-mono whitespace-nowrap bg-purple-50/20">
                               {r.virtualOut > 0 ? `₹${r.virtualOut.toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
-                            <td className="py-2 px-1 text-center font-extrabold text-red-500 text-[11.5px] font-mono bg-red-50/50">
+                            <td className="py-2 px-1 text-center font-extrabold text-red-500 text-[11.5px] font-mono whitespace-nowrap bg-red-50/50">
                               ₹{r.totalOut.toLocaleString("en-IN")}
                             </td>
 
@@ -3525,16 +3525,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       No portal deposit records found matching the filters.
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[650px]">
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[680px]">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[11px] uppercase">No</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[11px] uppercase">Date</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[22%] text-[11px] uppercase">Portal / Bank</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[15%] text-[11px] uppercase">Deposit Type</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Target Name</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[13%] text-[11px] uppercase">Staff</th>
-                          <th className="py-2 px-0.5 text-center w-[14%] text-[11px] uppercase">Amount (OUT)</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[38px] min-w-[38px] text-[11px] uppercase">No</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[85px] min-w-[85px] text-[11px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center min-w-[140px] text-[11px] uppercase">Portal / Bank</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[110px] min-w-[100px] text-[11px] uppercase">Deposit Type</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[110px] min-w-[100px] text-[11px] uppercase">Target Name</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[100px] min-w-[90px] text-[11px] uppercase">Staff</th>
+                          <th className="py-2 px-0.5 text-center w-[110px] min-w-[105px] text-[11px] uppercase">Amount (OUT)</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -3551,7 +3551,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               <td className="py-2 px-1 text-center font-semibold text-slate-600 text-[11px] uppercase">{d.deposit_type || "portal"}</td>
                               <td className="py-2 px-1 text-center font-semibold text-indigo-600 text-[11px]">{d.target_name || "-"}</td>
                               <td className="py-2 px-1 text-center font-bold text-slate-700 text-[11px] uppercase">{getStaffName(d)}</td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-xs font-mono">-₹{Number(d.amount || 0).toLocaleString("en-IN")}</td>
+                              <td className="py-2 px-0.5 text-center font-extrabold text-red-500 text-xs font-mono whitespace-nowrap">-₹{Number(d.amount || 0).toLocaleString("en-IN")}</td>
                             </tr>
                           );
                         })}
@@ -3600,15 +3600,15 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       No staff activity records found matching the filters.
                     </div>
                   ) : (
-                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[600px]">
+                    <table className="w-full text-xs text-left border-collapse table-fixed min-w-[680px]">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[6%] text-[11px] uppercase">No</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[24%] text-[11px] uppercase">Staff Name</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Collections Count</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[18%] text-[11px] uppercase">Total Collected (IN)</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[16%] text-[11px] uppercase">Total Deposited</th>
-                          <th className="py-2 px-1 text-center w-[18%] text-[11px] uppercase">Net Pending Cash</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[38px] min-w-[38px] text-[11px] uppercase">No</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center min-w-[130px] text-[11px] uppercase">Staff Name</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[110px] min-w-[100px] text-[11px] uppercase">Collections Count</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[115px] min-w-[110px] text-[11px] uppercase">Total Collected (IN)</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[115px] min-w-[110px] text-[11px] uppercase">Total Deposited</th>
+                          <th className="py-2 px-1 text-center w-[115px] min-w-[110px] text-[11px] uppercase">Net Pending Cash</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -3619,9 +3619,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               <td className="py-2 px-0.5 text-center font-bold text-slate-800 text-[11px]">{idx + 1}</td>
                               <td className="py-2 px-1 text-center font-black text-slate-900 text-xs uppercase">{s.staffName}</td>
                               <td className="py-2 px-1 text-center font-semibold text-slate-700 text-[11px]">{s.collectionsCount} trips</td>
-                              <td className="py-2 px-1 text-center font-extrabold text-emerald-600 text-xs font-mono">₹{s.collectionsTotal.toLocaleString("en-IN")}</td>
-                              <td className="py-2 px-1 text-center font-extrabold text-red-500 text-xs font-mono">₹{s.depositsTotal.toLocaleString("en-IN")}</td>
-                              <td className={`py-2 px-1 text-center font-black text-xs font-mono ${net > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
+                              <td className="py-2 px-1 text-center font-extrabold text-emerald-600 text-xs font-mono whitespace-nowrap">₹{s.collectionsTotal.toLocaleString("en-IN")}</td>
+                              <td className="py-2 px-1 text-center font-extrabold text-red-500 text-xs font-mono whitespace-nowrap">₹{s.depositsTotal.toLocaleString("en-IN")}</td>
+                              <td className={`py-2 px-1 text-center font-black text-xs font-mono whitespace-nowrap ${net > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
                                 ₹{net.toLocaleString("en-IN")}
                               </td>
                             </tr>
@@ -3776,16 +3776,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                       No virtual ledger transactions found for the selected type and date range.
                     </div>
                   ) : (
-                    <table className="w-full min-w-[700px] text-xs text-left border-collapse table-fixed">
+                    <table className="w-full min-w-[720px] text-xs text-left border-collapse table-fixed">
                       <thead>
                         <tr className="bg-slate-100 border-b border-slate-200 text-sky-950 font-bold">
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[5%] text-[11px] uppercase">No</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[11%] text-[11px] uppercase">Date</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[16%] text-[11px] uppercase">Txn Type</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[19%] text-[11px] uppercase">From</th>
-                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[19%] text-[11px] uppercase">To</th>
-                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[13%] text-[11px] uppercase">Amount</th>
-                          <th className="py-2 px-1 text-center w-[17%] text-[11px] uppercase">Staff</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[38px] min-w-[38px] text-[11px] uppercase">No</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[85px] min-w-[85px] text-[11px] uppercase">Date</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center w-[110px] min-w-[100px] text-[11px] uppercase">Txn Type</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center min-w-[130px] text-[11px] uppercase">From</th>
+                          <th className="py-2 px-1 border-r border-slate-200 text-center min-w-[130px] text-[11px] uppercase">To</th>
+                          <th className="py-2 px-0.5 border-r border-slate-200 text-center w-[110px] min-w-[105px] text-[11px] uppercase">Amount</th>
+                          <th className="py-2 px-1 text-center w-[100px] min-w-[90px] text-[11px] uppercase">Staff</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
@@ -3806,7 +3806,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               </td>
                               <td className="py-2 px-1 text-center font-semibold text-slate-800 text-[11px]">{tx.fromLabel}</td>
                               <td className="py-2 px-1 text-center font-semibold text-slate-800 text-[11px]">{tx.toLabel}</td>
-                              <td className="py-2 px-0.5 text-center font-extrabold text-indigo-600 text-xs font-mono">
+                              <td className="py-2 px-0.5 text-center font-extrabold text-indigo-600 text-xs font-mono whitespace-nowrap">
                                 ₹{Number(tx.amount).toLocaleString("en-IN")}
                               </td>
                               <td className="py-2 px-1 text-center font-bold text-slate-600 text-[11px] uppercase">{tx.staffName}</td>
@@ -3863,15 +3863,15 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
                 {/* Transaction Data Table */}
                 <div className="border-2 border-slate-300 rounded-lg overflow-x-auto bg-white shadow-xs">
-                  <table className="w-full text-xs text-left border-collapse table-fixed min-w-[620px]">
+                  <table className="w-full text-xs text-left border-collapse table-fixed min-w-[700px]">
                     <thead>
                       <tr className="bg-sky-900 text-white font-bold border-b-2 border-sky-950">
-                        <th className="py-2.5 px-1 border-r border-sky-800 text-center w-[5%] text-[11px] font-black uppercase tracking-wider">No</th>
-                        <th className="py-2.5 px-1.5 border-r border-sky-800 text-center w-[13%] text-[11px] font-black uppercase tracking-wider">Date</th>
-                        <th className="py-2.5 px-2 border-r border-sky-800 text-left w-[32%] text-[11px] font-black uppercase tracking-wider">Description</th>
-                        <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[16%] text-[11px] font-black uppercase tracking-wider">In</th>
-                        <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[16%] text-[11px] font-black uppercase tracking-wider">Out</th>
-                        <th className="py-2.5 px-1.5 text-right w-[18%] text-[11px] font-black uppercase tracking-wider">Notes</th>
+                        <th className="py-2.5 px-1 border-r border-sky-800 text-center w-[38px] min-w-[38px] text-[11px] font-black uppercase tracking-wider">No</th>
+                        <th className="py-2.5 px-1.5 border-r border-sky-800 text-center w-[85px] min-w-[85px] text-[11px] font-black uppercase tracking-wider">Date</th>
+                        <th className="py-2.5 px-2 border-r border-sky-800 text-left min-w-[180px] text-[11px] font-black uppercase tracking-wider">Description</th>
+                        <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[110px] min-w-[110px] text-[11px] font-black uppercase tracking-wider">In</th>
+                        <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[110px] min-w-[110px] text-[11px] font-black uppercase tracking-wider">Out</th>
+                        <th className="py-2.5 px-1.5 text-right w-[150px] min-w-[150px] text-[11px] font-black uppercase tracking-wider">Notes</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -3882,7 +3882,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-black text-sky-950 uppercase text-[11.5px] tracking-wider">
                           OPENING BALANCE
                         </td>
-                        <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums">
+                        <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums whitespace-nowrap">
                           ₹{staffOpeningBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="py-2.5 px-2 border-r border-slate-300 text-right text-slate-400 font-bold">-</td>
@@ -3961,10 +3961,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                                   </div>
                                 )}
                               </td>
-                              <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-emerald-700 text-xs font-mono tabular-nums">
+                              <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-emerald-700 text-xs font-mono tabular-nums whitespace-nowrap">
                                 {isCol ? `₹${Number(item.inAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
-                              <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-red-600 text-xs font-mono tabular-nums">
+                              <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-red-600 text-xs font-mono tabular-nums whitespace-nowrap">
                                 {!isCol ? `-₹${Number(item.outAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                               </td>
                               <td className="py-2.5 px-1.5 align-middle bg-slate-50/40">
@@ -3982,7 +3982,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-black text-sky-950 uppercase text-[11.5px] tracking-wider">
                           LAST BALANCE
                         </td>
-                        <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums">
+                        <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums whitespace-nowrap">
                           ₹{staffLastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="py-2.5 px-2 border-r border-slate-300 text-right text-slate-400 font-bold">-</td>
@@ -4054,7 +4054,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
                 {/* Master Table */}
                 <div className="overflow-x-auto border border-slate-200 rounded-sm shadow-xs -mx-1 sm:mx-0">
-                  <table className="w-full min-w-[980px] text-left text-xs border-collapse font-sans">
+                  <table className="w-full min-w-[1050px] text-left text-xs border-collapse font-sans">
                     <thead>
                       <tr className="bg-slate-900 text-white uppercase text-[9.5px] font-black tracking-wider border-b border-slate-800">
                         <th className="py-2.5 px-2 text-center w-10">#</th>
@@ -4062,8 +4062,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         <th className="py-2.5 px-2.5 w-32">Category</th>
                         <th className="py-2.5 px-2.5 min-w-[120px]">From (Started)</th>
                         <th className="py-2.5 px-2.5 min-w-[120px]">To (Ended)</th>
-                        <th className="py-2.5 px-2.5 text-right w-24">In (Credit)</th>
-                        <th className="py-2.5 px-2.5 text-right w-24">Out (Debit)</th>
+                        <th className="py-2.5 px-2.5 text-right w-28 min-w-[115px]">In (Credit)</th>
+                        <th className="py-2.5 px-2.5 text-right w-28 min-w-[115px]">Out (Debit)</th>
                         <th className="py-2.5 px-3 min-w-[170px]">Denominations</th>
                         <th className="py-2.5 px-2.5 w-28">Processed By</th>
                         <th className="py-2.5 px-2.5 min-w-[130px]">Remarks / Ref</th>
@@ -4105,10 +4105,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               <td className="py-2.5 px-2.5 font-bold text-slate-900">
                                 {item.toEntity}
                               </td>
-                              <td className="py-2.5 px-2.5 text-right font-black font-mono tabular-nums text-emerald-700">
+                              <td className="py-2.5 px-2.5 text-right font-black font-mono tabular-nums text-emerald-700 whitespace-nowrap">
                                 {item.inAmount !== null ? `+₹${item.inAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-"}
                               </td>
-                              <td className="py-2.5 px-2.5 text-right font-black font-mono tabular-nums text-red-700">
+                              <td className="py-2.5 px-2.5 text-right font-black font-mono tabular-nums text-red-700 whitespace-nowrap">
                                 {item.outAmount !== null ? `-₹${item.outAmount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "-"}
                               </td>
                               <td className="py-2.5 px-3 align-middle">

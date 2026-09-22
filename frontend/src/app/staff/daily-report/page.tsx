@@ -469,25 +469,25 @@ export default function DailyReportPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
                   <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">Opening Balance</span>
-                  <span className="text-sm sm:text-base font-black text-blue-900 tabular-nums tracking-tight">
+                  <span className="text-sm sm:text-base font-black text-blue-900 tabular-nums tracking-tight whitespace-nowrap">
                     ₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
                   <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">Today's In</span>
-                  <span className="text-sm sm:text-base font-black text-emerald-600 tabular-nums tracking-tight">
+                  <span className="text-sm sm:text-base font-black text-emerald-600 tabular-nums tracking-tight whitespace-nowrap">
                     ₹{totalInToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
                   <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">Today's Out</span>
-                  <span className="text-sm sm:text-base font-black text-red-600 tabular-nums tracking-tight">
+                  <span className="text-sm sm:text-base font-black text-red-600 tabular-nums tracking-tight whitespace-nowrap">
                     ₹{totalOutToday.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-2.5 sm:p-3 text-center flex flex-col justify-center items-center shadow-xs min-h-[64px]">
                   <span className="text-[10px] sm:text-[11px] font-black text-slate-500 uppercase tracking-wider text-center leading-tight mb-1">Last Balance</span>
-                  <span className="text-sm sm:text-base font-black text-blue-900 tabular-nums tracking-tight">
+                  <span className="text-sm sm:text-base font-black text-blue-900 tabular-nums tracking-tight whitespace-nowrap">
                     ₹{lastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
@@ -495,15 +495,15 @@ export default function DailyReportPage() {
 
               {/* Transaction Data Table */}
               <div className="border-2 border-slate-300 rounded-lg overflow-x-auto bg-white shadow-xs">
-                <table className="w-full text-xs text-left border-collapse table-fixed min-w-[620px]">
+                <table className="w-full text-xs text-left border-collapse table-fixed min-w-[700px]">
                   <thead>
                     <tr className="bg-sky-900 text-white font-bold border-b-2 border-sky-950">
-                      <th className="py-2.5 px-1 border-r border-sky-800 text-center w-[5%] text-[11px] font-black uppercase tracking-wider">No</th>
-                      <th className="py-2.5 px-1.5 border-r border-sky-800 text-center w-[13%] text-[11px] font-black uppercase tracking-wider">Date</th>
-                      <th className="py-2.5 px-2 border-r border-sky-800 text-left w-[32%] text-[11px] font-black uppercase tracking-wider">Description</th>
-                      <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[16%] text-[11px] font-black uppercase tracking-wider">In</th>
-                      <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[16%] text-[11px] font-black uppercase tracking-wider">Out</th>
-                      <th className="py-2.5 px-1.5 text-right w-[18%] text-[11px] font-black uppercase tracking-wider">Notes</th>
+                      <th className="py-2.5 px-1 border-r border-sky-800 text-center w-[38px] min-w-[38px] text-[11px] font-black uppercase tracking-wider">No</th>
+                      <th className="py-2.5 px-1.5 border-r border-sky-800 text-center w-[85px] min-w-[85px] text-[11px] font-black uppercase tracking-wider">Date</th>
+                      <th className="py-2.5 px-2 border-r border-sky-800 text-left min-w-[180px] text-[11px] font-black uppercase tracking-wider">Description</th>
+                      <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[110px] min-w-[110px] text-[11px] font-black uppercase tracking-wider">In</th>
+                      <th className="py-2.5 px-1.5 border-r border-sky-800 text-right w-[110px] min-w-[110px] text-[11px] font-black uppercase tracking-wider">Out</th>
+                      <th className="py-2.5 px-1.5 text-right w-[150px] min-w-[150px] text-[11px] font-black uppercase tracking-wider">Notes</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -514,7 +514,7 @@ export default function DailyReportPage() {
                       <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-black text-sky-950 uppercase text-[11.5px] tracking-wider">
                         OPENING BALANCE
                       </td>
-                      <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums">
+                      <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums whitespace-nowrap">
                         ₹{openingBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-2.5 px-2 border-r border-slate-300 text-right text-slate-400 font-bold">-</td>
@@ -600,12 +600,12 @@ export default function DailyReportPage() {
                             </td>
                             
                             {/* In */}
-                            <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-emerald-700 text-xs font-mono tabular-nums">
+                            <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-emerald-700 text-xs font-mono tabular-nums whitespace-nowrap">
                               {isCol ? `₹${Number(item.inAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
                             
                             {/* Out */}
-                            <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-red-600 text-xs font-mono tabular-nums">
+                            <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-red-600 text-xs font-mono tabular-nums whitespace-nowrap">
                               {!isCol ? `-₹${Number(item.outAmount).toLocaleString("en-IN")}` : <span className="text-slate-300 font-normal">-</span>}
                             </td>
                             
@@ -625,7 +625,7 @@ export default function DailyReportPage() {
                       <td className="py-2.5 px-2.5 border-r border-slate-300 text-left font-black text-sky-950 uppercase text-[11.5px] tracking-wider">
                         LAST BALANCE
                       </td>
-                      <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums">
+                      <td className="py-2.5 px-2 border-r border-slate-300 text-right font-black text-blue-900 text-xs font-mono tabular-nums whitespace-nowrap">
                         ₹{lastBalance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </td>
                       <td className="py-2.5 px-2 border-r border-slate-300 text-right text-slate-400 font-bold">-</td>

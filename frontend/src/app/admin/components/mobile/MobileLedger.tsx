@@ -513,14 +513,14 @@ export default function MobileLedger() {
       {/* Transaction List (Table Format) */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse min-w-[500px]">
+          <table className="w-full text-left text-xs border-collapse min-w-[580px]">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-950 text-[10px] font-black uppercase tracking-widest text-slate-500 border-b border-slate-200 dark:border-slate-800">
-                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 w-24">Date & Time</th>
-                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800">Description</th>
-                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 text-center w-16">Type</th>
-                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 text-right w-20 bg-slate-100/50 dark:bg-slate-800/50">Received</th>
-                <th className="py-1.5 px-2 text-right bg-blue-50/20 dark:bg-blue-950/5 w-20">Staff</th>
+                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 w-24 min-w-[96px]">Date & Time</th>
+                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 min-w-[180px]">Description</th>
+                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 text-center w-20 min-w-[80px]">Type</th>
+                <th className="py-1.5 px-2 border-r border-slate-100 dark:border-slate-800 text-right w-28 min-w-[110px] bg-slate-100/50 dark:bg-slate-800/50">Received</th>
+                <th className="py-1.5 px-2 text-right bg-blue-50/20 dark:bg-blue-950/5 w-24 min-w-[85px]">Staff</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -615,13 +615,13 @@ export default function MobileLedger() {
                               {isMoneyIn ? 'Cash In' : 'Cash Out'}
                             </span>
                           </td>
-                          <td className={`py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums ${isMoneyIn ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
+                          <td className={`py-1.5 px-2 border-r border-slate-50 dark:border-slate-800 text-right font-black text-xs font-mono tabular-nums whitespace-nowrap ${isMoneyIn ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50/10' : 'text-red-700 dark:text-red-400 bg-red-50/10'}`}>
                             {isMoneyIn ? '+' : '-'}₹{getTxAmount(item).toLocaleString()}
                           </td>
                         </>
                       );
                     })()}
-                   <td className="py-1.5 px-2 text-right font-black text-slate-500 uppercase text-xs">
+                   <td className="py-1.5 px-2 text-right font-black text-slate-500 uppercase text-xs whitespace-nowrap truncate">
                      {item.staff || 'Admin'}
                    </td>
                  </tr>

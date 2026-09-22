@@ -640,17 +640,17 @@ export default function MobileOverview({
             <p className="text-[8px] font-black uppercase tracking-widest opacity-60 flex items-center gap-1">
               Net Cash in Hand <Calendar className="w-2.5 h-2.5 text-blue-500 dark:text-blue-600" />
             </p>
-            <h2 className="text-xl font-black mt-0.5 font-mono tabular-nums">₹{netCashBalance.toLocaleString()}</h2>
+            <h2 className="text-xl font-black mt-0.5 font-mono tabular-nums whitespace-nowrap">₹{netCashBalance.toLocaleString()}</h2>
           </div>
 
           <div className="flex items-center gap-2">
             <div className="bg-white/10 dark:bg-slate-100 px-2 py-1 rounded-sm">
               <p className="text-[7px] font-black uppercase opacity-60">Cash In</p>
-              <p className="text-[10px] font-black mt-0.5 font-mono tabular-nums">₹{totalCollectedAmount.toLocaleString()}</p>
+              <p className="text-[10px] font-black mt-0.5 font-mono tabular-nums whitespace-nowrap">₹{totalCollectedAmount.toLocaleString()}</p>
             </div>
             <div className="bg-white/10 dark:bg-slate-100 px-2 py-1 rounded-sm">
               <p className="text-[7px] font-black uppercase opacity-60">Cash Out</p>
-              <p className="text-[10px] font-black mt-0.5 font-mono tabular-nums">₹{totalDepositedAmount.toLocaleString()}</p>
+              <p className="text-[10px] font-black mt-0.5 font-mono tabular-nums whitespace-nowrap">₹{totalDepositedAmount.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -706,33 +706,33 @@ export default function MobileOverview({
 
                       {/* Summary Stats Row — Old Bal | +Today In | -Today Out | =Net */}
                       <div className="grid grid-cols-4 gap-1 font-mono tabular-nums">
-                        <div className="p-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-sm flex flex-col">
-                          <span className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wide">Old Bal</span>
-                          <span className={`text-[8px] font-black mt-0.5 ${(staff as any).oldBalance < 0 ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'}`}>
+                        <div className="p-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-sm flex flex-col min-w-0">
+                          <span className="text-[7px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-wide truncate">Old Bal</span>
+                          <span className={`text-[7.5px] min-[380px]:text-[8.5px] font-black mt-0.5 whitespace-nowrap truncate tracking-tighter ${(staff as any).oldBalance < 0 ? 'text-red-600' : 'text-slate-700 dark:text-slate-300'}`}>
                             ₹{((staff as any).oldBalance || 0).toLocaleString()}
                           </span>
                         </div>
-                        <div className="p-1 bg-emerald-50/25 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/10 rounded-sm flex flex-col">
-                          <span className="text-[7px] font-black uppercase text-emerald-600 tracking-wide">+Today In</span>
-                          <span className="text-[8px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5">
+                        <div className="p-1 bg-emerald-50/25 dark:bg-emerald-950/5 border border-emerald-100/30 dark:border-emerald-900/10 rounded-sm flex flex-col min-w-0">
+                          <span className="text-[7px] font-black uppercase text-emerald-600 tracking-wide truncate">+Today In</span>
+                          <span className="text-[7.5px] min-[380px]:text-[8.5px] font-black text-emerald-700 dark:text-emerald-400 mt-0.5 whitespace-nowrap truncate tracking-tighter">
                             ₹{staff.collectedToday.toLocaleString()}
                           </span>
                         </div>
-                        <div className="p-1 bg-red-50/25 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/10 rounded-sm flex flex-col">
-                          <span className="text-[7px] font-black uppercase text-red-600 tracking-wide">-Today Out</span>
-                          <span className="text-[8px] font-black text-red-700 dark:text-red-400 mt-0.5">
+                        <div className="p-1 bg-red-50/25 dark:bg-red-950/5 border border-red-100/30 dark:border-red-900/10 rounded-sm flex flex-col min-w-0">
+                          <span className="text-[7px] font-black uppercase text-red-600 tracking-wide truncate">-Today Out</span>
+                          <span className="text-[7.5px] min-[380px]:text-[8.5px] font-black text-red-700 dark:text-red-400 mt-0.5 whitespace-nowrap truncate tracking-tighter">
                             ₹{staff.depositedToday.toLocaleString()}
                           </span>
                         </div>
-                        <div className={`p-1 rounded-sm flex flex-col border ${
+                        <div className={`p-1 rounded-sm flex flex-col border min-w-0 ${
                           (staff as any).netBalance < 0
                             ? 'bg-red-50 dark:bg-red-950/10 border-red-200 dark:border-red-900/20'
                             : 'bg-blue-50/25 dark:bg-blue-950/5 border-blue-100/30 dark:border-blue-900/10'
                         }`}>
-                          <span className={`text-[7px] font-black uppercase tracking-wide ${
+                          <span className={`text-[7px] font-black uppercase tracking-wide truncate ${
                             (staff as any).netBalance < 0 ? 'text-red-600' : 'text-blue-600'
                           }`}>=Net</span>
-                          <span className={`text-[8px] font-black mt-0.5 ${
+                          <span className={`text-[7.5px] min-[380px]:text-[8.5px] font-black mt-0.5 whitespace-nowrap truncate tracking-tighter ${
                             (staff as any).netBalance < 0 ? 'text-red-700 dark:text-red-400' : 'text-blue-700 dark:text-blue-400'
                           }`}>
                             ₹{((staff as any).netBalance || 0).toLocaleString()}
