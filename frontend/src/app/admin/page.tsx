@@ -15,11 +15,10 @@ export default function AdminPage() {
 
   const totalStaffCash = staffUsers.reduce((sum: number, user: any) => {
     const name = user.name;
-    const staffCols = (collections || []).filter((c: any) => (c.staffName === name || c.staff_id === user.id) && !c.from_staff_id);
+    const staffCols = (collections || []).filter((c: any) => c.staffName === name);
     const staffDeps = (deposits || []).filter((d: any) => 
-      (d.staffName === name || d.staff_id === user.id) && 
-      d.depositType?.toLowerCase() !== 'virtual' &&
-      !(d.recipient_staff_id === user.id && d.depositType === 'staff')
+      d.staffName === name && 
+      d.depositType?.toLowerCase() !== 'virtual'
     );
     const receivedDeps = (deposits || []).filter((d: any) => 
       d.recipient_staff_id === user.id && 
