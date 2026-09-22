@@ -637,7 +637,9 @@ export default function RetailersTab({
                     <span className={`text-sm font-black font-mono tabular-nums ${(retailer.balance || 0) > 0 ? 'text-emerald-600 dark:text-emerald-500' : (retailer.balance || 0) < 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500'}`}>
                       ₹{Math.abs(retailer.balance || 0).toLocaleString()}
                     </span>
-                    <span className="text-[8px] font-black text-slate-500 uppercase block tracking-wider mt-0.5">Outstanding Balance</span>
+                    <span className={`text-[8.5px] font-black uppercase block tracking-wider mt-0.5 ${(retailer.balance || 0) < 0 ? 'text-red-600 dark:text-red-400' : (retailer.balance || 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                      {(retailer.balance || 0) < 0 ? "To Take (Due)" : (retailer.balance || 0) > 0 ? "Advance (To Give)" : "Settled"}
+                    </span>
                   </div>
                   <button
                     type="button"

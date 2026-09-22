@@ -173,11 +173,15 @@ export default function OverviewTab({
   }, [safeDeposits, rangeStartDate, rangeEndDate]);
 
   const rangeCashIn = React.useMemo(() => {
-    return filteredCollections.reduce((s, c) => s + (c.totalAmount || 0), 0);
+    return filteredCollections
+      .filter(c => !c.from_staff_id)
+      .reduce((s, c) => s + (c.totalAmount || 0), 0);
   }, [filteredCollections]);
 
   const rangeCashOut = React.useMemo(() => {
-    return filteredDeposits.reduce((s, d) => s + (d.amount || 0), 0);
+    return filteredDeposits
+      .filter(d => d.depositType !== 'staff' || d.to_office || d.toOffice)
+      .reduce((s, d) => s + (d.amount || 0), 0);
   }, [filteredDeposits]);
 
   const rangeNet = rangeCashIn - rangeCashOut;
@@ -533,10 +537,10 @@ export default function OverviewTab({
     });
   }, [staffListData]);
 
-  // Pre-calculate running balances for all transactions (excluding virtual deposits)
+  // Pre-calculate running balances for all transactions (excluding virtual deposits and internal staff handovers)
   const combinedTimeline = [
-    ...safeCollections.map(c => ({ ...c, type: 'collection', amt: c.totalAmount })),
-    ...safeDeposits.filter(d => d.depositType?.toLowerCase() !== 'virtual').map(d => ({ ...d, type: 'deposit', amt: d.amount }))
+    ...safeCollections.filter(c => !c.from_staff_id).map(c => ({ ...c, type: 'collection', amt: c.totalAmount })),
+    ...safeDeposits.filter(d => d.depositType?.toLowerCase() !== 'virtual' && (d.depositType !== 'staff' || d.to_office || d.toOffice)).map(d => ({ ...d, type: 'deposit', amt: d.amount }))
   ].filter(item => item.date)
    .sort((a, b) => new Date(a.date.replace(' ', 'T')).getTime() - new Date(b.date.replace(' ', 'T')).getTime());
 

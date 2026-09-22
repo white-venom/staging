@@ -149,11 +149,15 @@ export default function MobileOverview({
   }, [safeDeposits, rangeStartDate, rangeEndDate]);
 
   const rangeCashIn = useMemo(() => {
-    return filteredCollections.reduce((s, c) => s + (c.totalAmount || 0), 0);
+    return filteredCollections
+      .filter(c => !c.from_staff_id)
+      .reduce((s, c) => s + (c.totalAmount || 0), 0);
   }, [filteredCollections]);
 
   const rangeCashOut = useMemo(() => {
-    return filteredDeposits.reduce((s, d) => s + (d.amount || 0), 0);
+    return filteredDeposits
+      .filter(d => d.depositType !== 'staff' || d.to_office || d.toOffice)
+      .reduce((s, d) => s + (d.amount || 0), 0);
   }, [filteredDeposits]);
 
   const rangeNet = rangeCashIn - rangeCashOut;
@@ -197,11 +201,11 @@ export default function MobileOverview({
     return last7Days.map(day => {
       const targetDateStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(day);
       const dayCollections = collections
-        .filter(c => c.date.split(" ")[0] === targetDateStr)
+        .filter(c => c.date.split(" ")[0] === targetDateStr && !c.from_staff_id)
         .reduce((sum, c) => sum + (c.totalAmount || 0), 0);
         
       const dayDeposits = deposits
-        .filter(d => d.date.split(" ")[0] === targetDateStr && d.depositType?.toLowerCase() !== 'virtual')
+        .filter(d => d.date.split(" ")[0] === targetDateStr && d.depositType?.toLowerCase() !== 'virtual' && (d.depositType !== 'staff' || d.to_office || d.toOffice))
         .reduce((sum, d) => sum + (d.amount || 0), 0);
         
       return {
