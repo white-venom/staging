@@ -474,8 +474,17 @@ def _compute_portal_ledger(db: Session, portal_id: uuid.UUID):
             "denominations": denom_dict
         })
 
+    def _get_portal_tx_effective_datetime(tx):
+        if tx.get("tx_date"):
+            created_ist = tx["created_at"] + timedelta(hours=5, minutes=30)
+            combined_ist = datetime.combine(tx["tx_date"], created_ist.time())
+            return combined_ist - timedelta(hours=5, minutes=30)
+        return tx["created_at"]
+
     tx_list.extend(adjustment_txs)
-    tx_list.sort(key=lambda x: x["created_at"])
+    # Sort chronologically by the effective transaction date/time so backdated entries
+    # are ordered properly and running balances stay continuous and consistent.
+    tx_list.sort(key=lambda x: (_get_portal_tx_effective_datetime(x), x["created_at"]))
 
     # opening_to_take/opening_to_give already include every manual adjustment ever made
     # (each "Adjust Balance" edit increments them). Since those same adjustments are now
@@ -496,26 +505,7 @@ def _compute_portal_ledger(db: Session, portal_id: uuid.UUID):
         else:
             running_balance -= tx["amount"]
 
-        # Display under collection_date/deposit_date, not created_at (PortalAdjustment
-        # rows have no such field and keep falling back to created_at). Row order and
-        # running_balance still follow created_at (real submission order).
-        #
-        # created_at is stored in UTC, but the frontend's formatIST() blindly treats
-        # this "date" string as UTC and adds +5:30 for display. Naively combining
-        # tx_date with created_at's raw UTC time-of-day breaks for any entry created
-        # between 00:00-05:29 IST: at that instant the UTC calendar date is still
-        # "yesterday", so gluing today's tx_date onto yesterday's UTC clock reading
-        # produces a value that, after the frontend's +5:30, lands on tomorrow's
-        # date -- a backdated (or just very-late-night) entry for the 27th could
-        # display as the 28th. Convert to IST first, combine, then subtract 5:30 to
-        # pre-cancel the frontend's own conversion, so the net result is always
-        # exactly tx_date at the real IST time of day.
-        if tx.get("tx_date"):
-            created_ist = tx["created_at"] + timedelta(hours=5, minutes=30)
-            combined_ist = datetime.combine(tx["tx_date"], created_ist.time())
-            display_date = combined_ist - timedelta(hours=5, minutes=30)
-        else:
-            display_date = tx["created_at"]
+        display_date = _get_portal_tx_effective_datetime(tx)
 
         formatted_txs.append({
             "id": tx["id"],

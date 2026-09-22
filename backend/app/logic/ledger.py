@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from sqlalchemy import select, desc
 from sqlalchemy.orm import Session, joinedload
@@ -85,17 +85,34 @@ def recalculate_balances(retailer_id, db: Session, update_opening_timestamp: boo
             db.add(primary_ledger)
         db.flush()
 
-    # Get all ledger entries for this retailer ordered by creation time and ID for deterministic sorting
+    # Get all ledger entries for this retailer ordered deterministically by effective transaction date
     entries = db.scalars(
         select(Ledger)
         .options(joinedload(Ledger.collection), joinedload(Ledger.deposit))
         .where(Ledger.retailer_id == retailer_id)
-        .order_by(Ledger.created_at, Ledger.id)
     ).all()
+
+    def _get_ledger_effective_datetime(entry):
+        tx_date = None
+        if entry.collection and entry.collection.collection_date:
+            tx_date = entry.collection.collection_date
+        elif entry.deposit and entry.deposit.deposit_date:
+            tx_date = entry.deposit.deposit_date
+        elif entry.description == "Opening Balance":
+            tx_date = retailer.opening_balance_set_on or (retailer.created_at.date() if retailer.created_at else None)
+
+        created_dt = entry.created_at or datetime.min
+        if tx_date:
+            created_ist = created_dt + timedelta(hours=5, minutes=30)
+            combined_ist = datetime.combine(tx_date, created_ist.time())
+            return (combined_ist - timedelta(hours=5, minutes=30), created_dt, entry.id or 0)
+        return (created_dt, created_dt, entry.id or 0)
+
+    sorted_entries = sorted(entries, key=_get_ledger_effective_datetime)
 
     current_balance = Decimal("0.00")
     
-    for entry in entries:
+    for entry in sorted_entries:
         # Raw signed running total, no "owe vs credit" business logic: whatever
         # amount is entered adds directly. "credit" = money flowing in from the
         # retailer (collections, virtual loads) -> adds. "debit" = money flowing

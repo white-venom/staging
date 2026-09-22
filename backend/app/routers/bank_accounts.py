@@ -386,30 +386,19 @@ def get_bank_account_ledger(
             "denominations": denom_dict
         })
 
-    # Sort transactions by created_at ascending -- purely chronological record.
-    # Item #8: no running/outstanding balance is computed for an individual
-    # BankAccount anymore; that concept lives only at the Portal level now
-    # (see GET /portals/{id}/ledger). This is just "what moved through this
-    # specific bank account," a record, not a balance statement.
-    tx_list.sort(key=lambda x: x["created_at"])
-    formatted_txs = []
-
-    for tx in tx_list:
-        # Display under collection_date/deposit_date, not created_at -- row order
-        # still follows created_at (real submission order).
-        #
-        # created_at is UTC, but the frontend's formatIST() blindly treats this
-        # "date" string as UTC and adds +5:30. Naively combining tx_date with
-        # created_at's raw UTC time-of-day breaks for entries created between
-        # 00:00-05:29 IST (UTC calendar date is still "yesterday" then), landing
-        # the display one day ahead of tx_date. Convert to IST first, combine,
-        # then subtract 5:30 to pre-cancel the frontend's own conversion.
+    def _get_bank_account_tx_effective_datetime(tx):
         if tx.get("tx_date"):
             created_ist = tx["created_at"] + timedelta(hours=5, minutes=30)
             combined_ist = datetime.combine(tx["tx_date"], created_ist.time())
-            display_date = combined_ist - timedelta(hours=5, minutes=30)
-        else:
-            display_date = tx["created_at"]
+            return combined_ist - timedelta(hours=5, minutes=30)
+        return tx["created_at"]
+
+    # Sort transactions chronologically by effective transaction date/time
+    tx_list.sort(key=lambda x: (_get_bank_account_tx_effective_datetime(x), x["created_at"]))
+    formatted_txs = []
+
+    for tx in tx_list:
+        display_date = _get_bank_account_tx_effective_datetime(tx)
 
         formatted_txs.append({
             "id": tx["id"],

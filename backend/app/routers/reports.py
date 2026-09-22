@@ -43,17 +43,28 @@ def get_public_ledger(
             joinedload(Ledger.deposit).joinedload(BankDeposit.recipient_staff),
             joinedload(Ledger.deposit).joinedload(BankDeposit.staff)
         )
-        .order_by(Ledger.created_at)
     ).all()
 
+    def _get_ledger_effective_datetime(entry):
+        tx_date = None
+        if entry.collection and entry.collection.collection_date:
+            tx_date = entry.collection.collection_date
+        elif entry.deposit and entry.deposit.deposit_date:
+            tx_date = entry.deposit.deposit_date
+        elif entry.description == "Opening Balance":
+            tx_date = retailer.opening_balance_set_on or (retailer.created_at.date() if retailer.created_at else None)
+
+        created_dt = entry.created_at or datetime.min
+        if tx_date:
+            created_ist = created_dt + timedelta(hours=5, minutes=30)
+            combined_ist = datetime.combine(tx_date, created_ist.time())
+            return (combined_ist - timedelta(hours=5, minutes=30), created_dt, entry.id or 0)
+        return (created_dt, created_dt, entry.id or 0)
+
+    transactions = sorted(transactions, key=_get_ledger_effective_datetime)
+
     # Calculate latest outstanding running balance
-    latest_entry = db.scalar(
-        select(Ledger)
-        .where(Ledger.retailer_id == retailer.id)
-        .order_by(Ledger.created_at.desc())
-        .limit(1)
-    )
-    current_balance = latest_entry.balance if latest_entry else Decimal("0.00")
+    current_balance = transactions[-1].balance if transactions else (retailer.balance or Decimal("0.00"))
 
     tx_list = []
     for tx in transactions:
@@ -656,8 +667,15 @@ def get_staff_ledger(
             "denominations": _denom_dict(d.denominations),
         })
 
-    # Sort transactions chronologically
-    tx_list.sort(key=lambda x: x["created_at"])
+    def _get_staff_tx_effective_datetime(tx):
+        if tx.get("tx_date"):
+            created_ist = tx["created_at"] + timedelta(hours=5, minutes=30)
+            combined_ist = datetime.combine(tx["tx_date"], created_ist.time())
+            return combined_ist - timedelta(hours=5, minutes=30)
+        return tx["created_at"]
+
+    # Sort transactions chronologically by effective transaction date/time
+    tx_list.sort(key=lambda x: (_get_staff_tx_effective_datetime(x), x["created_at"]))
 
     # Calculate running balance
     running_balance = 0.0
@@ -669,22 +687,7 @@ def get_staff_ledger(
         else:
             running_balance -= tx["amount"]
 
-        # Display under collection_date/deposit_date (the day the entry claims to
-        # represent), not created_at -- row order and running_balance still follow
-        # created_at (the real chronological submission order).
-        #
-        # created_at is UTC, but the frontend's formatIST() blindly treats this
-        # "date" string as UTC and adds +5:30. Naively combining tx_date with
-        # created_at's raw UTC time-of-day breaks for entries created between
-        # 00:00-05:29 IST (UTC calendar date is still "yesterday" then), landing
-        # the display one day ahead of tx_date. Convert to IST first, combine,
-        # then subtract 5:30 to pre-cancel the frontend's own conversion.
-        if tx.get("tx_date"):
-            created_ist = tx["created_at"] + timedelta(hours=5, minutes=30)
-            combined_ist = datetime.combine(tx["tx_date"], created_ist.time())
-            display_date = combined_ist - timedelta(hours=5, minutes=30)
-        else:
-            display_date = tx["created_at"]
+        display_date = _get_staff_tx_effective_datetime(tx)
 
         formatted_txs.append({
             "id": tx["id"],
