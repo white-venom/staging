@@ -331,6 +331,7 @@ export default function BankAccountLedgerModal({
             onBack={onClose}
             onEditEntry={handleStartEditEntry}
             onDeleteEntry={handleDeleteEntry}
+            onRefresh={() => reloadLedger(target)}
           />
         )}
       </div>

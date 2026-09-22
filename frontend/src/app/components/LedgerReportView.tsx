@@ -15,6 +15,7 @@ import {
   Edit2,
   Trash2,
   Store,
+  RefreshCw,
   X
 } from "lucide-react";
 import { getISTDateString } from "../utils/dateHelpers";
@@ -112,6 +113,7 @@ interface LedgerReportViewProps {
   onEditEntry?: (entry: any) => void;
   onDeleteEntry?: (entry: any) => void;
   hideBankNames?: boolean;
+  onRefresh?: () => void;
   // "You Gave / You Got" only makes sense when there's a real counterparty
   // relationship being described (a retailer). A staff member or a portal
   // (a payment gateway account) isn't a "you" in that sense, so those views
@@ -134,6 +136,7 @@ export default function LedgerReportView({
   phone,
   onEditEntry,
   onDeleteEntry,
+  onRefresh,
   hideBankNames = false
 }: LedgerReportViewProps) {
   const [selectedEntryForDetails, setSelectedEntryForDetails] = useState<LedgerTransaction | null>(null);
@@ -368,24 +371,36 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
           </div>
         </div>
         
-        {publicLink && !isPublic && (
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5">
+          {onRefresh && (
             <button
-              onClick={handleCopyLink}
+              type="button"
+              onClick={onRefresh}
               className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-sm border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
-              title={isCopied ? "Copied Link" : "Copy Portal Link"}
+              title="Refresh Statement"
             >
-              {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              <RefreshCw className="w-4 h-4" />
             </button>
-            <button
-              onClick={handleShare}
-              className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-sm border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
-              title="Share Portal Link"
-            >
-              <Share2 className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+          )}
+          {publicLink && !isPublic && (
+            <>
+              <button
+                onClick={handleCopyLink}
+                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-sm border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+                title={isCopied ? "Copied Link" : "Copy Portal Link"}
+              >
+                {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={handleShare}
+                className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-sm border border-white/20 transition-colors cursor-pointer flex items-center justify-center"
+                title="Share Portal Link"
+              >
+                <Share2 className="w-4 h-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 w-full max-w-lg mx-auto px-4 py-4 space-y-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search, Plus, X, Store as StoreIcon, Trash2, Edit2, Check, Phone, MapPin, BookOpen, ArrowLeft } from "lucide-react";
 import { api } from "../../../utils/api";
 import { useAdmin } from "../../context/AdminContext";
@@ -47,7 +47,10 @@ export default function RetailersTab({
   const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
   const [loadingLedger, setLoadingLedger] = useState(false);
 
+  const openedTokenRef = useRef<string | null>(null);
+
   const handleOpenLedger = async (retailer: any, opts?: { skipNav?: boolean }) => {
+    openedTokenRef.current = retailer.ledger_token;
     setLedgerRetailer(retailer);
     setActiveView("ledger");
     setLoadingLedger(true);
@@ -66,12 +69,17 @@ export default function RetailersTab({
   };
 
   // Re-open the right ledger when this tab is reached directly at
-  // /admin/retailers/[token]/ledger (a fresh load or a page refresh), instead
-  // of only supporting the click-to-open path.
+  // /admin/retailers/[token]/ledger (a fresh load or a page refresh), but ONLY
+  // once per token so background data updates don't cause an auto-refresh loop.
   useEffect(() => {
-    if (!initialLedgerToken) return;
+    if (!initialLedgerToken) {
+      openedTokenRef.current = null;
+      return;
+    }
+    if (openedTokenRef.current === initialLedgerToken) return;
     const match = retailerDirectory.find((r) => r.ledger_token === initialLedgerToken);
     if (match) {
+      openedTokenRef.current = initialLedgerToken;
       handleOpenLedger(match, { skipNav: true });
     }
   }, [initialLedgerToken, retailerDirectory]);
@@ -707,6 +715,7 @@ export default function RetailersTab({
               phone={ledgerRetailer.phone}
               onEditEntry={handleStartEditEntry}
               onDeleteEntry={handleDeleteEntry}
+              onRefresh={() => handleOpenLedger(ledgerRetailer, { skipNav: true })}
               hideBankNames={true}
             />
           ) : (

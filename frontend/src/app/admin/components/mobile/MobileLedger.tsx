@@ -17,6 +17,7 @@ import {
   Save,
   Trash2,
   ChevronDown,
+  RefreshCw,
   Share2
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
@@ -491,8 +492,16 @@ export default function MobileLedger() {
         </div>
         <div className="flex gap-1.5">
           <button
+            onClick={() => fetchData()}
+            className="w-7 h-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm flex items-center justify-center text-slate-500 transition-colors"
+            title="Refresh Ledger"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
+          <button
             onClick={() => setIsExportOpen(true)}
             className="w-7 h-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-sm flex items-center justify-center text-slate-500 transition-colors"
+            title="Export"
           >
             <Download className="w-4 h-4" />
           </button>

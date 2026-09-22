@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useAdmin } from "../../context/AdminContext";
-import { Edit2, X, Save, Trash2, ChevronDown, Share2 } from "lucide-react";
+import { Edit2, X, Save, Trash2, ChevronDown, Share2, RefreshCw } from "lucide-react";
 import { api } from "../../../utils/api";
 import { numberToWordsIndian, shareCollectionEntry, shareDepositEntry } from "../../../utils/shareHelper";
 import InlineSelect from "../../../components/InlineSelect";
@@ -756,6 +756,14 @@ export default function LedgerTab({
               className="px-4 py-1.5 bg-emerald-600 text-white text-[10px] font-black rounded-sm hover:bg-emerald-700 transition-colors"
             >
               Excel Export
+            </button>
+            <button
+              onClick={() => adminContext.fetchData()}
+              className="px-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-[10px] font-black rounded-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="Refresh Ledger"
+            >
+              <RefreshCw className={`w-3 h-3 ${adminContext.isLoading ? "animate-spin text-blue-600" : ""}`} />
+              Refresh
             </button>
           </div>
         </div>

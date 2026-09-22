@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   Search, 
   Plus, 
@@ -49,7 +49,10 @@ export default function MobileRetailers({
   const [ledgerOutstanding, setLedgerOutstanding] = useState(0);
   const [loadingLedger, setLoadingLedger] = useState(false);
 
+  const openedTokenRef = useRef<string | null>(null);
+
   const handleOpenLedger = async (retailer: any, opts?: { skipNav?: boolean }) => {
+    openedTokenRef.current = retailer.ledger_token;
     setLedgerRetailer(retailer);
     setIsLedgerModalOpen(true);
     setLoadingLedger(true);
@@ -69,11 +72,17 @@ export default function MobileRetailers({
   };
 
   // Re-open the right ledger when this component is reached directly at
-  // /admin/retailers/[token]/ledger (a fresh load or a page refresh).
+  // /admin/retailers/[token]/ledger (a fresh load or a page refresh), but ONLY
+  // once per token to prevent auto-refresh loops.
   useEffect(() => {
-    if (!initialLedgerToken || isLedgerModalOpen) return;
+    if (!initialLedgerToken) {
+      openedTokenRef.current = null;
+      return;
+    }
+    if (openedTokenRef.current === initialLedgerToken) return;
     const match = retailerDirectory.find((r) => r.ledger_token === initialLedgerToken);
     if (match) {
+      openedTokenRef.current = initialLedgerToken;
       handleOpenLedger(match, { skipNav: true });
     }
   }, [initialLedgerToken, retailerDirectory]);
@@ -1107,6 +1116,7 @@ export default function MobileRetailers({
                 setIsStoreModalOpen(true);
               }}
               phone={ledgerRetailer.phone}
+              onRefresh={() => handleOpenLedger(ledgerRetailer, { skipNav: true })}
             />
           )}
         </div>

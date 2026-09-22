@@ -209,12 +209,9 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchData(true);
-    const intervalId = setInterval(() => fetchData(false), 5000);
 
-    // Mobile browsers throttle/suspend setInterval while the tab/app is backgrounded
-    // (screen off, app switched away). Without this, a page left open since the
-    // morning shows stale data all day until manually reloaded. Force an immediate
-    // refetch as soon as the tab/app becomes visible again.
+    // When the browser tab becomes visible again after being backgrounded,
+    // sync the latest data once so stale numbers are updated.
     const handleVisibility = () => {
       if (document.visibilityState === "visible") fetchData(false);
     };
@@ -222,7 +219,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener("focus", handleVisibility);
 
     return () => {
-      clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", handleVisibility);
     };

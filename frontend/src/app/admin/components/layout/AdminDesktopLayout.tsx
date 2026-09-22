@@ -18,6 +18,7 @@ import {
   X,
   CheckCircle2,
   CreditCard,
+  RefreshCw,
   User
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
@@ -30,6 +31,7 @@ export default function AdminDesktopLayout({ children }: { children: React.React
   const pathname = usePathname();
   const { currentUser, resetStore, theme, setCurrentUser } = useAppStore();
   const { 
+    isLoading,
     showToast, 
     toastMessage, 
     setShowToast, 
@@ -281,6 +283,16 @@ export default function AdminDesktopLayout({ children }: { children: React.React
              <h2 className="text-xl font-black text-slate-900 dark:text-white capitalize">{activeTab === "admin" ? "Dashboard" : activeTab === "wallet-transfer" ? "Virtual Money Transfer" : activeTab === "virtual-ledger" ? "Virtual Ledger" : activeTab === "bankAccounts" ? "Portals" : activeTab}</h2>
              <p className="text-xs text-slate-400 font-semibold mt-1">Welcome back, {currentUser?.name}</p>
           </div>
+          <button
+            type="button"
+            onClick={() => fetchData()}
+            disabled={isLoading}
+            className="px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 rounded-sm text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+            title="Refresh Data"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin text-blue-600" : ""}`} />
+            <span>Refresh</span>
+          </button>
         </header>
         {children}
       </main>
