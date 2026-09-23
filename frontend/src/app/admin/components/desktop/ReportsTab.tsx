@@ -1714,7 +1714,17 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         }
       });
 
-      const closingBalance = openingBalance + totalIn - totalOut + periodOpeningAdj;
+      let closingBalance = openingBalance + totalIn - totalOut + periodOpeningAdj;
+
+      // When the period extends to the current date (no dateTo cutoff, or dateTo >= today),
+      // the retailer's true closing balance is their live ledger balance from the database.
+      // This prevents divergence caused by transactions that exist in Ledger (like direct adjustments,
+      // virtual settlements) but not in the raw collections/deposits arrays.
+      const todayStr = getISTDateString();
+      if ((!dateTo || dateTo >= todayStr) && typeof r.balance === "number" && !isNaN(r.balance)) {
+        closingBalance = r.balance;
+        openingBalance = closingBalance - totalIn + totalOut;
+      }
 
       results.push({
         id: retId,
@@ -5051,6 +5061,8 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               subtitle={ledgerRetailer.area ? `Route: ${ledgerRetailer.area}` : undefined}
               data={ledgerData}
               outstandingBalance={ledgerOutstanding}
+              initialStartDate={dateFrom || undefined}
+              initialEndDate={dateTo || undefined}
               isPublic={false}
               onBack={() => {
                 setIsLedgerModalOpen(false);

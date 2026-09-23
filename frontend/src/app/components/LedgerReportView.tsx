@@ -119,6 +119,8 @@ interface LedgerReportViewProps {
   // (a payment gateway account) isn't a "you" in that sense, so those views
   // use neutral Total In / Total Out labels instead.
   subjectType?: "retailer" | "staff" | "portal";
+  initialStartDate?: string;
+  initialEndDate?: string;
 }
 
 export default function LedgerReportView({
@@ -137,11 +139,13 @@ export default function LedgerReportView({
   onEditEntry,
   onDeleteEntry,
   onRefresh,
-  hideBankNames = false
+  hideBankNames = false,
+  initialStartDate,
+  initialEndDate
 }: LedgerReportViewProps) {
   const [selectedEntryForDetails, setSelectedEntryForDetails] = useState<LedgerTransaction | null>(null);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(initialStartDate || "");
+  const [endDate, setEndDate] = useState(initialEndDate || "");
   const [searchQuery, setSearchQuery] = useState("");
 
   // PDF/Excel export is a superadmin-controlled feature flag (Part 1). It has
@@ -171,6 +175,11 @@ export default function LedgerReportView({
 
   // Set default start/end date range to cover all data if available
   useEffect(() => {
+    if (initialStartDate || initialEndDate) {
+      setStartDate(initialStartDate || "");
+      setEndDate(initialEndDate || "");
+      return;
+    }
     if (data.length > 0) {
       const dates = data.map(d => d.date.substring(0, 10));
       dates.sort();
@@ -181,7 +190,7 @@ export default function LedgerReportView({
       setStartDate(today);
       setEndDate(today);
     }
-  }, [data]);
+  }, [data, initialStartDate, initialEndDate]);
 
   // Intercept phone hardware back button: push a fake state so pressing back
   // closes the ledger view instead of leaving the admin page entirely.
@@ -274,11 +283,22 @@ export default function LedgerReportView({
       }
     });
 
+    // In CrediiFlow accounting:
+    // When isPublic is false (Admin view):
+    //   youGot = Inflow (Collections / Credit)
+    //   youGave = Outflow (Payouts / Debit)
+    //   Net period change = youGot - youGave
+    // When isPublic is true (Retailer statement view):
+    //   youGave = Retailer gave to business (Collections)
+    //   youGot = Retailer received from business (Payouts)
+    //   Net period change = youGave - youGot
+    const netBalance = isPublic ? (youGave - youGot) : (youGot - youGave);
+
     return {
       entriesCount: filteredTransactions.length,
       youGave,
       youGot,
-      netBalance: youGave - youGot
+      netBalance
     };
   }, [filteredTransactions, isPublic]);
 
@@ -628,9 +648,11 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
               ? (staffOutstanding >= 0 ? "text-emerald-600" : "text-red-500")
               : (staffOutstanding < 0 ? "text-red-500" : staffOutstanding > 0 ? "text-emerald-600" : "text-slate-500");
 
-            const periodNetColor = isWalletOrStaff
-              ? (periodNet >= 0 ? "text-emerald-600" : "text-red-500")
-              : (periodNet > 0 ? "text-emerald-600" : periodNet < 0 ? "text-red-500" : "text-slate-500");
+            const periodNetColor = periodNet < 0
+              ? "text-red-600 dark:text-red-400"
+              : periodNet > 0
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-slate-500";
 
             return (
               <div className={`grid ${outstandingBalance !== undefined ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'} gap-2 sm:gap-2.5`}>
@@ -665,7 +687,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                     Net Balance (Period)
                   </span>
                   <span className={`text-sm sm:text-base font-black tabular-nums tracking-tight ${periodNetColor}`}>
-                    {periodNet < 0 ? "-" : ""}₹{Math.abs(periodNet).toLocaleString("en-IN")}
+                    {periodNet < 0 ? "-" : periodNet > 0 ? "+" : ""}₹{Math.abs(periodNet).toLocaleString("en-IN")}
                   </span>
                 </div>
               </div>
