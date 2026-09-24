@@ -1571,13 +1571,9 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       }
 
       if (opEntry) {
-        if (typeof opEntry.balance === "number" && !isNaN(opEntry.balance)) {
-          baseOpeningBalance = Number(opEntry.balance);
-        } else {
-          const amt = Number(opEntry.amount || 0);
-          const isDebit = String(opEntry.transaction_type || "").toLowerCase() === "debit";
-          baseOpeningBalance = isDebit ? -amt : amt;
-        }
+        const amt = Number(opEntry.amount || 0);
+        const isDebit = String(opEntry.transaction_type || "").toLowerCase() === "debit";
+        baseOpeningBalance = isDebit ? -amt : amt;
       } else {
         const toTake = Number(r.opening_to_take || 0);
         const toGive = Number(r.opening_to_give || 0);
@@ -1723,7 +1719,6 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       const todayStr = getISTDateString();
       if ((!dateTo || dateTo >= todayStr) && typeof r.balance === "number" && !isNaN(r.balance)) {
         closingBalance = r.balance;
-        openingBalance = closingBalance - totalIn + totalOut;
       }
 
       results.push({
@@ -1807,11 +1802,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       // Base opening balance
       const toTake = Number(portal.opening_to_take || 0);
       const toGive = Number(portal.opening_to_give || 0);
-      let baseOpening = toTake - toGive;
-
-      if (baseOpening === 0 && typeof portal.balance === "number" && portal.balance !== 0) {
-        baseOpening = Number(portal.balance);
-      }
+      const baseOpening = toTake - toGive;
 
       let openingBalance = baseOpening;
       let cashIn = 0;
@@ -1876,7 +1867,10 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         }
       });
 
+      // Collections: only direct non-retailer collections (office inflow / direct deduction) affect the portal account directly
       collections.forEach((c: any) => {
+        if (c.retailer_id) return;
+
         const cDate = c.collection_date || (c.created_at ? getISTDateString(getUtcDate(c.created_at)) : "");
         const amt = Number(c.total_amount || c.totalAmount || 0);
         if (amt === 0) return;
@@ -1884,23 +1878,20 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         const isTargetAccount = c.bank_account_id && accountIds.has(String(c.bank_account_id));
         if (!isTargetAccount) return;
 
-        let vAmt = Number(c.denominations?.online_amount || 0);
-        const isExplicitOnline = c.payment_mode === "online" || c.payment_mode === "bank" || c.paymentMode === "online" || c.paymentMode === "bank";
-        if (isExplicitOnline && vAmt === 0) vAmt = amt;
-        if (vAmt > amt) vAmt = amt;
-        const cAmt = Math.max(0, amt - vAmt);
-
         if (dateFrom && cDate && cDate < dateFrom) {
-          openingBalance += amt;
+          openingBalance -= amt;
         } else if ((!dateFrom || cDate >= dateFrom) && (!dateTo || cDate <= dateTo)) {
-          cashIn += cAmt;
-          onlineIn += vAmt;
-          totalIn += amt;
+          cashOut += amt;
+          totalOut += amt;
           txCount += 1;
         }
       });
 
-      const closingBalance = openingBalance + totalIn - totalOut;
+      let closingBalance = openingBalance + totalIn - totalOut;
+      const todayStr = getISTDateString();
+      if ((!dateTo || dateTo >= todayStr) && typeof portal.balance === "number" && !isNaN(portal.balance)) {
+        closingBalance = portal.balance;
+      }
 
       results.push({
         id: portalId,
