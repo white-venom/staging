@@ -1802,10 +1802,10 @@ export default function MobileOverview({
                             {item.type === 'collection' ? 'In' : 'Out'}
                           </span>
 
-                          <div className="flex items-center gap-1 truncate font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight text-[9px] min-w-0">
-                            <span className="truncate max-w-[90px]">{item.from}</span>
+                          <div className="flex items-center gap-1 font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight text-[9.5px] min-w-0 flex-wrap">
+                            <span className="break-words">{item.from}</span>
                             <ArrowRight className="w-2.5 h-2.5 text-slate-400 flex-shrink-0" />
-                            <span className="truncate max-w-[90px] text-blue-600 dark:text-blue-400">{item.to}</span>
+                            <span className="break-words text-blue-600 dark:text-blue-400">{item.to}</span>
                           </div>
                         </div>
 

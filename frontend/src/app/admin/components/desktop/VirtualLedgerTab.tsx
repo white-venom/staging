@@ -683,7 +683,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                       className="p-3.5 flex items-center justify-between hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors cursor-pointer"
                     >
                       {/* Left: Date & Running Balance */}
-                      <div className="flex flex-col gap-1 min-w-0 max-w-[125px] shrink-0">
+                      <div className="flex flex-col gap-1 min-w-0 max-w-[140px] sm:max-w-[180px] shrink-0">
                         <div className="flex flex-col leading-tight">
                           <span className="text-xs font-extrabold text-slate-800 dark:text-slate-200 shrink-0">{formatted.date}</span>
                           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-400 mt-0.5">{formatted.time}</span>
@@ -692,7 +692,7 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           Bal. ₹{Math.round(tx.balance_snapshot || 0).toLocaleString("en-IN")}
                         </span>
                         {tx.balanceAccountLabel && (
-                          <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 truncate max-w-[125px]" title={tx.balanceAccountLabel}>
+                          <span className="text-[8.5px] font-bold text-slate-400 dark:text-slate-500 break-words leading-tight" title={tx.balanceAccountLabel}>
                             {tx.balanceAccountLabel}
                           </span>
                         )}
@@ -704,10 +704,10 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
                           <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-wider self-start ${badgeColor}`}>
                             {badgeLabel}
                           </span>
-                          <div className={`text-xs font-black flex items-center gap-1 mt-1 ${isPortalTransferRow ? 'text-indigo-700 dark:text-indigo-400' : isGot ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
-                            <span className="truncate max-w-[80px]" title={tx.narrationFrom}>{tx.narrationFrom}</span>
-                            <span className="text-slate-500">→</span>
-                            <span className="truncate max-w-[80px]" title={tx.narrationTo}>{tx.narrationTo}</span>
+                          <div className={`text-xs sm:text-sm font-black flex flex-wrap items-center gap-1.5 mt-1 ${isPortalTransferRow ? 'text-indigo-700 dark:text-indigo-400' : isGot ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400'}`}>
+                            <span className="break-words font-black" title={tx.narrationFrom}>{tx.narrationFrom}</span>
+                            <span className="text-slate-400 shrink-0 font-bold">→</span>
+                            <span className="break-words font-black" title={tx.narrationTo}>{tx.narrationTo}</span>
                           </div>
                           <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold mt-1">
                             Staff: <span className="uppercase">{tx.staffName || 'Admin'}</span>
@@ -929,9 +929,9 @@ Period: ${dateFrom || "All Time"} to ${dateTo || "All Time"}`;
 
             <div className="space-y-4 text-left">
               <div className="p-4 bg-slate-50 dark:bg-slate-950 rounded-sm border border-slate-100 dark:border-slate-800">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[10px] font-black text-slate-400 uppercase">Narration</span>
-                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase truncate max-w-[180px]">{currentSelectionTx.narrationFrom} → {currentSelectionTx.narrationTo}</span>
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <span className="text-[10px] font-black text-slate-400 uppercase shrink-0 mt-0.5">Narration</span>
+                  <span className="text-xs font-black text-slate-900 dark:text-white uppercase break-words text-right">{currentSelectionTx.narrationFrom} → {currentSelectionTx.narrationTo}</span>
                 </div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[10px] font-black text-slate-400 uppercase">Staff</span>

@@ -2247,10 +2247,10 @@ export default function OverviewTab({
                             {item.type === 'collection' ? 'Cash In' : 'Cash Out'}
                           </span>
 
-                          <div className="flex items-center gap-1.5 truncate font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
-                            <span className="truncate max-w-[200px]">{item.from}</span>
+                          <div className="flex items-center gap-1.5 font-extrabold text-slate-800 dark:text-slate-200 uppercase tracking-tight flex-wrap">
+                            <span className="break-words">{item.from}</span>
                             <ArrowRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                            <span className="truncate max-w-[200px] text-blue-600 dark:text-blue-400">{item.to}</span>
+                            <span className="break-words text-blue-600 dark:text-blue-400">{item.to}</span>
                           </div>
                         </div>
 
