@@ -826,9 +826,14 @@ def update_tenant(
         tenant_db = TenantSession()
         try:
             from app.database import models
-            admin_user = tenant_db.query(models.User).filter(models.User.role == "admin").first()
+            admin_user = None
+            if payload.admin_phone:
+                admin_user = tenant_db.query(models.User).filter(models.User.phone == payload.admin_phone).first()
+            if not admin_user:
+                admin_user = tenant_db.query(models.User).filter(models.User.role == "admin").first()
+
             if admin_user:
-                if payload.admin_phone:
+                if payload.admin_phone and admin_user.phone != payload.admin_phone:
                     dup = tenant_db.query(models.User).filter(
                         models.User.phone == payload.admin_phone,
                         models.User.id != admin_user.id

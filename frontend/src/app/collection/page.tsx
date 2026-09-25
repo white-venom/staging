@@ -560,8 +560,8 @@ function NewCollectionContent() {
                         <div className="flex items-center gap-1.5">
                           {(() => {
                             const bal = selectedRetailer.net_balance || 0;
-                            const toGive = bal < 0 ? Math.abs(bal) : 0;
-                            const toTake = bal > 0 ? bal : 0;
+                            const toTake = bal < 0 ? Math.abs(bal) : 0;
+                            const toGive = bal > 0 ? bal : 0;
 
                             if (toGive === 0 && toTake === 0) {
                               return (

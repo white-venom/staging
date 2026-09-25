@@ -154,12 +154,11 @@ def startup_event():
                     )
                     db.add(new_u)
                 else:
-                    u.password_hash = get_password_hash("pass123")
                     u.is_active = True
             db.commit()
-            print("[INFO] Default admin and staff accounts verified/reset in do-it-services.")
+            print("[INFO] Default admin and staff accounts verified in do-it-services.")
         except Exception as err:
-            print(f"[WARN] Failed to verify/reset admin accounts: {err}")
+            print(f"[WARN] Failed to verify admin accounts: {err}")
         db.close()
     except Exception as e:
         print(f"[WARN] Failed to seed default tenant database 'do-it-services' during startup: {e}")
@@ -360,7 +359,7 @@ def tenant_info(request: Request):
         parts = host.split(".")
         if len(parts) >= 3:
             tenant_id = parts[0]
-            if tenant_id in ("superadmin", "www", "api", "staging-api"):
+            if tenant_id in ("superadmin", "www", "api", "staging-api", "app"):
                 tenant_id = None
                 
     if not tenant_id:
