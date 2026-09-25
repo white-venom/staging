@@ -115,6 +115,7 @@ class DepositResponse(BaseModel):
     bank_name: Optional[str] = None
     from_bank_account_name: Optional[str] = None  # Source account name for portal_transfer type
     from_portal_name: Optional[str] = None  # Source portal group name for portal_transfer type
+    from_portal_id: Optional[uuid.UUID] = None  # Source portal id for portal_transfer type
     staff_name: Optional[str] = None
     is_refund: Optional[bool] = None  # True when this is a "Move to Distributor" reverse transfer
     retailer_ledger_token: Optional[str] = None

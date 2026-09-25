@@ -1818,27 +1818,53 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         const amt = Number(d.amount || 0);
         if (amt === 0) return;
 
-        const isDirectPortal = String(d.portal_id || "") === portalId || (d.portal_name && d.portal_name.toLowerCase() === portalName.toLowerCase());
-        const isTargetAccount = d.bank_account_id && accountIds.has(String(d.bank_account_id));
-        const isFromAccount = d.from_bank_account_id && accountIds.has(String(d.from_bank_account_id));
+        const targetAccId = d.bank_account_id || d.bankAccountId;
+        const fromAccId = d.from_bank_account_id || d.fromBankAccountId;
+        const depPortalId = d.portal_id || d.portalId;
+        const fromPortalId = d.from_portal_id || d.fromPortalId;
+        const depPortalName = (d.portal_name || d.portalName || "").trim().toLowerCase();
+        const fromPortalNameStr = (d.from_portal_name || d.fromPortalName || "").trim().toLowerCase();
+        const pNameLower = portalName.toLowerCase();
 
-        if (!isDirectPortal && !isTargetAccount && !isFromAccount) return;
+        const isTargetAccount = Boolean(targetAccId && accountIds.has(String(targetAccId)));
+        const isFromAccount = Boolean(fromAccId && accountIds.has(String(fromAccId)));
+        const isTargetPortal = Boolean(
+          (depPortalId && String(depPortalId) === portalId) ||
+          (depPortalName && depPortalName === pNameLower)
+        );
+        const isFromPortal = Boolean(
+          (fromPortalId && String(fromPortalId) === portalId) ||
+          (fromPortalNameStr && fromPortalNameStr === pNameLower)
+        );
 
-        const isVirtualRefund = d.deposit_type === "virtual" && (d.is_refund === true || d.payment_mode === "refund" || d.paymentMode === "refund");
-        const isPortalTransferIn = d.deposit_type === "portal_transfer" && isTargetAccount;
-        const isPortalTransferOut = d.deposit_type === "portal_transfer" && isFromAccount;
-        const isRegularDepositIn = d.deposit_type === "portal" || (!d.deposit_type && isTargetAccount);
+        const isDirectPortal = isTargetPortal || (isTargetAccount && (!d.deposit_type || d.deposit_type === "portal" || d.deposit_type === "virtual"));
+        const isSourcePortal = isFromPortal || isFromAccount;
+
+        if (!isDirectPortal && !isTargetAccount && !isSourcePortal) return;
+
+        const isVirtualRefund = d.deposit_type === "virtual" && (d.is_refund === true || d.isRefund === true || d.payment_mode === "refund" || d.paymentMode === "refund");
+        const isPortalTransfer = d.deposit_type === "portal_transfer";
+        const isPortalTransferIn = isPortalTransfer && (isTargetAccount || (isTargetPortal && !isSourcePortal));
+        const isPortalTransferOut = isPortalTransfer && (isFromAccount || (isSourcePortal && !isTargetAccount));
+        const isPortalTransferInternal = isPortalTransfer && (isTargetAccount || isTargetPortal) && (isFromAccount || isSourcePortal);
+
+        const isRegularDepositIn = (d.deposit_type === "portal" || (!d.deposit_type && isTargetAccount)) && !isPortalTransfer;
         const isVirtualPayoutOut = d.deposit_type === "virtual" && !isVirtualRefund;
 
-        const isInflow = isRegularDepositIn || isVirtualRefund || isPortalTransferIn;
-        const isOutflow = isVirtualPayoutOut || isPortalTransferOut;
-
-        const isOnlineTx = d.deposit_type === "virtual" || d.deposit_type === "portal_transfer" || d.payment_mode === "online" || d.payment_mode === "bank" || d.paymentMode === "online" || d.paymentMode === "bank";
+        const isOnlineTx = d.deposit_type === "virtual" || isPortalTransfer || d.payment_mode === "online" || d.payment_mode === "bank" || d.paymentMode === "online" || d.paymentMode === "bank";
         let vAmt = isOnlineTx ? amt : Number(d.denominations?.online_amount || 0);
         if (vAmt > amt) vAmt = amt;
         const cAmt = Math.max(0, amt - vAmt);
 
-        if (isInflow) {
+        if (isPortalTransferInternal) {
+          if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
+            onlineIn += amt;
+            totalIn += amt;
+            onlineOut += amt;
+            totalOut += amt;
+            txCount += 1;
+          }
+        } else if (isPortalTransferIn || isRegularDepositIn || isVirtualRefund) {
           if (dateFrom && dDate && dDate < dateFrom) {
             openingBalance += amt;
           } else if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
@@ -1851,7 +1877,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
             totalIn += amt;
             txCount += 1;
           }
-        } else if (isOutflow) {
+        } else if (isPortalTransferOut || isVirtualPayoutOut) {
           if (dateFrom && dDate && dDate < dateFrom) {
             openingBalance -= amt;
           } else if ((!dateFrom || dDate >= dateFrom) && (!dateTo || dDate <= dateTo)) {
@@ -1953,8 +1979,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       if (selectedPortalIds.length > 0 && !selectedPortalIds.includes("all")) {
         if (selectedPortalIds.includes("__none__")) return false;
         const matches = selectedPortalIds.some(id =>
-          String(d.portal_id) === String(id) ||
-          d.portal_name === id
+          String(d.portal_id || d.portalId || "") === String(id) ||
+          String(d.from_portal_id || d.fromPortalId || "") === String(id) ||
+          d.portal_name === id ||
+          d.portalName === id ||
+          d.from_portal_name === id ||
+          d.fromPortalName === id
         );
         if (!matches) return false;
       }
@@ -1973,12 +2003,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const portalName = (d.portal_name || "").toLowerCase();
-        const targetName = (d.target_name || "").toLowerCase();
+        const portalName = (d.portal_name || d.portalName || "").toLowerCase();
+        const fromPortalName = (d.from_portal_name || d.fromPortalName || "").toLowerCase();
+        const targetName = (d.target_name || d.targetName || "").toLowerCase();
         const staffName = getStaffName(d).toLowerCase();
         const amount = String(d.amount || "");
         const remarks = (d.remarks || "").toLowerCase();
-        if (!portalName.includes(q) && !targetName.includes(q) && !staffName.includes(q) && !amount.includes(q) && !remarks.includes(q)) {
+        if (!portalName.includes(q) && !fromPortalName.includes(q) && !targetName.includes(q) && !staffName.includes(q) && !amount.includes(q) && !remarks.includes(q)) {
           return false;
         }
       }

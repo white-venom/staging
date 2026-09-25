@@ -483,6 +483,7 @@ def list_deposits(
             if src and src.portal:
                 dep.from_bank_account_name = src.portal.name
                 dep.from_portal_name = src.portal.name
+                dep.from_portal_id = src.portal.id
             if dst and dst.portal:
                 dep.portal_name = dst.portal.name
                 dep.portal_id = dst.portal.id
