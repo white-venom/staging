@@ -166,6 +166,9 @@ def get_bank_account_ledger(
         select(BankDeposit)
         .options(
             joinedload(BankDeposit.retailer),
+            joinedload(BankDeposit.store),
+            joinedload(BankDeposit.staff),
+            joinedload(BankDeposit.recipient_staff),
             joinedload(BankDeposit.denominations),
             joinedload(BankDeposit.from_bank_account).joinedload(BankAccount.portal),
             joinedload(BankDeposit.bank_account).joinedload(BankAccount.portal)
@@ -185,7 +188,12 @@ def get_bank_account_ledger(
     # Fetch verified collections for this account
     collections = db.scalars(
         select(Collection)
-        .options(joinedload(Collection.retailer), joinedload(Collection.denominations))
+        .options(
+            joinedload(Collection.retailer),
+            joinedload(Collection.store),
+            joinedload(Collection.staff),
+            joinedload(Collection.denominations),
+        )
         .where(
             and_(
                 Collection.bank_account_id == bank_account_id,
@@ -195,34 +203,42 @@ def get_bank_account_ledger(
         )
     ).all()
 
-    # Fetch all verified collections across this account's whole group (not just
-    # this single bank_account_id) to load store/retailer name in memory. A deposit
-    # can be edited to move it to a different account within the same group
-    # after the fact — the collection that originally generated it keeps its
-    # own bank_account_id, so the source lookup below has to search the whole group
-    # or it silently loses the retailer/store name for moved entries.
     group_account_ids = [bank_account_id]
     if account.portal_id:
         group_account_ids = [
             a.id for a in db.scalars(select(BankAccount).where(BankAccount.portal_id == account.portal_id)).all()
         ]
+    deposit_ids = [d.id for d in deposits]
+    deposit_dates = list({d.deposit_date for d in deposits if d.deposit_date})
+
     all_group_cols = db.scalars(
         select(Collection)
-        .options(joinedload(Collection.retailer), joinedload(Collection.store))
+        .options(
+            joinedload(Collection.retailer),
+            joinedload(Collection.store),
+            joinedload(Collection.staff),
+            joinedload(Collection.denominations),
+        )
         .where(
             and_(
-                Collection.bank_account_id.in_(group_account_ids),
+                or_(
+                    Collection.bank_account_id.in_(group_account_ids),
+                    Collection.online_routing_deposit_id.in_(deposit_ids),
+                    and_(
+                        Collection.collection_date.in_(deposit_dates),
+                        Collection.retailer_id.is_not(None)
+                    )
+                ),
                 Collection.status == "verified"
             )
         )
     ).all()
 
-    # Group collections by (date, retailer_id) and date for fast lookup. Multiple
-    # collections can share the same (account, date) with no retailer_id, so keep all
-    # of them per date instead of letting one silently overwrite the rest.
+    # Group collections for fast lookup
     col_by_date_retailer = {}
     col_by_date = {}
     col_by_routing_deposit_id = {}
+    col_by_date_and_amount = {}
     for col in sorted(all_group_cols, key=lambda c: c.created_at):
         col_date = col.collection_date
         if col.retailer_id:
@@ -230,6 +246,10 @@ def get_bank_account_ledger(
         col_by_date.setdefault(col_date, []).append(col)
         if col.online_routing_deposit_id:
             col_by_routing_deposit_id[col.online_routing_deposit_id] = col
+        if col.denominations and col.denominations.online_amount:
+            online_amt = Decimal(str(col.denominations.online_amount))
+            if online_amt > 0:
+                col_by_date_and_amount.setdefault((col_date, online_amt), []).append(col)
 
     def _best_date_match(col_date, deposit_amount):
         candidates = col_by_date.get(col_date) or []
@@ -239,72 +259,92 @@ def get_bank_account_ledger(
             online_amt = c.denominations.online_amount if c.denominations else None
             if online_amt is not None and Decimal(str(online_amt)) == Decimal(str(deposit_amount)):
                 return c
-        # No unambiguous amount match — only safe to guess when there's exactly one candidate.
         return candidates[0] if len(candidates) == 1 else None
 
     # Merge and sort chronologically
     tx_list = []
 
     for d in deposits:
-        # Bank deposit into account (cash deposit or online auto-route)
         retailer_name = d.retailer.retailer_name if d.retailer else None
-
-        store_name = None
+        retailer_id = str(d.retailer_id) if d.retailer_id else None
+        store_name = d.store.store_name if getattr(d, 'store', None) else None
+        store_id = str(d.store_id) if getattr(d, 'store_id', None) else None
+        staff_name = d.staff.name if d.staff else None
         fallback_remarks = d.remarks
 
         # 1. First priority: direct FK match to collection via online_routing_deposit_id
         matching_col = col_by_routing_deposit_id.get(d.id)
+
+        # 2. Second priority: match by date and online amount
+        if not matching_col and d.payment_mode == "online":
+            d_amt = Decimal(str(d.amount))
+            candidates = col_by_date_and_amount.get((d.deposit_date, d_amt)) or []
+            if len(candidates) == 1:
+                matching_col = candidates[0]
+            elif len(candidates) > 1:
+                candidate = next((c for c in candidates if str(c.retailer_id) == retailer_id), None)
+                if not candidate and d.remarks:
+                    candidate = next((c for c in candidates if c.remarks and c.remarks.strip() == d.remarks.strip()), None)
+                matching_col = candidate or candidates[0]
+
+        # 3. Third priority: fallback date match
+        if not matching_col and d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
+            matching_col = _best_date_match(d.deposit_date, d.amount)
+
         if matching_col:
-            if matching_col.retailer:
+            if not retailer_name and matching_col.retailer:
                 retailer_name = matching_col.retailer.retailer_name
-            if matching_col.store:
+                retailer_id = str(matching_col.retailer_id)
+            if not store_name and matching_col.store:
                 store_name = matching_col.store.store_name
+                store_id = str(matching_col.store_id)
+            if not staff_name and matching_col.staff:
+                staff_name = matching_col.staff.name
             if not fallback_remarks:
                 fallback_remarks = matching_col.remarks
-        elif d.deposit_type == "portal" and d.payment_mode == "online" and not retailer_name:
-            matching_col = _best_date_match(d.deposit_date, d.amount)
-            if matching_col:
-                retailer_name = matching_col.retailer.retailer_name if matching_col.retailer else None
-                store_name = matching_col.store.store_name if matching_col.store else None
-                if not fallback_remarks:
-                    fallback_remarks = matching_col.remarks
-        elif d.retailer:
-            # If retailer is available, look up store from matching collection
+        elif d.retailer_id:
             matching_col = col_by_date_retailer.get((d.deposit_date, d.retailer_id))
-            if matching_col and matching_col.store:
-                store_name = matching_col.store.store_name
+            if matching_col:
+                if not store_name and matching_col.store:
+                    store_name = matching_col.store.store_name
+                    store_id = str(matching_col.store_id)
+                if not staff_name and matching_col.staff:
+                    staff_name = matching_col.staff.name
 
-        tx_store_name = retailer_name or store_name
+        party_desc = ""
+        if retailer_name and store_name and retailer_name.lower().strip() != store_name.lower().strip():
+            party_desc = f"{retailer_name} ({store_name})"
+        elif retailer_name:
+            party_desc = retailer_name
+        elif store_name:
+            party_desc = store_name
 
         if d.deposit_type == "portal":
             tx_type = "credit" # You Got
             amount = float(d.amount)
             if d.payment_mode == "online":
-                desc_text = f"Online Payment from {tx_store_name}" if tx_store_name else "Online Payment"
+                desc_text = f"Online Payment from {party_desc}" if party_desc else "Online Payment"
             else:
-                desc_text = f"Cash Deposit from {tx_store_name}" if tx_store_name else "Cash Deposit"
+                desc_text = f"Cash Deposit from {party_desc}" if party_desc else "Cash Deposit"
             if fallback_remarks:
                 desc_text += f" ({fallback_remarks})"
         elif d.deposit_type == "virtual":
             if d.payment_mode == "refund":
                 tx_type = "credit" # You Got
                 amount = float(d.amount)
-                desc_text = f"Virtual Refund from {tx_store_name}" if tx_store_name else "Virtual Refund"
+                desc_text = f"Virtual Refund from {party_desc}" if party_desc else "Virtual Refund"
             else:
                 tx_type = "debit" # You Gave
                 amount = float(d.amount)
-                desc_text = f"Virtual Transfer to {tx_store_name}" if tx_store_name else "Virtual Transfer"
+                desc_text = f"Virtual Transfer to {party_desc}" if party_desc else "Virtual Transfer"
             if fallback_remarks:
                 desc_text += f" ({fallback_remarks})"
         elif d.deposit_type == "portal_transfer":
-            # For portal_transfer: credit if this account is destination, debit if this account is source
             if str(d.bank_account_id) == str(bank_account_id):
-                # This account is the destination: it received money (credit)
                 tx_type = "credit"
                 src_name = d.from_bank_account.portal.name if (d.from_bank_account and d.from_bank_account.portal) else (d.from_bank_account.bank_account_name if d.from_bank_account else "Source Account")
                 desc_text = f"Transfer received from {src_name}"
             else:
-                # This account is the source: it sent money (debit)
                 tx_type = "debit"
                 dst_name = d.bank_account.portal.name if (d.bank_account and d.bank_account.portal) else (d.bank_account.bank_account_name if d.bank_account else "Destination Account")
                 desc_text = f"Transfer sent to {dst_name}"
@@ -342,15 +382,16 @@ def get_bank_account_ledger(
             "payment_mode": d.payment_mode,
             "recipient_staff_id": str(d.recipient_staff_id) if d.recipient_staff_id else None,
             "to_office": d.to_office,
-            "retailer_id": str(d.retailer_id) if d.retailer_id else (str(matching_col.retailer_id) if matching_col and matching_col.retailer_id else None),
-            "store_id": str(matching_col.store_id) if matching_col and matching_col.store_id else None,
+            "retailer_id": retailer_id,
+            "retailer_name": retailer_name,
+            "store_id": store_id,
             "store_name": store_name,
+            "staff_name": staff_name,
             "bank_account_id": str(d.bank_account_id) if d.bank_account_id else None,
             "denominations": denom_dict
         })
 
     for c in collections:
-        # Collection associated with account (normally cash collection associated with account)
         denom_dict = None
         if c.denominations:
             denom_dict = {
@@ -368,7 +409,7 @@ def get_bank_account_ledger(
             "id": str(c.id),
             "created_at": c.created_at,
             "tx_date": c.collection_date,
-            "transaction_type": "debit", # You Gave (decreases account balance)
+            "transaction_type": "debit",
             "amount": float(c.total_amount),
             "description": f"Collection from {c.retailer.retailer_name if c.retailer else 'Retailer'}" + (f" ({c.remarks})" if c.remarks else ""),
             "collection_id": str(c.id),
@@ -380,8 +421,10 @@ def get_bank_account_ledger(
             "recipient_staff_id": None,
             "to_office": c.from_office,
             "retailer_id": str(c.retailer_id) if c.retailer_id else None,
+            "retailer_name": c.retailer.retailer_name if c.retailer else None,
             "store_id": str(c.store_id) if c.store_id else None,
             "store_name": c.store.store_name if (c.store and c.store.store_name) else (c.retailer.retailer_name if c.retailer else None),
+            "staff_name": c.staff.name if c.staff else None,
             "bank_account_id": str(c.bank_account_id) if c.bank_account_id else None,
             "denominations": denom_dict
         })
@@ -415,8 +458,10 @@ def get_bank_account_ledger(
             "recipient_staff_id": tx.get("recipient_staff_id"),
             "to_office": tx.get("to_office", False),
             "retailer_id": tx.get("retailer_id"),
+            "retailer_name": tx.get("retailer_name"),
             "store_id": tx.get("store_id"),
             "store_name": tx.get("store_name"),
+            "staff_name": tx.get("staff_name"),
             "bank_account_id": tx.get("bank_account_id"),
             "denominations": tx.get("denominations")
         })

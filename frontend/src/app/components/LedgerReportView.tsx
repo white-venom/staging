@@ -18,7 +18,8 @@ import {
   RefreshCw,
   X,
   LayoutList,
-  Table
+  Table,
+  User
 } from "lucide-react";
 import { getISTDateString } from "../utils/dateHelpers";
 import { downloadElementAsPdf } from "../utils/downloadElementAsPdf";
@@ -83,11 +84,16 @@ interface LedgerTransaction {
   collection_id?: string | null;
   deposit_id?: string | null;
   store_name?: string | null;
+  store_id?: string | null;
+  retailer_name?: string | null;
+  retailer_id?: string | null;
+  bank_account_id?: string | null;
   bank_account_name?: string | null;
   bank_name?: string | null;
   portal_name?: string | null;
   staff_name?: string | null;
   deposit_type?: string | null;
+  payment_mode?: string | null;
   denominations?: {
     note_500: number;
     note_200: number;
@@ -244,6 +250,8 @@ export default function LedgerReportView({
         const remarkText = tx.remarks || "";
         const refNoText = tx.reference_no || "";
         const storeText = tx.store_name || "";
+        const retailerText = tx.retailer_name || "";
+        const staffText = tx.staff_name || "";
         const bankAccountText = tx.bank_account_name || "";
         const bankText = tx.bank_name || "";
         const q = searchQuery.toLowerCase();
@@ -253,6 +261,8 @@ export default function LedgerReportView({
           !remarkText.toLowerCase().includes(q) &&
           !refNoText.toLowerCase().includes(q) &&
           !storeText.toLowerCase().includes(q) &&
+          !retailerText.toLowerCase().includes(q) &&
+          !staffText.toLowerCase().includes(q) &&
           !bankAccountText.toLowerCase().includes(q) &&
           !bankText.toLowerCase().includes(q) &&
           !tx.amount.toString().includes(q)
@@ -820,12 +830,17 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                           {cleanDescription(tx.description, tx)}
                         </div>
 
-                        {/* Meta tags: Store, Bank, Staff, Remarks, Ref */}
+                        {/* Meta tags: Retailer, Store, Bank, Staff, Remarks, Ref */}
                         <div className="flex flex-wrap gap-1 items-center pt-0.5">
+                          {tx.retailer_name && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 text-[10px] font-extrabold uppercase border border-purple-100 dark:border-purple-900/30">
+                              Retailer: {tx.retailer_name}
+                            </span>
+                          )}
                           {tx.store_name && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-extrabold uppercase border border-indigo-100 dark:border-indigo-900/30">
                               <Store className="w-3 h-3" />
-                              {tx.store_name}
+                              Store: {tx.store_name}
                             </span>
                           )}
                           {(tx.bank_account_name || tx.portal_name) && (
@@ -840,7 +855,8 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                             </span>
                           )}
                           {!isPublic && tx.staff_name && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-[10px] font-extrabold uppercase border border-amber-200 dark:border-amber-900/30">
+                              <User className="w-3 h-3" />
                               Staff: {tx.staff_name}
                             </span>
                           )}
@@ -931,8 +947,13 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                           <div className="text-slate-900 dark:text-slate-100 font-bold break-words">
                             {cleanDescription(tx.description, tx)}
                           </div>
+                          {tx.retailer_name && (
+                            <div className="text-[10.5px] font-extrabold text-purple-700 dark:text-purple-400 mt-1 flex items-center gap-1">
+                              <span>Retailer: <span className="uppercase tracking-tight">{tx.retailer_name}</span></span>
+                            </div>
+                          )}
                           {tx.store_name && (
-                            <div className="text-[10.5px] font-extrabold text-indigo-700 dark:text-indigo-400 mt-1 flex items-center gap-1">
+                            <div className="text-[10.5px] font-extrabold text-indigo-700 dark:text-indigo-400 mt-0.5 flex items-center gap-1">
                               <Store className="w-3 h-3 shrink-0" />
                               <span>Store: <span className="uppercase tracking-tight">{tx.store_name}</span></span>
                             </div>
@@ -949,8 +970,9 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                             </div>
                           )}
                           {!isPublic && tx.staff_name && (
-                            <div className="text-[10.5px] font-bold text-slate-600 dark:text-slate-400 mt-0.5">
-                              Staff: <span className="uppercase">{tx.staff_name}</span>
+                            <div className="text-[10.5px] font-extrabold text-amber-700 dark:text-amber-400 mt-0.5 flex items-center gap-1">
+                              <User className="w-3 h-3 shrink-0" />
+                              <span>Staff: <span className="uppercase tracking-tight">{tx.staff_name}</span></span>
                             </div>
                           )}
                           {tx.remarks && (
@@ -1070,6 +1092,15 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                   ₹ {selectedEntryForDetails.amount.toLocaleString("en-IN")}
                 </span>
               </div>
+
+              {selectedEntryForDetails.retailer_name && (
+                <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Retailer</span>
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
+                    {selectedEntryForDetails.retailer_name}
+                  </span>
+                </div>
+              )}
 
               {selectedEntryForDetails.store_name && (
                 <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">

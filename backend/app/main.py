@@ -190,6 +190,9 @@ def startup_event():
                             ("collections.online_routing_deposit_id",
                              "ALTER TABLE collections ADD COLUMN IF NOT EXISTS online_routing_deposit_id UUID "
                              "REFERENCES bank_deposits(id) ON DELETE SET NULL"),
+                            ("bank_deposits.store_id",
+                             "ALTER TABLE bank_deposits ADD COLUMN IF NOT EXISTS store_id UUID "
+                             "REFERENCES stores(id) ON DELETE SET NULL"),
                             ("users.token_version",
                              "ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0"),
                         ]

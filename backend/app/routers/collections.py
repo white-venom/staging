@@ -161,6 +161,7 @@ def submit_collection(
                     deposit_type="portal",
                     bank_account_id=payload.bank_account_id,
                     retailer_id=payload.retailer_id,
+                    store_id=payload.store_id,
                     recipient_staff_id=None,
                     to_office=False,
                     payment_mode="online",
@@ -778,6 +779,7 @@ def update_collection(
             # Update existing deposit in-place
             existing_dep.bank_account_id = new_bank_account_id
             existing_dep.retailer_id = new_retailer_id
+            existing_dep.store_id = payload.store_id
             existing_dep.remarks = payload.remarks
             existing_dep.amount = new_online_amount
             existing_dep.deposit_date = new_collection_date
@@ -810,6 +812,7 @@ def update_collection(
                 deposit_type="portal",
                 bank_account_id=new_bank_account_id,
                 retailer_id=new_retailer_id,
+                store_id=payload.store_id,
                 recipient_staff_id=None,
                 to_office=False,
                 payment_mode="online",

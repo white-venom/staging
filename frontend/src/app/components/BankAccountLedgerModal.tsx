@@ -261,8 +261,11 @@ export default function BankAccountLedgerModal({
         : { note_500: 0, note_200: 0, note_100: 0, note_50: 0, note_20: 0, note_10: 0, coins: 0, online_amount: Number(selectedNewAmount) };
 
       if (editingIsDeposit) {
-        const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" ? selectedNewBankAccountId : null;
-        const retailerId = selectedNewDepositType === "retailer" || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "retailer") ? selectedNewRetailerId : null;
+        const bankAccountId = selectedNewDepositType === "portal" || selectedNewDepositType === "virtual" 
+          ? (selectedNewBankAccountId || editingEntry.bank_account_id || null) 
+          : null;
+        const retailerId = selectedNewDepositType === "staff" ? null : (selectedNewRetailerId || null);
+        const storeId = selectedNewDepositType === "staff" ? null : (selectedNewStoreId || null);
         const recipientStaffId = (selectedNewDepositType === "staff" && !selectedNewToOffice) || (selectedNewDepositType === "virtual" && selectedNewVirtualTargetType === "staff") ? selectedNewRecipientStaffId : null;
         const toOffice = selectedNewDepositType === "staff" ? selectedNewToOffice : false;
 
@@ -270,6 +273,7 @@ export default function BankAccountLedgerModal({
           deposit_type: selectedNewDepositType,
           bank_account_id: bankAccountId,
           retailer_id: retailerId,
+          store_id: storeId,
           recipient_staff_id: recipientStaffId,
           to_office: toOffice,
           payment_mode: selectedNewPaymentMode,
@@ -354,9 +358,12 @@ export default function BankAccountLedgerModal({
             <form onSubmit={handleSaveEntryEdit} className="space-y-4">
               <div className="space-y-3">
 
-                {!editingIsDeposit && (
+                {/* Retailer Selector for Collections and Retailer/Portal Deposits */}
+                {(!editingIsDeposit || selectedNewDepositType === "retailer" || selectedNewDepositType === "portal") && (
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Retailer</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                      {selectedNewDepositType === "retailer" ? "Target Retailer" : "Retailer"}
+                    </label>
                     <InlineSelect
                       value={selectedNewRetailerId}
                       onChange={setSelectedNewRetailerId}
@@ -369,7 +376,8 @@ export default function BankAccountLedgerModal({
                   </div>
                 )}
 
-                {!editingIsDeposit && (availableStores.length > 0 || editingEntry?.store_name) && (
+                {/* Parent Store Selector */}
+                {(!editingIsDeposit || selectedNewDepositType === "retailer" || selectedNewDepositType === "portal") && (availableStores.length > 0 || editingEntry?.store_name) && (
                   <div className="space-y-1">
                     <div className="flex justify-between items-center px-1">
                       <label className="block text-[10px] font-bold text-slate-400 uppercase">Parent Store (Shop/Branch)</label>
@@ -497,20 +505,6 @@ export default function BankAccountLedgerModal({
                       </div>
                     )}
 
-                    {selectedNewDepositType === "retailer" && (
-                      <div>
-                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Target Retailer</label>
-                        <InlineSelect
-                          value={selectedNewRetailerId}
-                          onChange={setSelectedNewRetailerId}
-                          options={[
-                            { value: "", label: "Select Retailer" },
-                            ...retailerDirectory.map((r: any) => ({ value: String(r.id), label: r.name }))
-                          ]}
-                          placeholder="Select Retailer"
-                        />
-                      </div>
-                    )}
 
                     {selectedNewDepositType === "staff" && (
                       <>

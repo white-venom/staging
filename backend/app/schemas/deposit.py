@@ -13,6 +13,7 @@ class DepositCreate(BaseModel):
     bank_account_id: Optional[uuid.UUID] = None
     from_bank_account_id: Optional[uuid.UUID] = None  # Source account for portal_transfer type
     retailer_id: Optional[uuid.UUID] = None
+    store_id: Optional[uuid.UUID] = None
     recipient_staff_id: Optional[uuid.UUID] = None
     to_office: bool = False
 
@@ -33,6 +34,7 @@ class DepositCreate(BaseModel):
                 "paymentMode": "payment_mode",
                 "bankAccountId": "bank_account_id",
                 "retailerId": "retailer_id",
+                "storeId": "store_id",
                 "recipientStaffId": "recipient_staff_id",
                 "depositDate": "deposit_date",
                 "referenceNo": "reference_no",
@@ -95,6 +97,7 @@ class DepositResponse(BaseModel):
     bank_account_id: Optional[uuid.UUID]
     from_bank_account_id: Optional[uuid.UUID] = None
     retailer_id: Optional[uuid.UUID]
+    store_id: Optional[uuid.UUID] = None
     recipient_staff_id: Optional[uuid.UUID]
     to_office: bool
     payment_mode: str
@@ -117,6 +120,7 @@ class DepositResponse(BaseModel):
     from_portal_name: Optional[str] = None  # Source portal group name for portal_transfer type
     from_portal_id: Optional[uuid.UUID] = None  # Source portal id for portal_transfer type
     staff_name: Optional[str] = None
+    store_name: Optional[str] = None
     is_refund: Optional[bool] = None  # True when this is a "Move to Distributor" reverse transfer
     retailer_ledger_token: Optional[str] = None
 

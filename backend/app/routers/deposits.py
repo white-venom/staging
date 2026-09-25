@@ -113,6 +113,7 @@ def submit_deposit(
             bank_account_id=payload.bank_account_id,
             from_bank_account_id=payload.from_bank_account_id,
             retailer_id=payload.retailer_id,
+            store_id=payload.store_id,
             recipient_staff_id=payload.recipient_staff_id,
             to_office=payload.to_office,
             payment_mode=payload.payment_mode,
@@ -945,6 +946,19 @@ def update_deposit(
                         coins=d.coins, online_amount=d.online_amount,
                     ))
 
+    # Sync linked Collection if this deposit is an online routing deposit from a collection
+    routing_collection = db.scalar(
+        select(Collection).where(Collection.online_routing_deposit_id == deposit.id).with_for_update()
+    )
+    if routing_collection:
+        if payload.retailer_id:
+            routing_collection.retailer_id = payload.retailer_id
+        if payload.store_id:
+            routing_collection.store_id = payload.store_id
+        routing_collection.collection_date = deposit.deposit_date
+        if payload.remarks:
+            routing_collection.remarks = payload.remarks
+
     if payload.deposit_date:
         import pytz
         from datetime import datetime
@@ -974,6 +988,7 @@ def update_deposit(
         deposit.portal_name = deposit.bank_account.portal.name
         deposit.portal_id = deposit.bank_account.portal.id
     deposit.bank_name = deposit.bank_account.bank_name if deposit.bank_account else None
+    deposit.store_name = deposit.store.store_name if deposit.store else None
     deposit.is_refund = (deposit.payment_mode == "refund")
     
     if deposit.retailer_id and deposit.retailer:

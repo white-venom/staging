@@ -314,6 +314,7 @@ class BankDeposit(Base):
     bank_account_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bank_accounts.id", ondelete="SET NULL"), nullable=True)
     from_bank_account_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("bank_accounts.id", ondelete="SET NULL"), nullable=True)  # Source account for portal_transfer type
     retailer_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("retailers.id", ondelete="SET NULL"), nullable=True)
+    store_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("stores.id", ondelete="SET NULL"), nullable=True)
     recipient_staff_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     
     to_office: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # True if cash was handed directly to main office
@@ -337,6 +338,7 @@ class BankDeposit(Base):
     bank_account: Mapped[Optional[BankAccount]] = relationship("BankAccount", foreign_keys=[bank_account_id], back_populates="deposits")
     from_bank_account: Mapped[Optional[BankAccount]] = relationship("BankAccount", foreign_keys=[from_bank_account_id])
     retailer: Mapped[Optional[Retailer]] = relationship("Retailer", back_populates="deposits")
+    store: Mapped[Optional["Store"]] = relationship("Store", foreign_keys=[store_id])
     denominations: Mapped[Optional[Denomination]] = relationship(
         "Denomination", back_populates="deposit", uselist=False, cascade="all, delete-orphan"
     )
