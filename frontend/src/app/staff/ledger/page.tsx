@@ -119,7 +119,9 @@ export default function StaffLedgerPage() {
     }),
     ...deposits
       .filter((d: any) => {
-        if (d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff") {
+        const isOfficeUser = (currentUser?.name || "").toLowerCase().includes("office");
+        const isRecipient = (d.recipient_staff_id === currentUser?.id || (isOfficeUser && d.to_office === true)) && d.deposit_type === "staff";
+        if (isRecipient) {
           const hasMatchingCollection = collections.some((c: any) => 
             c.from_staff_id === d.staff_id && 
             Number(c.total_amount) === Number(d.amount)
@@ -129,7 +131,8 @@ export default function StaffLedgerPage() {
         return true;
       })
       .map(d => {
-        const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+        const isOfficeUser = (currentUser?.name || "").toLowerCase().includes("office");
+        const isRecipient = (d.recipient_staff_id === currentUser?.id || (isOfficeUser && d.to_office === true)) && d.deposit_type === "staff";
       const targetName = (d.deposit_type === "portal" && d.portal_name) ? d.portal_name : (d.target_name || "Super Distributor");
       
       let displayName = targetName;

@@ -51,6 +51,8 @@ export interface DepositItem {
   bank_account_id?: string;
   retailer_id?: string;
   recipient_staff_id?: string;
+  to_office?: boolean;
+  toOffice?: boolean;
   depositType: "portal" | "retailer" | "staff" | "staff_person" | "virtual";
   targetName: string; // Bank account name, retailer name, or staff recipient name
   amount: number;

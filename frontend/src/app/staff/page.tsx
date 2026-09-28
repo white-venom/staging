@@ -443,11 +443,12 @@ export default function StaffDashboard() {
   );
 
   // Handovers received split
+  const isOfficeUser = (currentUser.name || "").toLowerCase().includes("office");
   const todayHandoversRcvd = deposits
-    .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && d.date?.startsWith(todayIST))
+    .filter(d => (d.recipient_staff_id === currentUser.id || (isOfficeUser && d.to_office === true)) && d.depositType === 'staff' && d.date?.startsWith(todayIST))
     .reduce((s, d) => s + (d.amount || 0), 0);
   const prevHandoversRcvd = deposits
-    .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === 'staff' && !d.date?.startsWith(todayIST))
+    .filter(d => (d.recipient_staff_id === currentUser.id || (isOfficeUser && d.to_office === true)) && d.depositType === 'staff' && !d.date?.startsWith(todayIST))
     .reduce((s, d) => s + (d.amount || 0), 0);
 
   const todayIn  = todayCollections.reduce((s, c) => s + (c.totalAmount || 0), 0) + todayHandoversRcvd;
@@ -457,11 +458,11 @@ export default function StaffDashboard() {
 
   // Step 4: totals needed for the cash summary UI
   const totalHandoversReceived = deposits
-    .filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
+    .filter(d => (d.recipient_staff_id === currentUser.id || (isOfficeUser && d.to_office === true)) && d.depositType === "staff")
     .reduce((s, d) => s + (d.amount || 0), 0);
   const totalCollected = collections.reduce((s, c) => s + (c.totalAmount || 0), 0) + totalHandoversReceived;
   const totalDeposited = deposits
-    .filter(d => d.depositType !== "virtual" && !(d.recipient_staff_id === currentUser.id && d.depositType === "staff"))
+    .filter(d => d.depositType !== "virtual" && !((d.recipient_staff_id === currentUser.id || (isOfficeUser && d.to_office === true)) && d.depositType === "staff"))
     .reduce((s, d) => s + (d.amount || 0), 0);
   const netPortfolio = totalCollected - totalDeposited;
 
@@ -503,7 +504,7 @@ export default function StaffDashboard() {
   deposits.forEach((d) => {
     if (!d.denominations) return;
     if (d.created_at && getUtcDate(d.created_at).getTime() < cutoffMs) return;
-    const isReceivedHandover = d.recipient_staff_id === currentUser.id && d.depositType === 'staff';
+    const isReceivedHandover = (d.recipient_staff_id === currentUser.id || (isOfficeUser && d.to_office === true)) && d.depositType === 'staff';
     if (!isReceivedHandover && d.depositType === 'virtual') return;
     const sign = isReceivedHandover ? 1 : -1;
     note500 += sign * (Number(d.denominations.note_500) || 0);
@@ -518,10 +519,10 @@ export default function StaffDashboard() {
   coins = Math.round(coins * 100) / 100;
 
   const onlineIn = collections.reduce((s, c) => s + Number(c.denominations?.online_amount || 0), 0) +
-    deposits.filter(d => d.recipient_staff_id === currentUser.id && d.depositType === "staff")
+    deposits.filter(d => (d.recipient_staff_id === currentUser.id || (isOfficeUser && d.to_office === true)) && d.depositType === "staff")
             .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
   const onlineOut = deposits
-    .filter(d => d.depositType !== "virtual" && !(d.recipient_staff_id === currentUser.id && d.depositType === "staff"))
+    .filter(d => d.depositType !== "virtual" && !((d.recipient_staff_id === currentUser.id || (isOfficeUser && d.to_office === true)) && d.depositType === "staff"))
     .reduce((s, d) => s + Number(d.denominations?.online_amount || 0), 0);
   const totalOnline = onlineIn - onlineOut;
   const totalCashNotes = note500 * 500 + note200 * 200 + note100 * 100 + note50 * 50 + note20 * 20 + note10 * 10 + coins;

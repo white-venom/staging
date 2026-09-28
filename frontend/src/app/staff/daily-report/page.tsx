@@ -35,8 +35,9 @@ export default function DailyReportPage() {
         api.getCollections(),
         api.getDeposits()
       ]);
+      const isOfficeUser = (currentUser?.name || "").toLowerCase().includes("office");
       const filteredDeps = deps.filter((d: any) => {
-        if (d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff") {
+        if ((d.recipient_staff_id === currentUser?.id || (isOfficeUser && d.to_office === true)) && d.deposit_type === "staff") {
           const hasMatchingCollection = cols.some((c: any) => 
             c.from_staff_id === d.staff_id && 
             Number(c.total_amount) === Number(d.amount)
@@ -106,7 +107,8 @@ export default function DailyReportPage() {
       detailsText: c.retailer_name || "Unknown Retailer"
     })),
     ...filteredDeposits.map(d => {
-      const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+      const isOfficeUser = (currentUser?.name || "").toLowerCase().includes("office");
+      const isRecipient = (d.recipient_staff_id === currentUser?.id || (isOfficeUser && d.to_office === true)) && d.deposit_type === "staff";
       const targetDisp = (d.deposit_type === "portal" && d.portal_name) ? d.portal_name : (d.target_name || "Super Distributor");
       return {
         ...d,
@@ -124,6 +126,8 @@ export default function DailyReportPage() {
 
   // Calculate Running Balances -- bucketed by collection_date/deposit_date, not
   // created_at, matching the filters above.
+  const isOfficeUser = (currentUser?.name || "").toLowerCase().includes("office");
+
   const totalInBefore = collections
     .filter(c => {
       const localDateStr = c.collection_date || getISTDateString(getUtcDate(c.created_at));
@@ -132,7 +136,7 @@ export default function DailyReportPage() {
     .reduce((sum, c) => sum + Number(c.total_amount), 0) +
     deposits
     .filter(d => {
-      const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+      const isRecipient = (d.recipient_staff_id === currentUser?.id || (isOfficeUser && d.to_office === true)) && d.deposit_type === "staff";
       if (!isRecipient) return false;
       const localDateStr = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       return localDateStr < selectedDate;
@@ -141,7 +145,7 @@ export default function DailyReportPage() {
 
   const totalOutBefore = deposits
     .filter(d => {
-      const isRecipient = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+      const isRecipient = (d.recipient_staff_id === currentUser?.id || (isOfficeUser && d.to_office === true)) && d.deposit_type === "staff";
       if (isRecipient) return false;
       const localDateStr = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       return localDateStr < selectedDate;
@@ -176,7 +180,7 @@ export default function DailyReportPage() {
       if (!d.denominations) return;
       const dDate = d.deposit_date || getISTDateString(getUtcDate(d.created_at));
       if (dDate > throughDateInclusive) return;
-      const isReceivedHandover = d.recipient_staff_id === currentUser?.id && d.deposit_type === "staff";
+      const isReceivedHandover = (d.recipient_staff_id === currentUser?.id || (isOfficeUser && d.to_office === true)) && d.deposit_type === "staff";
       if (!isReceivedHandover && d.deposit_type === "virtual") return;
       const sign = isReceivedHandover ? 1 : -1;
       notes.note500 += sign * (Number(d.denominations.note_500) || 0);

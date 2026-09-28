@@ -480,17 +480,18 @@ export default function MobileOverview({
         (d) => d.staffName === name && !d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
       );
 
+      const isOfficeUser = name.toLowerCase().includes("office");
       // Received handovers (deposit_type === "staff" and recipient_staff_id === user.id)
       // Filter out received handovers that have matching collection to avoid double-counting
       const receivedDepsToday = (deposits || []).filter(d => 
-        d.recipient_staff_id === user.id && 
+        (d.recipient_staff_id === user.id || (isOfficeUser && d.to_office === true)) && 
         d.depositType === 'staff' && 
         d.date?.startsWith(todayStr) &&
         !(collections || []).some(c => (c.staff_id === user.id || c.staffName === name) && c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
       );
       
       const receivedDepsPrev = (deposits || []).filter(d => 
-        d.recipient_staff_id === user.id && 
+        (d.recipient_staff_id === user.id || (isOfficeUser && d.to_office === true)) && 
         d.depositType === 'staff' && 
         !d.date?.startsWith(todayStr) &&
         !(collections || []).some(c => (c.staff_id === user.id || c.staffName === name) && c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))

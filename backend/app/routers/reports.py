@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select, func, and_, desc
+from sqlalchemy import select, func, and_, or_, desc
 from sqlalchemy.orm import Session
 
 from app.database.db import get_db
@@ -293,12 +293,20 @@ def get_staff_cash_in_hand(
         deposits_query = deposits_query.where(BankDeposit.created_at >= cutoff)
     deposits_denoms = db.scalars(deposits_query).all()
 
+    is_office_user = "office" in (current_user.name or "").lower() or (current_user.role == "admin")
+    received_condition = (BankDeposit.recipient_staff_id == current_user.id)
+    if is_office_user:
+        received_condition = or_(
+            BankDeposit.recipient_staff_id == current_user.id,
+            and_(BankDeposit.deposit_type == "staff", BankDeposit.to_office == True)
+        )
+
     received_query = (
         select(Denomination)
         .join(BankDeposit, Denomination.deposit_id == BankDeposit.id)
         .where(
             and_(
-                BankDeposit.recipient_staff_id == current_user.id,
+                received_condition,
                 BankDeposit.deposit_type == "staff"
             )
         )
@@ -430,11 +438,21 @@ def get_staff_daily_summary(
         ))
     ) or Decimal("0.00")
 
+    target_staff = db.scalar(select(User).where(User.id == target_staff_id))
+    is_office_target = target_staff and ("office" in (target_staff.name or "").lower() or target_staff.role == "admin")
+
+    incoming_condition_before = (BankDeposit.recipient_staff_id == target_staff_id)
+    if is_office_target:
+        incoming_condition_before = or_(
+            BankDeposit.recipient_staff_id == target_staff_id,
+            and_(BankDeposit.deposit_type == "staff", BankDeposit.to_office == True)
+        )
+
     # Safeguard: include any legacy incoming staff handovers without a mirror collection
     legacy_incoming_before = db.scalar(
         select(func.sum(BankDeposit.amount))
         .where(and_(
-            BankDeposit.recipient_staff_id == target_staff_id,
+            incoming_condition_before,
             BankDeposit.deposit_type == "staff",
             BankDeposit.deposit_date < selected_date,
             ~BankDeposit.id.in_(
@@ -444,14 +462,13 @@ def get_staff_daily_summary(
     ) or Decimal("0.00")
     collections_before += legacy_incoming_before
 
-    # 2. Total Deposits (Out) before the selected date (cash deductions only)
+    # 2. Total Deposits (Out) before the selected date (cash deductions and portal transfers)
     deposits_before = db.scalar(
         select(func.sum(BankDeposit.amount))
         .where(and_(
             BankDeposit.staff_id == target_staff_id,
             BankDeposit.deposit_date < selected_date,
-            BankDeposit.deposit_type != "virtual",
-            BankDeposit.payment_mode != "online"
+            BankDeposit.deposit_type != "virtual"
         ))
     ) or Decimal("0.00")
 
@@ -466,11 +483,18 @@ def get_staff_daily_summary(
         ))
     ) or Decimal("0.00")
 
+    incoming_condition_today = (BankDeposit.recipient_staff_id == target_staff_id)
+    if is_office_target:
+        incoming_condition_today = or_(
+            BankDeposit.recipient_staff_id == target_staff_id,
+            and_(BankDeposit.deposit_type == "staff", BankDeposit.to_office == True)
+        )
+
     # Safeguard: include today's legacy incoming staff handovers without a mirror collection
     legacy_incoming_today = db.scalar(
         select(func.sum(BankDeposit.amount))
         .where(and_(
-            BankDeposit.recipient_staff_id == target_staff_id,
+            incoming_condition_today,
             BankDeposit.deposit_type == "staff",
             BankDeposit.deposit_date == selected_date,
             ~BankDeposit.id.in_(
@@ -480,14 +504,13 @@ def get_staff_daily_summary(
     ) or Decimal("0.00")
     collections_today += legacy_incoming_today
 
-    # 4. Total Deposits (Out) today (cash deductions only)
+    # 4. Total Deposits (Out) today
     deposits_today = db.scalar(
         select(func.sum(BankDeposit.amount))
         .where(and_(
             BankDeposit.staff_id == target_staff_id,
             BankDeposit.deposit_date == selected_date,
-            BankDeposit.deposit_type != "virtual",
-            BankDeposit.payment_mode != "online"
+            BankDeposit.deposit_type != "virtual"
         ))
     ) or Decimal("0.00")
 
@@ -533,13 +556,21 @@ def get_staff_ledger(
         )
     ).all()
 
+    is_office_staff = "office" in (staff.name or "").lower() or (staff.role == "admin")
+    handovers_condition = (BankDeposit.recipient_staff_id == staff_id)
+    if is_office_staff:
+        handovers_condition = or_(
+            BankDeposit.recipient_staff_id == staff_id,
+            and_(BankDeposit.deposit_type == "staff", BankDeposit.to_office == True)
+        )
+
     received_handovers = db.scalars(
         select(BankDeposit)
         .options(joinedload(BankDeposit.staff), joinedload(BankDeposit.denominations))
         .where(
             and_(
-                BankDeposit.recipient_staff_id == staff_id,
-                BankDeposit.deposit_type == "staff"
+                BankDeposit.deposit_type == "staff",
+                handovers_condition
             )
         )
     ).all()
@@ -556,8 +587,7 @@ def get_staff_ledger(
         .where(
             and_(
                 BankDeposit.staff_id == staff_id,
-                BankDeposit.deposit_type != "virtual",
-                BankDeposit.payment_mode != "online"
+                BankDeposit.deposit_type != "virtual"
             )
         )
     ).all()
@@ -610,7 +640,7 @@ def get_staff_ledger(
     # Format Received Handovers (Inflows)
     for d in received_handovers:
         sender_name = d.staff.name if d.staff else "Staff"
-        desc = f"Handover received from {sender_name}"
+        desc = f"Handover received from {sender_name}" + (" (To Office)" if d.to_office else "")
         tx_list.append({
             "id": str(d.id),
             "created_at": d.created_at,
