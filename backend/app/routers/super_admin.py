@@ -1102,19 +1102,32 @@ def get_infra_services(
     # Nginx routes by Host header/server_name, so an unmatched GET would just 404
     # from nginx itself -- a bare TCP connect is the honest check for "is the
     # process listening at all" here.
+    # On production VPS, host-level Nginx (port 80/443) is the active reverse proxy.
     start = time_lib.monotonic()
-    try:
-        with socket_lib.create_connection(("nginx", 80), timeout=3.0):
-            pass
+    nginx_ok = False
+    nginx_detail = ""
+    nginx_check = "tcp:nginx:80"
+    for host_probe, port_probe in [("nginx", 80), ("api.crediiflow.in", 443), ("172.17.0.1", 80), ("187.127.176.149", 80)]:
+        try:
+            with socket_lib.create_connection((host_probe, port_probe), timeout=2.0):
+                nginx_ok = True
+                nginx_detail = f"Listening on {host_probe}:{port_probe}"
+                nginx_check = f"tcp:{host_probe}:{port_probe}"
+                break
+        except Exception as probe_err:
+            nginx_detail = str(probe_err)[:120]
+
+    if nginx_ok:
         services.append({
-            "name": "Nginx Reverse Proxy", "container": "crediiflow_nginx",
-            "check": "tcp:nginx:80", "status": "up", "detail": "Port open",
+            "name": "Nginx Reverse Proxy",
+            "container": "host_nginx" if ("api.crediiflow" in nginx_check or "172." in nginx_check or "187." in nginx_check) else "crediiflow_nginx",
+            "check": nginx_check, "status": "up", "detail": nginx_detail,
             "latency_ms": round((time_lib.monotonic() - start) * 1000),
         })
-    except Exception as e:
+    else:
         services.append({
             "name": "Nginx Reverse Proxy", "container": "crediiflow_nginx",
-            "check": "tcp:nginx:80", "status": "unreachable", "detail": str(e)[:120], "latency_ms": None,
+            "check": "tcp:nginx:80", "status": "unreachable", "detail": nginx_detail, "latency_ms": None,
         })
 
     start = time_lib.monotonic()
