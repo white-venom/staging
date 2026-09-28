@@ -22,7 +22,10 @@ import {
   Building2,
   CreditCard,
   Share2,
-  Globe
+  Globe,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
 } from "lucide-react";
 import { useAdmin } from "../../context/AdminContext";
 import { getISTDateString, getUtcDate } from "../../../utils/dateHelpers";
@@ -207,10 +210,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const [dateFrom, setDateFrom] = useState(getISTDateString());
   const [dateTo, setDateTo] = useState(getISTDateString());
 
-  // Opening Balance Min / Max Filters for Summary Reports
+  // Opening Balance Min / Max Filters & Sorting for Summary Reports
   const [openingBalanceMin, setOpeningBalanceMin] = useState<string>("");
   const [openingBalanceMax, setOpeningBalanceMax] = useState<string>("");
   const [openingBalanceType, setOpeningBalanceType] = useState<"all" | "due" | "advance" | "non_zero">("all");
+  const [openingSort, setOpeningSort] = useState<"none" | "min" | "max">("none");
 
   // Virtual Ledger sub-type: 'all' | 'portal_to_portal' | 'portal_to_dist' | 'dist_to_portal'
   const [virtualLedgerSubType, setVirtualLedgerSubType] = useState<string>("all");
@@ -1783,8 +1787,30 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       });
     });
 
-    return results.sort((a, b) => a.name.localeCompare(b.name));
-  }, [retailerDirectory, collections, deposits, openingBalanceEntries, selectedRetailerCategory, searchQuery, dateFrom, dateTo, retailerCategoryMap, openingBalanceMin, openingBalanceMax, openingBalanceType]);
+    return results.sort((a, b) => {
+      if (openingSort === "min") {
+        if (openingBalanceType === "due") {
+          const diff = Math.abs(a.openingBalance) - Math.abs(b.openingBalance);
+          if (diff !== 0) return diff;
+        } else {
+          const diff = a.openingBalance - b.openingBalance;
+          if (diff !== 0) return diff;
+        }
+        return a.name.localeCompare(b.name);
+      }
+      if (openingSort === "max") {
+        if (openingBalanceType === "due") {
+          const diff = Math.abs(b.openingBalance) - Math.abs(a.openingBalance);
+          if (diff !== 0) return diff;
+        } else {
+          const diff = b.openingBalance - a.openingBalance;
+          if (diff !== 0) return diff;
+        }
+        return a.name.localeCompare(b.name);
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [retailerDirectory, collections, deposits, openingBalanceEntries, selectedRetailerCategory, searchQuery, dateFrom, dateTo, retailerCategoryMap, openingBalanceMin, openingBalanceMax, openingBalanceType, openingSort]);
 
   const categorySummaryTotals = useMemo(() => {
     const totalRetailers = filteredRetailerCategorySummary.length;
@@ -2017,8 +2043,30 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       });
     });
 
-    return results.sort((a, b) => a.name.localeCompare(b.name));
-  }, [portalDirectory, deposits, collections, dateFrom, dateTo, searchQuery, selectedPortalOnlineFilter, openingBalanceMin, openingBalanceMax, openingBalanceType]);
+    return results.sort((a, b) => {
+      if (openingSort === "min") {
+        if (openingBalanceType === "due") {
+          const diff = Math.abs(a.openingBalance) - Math.abs(b.openingBalance);
+          if (diff !== 0) return diff;
+        } else {
+          const diff = a.openingBalance - b.openingBalance;
+          if (diff !== 0) return diff;
+        }
+        return a.name.localeCompare(b.name);
+      }
+      if (openingSort === "max") {
+        if (openingBalanceType === "due") {
+          const diff = Math.abs(b.openingBalance) - Math.abs(a.openingBalance);
+          if (diff !== 0) return diff;
+        } else {
+          const diff = b.openingBalance - a.openingBalance;
+          if (diff !== 0) return diff;
+        }
+        return a.name.localeCompare(b.name);
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }, [portalDirectory, deposits, collections, dateFrom, dateTo, searchQuery, selectedPortalOnlineFilter, openingBalanceMin, openingBalanceMax, openingBalanceType, openingSort]);
 
   const portalSummaryTotals = useMemo(() => {
     const totalPortals = filteredPortalSummary.length;
@@ -2824,6 +2872,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 setOpeningBalanceMin("");
                 setOpeningBalanceMax("");
                 setOpeningBalanceType("all");
+                setOpeningSort("none");
               }}
               className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-sm cursor-pointer transition-colors shrink-0"
               title="Back to Reports Overview"
@@ -3228,26 +3277,73 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    3. Filter by Opening Balance (Min / Max ₹)
+                    3. Filter & Sort by Opening Balance
                   </span>
-                  {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                  {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all" || openingSort !== "none") && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
                       <Filter className="w-2.5 h-2.5" />
-                      Active Filter
+                      Active Filter/Sort
                     </span>
                   )}
                 </div>
-                {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all" || openingSort !== "none") && (
                   <button
                     type="button"
                     onClick={() => {
                       setOpeningBalanceMin("");
                       setOpeningBalanceMax("");
                       setOpeningBalanceType("all");
+                      setOpeningSort("none");
                     }}
                     className="text-[9.5px] font-bold text-red-500 hover:text-red-700 dark:hover:text-red-400 cursor-pointer flex items-center gap-1 transition-colors"
                   >
-                    <X className="w-3 h-3" /> Clear Balance Filter
+                    <X className="w-3 h-3" /> Clear Balance Settings
+                  </button>
+                )}
+              </div>
+
+              {/* Min/Max Order Sort Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-slate-950/60 rounded-xs border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Order Table:
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setOpeningSort(openingSort === "min" ? "none" : "min")}
+                      className={`px-2.5 py-1 text-[10px] font-bold rounded-xs border cursor-pointer transition-colors flex items-center gap-1 ${
+                        openingSort === "min"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                          : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-400"
+                      }`}
+                      title="Sort table by Opening Balance: Min to Max (Ascending)"
+                    >
+                      <ArrowUp className="w-3 h-3" />
+                      <span>Min → Max</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOpeningSort(openingSort === "max" ? "none" : "max")}
+                      className={`px-2.5 py-1 text-[10px] font-bold rounded-xs border cursor-pointer transition-colors flex items-center gap-1 ${
+                        openingSort === "max"
+                          ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                          : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-blue-400"
+                      }`}
+                      title="Sort table by Opening Balance: Max to Min (Descending)"
+                    >
+                      <ArrowDown className="w-3 h-3" />
+                      <span>Max → Min</span>
+                    </button>
+                  </div>
+                </div>
+                {openingSort !== "none" && (
+                  <button
+                    type="button"
+                    onClick={() => setOpeningSort("none")}
+                    className="text-[9.5px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    Reset Order (A-Z)
                   </button>
                 )}
               </div>
@@ -3472,26 +3568,73 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                   <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-                    3. Filter by Opening Balance (Min / Max ₹)
+                    3. Filter & Sort by Opening Balance
                   </span>
-                  {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                  {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all" || openingSort !== "none") && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
                       <Filter className="w-2.5 h-2.5" />
-                      Active Filter
+                      Active Filter/Sort
                     </span>
                   )}
                 </div>
-                {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all" || openingSort !== "none") && (
                   <button
                     type="button"
                     onClick={() => {
                       setOpeningBalanceMin("");
                       setOpeningBalanceMax("");
                       setOpeningBalanceType("all");
+                      setOpeningSort("none");
                     }}
                     className="text-[9.5px] font-bold text-red-500 hover:text-red-700 dark:hover:text-red-400 cursor-pointer flex items-center gap-1 transition-colors"
                   >
-                    <X className="w-3 h-3" /> Clear Balance Filter
+                    <X className="w-3 h-3" /> Clear Balance Settings
+                  </button>
+                )}
+              </div>
+
+              {/* Min/Max Order Sort Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-slate-950/60 rounded-xs border border-slate-200 dark:border-slate-800">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9.5px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Order Table:
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setOpeningSort(openingSort === "min" ? "none" : "min")}
+                      className={`px-2.5 py-1 text-[10px] font-bold rounded-xs border cursor-pointer transition-colors flex items-center gap-1 ${
+                        openingSort === "min"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                          : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-400"
+                      }`}
+                      title="Sort table by Opening Balance: Min to Max (Ascending)"
+                    >
+                      <ArrowUp className="w-3 h-3" />
+                      <span>Min → Max</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOpeningSort(openingSort === "max" ? "none" : "max")}
+                      className={`px-2.5 py-1 text-[10px] font-bold rounded-xs border cursor-pointer transition-colors flex items-center gap-1 ${
+                        openingSort === "max"
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                          : "bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-indigo-400"
+                      }`}
+                      title="Sort table by Opening Balance: Max to Min (Descending)"
+                    >
+                      <ArrowDown className="w-3 h-3" />
+                      <span>Max → Min</span>
+                    </button>
+                  </div>
+                </div>
+                {openingSort !== "none" && (
+                  <button
+                    type="button"
+                    onClick={() => setOpeningSort("none")}
+                    className="text-[9.5px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                  >
+                    Reset Order (A-Z)
                   </button>
                 )}
               </div>
@@ -4262,9 +4405,29 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         <tr className="bg-slate-200/90 border-b border-slate-300 text-slate-900 font-black text-[10px] uppercase">
                           <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[4%] min-w-[32px]">#</th>
                           <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-left w-[22%] min-w-[170px]">Retailer & Route</th>
-                          <th rowSpan={2} className={`py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px] ${(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") ? "bg-blue-100 text-blue-950 font-black" : ""}`}>
-                            Opening Bal
-                            {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                          <th
+                            rowSpan={2}
+                            onClick={() => setOpeningSort(prev => prev === "min" ? "max" : prev === "max" ? "none" : "min")}
+                            className={`py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px] cursor-pointer select-none hover:bg-slate-300/80 transition-colors ${(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all" || openingSort !== "none") ? "bg-blue-100 text-blue-950 font-black" : ""}`}
+                            title="Click to sort by Opening Balance (Min → Max / Max → Min)"
+                          >
+                            <div className="flex items-center justify-center gap-1">
+                              <span>Opening Bal</span>
+                              {openingSort === "min" ? (
+                                <ArrowUp className="w-3 h-3 text-blue-700 shrink-0" />
+                              ) : openingSort === "max" ? (
+                                <ArrowDown className="w-3 h-3 text-blue-700 shrink-0" />
+                              ) : (
+                                <ArrowUpDown className="w-2.5 h-2.5 text-slate-400 opacity-60 shrink-0" />
+                              )}
+                            </div>
+                            {openingSort === "min" && (
+                              <span className="block text-[8px] font-bold text-blue-700 lowercase">(min → max ↑)</span>
+                            )}
+                            {openingSort === "max" && (
+                              <span className="block text-[8px] font-bold text-blue-700 lowercase">(max → min ↓)</span>
+                            )}
+                            {openingSort === "none" && (openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
                               <span className="block text-[8px] font-bold text-blue-700 lowercase">(filtered)</span>
                             )}
                           </th>
@@ -4469,9 +4632,29 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         <tr className="bg-slate-200/90 border-b border-slate-300 text-slate-900 font-black text-[10px] uppercase">
                           <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[4%] min-w-[32px]">#</th>
                           <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-left w-[24%] min-w-[170px]">Portal & Accounts</th>
-                          <th rowSpan={2} className={`py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px] ${(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") ? "bg-indigo-100 text-indigo-950 font-black" : ""}`}>
-                            Opening Bal
-                            {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                          <th
+                            rowSpan={2}
+                            onClick={() => setOpeningSort(prev => prev === "min" ? "max" : prev === "max" ? "none" : "min")}
+                            className={`py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px] cursor-pointer select-none hover:bg-slate-300/80 transition-colors ${(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all" || openingSort !== "none") ? "bg-indigo-100 text-indigo-950 font-black" : ""}`}
+                            title="Click to sort by Opening Balance (Min → Max / Max → Min)"
+                          >
+                            <div className="flex items-center justify-center gap-1">
+                              <span>Opening Bal</span>
+                              {openingSort === "min" ? (
+                                <ArrowUp className="w-3 h-3 text-indigo-700 shrink-0" />
+                              ) : openingSort === "max" ? (
+                                <ArrowDown className="w-3 h-3 text-indigo-700 shrink-0" />
+                              ) : (
+                                <ArrowUpDown className="w-2.5 h-2.5 text-slate-400 opacity-60 shrink-0" />
+                              )}
+                            </div>
+                            {openingSort === "min" && (
+                              <span className="block text-[8px] font-bold text-indigo-700 lowercase">(min → max ↑)</span>
+                            )}
+                            {openingSort === "max" && (
+                              <span className="block text-[8px] font-bold text-indigo-700 lowercase">(max → min ↓)</span>
+                            )}
+                            {openingSort === "none" && (openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
                               <span className="block text-[8px] font-bold text-indigo-700 lowercase">(filtered)</span>
                             )}
                           </th>
