@@ -302,7 +302,7 @@ def get_bank_account_ledger(
                 staff_name = matching_col.staff.name
             if not fallback_remarks:
                 fallback_remarks = matching_col.remarks
-        elif d.retailer_id:
+        elif d.retailer_id and d.deposit_type not in ("virtual", "portal_transfer"):
             matching_col = col_by_date_retailer.get((d.deposit_date, d.retailer_id))
             if matching_col:
                 if not store_name and matching_col.store:
@@ -329,14 +329,18 @@ def get_bank_account_ledger(
             if fallback_remarks:
                 desc_text += f" ({fallback_remarks})"
         elif d.deposit_type == "virtual":
+            # Virtual transfers are strictly between portal and retailer; store names must never apply
+            store_name = None
+            store_id = None
+            party_name = retailer_name or "Retailer"
             if d.payment_mode == "refund":
                 tx_type = "credit" # You Got
                 amount = float(d.amount)
-                desc_text = f"Virtual Refund from {party_desc}" if party_desc else "Virtual Refund"
+                desc_text = f"Virtual Refund from {party_name}"
             else:
                 tx_type = "debit" # You Gave
                 amount = float(d.amount)
-                desc_text = f"Virtual Transfer to {party_desc}" if party_desc else "Virtual Transfer"
+                desc_text = f"Virtual Transfer to {party_name}"
             if fallback_remarks:
                 desc_text += f" ({fallback_remarks})"
         elif d.deposit_type == "portal_transfer":
@@ -384,8 +388,8 @@ def get_bank_account_ledger(
             "to_office": d.to_office,
             "retailer_id": retailer_id,
             "retailer_name": retailer_name,
-            "store_id": store_id,
-            "store_name": store_name,
+            "store_id": None if d.deposit_type in ("virtual", "portal_transfer") else store_id,
+            "store_name": None if d.deposit_type in ("virtual", "portal_transfer") else store_name,
             "staff_name": staff_name,
             "bank_account_id": str(d.bank_account_id) if d.bank_account_id else None,
             "denominations": denom_dict

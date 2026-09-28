@@ -27,13 +27,23 @@ import { downloadCsv } from "../utils/downloadCsv";
 
 const cleanDescription = (desc: string, tx?: any): string => {
   if (!desc) return "";
-  // Used to append the portal name into this title (e.g. "move to
-  // distributor vidcom") -- now redundant and duplicated, since the portal
-  // is always shown as its own subtitle line below the title.
-  return desc
+  let cleaned = desc
     .replace(/\s*\(auto-verified\)/gi, "")
     .replace(/cash payout/gi, "cash out")
     .replace(/cash collection/gi, "cash in");
+
+  if (tx?.deposit_type === "virtual" || /virtual (transfer|refund)/i.test(cleaned)) {
+    if (tx?.store_name) {
+      const escapedStore = tx.store_name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      cleaned = cleaned.replace(new RegExp(`\\s*\\(${escapedStore}\\)`, "gi"), "");
+    }
+    if (tx?.retailer_name) {
+      const escapedRetailer = tx.retailer_name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      cleaned = cleaned.replace(new RegExp(`(${escapedRetailer})\\s*\\([^)]*\\)`, "i"), "$1");
+    }
+  }
+
+  return cleaned;
 };
 
 const renderDenominations = (denom: any) => {
@@ -249,7 +259,7 @@ export default function LedgerReportView({
         const cleanDesc = cleanDescription(tx.description, tx);
         const remarkText = tx.remarks || "";
         const refNoText = tx.reference_no || "";
-        const storeText = tx.store_name || "";
+        const storeText = (tx.deposit_type !== "virtual" && tx.store_name) ? tx.store_name : "";
         const retailerText = tx.retailer_name || "";
         const staffText = tx.staff_name || "";
         const bankAccountText = tx.bank_account_name || "";
@@ -837,7 +847,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                               Retailer: {tx.retailer_name}
                             </span>
                           )}
-                          {tx.store_name && (
+                          {tx.store_name && tx.deposit_type !== "virtual" && (
                             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 text-[10px] font-extrabold uppercase border border-indigo-100 dark:border-indigo-900/30">
                               <Store className="w-3 h-3" />
                               Store: {tx.store_name}
@@ -952,7 +962,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                               <span>Retailer: <span className="uppercase tracking-tight">{tx.retailer_name}</span></span>
                             </div>
                           )}
-                          {tx.store_name && (
+                          {tx.store_name && tx.deposit_type !== "virtual" && (
                             <div className="text-[10.5px] font-extrabold text-indigo-700 dark:text-indigo-400 mt-0.5 flex items-center gap-1">
                               <Store className="w-3 h-3 shrink-0" />
                               <span>Store: <span className="uppercase tracking-tight">{tx.store_name}</span></span>
@@ -1102,7 +1112,7 @@ ${publicLink ? `\nView Full Ledger: ${publicLink}` : ""}`;
                 </div>
               )}
 
-              {selectedEntryForDetails.store_name && (
+              {selectedEntryForDetails.store_name && selectedEntryForDetails.deposit_type !== "virtual" && (
                 <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 p-3 rounded-sm border border-slate-100 dark:border-slate-800">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Store Name</span>
                   <span className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider">
@@ -1203,7 +1213,7 @@ Date: ${formatIST(entry.date).full}
 Type: ${entry.transaction_type === "credit" ? "Cash In" : "Cash Out"}
 Amount: ₹ ${Math.round(entry.amount).toLocaleString()}
 Desc: ${cleanDescription(entry.description, entry)}
-${entry.store_name ? `Store: ${entry.store_name}\n` : ''}${entry.bank_account_name ? `Bank: ${entry.bank_account_name}\n` : ''}Remarks: ${entry.remarks || 'None'}`;
+${entry.store_name && entry.deposit_type !== "virtual" ? `Store: ${entry.store_name}\n` : ''}${entry.bank_account_name ? `Bank: ${entry.bank_account_name}\n` : ''}Remarks: ${entry.remarks || 'None'}`;
                   if (navigator.share) {
                     navigator.share({ title: "Transaction Receipt", text: shareText }).catch(() => {});
                   } else {
