@@ -207,6 +207,11 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
   const [dateFrom, setDateFrom] = useState(getISTDateString());
   const [dateTo, setDateTo] = useState(getISTDateString());
 
+  // Opening Balance Min / Max Filters for Summary Reports
+  const [openingBalanceMin, setOpeningBalanceMin] = useState<string>("");
+  const [openingBalanceMax, setOpeningBalanceMax] = useState<string>("");
+  const [openingBalanceType, setOpeningBalanceType] = useState<"all" | "due" | "advance" | "non_zero">("all");
+
   // Virtual Ledger sub-type: 'all' | 'portal_to_portal' | 'portal_to_dist' | 'dist_to_portal'
   const [virtualLedgerSubType, setVirtualLedgerSubType] = useState<string>("all");
 
@@ -1721,6 +1726,42 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         closingBalance = r.balance;
       }
 
+      // Opening Balance Filter (Type & Min/Max)
+      if (openingBalanceType === "due" && openingBalance >= 0) return;
+      if (openingBalanceType === "advance" && openingBalance <= 0) return;
+      if (openingBalanceType === "non_zero" && openingBalance === 0) return;
+
+      const minVal = openingBalanceMin.trim() !== "" ? parseFloat(openingBalanceMin) : null;
+      const maxVal = openingBalanceMax.trim() !== "" ? parseFloat(openingBalanceMax) : null;
+
+      if (minVal !== null && !isNaN(minVal)) {
+        if (openingBalanceType === "due") {
+          if (Math.abs(openingBalance) < minVal) return;
+        } else if (openingBalanceType === "advance") {
+          if (openingBalance < minVal) return;
+        } else {
+          if (minVal < 0) {
+            if (openingBalance < minVal) return;
+          } else {
+            if (Math.abs(openingBalance) < minVal) return;
+          }
+        }
+      }
+
+      if (maxVal !== null && !isNaN(maxVal)) {
+        if (openingBalanceType === "due") {
+          if (Math.abs(openingBalance) > maxVal) return;
+        } else if (openingBalanceType === "advance") {
+          if (openingBalance > maxVal) return;
+        } else {
+          if (maxVal < 0) {
+            if (openingBalance > maxVal) return;
+          } else {
+            if (Math.abs(openingBalance) > maxVal) return;
+          }
+        }
+      }
+
       results.push({
         id: retId,
         name: retName || "Retailer",
@@ -1743,7 +1784,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     });
 
     return results.sort((a, b) => a.name.localeCompare(b.name));
-  }, [retailerDirectory, collections, deposits, openingBalanceEntries, selectedRetailerCategory, searchQuery, dateFrom, dateTo, retailerCategoryMap]);
+  }, [retailerDirectory, collections, deposits, openingBalanceEntries, selectedRetailerCategory, searchQuery, dateFrom, dateTo, retailerCategoryMap, openingBalanceMin, openingBalanceMax, openingBalanceType]);
 
   const categorySummaryTotals = useMemo(() => {
     const totalRetailers = filteredRetailerCategorySummary.length;
@@ -1919,6 +1960,42 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         closingBalance = portal.balance;
       }
 
+      // Opening Balance Filter (Type & Min/Max)
+      if (openingBalanceType === "due" && openingBalance >= 0) return;
+      if (openingBalanceType === "advance" && openingBalance <= 0) return;
+      if (openingBalanceType === "non_zero" && openingBalance === 0) return;
+
+      const minVal = openingBalanceMin.trim() !== "" ? parseFloat(openingBalanceMin) : null;
+      const maxVal = openingBalanceMax.trim() !== "" ? parseFloat(openingBalanceMax) : null;
+
+      if (minVal !== null && !isNaN(minVal)) {
+        if (openingBalanceType === "due") {
+          if (Math.abs(openingBalance) < minVal) return;
+        } else if (openingBalanceType === "advance") {
+          if (openingBalance < minVal) return;
+        } else {
+          if (minVal < 0) {
+            if (openingBalance < minVal) return;
+          } else {
+            if (Math.abs(openingBalance) < minVal) return;
+          }
+        }
+      }
+
+      if (maxVal !== null && !isNaN(maxVal)) {
+        if (openingBalanceType === "due") {
+          if (Math.abs(openingBalance) > maxVal) return;
+        } else if (openingBalanceType === "advance") {
+          if (openingBalance > maxVal) return;
+        } else {
+          if (maxVal < 0) {
+            if (openingBalance > maxVal) return;
+          } else {
+            if (Math.abs(openingBalance) > maxVal) return;
+          }
+        }
+      }
+
       results.push({
         id: portalId,
         name: portalName,
@@ -1941,7 +2018,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     });
 
     return results.sort((a, b) => a.name.localeCompare(b.name));
-  }, [portalDirectory, deposits, collections, dateFrom, dateTo, searchQuery, selectedPortalOnlineFilter]);
+  }, [portalDirectory, deposits, collections, dateFrom, dateTo, searchQuery, selectedPortalOnlineFilter, openingBalanceMin, openingBalanceMax, openingBalanceType]);
 
   const portalSummaryTotals = useMemo(() => {
     const totalPortals = filteredPortalSummary.length;
@@ -2742,7 +2819,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-sm w-full max-w-full">
           <div className="flex items-center gap-3 min-w-0">
             <button
-              onClick={() => setSelectedReport(null)}
+              onClick={() => {
+                setSelectedReport(null);
+                setOpeningBalanceMin("");
+                setOpeningBalanceMax("");
+                setOpeningBalanceType("all");
+              }}
               className="p-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-sm cursor-pointer transition-colors shrink-0"
               title="Back to Reports Overview"
             >
@@ -3140,6 +3222,118 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                 </div>
               </div>
             )}
+
+            {/* Opening Balance Min/Max Filter Section */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    3. Filter by Opening Balance (Min / Max ₹)
+                  </span>
+                  {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                      <Filter className="w-2.5 h-2.5" />
+                      Active Filter
+                    </span>
+                  )}
+                </div>
+                {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpeningBalanceMin("");
+                      setOpeningBalanceMax("");
+                      setOpeningBalanceType("all");
+                    }}
+                    className="text-[9.5px] font-bold text-red-500 hover:text-red-700 dark:hover:text-red-400 cursor-pointer flex items-center gap-1 transition-colors"
+                  >
+                    <X className="w-3 h-3" /> Clear Balance Filter
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-0.5">
+                    Balance Type
+                  </label>
+                  <select
+                    value={openingBalanceType}
+                    onChange={(e) => setOpeningBalanceType(e.target.value as any)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">All Balances (Any)</option>
+                    <option value="due">Dues Only (To Take -)</option>
+                    <option value="advance">Advances Only (To Give +)</option>
+                    <option value="non_zero">Non-Zero Only (≠ ₹0)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-0.5">
+                    Min Amount (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1.5 text-[11px] text-slate-400 font-bold">₹</span>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1000"
+                      value={openingBalanceMin}
+                      onChange={(e) => setOpeningBalanceMin(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-6 pr-2 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-0.5">
+                    Max Amount (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1.5 text-[11px] text-slate-400 font-bold">₹</span>
+                    <input
+                      type="number"
+                      placeholder="e.g. 50000"
+                      value={openingBalanceMax}
+                      onChange={(e) => setOpeningBalanceMax(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-6 pr-2 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Amount Presets */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mr-1">Presets:</span>
+                {[
+                  { label: "Non-Zero", type: "non_zero", min: "", max: "" },
+                  { label: "< ₹5,000", type: "all", min: "", max: "5000" },
+                  { label: "₹5k - ₹25k", type: "all", min: "5000", max: "25000" },
+                  { label: "₹25k - ₹1 Lakh", type: "all", min: "25000", max: "100000" },
+                  { label: "> ₹1 Lakh", type: "all", min: "100000", max: "" },
+                ].map((preset, pIdx) => {
+                  const isPresetActive = openingBalanceType === preset.type && openingBalanceMin === preset.min && openingBalanceMax === preset.max;
+                  return (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      onClick={() => {
+                        setOpeningBalanceType(preset.type as any);
+                        setOpeningBalanceMin(preset.min);
+                        setOpeningBalanceMax(preset.max);
+                      }}
+                      className={`px-2 py-0.5 text-[9.5px] font-bold rounded-xs border cursor-pointer transition-colors ${
+                        isPresetActive
+                          ? "bg-blue-600 text-white border-blue-600 shadow-xs"
+                          : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
 
@@ -3271,6 +3465,118 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
               >
                 <span>Standard Only</span>
               </button>
+            </div>
+
+            {/* Opening Balance Min/Max Filter Section for Portal Summary */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                    3. Filter by Opening Balance (Min / Max ₹)
+                  </span>
+                  {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[8.5px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                      <Filter className="w-2.5 h-2.5" />
+                      Active Filter
+                    </span>
+                  )}
+                </div>
+                {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpeningBalanceMin("");
+                      setOpeningBalanceMax("");
+                      setOpeningBalanceType("all");
+                    }}
+                    className="text-[9.5px] font-bold text-red-500 hover:text-red-700 dark:hover:text-red-400 cursor-pointer flex items-center gap-1 transition-colors"
+                  >
+                    <X className="w-3 h-3" /> Clear Balance Filter
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-0.5">
+                    Balance Type
+                  </label>
+                  <select
+                    value={openingBalanceType}
+                    onChange={(e) => setOpeningBalanceType(e.target.value as any)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm px-2.5 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none cursor-pointer"
+                  >
+                    <option value="all">All Balances (Any)</option>
+                    <option value="due">Negative Only (- Due)</option>
+                    <option value="advance">Positive Only (+ Adv)</option>
+                    <option value="non_zero">Non-Zero Only (≠ ₹0)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-0.5">
+                    Min Amount (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1.5 text-[11px] text-slate-400 font-bold">₹</span>
+                    <input
+                      type="number"
+                      placeholder="e.g. 1000"
+                      value={openingBalanceMin}
+                      onChange={(e) => setOpeningBalanceMin(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-6 pr-2 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-0.5">
+                    Max Amount (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1.5 text-[11px] text-slate-400 font-bold">₹</span>
+                    <input
+                      type="number"
+                      placeholder="e.g. 50000"
+                      value={openingBalanceMax}
+                      onChange={(e) => setOpeningBalanceMax(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-sm pl-6 pr-2 py-1.5 text-[11px] font-bold text-slate-800 dark:text-slate-200 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Amount Presets */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                <span className="text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mr-1">Presets:</span>
+                {[
+                  { label: "Non-Zero", type: "non_zero", min: "", max: "" },
+                  { label: "< ₹5,000", type: "all", min: "", max: "5000" },
+                  { label: "₹5k - ₹25k", type: "all", min: "5000", max: "25000" },
+                  { label: "₹25k - ₹1 Lakh", type: "all", min: "25000", max: "100000" },
+                  { label: "> ₹1 Lakh", type: "all", min: "100000", max: "" },
+                ].map((preset, pIdx) => {
+                  const isPresetActive = openingBalanceType === preset.type && openingBalanceMin === preset.min && openingBalanceMax === preset.max;
+                  return (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      onClick={() => {
+                        setOpeningBalanceType(preset.type as any);
+                        setOpeningBalanceMin(preset.min);
+                        setOpeningBalanceMax(preset.max);
+                      }}
+                      className={`px-2 py-0.5 text-[9.5px] font-bold rounded-xs border cursor-pointer transition-colors ${
+                        isPresetActive
+                          ? "bg-indigo-600 text-white border-indigo-600 shadow-xs"
+                          : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -3896,9 +4202,19 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Retailers</span>
                     <span className="text-base font-black text-slate-900 mt-0.5 block">{categorySummaryTotals.totalRetailers} Listed</span>
                   </div>
-                  <div className="border border-slate-200 rounded-lg bg-white p-2.5 text-center shadow-xs">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Opening Balance</span>
+                  <div className={`border rounded-lg bg-white p-2.5 text-center shadow-xs ${(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") ? "border-blue-300 bg-blue-50/20 ring-1 ring-blue-400/20" : "border-slate-200"}`}>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Opening Balance</span>
+                      {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500" title="Opening balance filter active" />
+                      )}
+                    </div>
                     <div className="text-sm font-black mt-0.5">{formatBal(categorySummaryTotals.totalOpening)}</div>
+                    {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                      <div className="text-[8px] font-bold text-blue-600 bg-blue-50 border border-blue-100 rounded px-1 py-0.2 mt-0.5 inline-block">
+                        Filtered: {openingBalanceType !== "all" ? `${openingBalanceType.toUpperCase()} ` : ""}{openingBalanceMin ? `≥₹${Number(openingBalanceMin).toLocaleString("en-IN")}` : ""}{openingBalanceMin && openingBalanceMax ? " to " : ""}{openingBalanceMax ? `≤₹${Number(openingBalanceMax).toLocaleString("en-IN")}` : ""}
+                      </div>
+                    )}
                   </div>
                   <div className="border border-emerald-100 bg-emerald-50/50 rounded-lg p-2.5 text-center shadow-xs">
                     <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wider block">Total IN (Colls)</span>
@@ -3946,7 +4262,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         <tr className="bg-slate-200/90 border-b border-slate-300 text-slate-900 font-black text-[10px] uppercase">
                           <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[4%] min-w-[32px]">#</th>
                           <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-left w-[22%] min-w-[170px]">Retailer & Route</th>
-                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px]">Opening Bal</th>
+                          <th rowSpan={2} className={`py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px] ${(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") ? "bg-blue-100 text-blue-950 font-black" : ""}`}>
+                            Opening Bal
+                            {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                              <span className="block text-[8px] font-bold text-blue-700 lowercase">(filtered)</span>
+                            )}
+                          </th>
                           <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[9%] min-w-[85px]">Category</th>
                           <th colSpan={3} className="py-1 px-1 border-r border-emerald-300 text-center bg-emerald-100/80 text-emerald-950 font-black tracking-wider">
                             Total IN (Collections)
@@ -4088,9 +4409,19 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Portals</span>
                     <span className="text-base font-black text-slate-900 mt-0.5 block">{portalSummaryTotals.totalPortals} Listed</span>
                   </div>
-                  <div className="border border-slate-200 rounded-lg bg-white p-2.5 text-center shadow-xs">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Opening Balance</span>
+                  <div className={`border rounded-lg bg-white p-2.5 text-center shadow-xs ${(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") ? "border-indigo-300 bg-indigo-50/20 ring-1 ring-indigo-400/20" : "border-slate-200"}`}>
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">Opening Balance</span>
+                      {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-indigo-500" title="Opening balance filter active" />
+                      )}
+                    </div>
                     <div className="text-sm font-black mt-0.5">{formatBal(portalSummaryTotals.totalOpening)}</div>
+                    {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                      <div className="text-[8px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded px-1 py-0.2 mt-0.5 inline-block">
+                        Filtered: {openingBalanceType !== "all" ? `${openingBalanceType.toUpperCase()} ` : ""}{openingBalanceMin ? `≥₹${Number(openingBalanceMin).toLocaleString("en-IN")}` : ""}{openingBalanceMin && openingBalanceMax ? " to " : ""}{openingBalanceMax ? `≤₹${Number(openingBalanceMax).toLocaleString("en-IN")}` : ""}
+                      </div>
+                    )}
                   </div>
                   <div className="border border-emerald-100 bg-emerald-50/50 rounded-lg p-2.5 text-center shadow-xs">
                     <span className="text-[9px] font-black text-emerald-700 uppercase tracking-wider block">Total IN (Deposits)</span>
@@ -4138,7 +4469,12 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                         <tr className="bg-slate-200/90 border-b border-slate-300 text-slate-900 font-black text-[10px] uppercase">
                           <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[4%] min-w-[32px]">#</th>
                           <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-left w-[24%] min-w-[170px]">Portal & Accounts</th>
-                          <th rowSpan={2} className="py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px]">Opening Bal</th>
+                          <th rowSpan={2} className={`py-2 px-2 border-r border-slate-300 text-center w-[12%] min-w-[105px] ${(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") ? "bg-indigo-100 text-indigo-950 font-black" : ""}`}>
+                            Opening Bal
+                            {(openingBalanceMin || openingBalanceMax || openingBalanceType !== "all") && (
+                              <span className="block text-[8px] font-bold text-indigo-700 lowercase">(filtered)</span>
+                            )}
+                          </th>
                           <th rowSpan={2} className="py-2 px-1 border-r border-slate-300 text-center w-[9%] min-w-[85px]">Status</th>
                           <th colSpan={3} className="py-1 px-1 border-r border-emerald-300 text-center bg-emerald-100/80 text-emerald-950 font-black tracking-wider">
                             Total IN (Deposits / Inflow)
