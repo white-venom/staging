@@ -74,20 +74,25 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
       
       const mappedCols = cols.map((c: any) => {
         const dtStr = buildDisplayDate(c.created_at, c.collection_date);
+        const collector = (fetchedUsers || []).find((u: any) => String(u.id) === String(c.staff_id));
+        const sender = (fetchedUsers || []).find((u: any) => String(u.id) === String(c.from_staff_id));
+        const resolvedStaffName = (c.staff_name && c.staff_name !== "Unknown Staff") ? c.staff_name : (collector?.name || c.staff_name || "Unknown Staff");
+        const resolvedFromStaffName = c.from_staff_name || sender?.name || null;
         return {
           id: c.id,
           retailer_id: c.retailer_id,
           retailer_name: c.retailer_name || null,
-          retailerName: c.retailer_name || "Unknown Retailer",
+          retailerName: c.retailer_name || (c.from_staff_id ? `Staff: ${resolvedFromStaffName || "Staff"}` : "Unknown Retailer"),
           bank_account_id: c.bank_account_id,
           store_id: c.store_id,
           from_staff_id: c.from_staff_id,
-          from_staff_name: c.from_staff_name || null,
+          from_staff_name: resolvedFromStaffName,
           staff_id: c.staff_id,
+          staffId: c.staff_id,
           store_name: c.store_name || null,
           bankAccountName: c.bank_account_name || "Standard Channel",
-          staffName: c.staff_name || "Unknown Staff",
-          staff_name: c.staff_name || "Unknown Staff",
+          staffName: resolvedStaffName,
+          staff_name: resolvedStaffName,
           totalAmount: parseFloat(c.total_amount),
           total_amount: c.total_amount,
           balance_snapshot: c.balance_snapshot,
@@ -102,6 +107,11 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
       const mappedDeps = deps.map((d: any) => {
         const dtStr = buildDisplayDate(d.created_at, d.deposit_date);
+        const sender = (fetchedUsers || []).find((u: any) => String(u.id) === String(d.staff_id));
+        const recipient = (fetchedUsers || []).find((u: any) => String(u.id) === String(d.recipient_staff_id));
+        const resolvedStaffName = (d.staff_name && d.staff_name !== "System") ? d.staff_name : (sender?.name || d.staff_name || "System");
+        const resolvedRecipientStaffName = d.recipient_staff_name || recipient?.name || null;
+        const isToOffice = Boolean(d.to_office || (recipient && ((recipient.name || "").toLowerCase().includes("office") || recipient.role === "admin")));
         return {
           ...d,
           id: d.id,
@@ -113,7 +123,13 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           retailer_name: d.retailer_name || null,
           retailerName: d.retailer_name || null,
           staff_id: d.staff_id,
+          staffId: d.staff_id,
           recipient_staff_id: d.recipient_staff_id,
+          recipientStaffId: d.recipient_staff_id,
+          recipient_staff_name: resolvedRecipientStaffName,
+          recipientStaffName: resolvedRecipientStaffName,
+          to_office: isToOffice,
+          toOffice: isToOffice,
           portalId: d.portal_id || null,
           portal_id: d.portal_id || null,
           portalName: d.portal_name || null,
@@ -126,8 +142,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           from_bank_account_name: d.from_bank_account_name || null,
           depositType: d.deposit_type,
           deposit_type: d.deposit_type,
-          targetName: d.target_name || "Direct Deposit",
-          target_name: d.target_name || "Direct Deposit",
+          targetName: d.target_name || (d.deposit_type === "staff" ? (resolvedRecipientStaffName || "Staff Handover") : "Direct Deposit"),
+          target_name: d.target_name || (d.deposit_type === "staff" ? (resolvedRecipientStaffName || "Staff Handover") : "Direct Deposit"),
           bankAccountName: d.bank_account_name || null,
           bank_account_name: d.bank_account_name || null,
           amount: parseFloat(d.amount),
@@ -136,8 +152,8 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
           payment_mode: d.payment_mode,
           denominations: d.denominations,
           status: d.status,
-          staffName: d.staff_name || "System",
-          staff_name: d.staff_name || "System",
+          staffName: resolvedStaffName,
+          staff_name: resolvedStaffName,
           isRefund: d.is_refund === true,
           is_refund: d.is_refund === true,
           retailer_ledger_token: d.retailer_ledger_token || null,

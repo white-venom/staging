@@ -204,11 +204,12 @@ def submit_collection(
             # sender — leaving their balance never debited.
             # Auto-create corresponding BankDeposit for the sender staff (from_staff_id)
             # representing the handover payout to the recipient staff (current_user.id)
+            is_office = bool(("office" in (current_user.name or "").lower()) or (current_user.role == "admin"))
             db_deposit = BankDeposit(
                 staff_id=payload.from_staff_id,
                 deposit_type="staff",
                 recipient_staff_id=current_user.id,
-                to_office=False,
+                to_office=is_office,
                 payment_mode="cash",
                 amount=payload.total_amount,
                 deposit_date=db_collection.collection_date,
@@ -952,11 +953,13 @@ def update_collection(
                 )
         # Create new mirrored deposit if new is set
         if new_from_staff_id:
+            recip = db.get(User, collection.staff_id)
+            is_office = bool(recip and ("office" in (recip.name or "").lower() or recip.role == "admin"))
             db_deposit = BankDeposit(
                 staff_id=new_from_staff_id,
                 deposit_type="staff",
                 recipient_staff_id=collection.staff_id,
-                to_office=False,
+                to_office=is_office,
                 payment_mode="cash",
                 amount=payload.total_amount,
                 deposit_date=new_collection_date,

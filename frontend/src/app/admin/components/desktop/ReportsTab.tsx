@@ -322,14 +322,14 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     if (!item) return "Staff Member";
     
     // Check direct name fields
-    const directName = item.staff_name || item.staffName || item.from_staff_name || item.recipient_staff_name || item.name || item.full_name;
+    const directName = item.staff_name || item.staffName || item.recipient_staff_name || item.recipientStaffName || item.name || item.full_name;
 
     if (directName && typeof directName === "string" && !isUuid(directName) && directName !== "Unknown Staff" && directName !== "System") {
       return directName;
     }
 
     // Lookup in userDirectory by staff ID
-    const targetId = String(item.from_staff_id || item.staff_id || item.staffId || item.recipient_staff_id || item.id || item.user_id || "");
+    const targetId = String(item.staff_id || item.staffId || item.recipient_staff_id || item.recipientStaffId || item.id || item.user_id || "");
     if (targetId && userDirectory && userDirectory.length > 0) {
       const found = userDirectory.find((u: any) => String(u.id) === targetId || String(u.staff_id) === targetId || String(u.user_id) === targetId);
       if (found && (found.name || found.full_name || found.username)) {
@@ -393,7 +393,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
 
     collections.forEach(c => {
       const name = getStaffName(c);
-      const id = String(c.from_staff_id || c.staff_id || name);
+      const id = String(c.staff_id || c.staffId || name);
       if (name && name !== "Staff Member" && name !== "Unknown Staff") {
         map.set(id, name);
       }
@@ -559,7 +559,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
     if (!targetStaff) return [];
     return collections.filter((c: any) => {
       const staffName = getStaffName(c);
-      return String(c.from_staff_id || c.staff_id || c.staffId) === String(targetStaff.id) ||
+      return String(c.staff_id || c.staffId) === String(targetStaff.id) ||
              staffName === targetStaff.name ||
              staffName.toLowerCase() === targetStaff.name.toLowerCase();
     });
@@ -1459,7 +1459,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
         if (selectedStaffIds.includes("__none__")) return false;
         const sName = getStaffName(c);
         const matches = selectedStaffIds.some(id =>
-          String(c.from_staff_id || c.staff_id) === String(id) ||
+          String(c.staff_id || c.staffId) === String(id) ||
           sName === id ||
           sName.toLowerCase() === id.toLowerCase()
         );
@@ -2166,7 +2166,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
       if (dateTo && cDate > dateTo) return;
 
       const resolvedName = getStaffName(c);
-      const staffId = String(c.from_staff_id || c.staff_id || resolvedName);
+      const staffId = String(c.staff_id || c.staffId || resolvedName);
       const mapKey = resolvedName !== "Staff Member" ? resolvedName : staffId;
 
       if (!map.has(mapKey)) {

@@ -175,37 +175,51 @@ def submit_deposit(
             retailer.balance = new_balance
             db_deposit.balance_snapshot = new_balance
 
-        elif dt == "staff" and payload.recipient_staff_id:
-            # Sending staff initiates the handover here (item #9's reversal of the
-            # old flow, where the *receiving* staff used to initiate via
-            # "Cash In > From Staff"). Auto-create the matching incoming
-            # Collection on the recipient's side, the same mirror-pair shape
-            # submit_collection() used to build in the other direction --
-            # update_deposit()/delete_deposit() already sync and clean up this
-            # pairing bidirectionally via Collection.mirror_deposit_id, so no
-            # changes were needed there.
-            db_collection = Collection(
-                retailer_id=None,
-                staff_id=payload.recipient_staff_id,
-                from_staff_id=current_user.id,
-                from_office=False,
-                total_amount=payload.amount,
-                collection_date=payload.deposit_date,
-                status="verified",
-                balance_snapshot=Decimal("0.00"),
-                mirror_deposit_id=db_deposit.id,
-            )
-            db.add(db_collection)
-            db.flush()
+        elif dt == "staff":
+            target_recipient_id = payload.recipient_staff_id
+            is_office = payload.to_office or False
+            if target_recipient_id:
+                recipient = db.get(User, target_recipient_id)
+                if recipient and ("office" in (recipient.name or "").lower() or recipient.role == "admin"):
+                    is_office = True
+            elif is_office:
+                office_user = db.scalar(
+                    select(User).where(
+                        or_(
+                            User.name.ilike("%office%"),
+                            User.role == "admin"
+                        )
+                    ).order_by(User.id)
+                )
+                if office_user:
+                    target_recipient_id = office_user.id
+                    db_deposit.recipient_staff_id = office_user.id
 
-            if payload.denominations:
-                d = payload.denominations
-                db.add(Denomination(
-                    collection_id=db_collection.id,
-                    note_500=d.note_500, note_200=d.note_200, note_100=d.note_100,
-                    note_50=d.note_50, note_20=d.note_20, note_10=d.note_10,
-                    coins=d.coins, online_amount=d.online_amount,
-                ))
+            db_deposit.to_office = is_office
+
+            if target_recipient_id:
+                db_collection = Collection(
+                    retailer_id=None,
+                    staff_id=target_recipient_id,
+                    from_staff_id=current_user.id,
+                    from_office=False,
+                    total_amount=payload.amount,
+                    collection_date=payload.deposit_date,
+                    status="verified",
+                    balance_snapshot=Decimal("0.00"),
+                    mirror_deposit_id=db_deposit.id,
+                )
+                db.add(db_collection)
+                db.flush()
+
+                if payload.denominations:
+                    d = payload.denominations
+                    db.add(Denomination(
+                        collection_id=db_collection.id,
+                        note_500=d.note_500, note_200=d.note_200, note_100=d.note_100,
+                        note_50=d.note_50, note_20=d.note_20, note_10=d.note_10,
+                        coins=d.coins, online_amount=d.online_amount,
+                    ))
 
         elif dt == "portal":
             # BankAccount deposits reduce what CrediiFlow owes to the portal
@@ -427,10 +441,67 @@ def list_deposits(
         joinedload(BankDeposit.denominations),
         selectinload(BankDeposit.ledgers)
     )
+    # Auto-heal: ensure every collection from a staff member has its matching mirrored BankDeposit
+    try:
+        unmirrored_cols = db.scalars(
+            select(Collection).where(
+                Collection.from_staff_id.isnot(None),
+                Collection.mirror_deposit_id.is_(None)
+            )
+        ).all()
+        if unmirrored_cols:
+            for col in unmirrored_cols:
+                matching_dep = db.scalar(
+                    select(BankDeposit).where(
+                        BankDeposit.deposit_type == "staff",
+                        BankDeposit.staff_id == col.from_staff_id,
+                        BankDeposit.recipient_staff_id == col.staff_id,
+                        BankDeposit.amount == col.total_amount,
+                        BankDeposit.deposit_date == col.collection_date
+                    )
+                )
+                if matching_dep:
+                    col.mirror_deposit_id = matching_dep.id
+                else:
+                    recip = db.get(User, col.staff_id)
+                    is_office = bool(recip and ("office" in (recip.name or "").lower() or recip.role == "admin"))
+                    new_dep = BankDeposit(
+                        staff_id=col.from_staff_id,
+                        deposit_type="staff",
+                        recipient_staff_id=col.staff_id,
+                        to_office=is_office,
+                        payment_mode="cash",
+                        amount=col.total_amount,
+                        deposit_date=col.collection_date,
+                        status="verified",
+                        balance_snapshot=Decimal("0.00")
+                    )
+                    db.add(new_dep)
+                    db.flush()
+                    if col.denominations:
+                        cd = col.denominations
+                        db.add(Denomination(
+                            deposit_id=new_dep.id,
+                            note_500=cd.note_500, note_200=cd.note_200, note_100=cd.note_100,
+                            note_50=cd.note_50, note_20=cd.note_20, note_10=cd.note_10,
+                            coins=cd.coins, online_amount=cd.online_amount
+                        ))
+                    col.mirror_deposit_id = new_dep.id
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error auto-healing unmirrored handovers: {e}")
+
     deposits = db.scalars(query.order_by(desc(BankDeposit.created_at))).all()
     
-    # Manually populate target_name
+    # Manually populate virtual fields
     for dep in deposits:
+        dep.staff_name = dep.staff.name if dep.staff else None
+        dep.recipient_staff_name = dep.recipient_staff.name if dep.recipient_staff else None
+        if dep.deposit_type == "staff" and dep.recipient_staff:
+            if "office" in (dep.recipient_staff.name or "").lower() or dep.recipient_staff.role == "admin":
+                dep.to_office = True
+
         if dep.deposit_type == "portal":
             dep.target_name = dep.bank_account.bank_account_name if dep.bank_account else "Bank Account"
             dep.bank_account_name = dep.bank_account.bank_account_name if dep.bank_account else None
@@ -983,6 +1054,10 @@ def update_deposit(
     
     # Populate virtual fields
     deposit.staff_name = deposit.staff.name if deposit.staff else "Unknown"
+    deposit.recipient_staff_name = deposit.recipient_staff.name if deposit.recipient_staff else None
+    if deposit.deposit_type == "staff" and deposit.recipient_staff:
+        if "office" in (deposit.recipient_staff.name or "").lower() or deposit.recipient_staff.role == "admin":
+            deposit.to_office = True
     deposit.bank_account_name = deposit.bank_account.bank_account_name if deposit.bank_account else "Main Office"
     if deposit.bank_account and deposit.bank_account.portal:
         deposit.portal_name = deposit.bank_account.portal.name

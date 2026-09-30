@@ -466,35 +466,35 @@ export default function MobileOverview({
 
       // Today's collections & deposits
       const staffColsToday = (collections || []).filter(
-        (c) => c.staffName === name && c.date?.startsWith(todayStr)
+        (c) => ((c.staff_id && String(c.staff_id) === String(user.id)) || c.staffName === name || c.staff_name === name) && c.date?.startsWith(todayStr)
       );
       const staffDepsToday = (deposits || []).filter(
-        (d) => d.staffName === name && d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
+        (d) => ((d.staff_id && String(d.staff_id) === String(user.id)) || d.staffName === name || d.staff_name === name) && d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
       );
 
       // Previous days' collections & deposits
       const staffColsPrev = (collections || []).filter(
-        (c) => c.staffName === name && !c.date?.startsWith(todayStr)
+        (c) => ((c.staff_id && String(c.staff_id) === String(user.id)) || c.staffName === name || c.staff_name === name) && !c.date?.startsWith(todayStr)
       );
       const staffDepsPrev = (deposits || []).filter(
-        (d) => d.staffName === name && !d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
+        (d) => ((d.staff_id && String(d.staff_id) === String(user.id)) || d.staffName === name || d.staff_name === name) && !d.date?.startsWith(todayStr) && d.depositType?.toLowerCase() !== 'virtual'
       );
 
       const isOfficeUser = name.toLowerCase().includes("office");
       // Received handovers (deposit_type === "staff" and recipient_staff_id === user.id)
       // Filter out received handovers that have matching collection to avoid double-counting
       const receivedDepsToday = (deposits || []).filter(d => 
-        (d.recipient_staff_id === user.id || (isOfficeUser && d.to_office === true)) && 
+        (String(d.recipient_staff_id) === String(user.id) || (isOfficeUser && d.to_office === true)) && 
         d.depositType === 'staff' && 
         d.date?.startsWith(todayStr) &&
-        !(collections || []).some(c => (c.staff_id === user.id || c.staffName === name) && c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
+        !(collections || []).some(c => (String(c.staff_id) === String(user.id) || c.staffName === name) && String(c.from_staff_id) === String(d.staff_id) && Number(c.totalAmount) === Number(d.amount))
       );
       
       const receivedDepsPrev = (deposits || []).filter(d => 
-        (d.recipient_staff_id === user.id || (isOfficeUser && d.to_office === true)) && 
+        (String(d.recipient_staff_id) === String(user.id) || (isOfficeUser && d.to_office === true)) && 
         d.depositType === 'staff' && 
         !d.date?.startsWith(todayStr) &&
-        !(collections || []).some(c => (c.staff_id === user.id || c.staffName === name) && c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
+        !(collections || []).some(c => (String(c.staff_id) === String(user.id) || c.staffName === name) && String(c.from_staff_id) === String(d.staff_id) && Number(c.totalAmount) === Number(d.amount))
       );
 
       const collectedToday = staffColsToday.reduce((s, c) => s + (c.totalAmount || 0), 0) + receivedDepsToday.reduce((s, d) => s + (d.amount || 0), 0);

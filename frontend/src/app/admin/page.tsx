@@ -15,15 +15,17 @@ export default function AdminPage() {
 
   const totalStaffCash = staffUsers.reduce((sum: number, user: any) => {
     const name = user.name;
-    const staffCols = (collections || []).filter((c: any) => c.staffName === name);
+    const staffCols = (collections || []).filter((c: any) => 
+      (c.staff_id && String(c.staff_id) === String(user.id)) || c.staffName === name || c.staff_name === name
+    );
     const staffDeps = (deposits || []).filter((d: any) => 
-      d.staffName === name && 
+      ((d.staff_id && String(d.staff_id) === String(user.id)) || d.staffName === name || d.staff_name === name) && 
       d.depositType?.toLowerCase() !== 'virtual'
     );
     const receivedDeps = (deposits || []).filter((d: any) => 
-      d.recipient_staff_id === user.id && 
+      String(d.recipient_staff_id) === String(user.id) && 
       d.depositType === 'staff' && 
-      !(collections || []).some((c: any) => (c.staff_id === user.id || c.staffName === name) && c.from_staff_id === d.staff_id && Number(c.totalAmount) === Number(d.amount))
+      !(collections || []).some((c: any) => (String(c.staff_id) === String(user.id) || c.staffName === name) && String(c.from_staff_id) === String(d.staff_id) && Number(c.totalAmount) === Number(d.amount))
     );
 
     const collected = staffCols.reduce((s: number, c: any) => s + (c.totalAmount || 0), 0) + receivedDeps.reduce((s: number, d: any) => s + (d.amount || 0), 0);

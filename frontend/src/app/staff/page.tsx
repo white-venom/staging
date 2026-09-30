@@ -253,11 +253,17 @@ export default function StaffDashboard() {
         })
         .map((d: any) => ({
         id: d.id,
+        staff_id: d.staff_id,
         bank_account_id: d.bank_account_id,
         retailer_id: d.retailer_id,
         recipient_staff_id: d.recipient_staff_id,
+        recipient_staff_name: d.recipient_staff_name,
+        to_office: d.to_office,
+        toOffice: d.to_office,
         depositType: d.deposit_type,
+        deposit_type: d.deposit_type,
         targetName: (d.deposit_type === "portal" && d.portal_name) ? d.portal_name : (d.target_name || "Super Distributor"),
+        target_name: (d.deposit_type === "portal" && d.portal_name) ? d.portal_name : (d.target_name || "Super Distributor"),
         amount: Number(d.amount),
         paymentMode: (d.payment_mode === "cash" ? "cash" : "online") as "cash" | "online",
         denominations: d.denominations ? {
@@ -276,6 +282,7 @@ export default function StaffDashboard() {
         bankAccountName: d.bank_account_name || undefined,
         bankName: d.bank_name || undefined,
         date: buildDisplayDate(d.created_at, d.deposit_date),
+        deposit_date: d.deposit_date,
         retailer_ledger_token: d.retailer_ledger_token,
         created_at: d.created_at,
       }));
@@ -1007,7 +1014,31 @@ export default function StaffDashboard() {
                                      const [apiCols, apiDeps] = await Promise.all([api.getCollections(), api.getDeposits()]);
                                      const { setCollections, setDeposits } = useAppStore.getState();
                                      setCollections(apiCols.map((col: any) => ({ id: col.id, retailer_id: col.retailer_id, store_id: col.store_id, store_name: col.store_name, retailerName: col.retailer_name || 'Unknown', bankAccountName: col.bank_account_name || 'Cash', portalName: col.portal_name || undefined, staffName: col.staff_name, totalAmount: Number(col.total_amount), denominations: col.denominations, status: col.status, remarks: col.remarks, date: buildDisplayDate(col.created_at, col.collection_date), retailer_ledger_token: col.retailer_ledger_token, created_at: col.created_at })));
-                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({ id: d.id, bank_account_id: d.bank_account_id, retailer_id: d.retailer_id, recipient_staff_id: d.recipient_staff_id, depositType: d.deposit_type, targetName: (d.deposit_type === 'portal' && d.portal_name) ? d.portal_name : (d.target_name || 'Super Distributor'), amount: Number(d.amount), paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online', denominations: d.denominations, status: d.status, remarks: d.remarks, bankAccountName: d.bank_account_name || undefined, bankName: d.bank_name || undefined, date: buildDisplayDate(d.created_at, d.deposit_date), retailer_ledger_token: d.retailer_ledger_token, created_at: d.created_at })));
+                                     setDeposits(apiDeps.filter((d: any) => !(d.recipient_staff_id === currentUser.id && d.deposit_type === 'staff')).map((d: any) => ({
+                                       id: d.id,
+                                       staff_id: d.staff_id,
+                                       bank_account_id: d.bank_account_id,
+                                       retailer_id: d.retailer_id,
+                                       recipient_staff_id: d.recipient_staff_id,
+                                       recipient_staff_name: d.recipient_staff_name,
+                                       to_office: d.to_office,
+                                       toOffice: d.to_office,
+                                       depositType: d.deposit_type,
+                                       deposit_type: d.deposit_type,
+                                       targetName: (d.deposit_type === 'portal' && d.portal_name) ? d.portal_name : (d.target_name || 'Super Distributor'),
+                                       target_name: (d.deposit_type === 'portal' && d.portal_name) ? d.portal_name : (d.target_name || 'Super Distributor'),
+                                       amount: Number(d.amount),
+                                       paymentMode: d.payment_mode === 'cash' ? 'cash' : 'online',
+                                       denominations: d.denominations,
+                                       status: d.status,
+                                       remarks: d.remarks,
+                                       bankAccountName: d.bank_account_name || undefined,
+                                       bankName: d.bank_name || undefined,
+                                       date: buildDisplayDate(d.created_at, d.deposit_date),
+                                       deposit_date: d.deposit_date,
+                                       retailer_ledger_token: d.retailer_ledger_token,
+                                       created_at: d.created_at
+                                     })));
                                      setExpandedHomeId(null);
                                    } catch (err: any) {
                                      alert('Delete failed: ' + err.message);
