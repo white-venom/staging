@@ -684,11 +684,13 @@ def get_staff_ledger(
         elif d.deposit_type == "retailer":
             desc = f"Deposit to Retailer: {retailer_name or 'Retailer'}"
         elif d.deposit_type == "staff":
-            if d.to_office:
-                desc = "Handover to Main Office"
+            recipient_name = d.recipient_staff.name if d.recipient_staff else None
+            if recipient_name:
+                desc = f"Handover to {recipient_name}"
+            elif d.to_office:
+                desc = "Handover to DO iT OFFICE"
             else:
-                recipient_name = d.recipient_staff.name if d.recipient_staff else "Staff"
-                desc = f"Handover to Staff: {recipient_name}"
+                desc = "Handover to Staff"
         else:
             continue
 

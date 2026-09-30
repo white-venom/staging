@@ -520,13 +520,13 @@ def list_deposits(
                 dep.retailer_ledger_token = dep.retailer.ledger_token
         elif dep.deposit_type == "staff":
             dep.recipient_staff_name = dep.recipient_staff.name if dep.recipient_staff else None
-            if dep.to_office:
-                dep.target_name = "Main Office Cashier"
+            recipient_name = dep.recipient_staff.name if dep.recipient_staff else None
+            if recipient_name:
+                dep.target_name = recipient_name
+            elif dep.to_office:
+                dep.target_name = "DO iT OFFICE"
             else:
-                if current_user.role != "admin" and dep.recipient_staff_id == current_user.id:
-                    dep.target_name = f"Received from {dep.staff.name if dep.staff else 'Staff'}"
-                else:
-                    dep.target_name = dep.recipient_staff.name if dep.recipient_staff else "Field Staff"
+                dep.target_name = "Field Staff"
         elif dep.deposit_type == "virtual":
             bank_account_obj = dep.bank_account
             if dep.retailer:
@@ -1075,6 +1075,8 @@ def update_deposit(
         deposit.retailer_ledger_token = deposit.retailer.ledger_token
     elif deposit.recipient_staff_id and deposit.recipient_staff:
         deposit.target_name = deposit.recipient_staff.name
+    elif deposit.deposit_type == "staff" and deposit.to_office:
+        deposit.target_name = "DO iT OFFICE"
     else:
         deposit.target_name = deposit.bank_account_name
 
