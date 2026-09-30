@@ -441,56 +441,60 @@ def list_deposits(
         joinedload(BankDeposit.denominations),
         selectinload(BankDeposit.ledgers)
     )
-    # Auto-heal: ensure every collection from a staff member has its matching mirrored BankDeposit
+    # Deduplicate and auto-heal handovers: ensure only one mirror deposit per handover
     try:
-        unmirrored_cols = db.scalars(
-            select(Collection).where(
-                Collection.from_staff_id.isnot(None),
-                Collection.mirror_deposit_id.is_(None)
-            )
+        cols = db.scalars(
+            select(Collection).where(Collection.from_staff_id.isnot(None))
         ).all()
-        if unmirrored_cols:
-            for col in unmirrored_cols:
-                matching_dep = db.scalar(
-                    select(BankDeposit).where(
-                        BankDeposit.deposit_type == "staff",
-                        BankDeposit.staff_id == col.from_staff_id,
-                        BankDeposit.recipient_staff_id == col.staff_id,
-                        BankDeposit.amount == col.total_amount,
-                        BankDeposit.deposit_date == col.collection_date
-                    )
+        for col in cols:
+            matching_deps = db.scalars(
+                select(BankDeposit).where(
+                    BankDeposit.deposit_type == "staff",
+                    BankDeposit.staff_id == col.from_staff_id,
+                    BankDeposit.amount == col.total_amount,
+                    BankDeposit.deposit_date == col.collection_date
+                ).order_by(BankDeposit.created_at.asc(), BankDeposit.id.asc())
+            ).all()
+            if len(matching_deps) > 1:
+                keep_dep = matching_deps[0]
+                col.mirror_deposit_id = keep_dep.id
+                for dup in matching_deps[1:]:
+                    db.execute(delete(Denomination).where(Denomination.deposit_id == dup.id))
+                    db.execute(delete(BankDeposit).where(BankDeposit.id == dup.id))
+                db.commit()
+            elif len(matching_deps) == 1:
+                if col.mirror_deposit_id != matching_deps[0].id:
+                    col.mirror_deposit_id = matching_deps[0].id
+                    db.commit()
+            elif len(matching_deps) == 0 and not col.mirror_deposit_id:
+                recip = db.get(User, col.staff_id)
+                is_office = bool(recip and ("office" in (recip.name or "").lower() or recip.role == "admin"))
+                new_dep = BankDeposit(
+                    staff_id=col.from_staff_id,
+                    deposit_type="staff",
+                    recipient_staff_id=col.staff_id,
+                    to_office=is_office,
+                    payment_mode="cash",
+                    amount=col.total_amount,
+                    deposit_date=col.collection_date,
+                    status="verified",
+                    balance_snapshot=Decimal("0.00")
                 )
-                if matching_dep:
-                    col.mirror_deposit_id = matching_dep.id
-                else:
-                    recip = db.get(User, col.staff_id)
-                    is_office = bool(recip and ("office" in (recip.name or "").lower() or recip.role == "admin"))
-                    new_dep = BankDeposit(
-                        staff_id=col.from_staff_id,
-                        deposit_type="staff",
-                        recipient_staff_id=col.staff_id,
-                        to_office=is_office,
-                        payment_mode="cash",
-                        amount=col.total_amount,
-                        deposit_date=col.collection_date,
-                        status="verified",
-                        balance_snapshot=Decimal("0.00")
-                    )
-                    db.add(new_dep)
-                    db.flush()
-                    if col.denominations:
-                        cd = col.denominations
-                        db.add(Denomination(
-                            deposit_id=new_dep.id,
-                            note_500=cd.note_500, note_200=cd.note_200, note_100=cd.note_100,
-                            note_50=cd.note_50, note_20=cd.note_20, note_10=cd.note_10,
-                            coins=cd.coins, online_amount=cd.online_amount
-                        ))
-                    col.mirror_deposit_id = new_dep.id
-            db.commit()
+                db.add(new_dep)
+                db.flush()
+                if col.denominations:
+                    cd = col.denominations
+                    db.add(Denomination(
+                        deposit_id=new_dep.id,
+                        note_500=cd.note_500, note_200=cd.note_200, note_100=cd.note_100,
+                        note_50=cd.note_50, note_20=cd.note_20, note_10=cd.note_10,
+                        coins=cd.coins, online_amount=cd.online_amount
+                    ))
+                col.mirror_deposit_id = new_dep.id
+                db.commit()
     except Exception as e:
         db.rollback()
-        print(f"Error auto-healing unmirrored handovers: {e}")
+        print(f"Error deduplicating/healing handovers: {e}")
 
     deposits = db.scalars(query.order_by(desc(BankDeposit.created_at))).all()
     

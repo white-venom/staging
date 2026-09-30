@@ -592,6 +592,18 @@ def get_staff_ledger(
         )
     ).all()
 
+    # Deduplicate any duplicate staff handover deposits made
+    unique_deposits_made = []
+    seen_handovers = set()
+    for d in deposits_made:
+        if d.deposit_type == "staff":
+            key = (float(d.amount), str(d.deposit_date))
+            if key in seen_handovers:
+                continue
+            seen_handovers.add(key)
+        unique_deposits_made.append(d)
+    deposits_made = unique_deposits_made
+
     def _denom_dict(denom):
         if not denom:
             return None
