@@ -5,8 +5,12 @@ from app.core.config import settings
 from fastapi import Request, HTTPException
 
 # Master DB setup for central routing
+master_url = settings.MASTER_DATABASE_URL
+if master_url and master_url.startswith("postgresql://"):
+    master_url = master_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
 master_engine = create_engine(
-    settings.MASTER_DATABASE_URL,
+    master_url,
     pool_size=10,
     max_overflow=20,
     pool_timeout=30,
@@ -39,7 +43,7 @@ import time
 
 def get_tenant_connection_string(db_name: str) -> str:
     escaped_password = urllib.parse.quote_plus(settings.DB_PASSWORD)
-    return f"postgresql://{settings.DB_USER}:{escaped_password}@{settings.DB_HOST}:{settings.DB_PORT}/{db_name}"
+    return f"postgresql+psycopg2://{settings.DB_USER}:{escaped_password}@{settings.DB_HOST}:{settings.DB_PORT}/{db_name}"
 
 def get_tenant_engine(db_name: str):
     if db_name not in _tenant_engines:

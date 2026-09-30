@@ -466,7 +466,7 @@ def create_tenant(
     # Create database and run migrations/seed
     try:
         # Create physical database and schema
-        pg_url = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
+        pg_url = f"postgresql+psycopg2://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
         pg_engine = create_engine(pg_url, isolation_level="AUTOCOMMIT")
         try:
             with pg_engine.connect() as conn:
@@ -910,7 +910,7 @@ def delete_tenant(
     
     # Try to drop the tenant's database to clean up resources
     try:
-        pg_url = f"postgresql://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
+        pg_url = f"postgresql+psycopg2://{settings.DB_USER}:{settings.DB_PASSWORD}@{settings.DB_HOST}:{settings.DB_PORT}/postgres"
         pg_engine = create_engine(pg_url, isolation_level="AUTOCOMMIT")
         try:
             with pg_engine.connect() as conn:
