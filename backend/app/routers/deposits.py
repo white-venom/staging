@@ -330,7 +330,7 @@ def submit_deposit(
                 db_deposit.retailer_ledger_token = retailer.ledger_token
         elif dt == "staff":
             if payload.to_office:
-                db_deposit.target_name = "Main Office Cashier"
+                db_deposit.target_name = "DO iT OFFICE"
             else:
                 if payload.recipient_staff_id:
                     recipient = db.scalar(select(User).where(User.id == payload.recipient_staff_id).with_for_update())

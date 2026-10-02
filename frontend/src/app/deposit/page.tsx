@@ -321,7 +321,7 @@ function NewDepositContent() {
     } else if (depositType === "staff_person") {
       targetName = staffUsers.find(s => s.id === selectedStaffId)?.name || "Staff Member";
     } else {
-      targetName = "Super Distributor";
+      targetName = "DO iT OFFICE";
     }
 
     // Build proper backend payload with UUIDs. "staff_person" is a frontend-only

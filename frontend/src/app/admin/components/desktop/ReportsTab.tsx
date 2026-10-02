@@ -2612,7 +2612,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           const retDispName = isCms 
             ? `${item.retailer_name} - ${item.store_name || "Cash"}` 
             : (item.from_staff_name ? `Staff: ${item.from_staff_name}` : `${item.retailer_name || "Retailer"}${storeStr}`);
-          source = item.from_office ? "Super Distributor" : retDispName;
+          source = item.from_office ? (item.target_name && item.target_name !== "Super Distributor" ? item.target_name : "DO iT OFFICE") : retDispName;
           destination = item.portal_name
             ? `${item.portal_name}${item.bank_name ? ` (${item.bank_name})` : (item.bank_account_name ? ` (${item.bank_account_name})` : "")}`
             : staffName;
@@ -2621,8 +2621,16 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
           const bankSuffix = (item.deposit_type === "portal" && item.bank_name)
             ? ` (${item.bank_name})`
             : (item.store_name && item.store_name !== "Cash" ? ` (${item.store_name})` : "");
-          const destName = (item.deposit_type === "portal" && item.portal_name) ? item.portal_name : (item.target_name || "Recipient");
-          destination = item.to_office ? "Super Distributor" : `${destName}${bankSuffix}`;
+          const rawDest = item.target_name || item.targetName || item.portal_name || "";
+          const cleanStaffTarget = rawDest ? (rawDest.startsWith("Staff") ? rawDest : `Staff: ${rawDest}`) : "Staff: DO iT OFFICE";
+          const destName = (item.deposit_type === "portal" && item.portal_name) 
+            ? item.portal_name 
+            : (item.deposit_type === "staff" ? (item.recipient_staff_name ? `Staff: ${item.recipient_staff_name}` : cleanStaffTarget) : (item.target_name || "Recipient"));
+          destination = item.to_office 
+            ? (item.target_name && item.target_name !== "Super Distributor" && item.target_name !== "Main Office Cashier"
+                ? (item.target_name.startsWith("Staff") ? item.target_name : `Staff: ${item.target_name}`)
+                : (item.recipient_staff_name ? `Staff: ${item.recipient_staff_name}` : "Staff: DO iT OFFICE"))
+            : `${destName}${bankSuffix}`;
         }
         const narration = `From ${source} to ${destination}`;
 
@@ -5192,7 +5200,7 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                               ? `${item.retailer_name} - ${item.store_name || "Cash"}` 
                               : (item.from_staff_name ? `Staff: ${item.from_staff_name}` : `${item.retailer_name || "Retailer"}${storeStr}`);
                             source = item.from_office
-                              ? "Super Distributor"
+                              ? (item.target_name && item.target_name !== "Super Distributor" ? item.target_name : "DO iT OFFICE")
                               : retDispName;
                             destination = item.portal_name
                                ? `${item.portal_name}${item.bank_name ? ` (${item.bank_name})` : (item.bank_account_name ? ` (${item.bank_account_name})` : "")}`
@@ -5217,9 +5225,13 @@ export default function ReportsTab({ collections: propCols = [], deposits: propD
                             } else if (item.deposit_type === "staff") {
                               destName = `Staff: ${item.recipient_staff_name || item.recipientStaffName || item.target_name || item.targetName || "Staff"}`;
                             } else {
-                              destName = item.target_name || item.targetName || item.portal_name || item.retailer_name || "Super Distributor";
+                              destName = item.target_name || item.targetName || item.portal_name || item.retailer_name || "DO iT OFFICE";
                             }
-                            destination = item.to_office ? "Super Distributor" : destName;
+                            destination = item.to_office 
+                              ? (item.target_name && item.target_name !== "Super Distributor" && item.target_name !== "Main Office Cashier"
+                                  ? (item.target_name.startsWith("Staff") ? item.target_name : `Staff: ${item.target_name}`)
+                                  : (item.recipient_staff_name ? `Staff: ${item.recipient_staff_name}` : (destName && !destName.includes("Super Distributor") ? destName : "Staff: DO iT OFFICE")))
+                              : destName;
                           }
                           const narration = `From ${source} to ${destination}`;
                           const isEven = idx % 2 === 0;
