@@ -48,4 +48,11 @@ jobs:
           sleep 5
           docker compose exec -T backend python scripts/reset_superadmin.py superadmin superpass123 || docker exec crediiflow_backend python scripts/reset_superadmin.py superadmin superpass123 || true
 
+          # Ensure host Nginx reverse proxy is active and healthy
+          echo "=== Testing & Restarting Host Nginx ==="
+          nginx -t || true
+          systemctl restart nginx || service nginx restart || true
+          systemctl status nginx --no-pager || true
+
+
 
